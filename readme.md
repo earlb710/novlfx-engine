@@ -20,6 +20,7 @@ The library publishes reusable packages in the `com.eb.javafx.*` namespace throu
   - `state`
   - `text`
   - `ui`
+  - `util`
 - `src/main/resources/com/eb/javafx/ui/eb.css`
 - Matching JUnit tests for the reusable packages
 - Test-only `testscreen` support used by the copied UI tests
