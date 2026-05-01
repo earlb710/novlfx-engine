@@ -9,6 +9,6 @@ This local plan tracks reusable `novlfx-engine` work that remains after the curr
 - [ ] Add richer scene validation for unreachable branches, scene graph summaries, and speaker/display reference checks supplied by app registries.
 - [ ] Connect `SceneFlowStateJson` to future save/load snapshot contracts without making the engine own app save schemas.
 - [ ] Implement app-owned JavaFX media adapters against `AudioPlaybackAdapter`.
-- [ ] Replace placeholder screens with reusable view-model driven screens while keeping app-specific controls in app modules.
+- [x] Replace placeholder screens with reusable view-model driven screens while keeping app-specific controls in app modules.
 - [ ] Add integration tests around options-based bootstrap loading JSON-backed content modules.
 - [ ] Keep `docs/PORT_JAVAFX_PLAN.md` updated whenever reusable package scope changes.

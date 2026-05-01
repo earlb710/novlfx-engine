@@ -124,7 +124,7 @@ Keep authored story content and game-specific data outside this repository. Regi
 
 Use `SceneRouter` to register `RouteModule` implementations and navigate by route ID. A route is described with `RouteDescriptor` metadata and constructed through a `RouteFactory` using a `RouteContext`.
 
-Routes are grouped by `RouteCategory`, which helps UI code distinguish menus, gameplay routes, diagnostics, and other navigation surfaces. `DefaultRouteModule` provides reusable placeholder routes for the engine.
+Routes are grouped by `RouteCategory`, which helps UI code distinguish menus, gameplay routes, diagnostics, and other navigation surfaces. `DefaultRouteModule` provides reusable route factories backed by UI-neutral view models for the engine.
 
 ### Scene definitions and execution
 
@@ -147,14 +147,16 @@ Use `SceneFlowStateJson` to serialize and restore `SceneFlowState` snapshots con
 
 The `ui` package provides reusable JavaFX surfaces and helpers:
 
+- `ScreenViewModel` and `ScreenActionViewModel` describe reusable screen text and route-backed actions without JavaFX control state.
+- `ViewModelScreen` renders a `ScreenViewModel` with generic labels and navigation buttons.
 - `ScreenShell` wraps screen content in a consistent shell.
 - `ScreenNavigation` centralizes navigation callbacks.
-- `MainMenuScreen`, `PlaceholderScreen`, `SceneFlowScreen`, `DisplayBindingsScreen`, `HudSummaryScreen`, `SaveLoadSummaryScreen`, and `PreferencesSummaryScreen` provide generic reusable screens.
+- `MainMenuScreen`, `SceneFlowScreen`, `DisplayBindingsScreen`, `HudSummaryScreen`, `SaveLoadSummaryScreen`, and `PreferencesSummaryScreen` provide generic reusable screens or screen models.
 - `CaptureTestScreen` supports test/manual capture workflows.
 - `UiTheme` loads the reusable stylesheet from `src/main/resources/com/eb/javafx/ui/eb.css`.
 - `StartupErrorReporter`, `StartupFailureException`, and `StartupFailureCategory` provide structured startup diagnostics.
 
-Applications can use these screens directly for prototypes or replace route factories with application-specific screens while keeping the same routing and bootstrap contracts.
+Applications can use these screens directly for prototypes or replace route factories with application-specific screens while keeping the same routing and bootstrap contracts. App-specific JavaFX controls should live in application route modules; reusable engine screens should consume view models or generic display contracts.
 
 ## 7. Display support
 

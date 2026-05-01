@@ -4,12 +4,12 @@ import com.eb.javafx.routing.SceneRouter;
 
 import java.util.List;
 
-/** Builds simple route-backed screen models for reusable informational screens. */
-public final class PlaceholderScreen {
-    private PlaceholderScreen() {
+/** Factory methods for simple reusable informational screen models. */
+public final class InformationalScreenModels {
+    private InformationalScreenModels() {
     }
 
-    public static ScreenViewModel viewModel(String title, String bodyText) {
+    public static ScreenViewModel backToMainMenu(String title, String bodyText) {
         return new ScreenViewModel(
                 title,
                 List.of(bodyText),

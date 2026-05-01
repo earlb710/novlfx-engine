@@ -3,8 +3,8 @@ package com.eb.javafx.routing;
 import com.eb.javafx.ui.CaptureTestScreen;
 import com.eb.javafx.ui.DisplayBindingsScreen;
 import com.eb.javafx.ui.HudSummaryScreen;
+import com.eb.javafx.ui.InformationalScreenModels;
 import com.eb.javafx.ui.MainMenuScreen;
-import com.eb.javafx.ui.PlaceholderScreen;
 import com.eb.javafx.ui.PreferencesSummaryScreen;
 import com.eb.javafx.ui.SaveLoadSummaryScreen;
 import com.eb.javafx.ui.SceneFlowScreen;
@@ -62,7 +62,7 @@ public final class DefaultRouteModule implements RouteModule {
                         RouteCategory.OVERLAY,
                         true,
                         "Reusable view-model route for notification and modal overlay layering."),
-                context -> ViewModelScreen.createScene(context, PlaceholderScreen.viewModel(
+                context -> ViewModelScreen.createScene(context, InformationalScreenModels.backToMainMenu(
                         context.contentRegistry().definition("ui.notification.title"),
                         "Notifications and modal overlays share this JavaFX layer strategy.")));
         router.registerRoute(new RouteDescriptor(
@@ -71,7 +71,7 @@ public final class DefaultRouteModule implements RouteModule {
                         RouteCategory.TOOLTIP,
                         true,
                         "Reusable view-model route for tooltip panels."),
-                context -> ViewModelScreen.createScene(context, PlaceholderScreen.viewModel(
+                context -> ViewModelScreen.createScene(context, InformationalScreenModels.backToMainMenu(
                         context.contentRegistry().definition("ui.tooltip.title"),
                         "Reusable tooltip panels for domain data, actions, requirements, and generic help render here.")));
         router.registerRoute(new RouteDescriptor(

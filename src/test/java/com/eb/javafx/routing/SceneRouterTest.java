@@ -16,7 +16,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -52,8 +51,12 @@ final class SceneRouterTest {
         assertEquals(router.routes().keySet(), router.routeDescriptors().keySet());
         assertTrue(router.routeDescriptors().get(SceneRouter.MAIN_MENU_ROUTE).migrated());
         assertTrue(router.routeDescriptors().get(SceneRouter.PREFERENCES_ROUTE).migrated());
+        assertTrue(router.routeDescriptors().get(SceneRouter.SAVE_LOAD_ROUTE).migrated());
         assertTrue(router.routeDescriptors().get(SceneRouter.DIALOGUE_ROUTE).migrated());
         assertTrue(router.routeDescriptors().get(SceneRouter.CHOICE_ROUTE).migrated());
+        assertTrue(router.routeDescriptors().get(SceneRouter.HUD_ROUTE).migrated());
+        assertTrue(router.routeDescriptors().get(SceneRouter.NOTIFICATION_ROUTE).migrated());
+        assertTrue(router.routeDescriptors().get(SceneRouter.TOOLTIP_ROUTE).migrated());
         assertEquals(RouteCategory.SETTINGS, router.routeDescriptors().get(SceneRouter.PREFERENCES_ROUTE).category());
         assertEquals("ui.tooltip.title", router.routeDescriptors().get(SceneRouter.TOOLTIP_ROUTE).titleDefinition());
         assertEquals("ui.displayBindings.title", router.routeDescriptors().get(SceneRouter.DISPLAY_BINDINGS_ROUTE).titleDefinition());
