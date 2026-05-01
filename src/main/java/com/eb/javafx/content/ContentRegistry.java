@@ -1,59 +1,63 @@
 package com.eb.javafx.content;
 
 import java.util.Collections;
+import java.util.Collection;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 
 /**
  * Holds static definitions loaded during application startup.
  *
- * <p>Ren'Py define variables and module-level lists currently create many static
+ * <p>Source-game define variables and module-level lists can create many static
  * game definitions as files are imported. This registry is the Java equivalent: it
  * gives those definitions an explicit home so migrated content can be loaded before
  * mutable save data is created.</p>
  */
 public final class ContentRegistry {
     private final Map<String, String> definitions = new LinkedHashMap<>();
+    private final Set<String> requiredDefinitionIds = new LinkedHashSet<>();
 
     /**
-     * Registers the minimal placeholder content needed by the initial JavaFX shell.
+     * Registers engine-level required content keys that must be supplied before runtime state.
      *
-     * <p>Later migration work should replace these strings with parsed domain and
-     * authored-content data supplied by app/game-specific content modules.</p>
+     * <p>Application or reusable demo modules provide the values for these IDs via
+     * {@link #registerDefinition(String, String)} before validation runs.</p>
      */
     public void registerBaseContent() {
-        definitions.put("application.name", "Alternative World JavaFX Port");
-        definitions.put("startup.route", "main-menu");
-        definitions.put("migration.slice", "JAVAFX_PLAN 1.1 through 1.4 - lifecycle, screens, styles, and display bindings");
-        definitions.put("ui.mainMenu.title", "Main Menu");
-        definitions.put("ui.preferences.title", "Preferences");
-        definitions.put("ui.saveLoad.title", "Save / Load");
-        definitions.put("ui.dialogue.title", "Dialogue");
-        definitions.put("ui.choice.title", "Choice Menu");
-        definitions.put("ui.hud.title", "HUD");
-        definitions.put("ui.notification.title", "Notification Overlay");
-        definitions.put("ui.tooltip.title", "Tooltip");
-        definitions.put("ui.displayBindings.title", "Display Bindings Preview");
-        definitions.put("ui.captureTest.title", "Capture Test Screen");
+        registerRequiredDefinition("application.name");
+        registerRequiredDefinition("startup.route");
+    }
+
+    /** Registers or replaces a static definition value. */
+    public void registerDefinition(String id, String value) {
+        definitions.put(validateId(id), Objects.requireNonNull(value, "Definition value must not be null."));
+    }
+
+    /** Registers every supplied static definition value in iteration order. */
+    public void registerDefinitions(Map<String, String> definitions) {
+        Objects.requireNonNull(definitions, "Definitions must not be null.")
+                .forEach(this::registerDefinition);
+    }
+
+    /** Marks a definition ID as required during startup validation. */
+    public void registerRequiredDefinition(String id) {
+        requiredDefinitionIds.add(validateId(id));
+    }
+
+    /** Marks each supplied definition ID as required during startup validation. */
+    public void registerRequiredDefinitions(Collection<String> ids) {
+        Objects.requireNonNull(ids, "Required definition IDs must not be null.")
+                .forEach(this::registerRequiredDefinition);
     }
 
     /**
      * Validates content that must exist before game state or UI routes can use it.
      */
     public void validateRules() {
-        requireDefinition("application.name");
-        requireDefinition("startup.route");
-        requireDefinition("migration.slice");
-        requireDefinition("ui.mainMenu.title");
-        requireDefinition("ui.preferences.title");
-        requireDefinition("ui.saveLoad.title");
-        requireDefinition("ui.dialogue.title");
-        requireDefinition("ui.choice.title");
-        requireDefinition("ui.hud.title");
-        requireDefinition("ui.notification.title");
-        requireDefinition("ui.tooltip.title");
-        requireDefinition("ui.displayBindings.title");
-        requireDefinition("ui.captureTest.title");
+        requiredDefinitionIds.forEach(this::requireDefinition);
     }
 
     /**
@@ -64,6 +68,11 @@ public final class ContentRegistry {
      */
     public Map<String, String> definitions() {
         return Collections.unmodifiableMap(definitions);
+    }
+
+    /** Returns immutable required definition IDs in deterministic validation order. */
+    public Set<String> requiredDefinitionIds() {
+        return Collections.unmodifiableSet(requiredDefinitionIds);
     }
 
     /**
@@ -80,5 +89,15 @@ public final class ContentRegistry {
         if (!definitions.containsKey(id)) {
             throw new IllegalStateException("Missing required content definition: " + id);
         }
+    }
+
+    private String validateId(String id) {
+        if (id == null) {
+            throw new IllegalArgumentException("Definition ID must not be null.");
+        }
+        if (id.isBlank()) {
+            throw new IllegalArgumentException("Definition ID must not be blank.");
+        }
+        return id;
     }
 }

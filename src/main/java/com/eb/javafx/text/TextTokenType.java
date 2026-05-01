@@ -1,7 +1,7 @@
 package com.eb.javafx.text;
 
 /**
- * Token kinds emitted by the section 1.7 Ren'Py text-tag parser.
+ * Token kinds emitted by the section 1.7 visual novel text-tag parser.
  */
 public enum TextTokenType {
     /** Styled text span that can be rendered directly. */

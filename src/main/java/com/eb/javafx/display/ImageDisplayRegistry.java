@@ -18,8 +18,8 @@ import java.util.Optional;
 /**
  * Static image, transform, and layer registry for the JavaFX display pipeline.
  *
- * <p>Ren'Py image declarations and ATL transforms are currently created as script
- * load side effects. This registry gives the JavaFX port explicit IDs for the
+ * <p>Scripted image declarations and transforms are often created as script
+ * load side effects. This registry gives JavaFX ports explicit IDs for the
  * aliases, transform bindings, and display layers that migrated screens can
  * validate before constructing image nodes.</p>
  */

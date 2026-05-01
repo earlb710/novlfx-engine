@@ -7,6 +7,7 @@ import com.eb.javafx.ui.MainMenuScreen;
 import com.eb.javafx.ui.PlaceholderScreen;
 import com.eb.javafx.ui.PreferencesSummaryScreen;
 import com.eb.javafx.ui.SaveLoadSummaryScreen;
+import com.eb.javafx.ui.SceneFlowScreen;
 
 /** Registers reusable engine-provided routes used by the initial JavaFX shell. */
 public final class DefaultRouteModule implements RouteModule {
@@ -37,20 +38,16 @@ public final class DefaultRouteModule implements RouteModule {
                         SceneRouter.DIALOGUE_ROUTE,
                         "ui.dialogue.title",
                         RouteCategory.DIALOGUE,
-                        false,
-                        "Placeholder route for future say-window and dialogue executor integration."),
-                context -> PlaceholderScreen.createScene(context,
-                        "ui.dialogue.title",
-                        "Dialogue text, speaker names, portraits, and say-window opacity will bind here."));
+                        true,
+                        "Diagnostic route backed by the reusable scene-flow executor."),
+                SceneFlowScreen::createDialogueScene);
         router.registerRoute(new RouteDescriptor(
                         SceneRouter.CHOICE_ROUTE,
                         "ui.choice.title",
                         RouteCategory.DIALOGUE,
-                        false,
-                        "Placeholder route for future command-backed choice menus."),
-                context -> PlaceholderScreen.createScene(context,
-                        "ui.choice.title",
-                        "Ren'Py menu choices will become route-backed command selections here."));
+                        true,
+                        "Diagnostic route backed by reusable command-backed choice models."),
+                SceneFlowScreen::createChoiceScene);
         router.registerRoute(new RouteDescriptor(
                         SceneRouter.HUD_ROUTE,
                         "ui.hud.title",

@@ -5,7 +5,7 @@ import com.eb.javafx.content.ContentRegistry;
 /**
  * Creates per-save mutable state after static content is available.
  *
- * <p>This factory is the Java replacement for Ren'Py default initialization. It
+ * <p>This factory is the Java replacement for default state initialization. It
  * prevents mutable state from being created as a module-import side effect and
  * gives new-game creation one explicit entry point.</p>
  */

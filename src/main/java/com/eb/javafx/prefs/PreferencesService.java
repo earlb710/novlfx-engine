@@ -3,7 +3,7 @@ package com.eb.javafx.prefs;
 import java.util.prefs.Preferences;
 
 /**
- * Section 1.8 JavaFX replacement for Ren'Py persistent preferences.
+ * Section 1.8 JavaFX service for persistent preferences.
  *
  * <p>The service deliberately stores display preferences outside save data. That
  * mirrors the plan's distinction between persistent user settings and serialized

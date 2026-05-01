@@ -1,6 +1,6 @@
 package com.eb.javafx.ui;
 
-/** Categories for boot failures that replace Ren'Py's generic startup error surface. */
+/** Categories for boot failures surfaced during JavaFX startup. */
 public enum StartupFailureCategory {
     /** A required stylesheet, image, audio file, or other asset could not be found. */
     MISSING_ASSET("Missing asset"),

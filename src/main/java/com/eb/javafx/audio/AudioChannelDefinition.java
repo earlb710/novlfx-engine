@@ -3,7 +3,7 @@ package com.eb.javafx.audio;
 import com.eb.javafx.util.Validation;
 
 /**
- * Describes a named audio channel that replaces Ren'Py music/sound channels.
+ * Describes a named audio channel for reusable music/sound routing.
  *
  * <p>The definition is intentionally data-only: migrated systems can validate
  * channel IDs before playback code loads JavaFX media resources. IDs and

@@ -3,7 +3,7 @@ package com.eb.javafx.display;
 import com.eb.javafx.util.Validation;
 
 /**
- * Static image alias migrated from Ren'Py image declarations.
+ * Static image alias migrated from visual novel image declarations.
  *
  * <p>The ID is the stable name used by migrated screens, {@code sourcePath}
  * points at an authored image asset under the game tree, {@code transformId} is

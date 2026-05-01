@@ -2,6 +2,7 @@ package com.eb.javafx.bootstrap;
 
 import com.eb.javafx.audio.AudioService;
 import com.eb.javafx.content.ContentRegistry;
+import com.eb.javafx.content.EnginePlaceholderContentModule;
 import com.eb.javafx.content.StaticContentModule;
 import com.eb.javafx.display.ImageDisplayRegistry;
 import com.eb.javafx.gamesupport.GameSupportService;
@@ -10,6 +11,10 @@ import com.eb.javafx.random.GameRandomService;
 import com.eb.javafx.globalApi.GlobalApiAdapter;
 import com.eb.javafx.routing.SceneRouter;
 import com.eb.javafx.save.SaveLoadService;
+import com.eb.javafx.scene.EnginePlaceholderSceneModule;
+import com.eb.javafx.scene.SceneExecutor;
+import com.eb.javafx.scene.SceneModule;
+import com.eb.javafx.scene.SceneRegistry;
 import com.eb.javafx.state.GameState;
 import com.eb.javafx.state.GameStateFactory;
 import com.eb.javafx.ui.UiTheme;
@@ -38,9 +43,11 @@ public final class BootstrapService {
     private final GameRandomService randomService;
     private final AudioService audioService;
     private final GameSupportService gameSupportService;
+    private final SceneRegistry sceneRegistry;
     private final SceneRouter sceneRouter;
     private final UiTheme uiTheme;
     private final List<StaticContentModule> staticContentModules;
+    private final List<SceneModule> sceneModules;
 
     /**
      * Creates a bootstrap service using default audio/game-support services and no static modules.
@@ -66,8 +73,10 @@ public final class BootstrapService {
                 randomService,
                 new AudioService(),
                 new GameSupportService(),
+                new SceneRegistry(),
                 sceneRouter,
                 uiTheme,
+                Collections.emptyList(),
                 Collections.emptyList());
     }
 
@@ -89,6 +98,25 @@ public final class BootstrapService {
             SceneRouter sceneRouter,
             UiTheme uiTheme,
             List<StaticContentModule> staticContentModules) {
+        this(preferencesService, contentRegistry, imageDisplayRegistry, gameStateFactory, saveLoadService,
+                randomService, audioService, gameSupportService, new SceneRegistry(), sceneRouter, uiTheme,
+                staticContentModules, Collections.emptyList());
+    }
+
+    public BootstrapService(
+            PreferencesService preferencesService,
+            ContentRegistry contentRegistry,
+            ImageDisplayRegistry imageDisplayRegistry,
+            GameStateFactory gameStateFactory,
+            SaveLoadService saveLoadService,
+            GameRandomService randomService,
+            AudioService audioService,
+            GameSupportService gameSupportService,
+            SceneRegistry sceneRegistry,
+            SceneRouter sceneRouter,
+            UiTheme uiTheme,
+            List<StaticContentModule> staticContentModules,
+            List<SceneModule> sceneModules) {
         this.preferencesService = preferencesService;
         this.contentRegistry = contentRegistry;
         this.imageDisplayRegistry = imageDisplayRegistry;
@@ -97,9 +125,11 @@ public final class BootstrapService {
         this.randomService = randomService;
         this.audioService = audioService;
         this.gameSupportService = gameSupportService;
+        this.sceneRegistry = sceneRegistry;
         this.sceneRouter = sceneRouter;
         this.uiTheme = uiTheme;
         this.staticContentModules = List.copyOf(staticContentModules);
+        this.sceneModules = List.copyOf(sceneModules);
     }
 
     /**
@@ -127,26 +157,38 @@ public final class BootstrapService {
         // Static content registries: replace define/import side effects with named registry calls.
         contentRegistry.registerBaseContent();
         imageDisplayRegistry.registerBaseDisplayContent();
+        EnginePlaceholderContentModule enginePlaceholderContentModule = new EnginePlaceholderContentModule();
+        enginePlaceholderContentModule.register(contentRegistry, imageDisplayRegistry);
         staticContentModules.forEach(module -> module.register(contentRegistry, imageDisplayRegistry));
+        EnginePlaceholderSceneModule enginePlaceholderSceneModule = new EnginePlaceholderSceneModule();
+        enginePlaceholderSceneModule.registerScenes(sceneRegistry);
+        sceneModules.forEach(module -> module.registerScenes(sceneRegistry));
         completePhase(completedPhases, phaseMessages, BootstrapPhase.STATIC_CONTENT_REGISTRIES,
-                "Base static content and display definitions registered.");
+                "Base static content, display definitions, and scene definitions registered.");
 
         // Game rules: validate required definitions before any screen can depend on them.
         contentRegistry.validateRules();
         imageDisplayRegistry.validateDisplayContent();
+        enginePlaceholderContentModule.validate(contentRegistry, imageDisplayRegistry);
         staticContentModules.forEach(module -> module.validate(contentRegistry, imageDisplayRegistry));
+        sceneRegistry.validateScenes();
+        enginePlaceholderSceneModule.validateScenes(sceneRegistry);
+        sceneModules.forEach(module -> module.validateScenes(sceneRegistry));
         completePhase(completedPhases, phaseMessages, BootstrapPhase.GAME_RULES,
-                "Required content and display definitions validated.");
+                "Required content, display, and scene definitions validated.");
+
+        SceneExecutor sceneExecutor = new SceneExecutor(sceneRegistry);
 
         // UI routes/controllers: replace label and jump targets with explicit route IDs.
-        sceneRouter.registerDefaultRoutes(primaryStage, preferencesService, contentRegistry, imageDisplayRegistry, saveLoadService, uiTheme);
+        GameState newGameState = gameStateFactory.createNewGame(contentRegistry);
+        sceneRouter.registerDefaultRoutes(primaryStage, preferencesService, contentRegistry, imageDisplayRegistry, saveLoadService,
+                randomService, gameSupportService, newGameState, sceneRegistry, sceneExecutor, uiTheme);
         sceneRouter.validateRouteDefinitions(contentRegistry);
         GlobalApiAdapter globalApiAdapter = new GlobalApiAdapter(randomService, sceneRouter, audioService);
         completePhase(completedPhases, phaseMessages, BootstrapPhase.UI_ROUTES_AND_CONTROLLERS,
                 "Default JavaFX shell routes and Global API adapter registered and validated.");
 
         // Runtime state: create mutable new-game state only after services and registries exist.
-        GameState newGameState = gameStateFactory.createNewGame(contentRegistry);
         completePhase(completedPhases, phaseMessages, BootstrapPhase.RUNTIME_STATE,
                 "Initial mutable game state created.");
 
@@ -160,6 +202,8 @@ public final class BootstrapService {
                 randomService,
                 audioService,
                 gameSupportService,
+                sceneRegistry,
+                sceneExecutor,
                 globalApiAdapter,
                 sceneRouter,
                 uiTheme,

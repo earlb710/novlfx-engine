@@ -1,7 +1,7 @@
 package com.eb.javafx.bootstrap;
 
 /**
- * Explicit startup phases replacing Ren'Py init priority and script load order.
+ * Explicit startup phases replacing implicit init priority and script load order.
  *
  * <p>The order mirrors docs/JAVAFX_PLAN.md section 1.1: core services must exist
  * before content registries, content must exist before game rules, routes must be

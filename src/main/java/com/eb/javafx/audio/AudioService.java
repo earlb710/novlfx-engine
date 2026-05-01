@@ -12,7 +12,7 @@ import java.util.Optional;
 /**
  * Section 1.5 audio/media boundary for migrated JavaFX systems.
  *
- * <p>Ren'Py exposes global music and sound helpers. This service replaces that
+ * <p>Source engines may expose global music and sound helpers. This service replaces that
  * with named channel definitions, preference-backed master volume, and validated
  * playback commands that can later be bridged to JavaFX media classes.</p>
  *

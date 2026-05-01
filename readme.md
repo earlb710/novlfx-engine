@@ -4,6 +4,10 @@ Reusable JavaFX foundation for visual novel games.
 
 The library publishes reusable packages in the `com.eb.javafx.*` namespace through the `com.novlfx.engine` Java module.
 
+## User manual
+
+See [docs/USER_MANUAL.md](docs/USER_MANUAL.md) for setup, package responsibilities, service usage, and extension boundaries.
+
 ## Included
 
 - Reusable JavaFX foundation packages:
@@ -17,6 +21,7 @@ The library publishes reusable packages in the `com.eb.javafx.*` namespace throu
   - `globalApi`
   - `routing`
   - `save`
+  - `scene`
   - `state`
   - `text`
   - `ui`
@@ -29,7 +34,7 @@ The library publishes reusable packages in the `com.eb.javafx.*` namespace throu
 
 - eb application entry point: `GameApplication`
 - Authored eb game content: `gamecontent/display`
-- Ren'Py game scripts and assets from eb's `game` directory
+- Source game scripts and assets from eb's `game` directory
 - Extraction metadata classes from eb's `engine` package
 - eb-specific migration docs
 

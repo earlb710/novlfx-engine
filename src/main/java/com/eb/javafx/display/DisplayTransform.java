@@ -3,7 +3,7 @@ package com.eb.javafx.display;
 import com.eb.javafx.util.Validation;
 
 /**
- * First-pass Java model for Ren'Py ATL transforms used by migrated images.
+ * First-pass Java model for visual novel transforms used by migrated images.
  *
  * <p>Transforms define fit dimensions, opacity, and alignment metadata that the
  * display registry can apply when creating JavaFX image nodes. Fit sizes must be

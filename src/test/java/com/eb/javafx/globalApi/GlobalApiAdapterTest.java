@@ -2,6 +2,7 @@ package com.eb.javafx.globalApi;
 
 import com.eb.javafx.audio.AudioService;
 import com.eb.javafx.content.ContentRegistry;
+import com.eb.javafx.content.EnginePlaceholderContentModule;
 import com.eb.javafx.display.ImageDisplayRegistry;
 import com.eb.javafx.prefs.PreferencesService;
 import com.eb.javafx.random.GameRandomService;
@@ -33,6 +34,7 @@ final class GlobalApiAdapterTest {
         preferencesService.load();
         ContentRegistry contentRegistry = new ContentRegistry();
         contentRegistry.registerBaseContent();
+        new EnginePlaceholderContentModule().register(contentRegistry, null);
         SceneRouter sceneRouter = new SceneRouter();
         SaveLoadService saveLoadService = new SaveLoadService();
         saveLoadService.initialize();

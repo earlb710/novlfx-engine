@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Section 1.7 parser for Ren'Py-style text tags used by migrated dialogue UI.
+ * Section 1.7 parser for visual novel text tags used by migrated dialogue UI.
  *
  * <p>The parser turns inline tags into explicit tokens and style metadata. Unknown
  * tags are preserved as literal text so authored content is not silently lost
@@ -112,7 +112,7 @@ public final class TextTagParser {
         try {
             return Math.max(0.0, Double.parseDouble(rawValue));
         } catch (NumberFormatException exception) {
-            throw new IllegalArgumentException("Invalid Ren'Py pause tag duration: " + rawValue, exception);
+            throw new IllegalArgumentException("Invalid pause tag duration: " + rawValue, exception);
         }
     }
 

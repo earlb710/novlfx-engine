@@ -12,6 +12,7 @@ module com.novlfx.engine {
     exports com.eb.javafx.globalApi;
     exports com.eb.javafx.routing;
     exports com.eb.javafx.save;
+    exports com.eb.javafx.scene;
     exports com.eb.javafx.state;
     exports com.eb.javafx.text;
     exports com.eb.javafx.ui;
