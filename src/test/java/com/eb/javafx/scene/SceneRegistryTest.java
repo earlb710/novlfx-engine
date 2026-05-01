@@ -30,7 +30,7 @@ final class SceneRegistryTest {
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
                 registry.register(SceneDefinition.of("intro", List.of(SceneStep.narration("other", "intro.other")))));
 
-        assertEquals("Scene already registered: intro", exception.getMessage());
+        assertEquals("Duplicate scene id 'intro' cannot be registered. Scene IDs must be unique across all scene modules.", exception.getMessage());
     }
 
     @Test
@@ -41,7 +41,7 @@ final class SceneRegistryTest {
 
         IllegalStateException exception = assertThrows(IllegalStateException.class, registry::validateScenes);
 
-        assertEquals("Scene intro step missing references missing scene: missing-scene", exception.getMessage());
+        assertEquals("Scene 'intro' step 'missing' has JUMP transition to missing scene 'missing-scene'. Register that scene or change the transition target.", exception.getMessage());
     }
 
     @Test
@@ -53,6 +53,6 @@ final class SceneRegistryTest {
 
         IllegalStateException exception = assertThrows(IllegalStateException.class, registry::validateScenes);
 
-        assertEquals("Duplicate choice id in choice-scene/choice: same", exception.getMessage());
+        assertEquals("Duplicate choice id 'same' in scene 'choice-scene' step 'choice'. Choice IDs must be unique within a choice step.", exception.getMessage());
     }
 }

@@ -1,6 +1,6 @@
 # Portable JavaFX Plan Extract
 
-This document extracts the reusable JavaFX engine guidance from the referenced JavaFX port planning material into `novlfx-engine`. It is intentionally limited to cross-project foundation code and omits application-specific story content, assets, route names, migration metadata, and game rules from Lr2Alt or any other source project.
+This document extracts the reusable JavaFX engine guidance from the referenced JavaFX port planning material into `novlfx-engine`. It is intentionally limited to cross-project foundation code and omits application-specific story content, assets, route names, migration metadata, and game rules from Lr2Alt or any other source project : https://github.com/earlb710/Lr2Alt.git
 
 ## Portability filter
 
@@ -70,7 +70,7 @@ Provide sound requests, playback commands, channel definitions, and audio servic
 
 ### `gamesupport`, `state`, `save`, `prefs`, and `random`
 
-Provide reusable abstractions for actions, requirements, effects, game clock/date-time, mutable game state creation, save/load workflows, preferences, and deterministic random behavior. Keep domain-specific rules outside the engine unless represented as generic extension points.
+Provide reusable abstractions for actions, requirements, effects, generic definition registries, generic code tables, location descriptors, location occupancy, configurable game clock/date-time, mutable game state creation, save/load workflows, preferences, and deterministic random behavior. Keep domain-specific rules outside the engine unless represented as generic extension points.
 
 ### `text` and `util`
 
@@ -90,6 +90,10 @@ When porting code from an application into `novlfx-engine`:
 ## Current reusable scope in `novlfx-engine`
 
 The engine currently publishes the `com.novlfx.engine` Java module with reusable `com.eb.javafx.*` packages for audio, bootstrap, content, display, game support, preferences, random, global API adapters, routing, save/load, scene flow, state, text, UI, and utilities.
+
+Bootstrap can be configured with `BootstrapOptions`, which groups an application root, JSON-backed `ApplicationResourceConfig`, static content modules, scene modules, and route modules. Options-based bootstrap keeps defaults available while allowing consuming applications to relocate image assets and other app-owned resources without hard-coding paths into the engine.
+
+The engine also provides generic JSON import/export boundaries for reusable display and scene definitions. `DisplayDefinitionJsonLoader` and `JsonDisplayContentModule` can register app-owned transform, image, and layered-display JSON into `ImageDisplayRegistry`; `SceneDefinitionJson` can import/export simple dialogue, choice, and transition scenes; and `SceneFlowStateJson` can serialize resumable scene-flow snapshots without making the engine own app save schemas.
 
 Validation for this repository should continue to use the checked-in Gradle wrapper:
 

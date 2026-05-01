@@ -1,7 +1,7 @@
 package com.eb.javafx.gamesupport;
 
 /**
- * Owns generic section 2 support systems without registering authored game content.
+ * Owns generic game-support systems without registering authored game content.
  *
  * <p>The service creates reusable action and scheduling infrastructure during
  * startup, but intentionally does not register game-authored actions. Content
@@ -10,6 +10,7 @@ package com.eb.javafx.gamesupport;
  */
 public final class GameSupportService {
     private final ActionRegistry actionRegistry = new ActionRegistry();
+    private final LocationRegistry locationRegistry = new LocationRegistry();
     private final GameClock gameClock = new GameClock();
     private boolean initialized;
 
@@ -32,6 +33,12 @@ public final class GameSupportService {
     public GameClock gameClock() {
         ensureInitialized();
         return gameClock;
+    }
+
+    /** Returns the initialized generic location registry for map descriptors. */
+    public LocationRegistry locationRegistry() {
+        ensureInitialized();
+        return locationRegistry;
     }
 
     private void ensureInitialized() {

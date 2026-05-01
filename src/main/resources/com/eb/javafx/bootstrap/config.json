@@ -1,0 +1,7 @@
+{
+  "categoryCodeTablesPath": "config/category-code-tables.en.json",
+  "imageAssetRoot": "game",
+  "resources": {
+    "uiTheme": "src/main/resources/com/eb/javafx/ui/eb.css"
+  }
+}

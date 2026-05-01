@@ -9,6 +9,9 @@ import com.eb.javafx.gamesupport.GameSupportService;
 import com.eb.javafx.prefs.PreferencesService;
 import com.eb.javafx.random.GameRandomService;
 import com.eb.javafx.globalApi.GlobalApiAdapter;
+import com.eb.javafx.routing.DefaultRouteModule;
+import com.eb.javafx.routing.RouteContext;
+import com.eb.javafx.routing.RouteModule;
 import com.eb.javafx.routing.SceneRouter;
 import com.eb.javafx.save.SaveLoadService;
 import com.eb.javafx.scene.EnginePlaceholderSceneModule;
@@ -20,6 +23,9 @@ import com.eb.javafx.state.GameStateFactory;
 import com.eb.javafx.ui.UiTheme;
 import javafx.stage.Stage;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.EnumMap;
@@ -35,6 +41,8 @@ import java.util.Map;
  * startup is named, invoked once, and checked before the first scene is displayed.</p>
  */
 public final class BootstrapService {
+    private final Path applicationRoot;
+    private final ApplicationResourceConfig resourceConfig;
     private final PreferencesService preferencesService;
     private final ContentRegistry contentRegistry;
     private final ImageDisplayRegistry imageDisplayRegistry;
@@ -48,6 +56,30 @@ public final class BootstrapService {
     private final UiTheme uiTheme;
     private final List<StaticContentModule> staticContentModules;
     private final List<SceneModule> sceneModules;
+    private final List<RouteModule> routeModules;
+
+    /** Creates a bootstrap service with default services rooted by the supplied application options. */
+    public BootstrapService(BootstrapOptions options) {
+        this(
+                options.applicationRoot(),
+                options.resourceConfig(),
+                new PreferencesService(),
+                new ContentRegistry(),
+                new ImageDisplayRegistry(
+                        options.applicationRoot(),
+                        options.resourceConfig().resolveImageAssetRoot(options.applicationRoot())),
+                new GameStateFactory(),
+                new SaveLoadService(),
+                new GameRandomService(),
+                new AudioService(),
+                new GameSupportService(),
+                new SceneRegistry(),
+                new SceneRouter(),
+                new UiTheme(),
+                options.staticContentModules(),
+                options.sceneModules(),
+                options.routeModules());
+    }
 
     /**
      * Creates a bootstrap service using default audio/game-support services and no static modules.
@@ -65,6 +97,8 @@ public final class BootstrapService {
             SceneRouter sceneRouter,
             UiTheme uiTheme) {
         this(
+                defaultApplicationRoot(),
+                ApplicationResourceConfig.defaults(),
                 preferencesService,
                 contentRegistry,
                 imageDisplayRegistry,
@@ -76,6 +110,7 @@ public final class BootstrapService {
                 new SceneRegistry(),
                 sceneRouter,
                 uiTheme,
+                Collections.emptyList(),
                 Collections.emptyList(),
                 Collections.emptyList());
     }
@@ -98,9 +133,9 @@ public final class BootstrapService {
             SceneRouter sceneRouter,
             UiTheme uiTheme,
             List<StaticContentModule> staticContentModules) {
-        this(preferencesService, contentRegistry, imageDisplayRegistry, gameStateFactory, saveLoadService,
+        this(defaultApplicationRoot(), ApplicationResourceConfig.defaults(), preferencesService, contentRegistry, imageDisplayRegistry, gameStateFactory, saveLoadService,
                 randomService, audioService, gameSupportService, new SceneRegistry(), sceneRouter, uiTheme,
-                staticContentModules, Collections.emptyList());
+                staticContentModules, Collections.emptyList(), Collections.emptyList());
     }
 
     public BootstrapService(
@@ -117,6 +152,30 @@ public final class BootstrapService {
             UiTheme uiTheme,
             List<StaticContentModule> staticContentModules,
             List<SceneModule> sceneModules) {
+        this(defaultApplicationRoot(), ApplicationResourceConfig.defaults(), preferencesService, contentRegistry, imageDisplayRegistry,
+                gameStateFactory, saveLoadService, randomService, audioService, gameSupportService, sceneRegistry, sceneRouter,
+                uiTheme, staticContentModules, sceneModules, Collections.emptyList());
+    }
+
+    public BootstrapService(
+            Path applicationRoot,
+            ApplicationResourceConfig resourceConfig,
+            PreferencesService preferencesService,
+            ContentRegistry contentRegistry,
+            ImageDisplayRegistry imageDisplayRegistry,
+            GameStateFactory gameStateFactory,
+            SaveLoadService saveLoadService,
+            GameRandomService randomService,
+            AudioService audioService,
+            GameSupportService gameSupportService,
+            SceneRegistry sceneRegistry,
+            SceneRouter sceneRouter,
+            UiTheme uiTheme,
+            List<StaticContentModule> staticContentModules,
+            List<SceneModule> sceneModules,
+            List<RouteModule> routeModules) {
+        this.applicationRoot = applicationRoot.toAbsolutePath().normalize();
+        this.resourceConfig = resourceConfig;
         this.preferencesService = preferencesService;
         this.contentRegistry = contentRegistry;
         this.imageDisplayRegistry = imageDisplayRegistry;
@@ -130,6 +189,7 @@ public final class BootstrapService {
         this.uiTheme = uiTheme;
         this.staticContentModules = List.copyOf(staticContentModules);
         this.sceneModules = List.copyOf(sceneModules);
+        this.routeModules = List.copyOf(routeModules);
     }
 
     /**
@@ -181,8 +241,23 @@ public final class BootstrapService {
 
         // UI routes/controllers: replace label and jump targets with explicit route IDs.
         GameState newGameState = gameStateFactory.createNewGame(contentRegistry);
-        sceneRouter.registerDefaultRoutes(primaryStage, preferencesService, contentRegistry, imageDisplayRegistry, saveLoadService,
-                randomService, gameSupportService, newGameState, sceneRegistry, sceneExecutor, uiTheme);
+        RouteContext routeContext = new RouteContext(
+                primaryStage,
+                preferencesService,
+                contentRegistry,
+                imageDisplayRegistry,
+                saveLoadService,
+                randomService,
+                gameSupportService,
+                newGameState,
+                sceneRegistry,
+                sceneExecutor,
+                uiTheme,
+                sceneRouter);
+        List<RouteModule> allRouteModules = new ArrayList<>();
+        allRouteModules.add(new DefaultRouteModule());
+        allRouteModules.addAll(routeModules);
+        sceneRouter.registerRoutes(routeContext, allRouteModules);
         sceneRouter.validateRouteDefinitions(contentRegistry);
         GlobalApiAdapter globalApiAdapter = new GlobalApiAdapter(randomService, sceneRouter, audioService);
         completePhase(completedPhases, phaseMessages, BootstrapPhase.UI_ROUTES_AND_CONTROLLERS,
@@ -208,6 +283,8 @@ public final class BootstrapService {
                 sceneRouter,
                 uiTheme,
                 newGameState,
+                applicationRoot,
+                resourceConfig,
                 bootstrapReport);
     }
 
@@ -225,5 +302,9 @@ public final class BootstrapService {
         if (!completedPhases.containsAll(EnumSet.allOf(BootstrapPhase.class))) {
             throw new IllegalStateException("JavaFX bootstrap did not complete all required phases.");
         }
+    }
+
+    private static Path defaultApplicationRoot() {
+        return Paths.get("").toAbsolutePath().normalize();
     }
 }

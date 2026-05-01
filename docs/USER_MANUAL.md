@@ -7,9 +7,9 @@ This manual explains how to use the existing `novlfx-engine` code as a reusable 
 - **Project setup and validation**: open the repository, build it, run tests, and launch the manual test screen.
 - **Module and package layout**: understand the `com.novlfx.engine` module and exported `com.eb.javafx.*` packages.
 - **Startup and service wiring**: initialize the engine with `BootstrapService` and use the resulting `BootContext`.
-- **Content, routing, and scenes**: register static content, routes, scene definitions, choices, transitions, and resumable scene flow state.
+- **Content, routing, and scenes**: register static content, routes, scene definitions, choices, transitions, JSON-backed scene data, and resumable scene flow state.
 - **UI screens and themes**: use reusable JavaFX screens, navigation helpers, startup error reporting, and CSS theme loading.
-- **Display support**: define image assets, layers, transforms, layered characters, interpolation, and animations.
+- **Display support**: define image assets, layers, transforms, layered characters, JSON-backed display definitions, interpolation, and animations.
 - **Audio support**: validate channel-based sound requests and produce playback commands for application media adapters.
 - **Game support services**: use reusable action, requirement, effect, game-clock, state, save/load, preference, and random utilities.
 - **Text and utility helpers**: parse simple styled text tags and use common validation, collection, path, JSON, and time helpers.
@@ -41,15 +41,15 @@ The engine publishes the Java module `com.novlfx.engine`. It exports reusable pa
 
 - `audio`: channel definitions, sound requests, and validated playback commands.
 - `bootstrap`: startup phases, bootstrap reporting, and boot context assembly.
-- `content`: reusable static content module and registry contracts.
-- `display`: image assets, display layers, transforms, layered characters, interpolation, and animation playback.
+- `content`: reusable static content module and registry contracts, including JSON-backed display content modules.
+- `display`: image assets, display layers, transforms, layered characters, JSON definition loading, interpolation, and animation playback.
 - `gamesupport`: generic action, requirement, effect, clock, date/time, and game-support registry behavior.
 - `globalApi`: adapters for global-style navigation, screen visibility, randomness, and sound requests.
 - `prefs`: persisted user preferences such as window size, fullscreen state, and master volume.
 - `random`: deterministic and non-deterministic random helpers.
 - `routing`: route descriptors, route modules, route factories, contexts, and scene router behavior.
 - `save`: reusable save/load slot metadata and JSON persistence workflow.
-- `scene`: scene definitions, steps, choices, transitions, execution results, and view models.
+- `scene`: scene definitions, JSON import/export, steps, choices, transitions, execution results, flow-state JSON snapshots, and view models.
 - `state`: basic mutable game-state creation and snapshots.
 - `text`: text tag parsing, text tokens, token types, and text style metadata.
 - `ui`: reusable JavaFX screens, navigation shells, theme loading, and startup failure reporting.
@@ -60,6 +60,8 @@ Use these packages from an application project instead of copying source-engine-
 ## 4. Startup and service wiring
 
 Use `BootstrapService` when you want the engine to create and initialize the standard reusable services in the correct order. The bootstrap process loads preferences, initializes save/load, random, audio, game-support, and theme services, registers static content and route modules, validates game rules, and creates runtime state.
+
+For application integration, prefer `BootstrapOptions` with the options-based `BootstrapService` constructor. Options group the application root, `ApplicationResourceConfig`, static content modules, scene modules, and route modules. When created this way, bootstrap constructs its `ImageDisplayRegistry` from the configured image asset root and exposes both the application root and resource config from `BootContext`.
 
 The main result is a `BootContext`. Use it to access initialized services such as:
 
@@ -79,6 +81,36 @@ The main result is a `BootContext`. Use it to access initialized services such a
 Inspect the `BootstrapReport` when startup diagnostics matter. It records completed phases and phase messages so an application can display useful failure or progress information.
 
 Do not use guarded services before initialization. Several services use initialization guards and will fail fast if called before bootstrap or explicit initialization.
+
+Applications can also keep an external `config.json` and load it with `ApplicationResourceConfig.load(Path)` when authored resources need to live outside the engine defaults. The config stores a category code-table JSON path, an image asset root, and a generic `resources` map for other overrideable files such as themes or image groups:
+
+```json
+{
+  "categoryCodeTablesPath": "config/category-code-tables.en.json",
+  "imageAssetRoot": "game",
+  "resources": {
+    "uiTheme": "src/main/resources/com/eb/javafx/ui/eb.css",
+    "backgrounds": "assets/backgrounds"
+  }
+}
+```
+
+Resolve those paths relative to an application-chosen base directory:
+
+- `resolveCategoryCodeTables(baseDir)` returns the authored category JSON file to pass into `CategoryCodeTableDefinition.load(...)`.
+- `resolveImageAssetRoot(baseDir)` returns the image root used by options-based bootstrap or to pass into `new ImageDisplayRegistry(repoRoot, imageAssetRoot)`.
+- `resolveResource(baseDir, "backgrounds")` resolves other named override points that the application owns.
+
+```java
+BootstrapOptions options = BootstrapOptions.fromConfig(appRoot.resolve("config.json"))
+        .withStaticContentModules(staticModules)
+        .withSceneModules(sceneModules)
+        .withRouteModules(routeModules);
+BootContext context = new BootstrapService(options).boot(primaryStage);
+```
+
+Use `context.resourceConfig().resolveCategoryCodeTables(context.applicationRoot())` when app-owned content modules need to load generic category JSON during startup.
+Use `context.resourceConfig().resolveResource(context.applicationRoot(), "displayDefinitions")` with `JsonDisplayContentModule` when app-owned display definitions should be loaded during the static content phase.
 
 ## 5. Content, routing, and scenes
 
@@ -107,6 +139,10 @@ Use `SceneRegistry` to register `SceneModule` implementations. A scene is descri
 
 Use `SceneExecutor` to execute scene flow and return a `SceneExecutionResult`. Use `ScenePresenter` and view-model classes when JavaFX UI code needs a UI-neutral representation of the current scene and choices.
 
+Use `SceneDefinitionJson` for simple JSON-authored scenes that do not require executable Java `ActionRequirement` or `ActionEffect` instances. JSON scenes can include dialogue/narration text definition IDs, choices, transitions, display references, and string metadata. Register more complex requirements/effects through Java scene modules.
+
+Use `SceneFlowStateJson` to serialize and restore `SceneFlowState` snapshots containing the active scene, step index, call stack, selected choice IDs, and pending UI interruption marker.
+
 ## 6. UI screens and themes
 
 The `ui` package provides reusable JavaFX surfaces and helpers:
@@ -134,9 +170,11 @@ Use `DisplayAnimationPlayer` to model animation playback state and interpolation
 
 The registry can resolve image paths from a checked-out game tree through `GameAssetLocator`, but concrete image assets remain application-owned.
 
+Use `DisplayDefinitionJsonLoader` to load app-owned display JSON into an `ImageDisplayRegistry`, or wrap that loading in `JsonDisplayContentModule` for bootstrap registration. The supported root fields are `transforms`, `images`, and `layeredCharacters`; authored image files and IDs remain outside the engine.
+
 ## 8. Audio support
 
-Use `AudioService` for the current reusable audio boundary. It registers default channels for music, short sounds, reusable effects, and intimate/effect-style channels. It validates `SoundRequest` instances and produces `AudioPlaybackCommand` objects that a later application adapter can bind to JavaFX media classes.
+Use `AudioService` for the current reusable audio boundary. It registers default channels for music, short sounds, reusable effects, and intimate/effect-style channels. It validates `SoundRequest` instances and produces `AudioPlaybackCommand` objects that an application-owned `AudioPlaybackAdapter` can bind to JavaFX media classes.
 
 Audio support currently includes:
 
@@ -150,7 +188,7 @@ Audio support currently includes:
 - tracking the last playback command per channel
 - stop tracking for a channel
 
-Actual `MediaPlayer` or `AudioClip` playback, audio asset discovery, fades, crossfades, and channel-specific player pools are not part of the current implementation. Applications should provide concrete media adapters if they need real sound output today.
+Actual `MediaPlayer` or `AudioClip` playback, audio asset discovery, fades, crossfades, and channel-specific player pools are not part of the current implementation. Applications should provide concrete `AudioPlaybackAdapter` implementations if they need real sound output today.
 
 ## 9. Game support, state, saves, preferences, and random behavior
 
@@ -158,7 +196,36 @@ Actual `MediaPlayer` or `AudioClip` playback, audio asset discovery, fades, cros
 
 Use `GameSupportService` and `ActionRegistry` to register reusable `GameAction` objects. Actions can use `ActionRequirement` checks, `ActionEffect` outcomes, `ActionContext`, `RequirementResult`, and `ActionResult` to keep generic game-rule plumbing separate from authored domain rules.
 
-Use `GameClock`, `GameDateTime`, and `TimeSlot` to model reusable time progression without embedding a specific game calendar or schedule.
+Use `CodeTableDefinition` and `CodeDefinition` to define project-supplied code lists such as time slots, roles, goals, postures, positions, duties, or listener types. `GameClock` and `GameDateTime` use a time-slot code table so reusable time progression does not embed a specific game calendar or schedule.
+
+Use `CategoryCodeTableDefinition.load(Path)` when category data should come from authored JSON. The root object contains a `language` field and a `tables` array; titles in that file are interpreted as text for that language so applications can provide parallel files for later translation:
+
+```json
+{
+  "language": "en",
+  "tables": [
+    {
+      "id": "roles",
+      "title": "Roles",
+      "codes": [
+        {
+          "id": "manager",
+          "title": "Manager",
+          "sortOrder": 20,
+          "tags": ["work"]
+        }
+      ]
+    }
+  ]
+}
+```
+
+Use the immutable helper methods to work with authored category files without hand-editing registry objects in memory:
+
+- `CategoryCodeTableDefinition.load(path)` loads a language-specific file.
+- `addTable(...)`, `editTable(...)`, and `removeTable(...)` return updated category sets.
+- `CodeTableDefinition.withTitle(...)`, `addCode(...)`, `editCode(...)`, and `removeCode(...)` return updated tables.
+- `save(path)` writes the updated category set back to JSON, and `toJson()` returns the same formatted JSON string for previews or tests.
 
 ### State
 

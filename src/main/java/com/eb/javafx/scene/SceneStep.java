@@ -69,6 +69,19 @@ public final class SceneStep {
                 List.of(), List.of(), transition, Map.of());
     }
 
+    public static SceneStep create(
+            String id,
+            SceneStepType type,
+            String speakerId,
+            String textDefinition,
+            String displayReference,
+            List<SceneChoice> choices,
+            List<ActionEffect> effects,
+            SceneTransition transition,
+            Map<String, String> metadata) {
+        return new SceneStep(id, type, speakerId, textDefinition, displayReference, choices, effects, transition, metadata);
+    }
+
     public String id() {
         return id;
     }

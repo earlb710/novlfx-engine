@@ -4,6 +4,9 @@ import com.eb.javafx.random.GameRandomService;
 import com.eb.javafx.state.GameState;
 import org.junit.jupiter.api.Test;
 
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.nio.file.Path;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -24,18 +27,55 @@ final class GameSupportServiceTest {
 
         assertTrue(service.isInitialized());
         assertTrue(service.actionRegistry().isEmpty());
+        assertTrue(service.locationRegistry().isEmpty());
         assertEquals(1, service.gameClock().currentTime().day());
-        assertEquals(TimeSlot.MORNING, service.gameClock().currentTime().timeSlot());
+        assertEquals("default", service.gameClock().currentTime().timeSlotId());
     }
 
     @Test
-    void clockAdvancesSlotsAndRollsDayAfterNight() {
-        GameClock clock = new GameClock();
+    void clockAdvancesConfiguredSlotsAndRollsDayAfterFinalSlot() {
+        GameClock clock = new GameClock(timeSlots(
+                new CodeDefinition("early", "Early", 10, List.of()),
+                new CodeDefinition("late", "Late", 20, List.of()),
+                new CodeDefinition("after-hours", "After Hours", 30, List.of())));
 
-        assertEquals(new GameDateTime(1, TimeSlot.AFTERNOON).toString(), clock.advanceSlot().toString());
-        assertEquals(new GameDateTime(1, TimeSlot.EVENING).toString(), clock.advanceSlot().toString());
-        assertEquals(new GameDateTime(1, TimeSlot.NIGHT).toString(), clock.advanceSlot().toString());
-        assertEquals(new GameDateTime(2, TimeSlot.MORNING).toString(), clock.advanceSlot().toString());
+        assertEquals(new GameDateTime(1, "late").toString(), clock.advanceSlot().toString());
+        assertEquals(new GameDateTime(1, "after-hours").toString(), clock.advanceSlot().toString());
+        assertEquals(new GameDateTime(2, "early").toString(), clock.advanceSlot().toString());
+    }
+
+    @Test
+    void codeTablesRepresentGenericSectionTwoCategories() throws URISyntaxException {
+        CategoryCodeTableDefinition categories = CategoryCodeTableDefinition.load(testResource(
+                "category-code-tables.en.json"));
+        CodeTableDefinition roles = categories.table("roles").orElseThrow();
+
+        assertEquals(List.of("founder", "manager"), roles.codes().stream().map(CodeDefinition::id).toList());
+        assertTrue(roles.contains("manager"));
+        assertThrows(UnsupportedOperationException.class, () ->
+                roles.codes().add(new CodeDefinition("other", "Other", 30, List.of())));
+    }
+
+    @Test
+    void categoryCodeTablesLoadTranslatedDefinitionsFromJson() throws URISyntaxException {
+        CategoryCodeTableDefinition categories = CategoryCodeTableDefinition.load(testResource(
+                "category-code-tables.en.json"));
+
+        assertEquals("en", categories.language());
+        assertTrue(categories.containsTable("roles"));
+        assertTrue(categories.containsTable("postures"));
+        assertTrue(categories.containsTable("goals"));
+
+        CodeTableDefinition duties = categories.table("duties").orElseThrow();
+        assertEquals("Duties", duties.title());
+        assertEquals(List.of("closer", "opener"), duties.codes().stream().map(CodeDefinition::id).toList());
+        assertEquals(List.of("work", "night"), duties.code("closer").orElseThrow().tags());
+    }
+
+    @Test
+    void categoryCodeTablesRejectMissingLanguage() {
+        assertThrows(IllegalArgumentException.class, () ->
+                CategoryCodeTableDefinition.fromJson("{\"tables\":[]}", "missing-language.json"));
     }
 
     @Test
@@ -61,7 +101,8 @@ final class GameSupportServiceTest {
         assertTrue(result.success());
         assertTrue(result.stateChanged());
         assertEquals("Advanced one slot.", result.message());
-        assertEquals(TimeSlot.AFTERNOON, clock.currentTime().timeSlot());
+        assertEquals("default", clock.currentTime().timeSlotId());
+        assertEquals(2, clock.currentTime().day());
         assertEquals(1, registry.actionsByCategory().get("time").size());
     }
 
@@ -85,6 +126,19 @@ final class GameSupportServiceTest {
 
         assertFalse(result.success());
         assertEquals("Not available.", result.message());
-        assertEquals(TimeSlot.MORNING, clock.currentTime().timeSlot());
+        assertEquals("default", clock.currentTime().timeSlotId());
+        assertEquals(1, clock.currentTime().day());
+    }
+
+    private static CodeTableDefinition timeSlots(CodeDefinition... codes) {
+        return new CodeTableDefinition("time-slots", "Time Slots", List.of(codes));
+    }
+
+    private static Path testResource(String name) throws URISyntaxException {
+        URL resource = GameSupportServiceTest.class.getResource("/com/eb/javafx/gamesupport/" + name);
+        if (resource == null) {
+            throw new IllegalArgumentException("Missing test resource: " + name);
+        }
+        return Path.of(resource.toURI());
     }
 }
