@@ -11,7 +11,7 @@ public final class EnginePlaceholderContentModule implements StaticContentModule
     @Override
     public void register(ContentRegistry contentRegistry, ImageDisplayRegistry imageDisplayRegistry) {
         Map<String, String> definitions = new LinkedHashMap<>();
-        definitions.put("application.name", "NovlFX Engine");
+        definitions.put("application.name", "novlfx-engine");
         definitions.put("startup.route", SceneRouter.MAIN_MENU_ROUTE);
         definitions.put("ui.mainMenu.title", "Main Menu");
         definitions.put("ui.mainMenu.status", "Reusable JavaFX engine shell is ready.");

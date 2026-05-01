@@ -42,7 +42,7 @@ final class ContentRegistryTest {
         module.register(registry, null);
         module.validate(registry, null);
 
-        assertEquals("NovlFX Engine", registry.definition("application.name"));
+        assertEquals("novlfx-engine", registry.definition("application.name"));
         assertEquals("main-menu", registry.definition("startup.route"));
         assertEquals("Main Menu", registry.definition("ui.mainMenu.title"));
         assertEquals("Tooltip", registry.definition("ui.tooltip.title"));
