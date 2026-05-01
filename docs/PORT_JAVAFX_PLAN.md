@@ -93,6 +93,8 @@ The engine currently publishes the `com.novlfx.engine` Java module with reusable
 
 Bootstrap can be configured with `BootstrapOptions`, which groups an application root, JSON-backed `ApplicationResourceConfig`, static content modules, scene modules, and route modules. Options-based bootstrap keeps defaults available while allowing consuming applications to relocate image assets and other app-owned resources without hard-coding paths into the engine.
 
+The engine also provides generic JSON import/export boundaries for reusable display and scene definitions. `DisplayDefinitionJsonLoader` and `JsonDisplayContentModule` can register app-owned transform, image, and layered-display JSON into `ImageDisplayRegistry`; `SceneDefinitionJson` can import/export simple dialogue, choice, and transition scenes; and `SceneFlowStateJson` can serialize resumable scene-flow snapshots without making the engine own app save schemas.
+
 Validation for this repository should continue to use the checked-in Gradle wrapper:
 
 ```bash
