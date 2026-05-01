@@ -16,7 +16,9 @@ import java.util.Set;
  *
  * <p>The adapter provides stable Java methods for migrated code that needs
  * global random, route, screen, and sound requests while delegating validation
- * to JavaFX services.</p>
+ * to JavaFX services. Route requests fail when a route is not registered, screen
+ * visibility is tracked locally for diagnostics, and sound requests delegate to
+ * {@link AudioService} for channel and volume validation.</p>
  */
 public final class GlobalApiAdapter {
     private final GameRandomService randomService;
@@ -25,6 +27,13 @@ public final class GlobalApiAdapter {
     private final Set<String> visibleScreens = new LinkedHashSet<>();
     private GlobalRouteRequest lastRouteRequest;
 
+    /**
+     * Creates an adapter over initialized services used by migrated global calls.
+     *
+     * @param randomService deterministic gameplay random source
+     * @param sceneRouter registered JavaFX route table
+     * @param audioService initialized audio service for playback requests
+     */
     public GlobalApiAdapter(GameRandomService randomService, SceneRouter sceneRouter, AudioService audioService) {
         if (randomService == null || sceneRouter == null || audioService == null) {
             throw new IllegalArgumentException("Global API adapter requires random, route, and audio services.");

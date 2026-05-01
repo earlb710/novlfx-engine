@@ -2,6 +2,11 @@ package com.eb.javafx.display;
 
 /**
  * First-pass Java model for Ren'Py ATL transforms used by migrated images.
+ *
+ * <p>Transforms define fit dimensions, opacity, and alignment metadata that the
+ * display registry can apply when creating JavaFX image nodes. Fit sizes must be
+ * positive, opacity is {@code 0.0..1.0}, and alignment values are normalized
+ * {@code 0.0..1.0} anchors.</p>
  */
 public final class DisplayTransform {
     private final String id;
@@ -11,6 +16,16 @@ public final class DisplayTransform {
     private final double xAlign;
     private final double yAlign;
 
+    /**
+     * Creates validated image transform metadata.
+     *
+     * @param id non-blank transform ID
+     * @param fitWidth positive JavaFX fit width
+     * @param fitHeight positive JavaFX fit height
+     * @param opacity image opacity from {@code 0.0} to {@code 1.0}
+     * @param xAlign horizontal alignment anchor from left {@code 0.0} to right {@code 1.0}
+     * @param yAlign vertical alignment anchor from top {@code 0.0} to bottom {@code 1.0}
+     */
     public DisplayTransform(String id, int fitWidth, int fitHeight, double opacity, double xAlign, double yAlign) {
         if (id == null || id.isBlank()) {
             throw new IllegalArgumentException("Display transform id is required.");

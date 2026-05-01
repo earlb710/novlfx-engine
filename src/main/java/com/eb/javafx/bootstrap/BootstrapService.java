@@ -42,6 +42,12 @@ public final class BootstrapService {
     private final UiTheme uiTheme;
     private final List<StaticContentModule> staticContentModules;
 
+    /**
+     * Creates a bootstrap service using default audio/game-support services and no static modules.
+     *
+     * <p>This constructor is useful for the minimal shell and tests that only need
+     * the core registries supplied directly.</p>
+     */
     public BootstrapService(
             PreferencesService preferencesService,
             ContentRegistry contentRegistry,
@@ -65,6 +71,12 @@ public final class BootstrapService {
                 Collections.emptyList());
     }
 
+    /**
+     * Creates a fully injectable bootstrap service for app/game content modules and tests.
+     *
+     * <p>The supplied services are owned for the duration of startup; static modules
+     * register after base registries are ready and validate before route creation.</p>
+     */
     public BootstrapService(
             PreferencesService preferencesService,
             ContentRegistry contentRegistry,
@@ -95,6 +107,7 @@ public final class BootstrapService {
      *
      * @param primaryStage JavaFX stage passed in so route factories can size scenes
      * @return initialized services plus the first mutable game state object
+     * @throws RuntimeException when any phase fails; the caller should report it via startup UI
      */
     public BootContext boot(Stage primaryStage) {
         Instant startedAt = Instant.now();

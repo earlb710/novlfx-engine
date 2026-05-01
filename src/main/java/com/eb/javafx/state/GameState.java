@@ -10,11 +10,17 @@ package com.eb.javafx.state;
 public final class GameState {
     private final String startupRoute;
 
+    /** Creates placeholder mutable state with the route selected by static content. */
     public GameState(String startupRoute) {
         this.startupRoute = startupRoute;
     }
 
-    /** Returns the route a new game should enter after startup. */
+    /**
+     * Returns the route a new game should enter after startup.
+     *
+     * <p>Future mutable gameplay fields should live alongside this value so save
+     * data remains explicit rather than hidden in globals.</p>
+     */
     public String startupRoute() {
         return startupRoute;
     }

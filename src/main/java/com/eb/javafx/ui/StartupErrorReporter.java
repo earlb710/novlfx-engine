@@ -14,7 +14,13 @@ import javafx.stage.Stage;
  */
 public final class StartupErrorReporter {
 
-    /** Shows a blocking error dialog when boot fails before the first scene opens. */
+    /**
+     * Shows a blocking error dialog when boot fails before the first scene opens.
+     *
+     * <p>{@link StartupFailureException} supplies the category directly; other
+     * runtime exceptions fall back to programming error. Blank messages are replaced
+     * by the exception class name so the dialog always contains detail text.</p>
+     */
     public void report(Stage owner, RuntimeException exception) {
         Alert alert = new Alert(AlertType.ERROR);
         alert.initOwner(owner);

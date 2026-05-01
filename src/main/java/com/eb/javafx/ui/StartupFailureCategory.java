@@ -2,9 +2,13 @@ package com.eb.javafx.ui;
 
 /** Categories for boot failures that replace Ren'Py's generic startup error surface. */
 public enum StartupFailureCategory {
+    /** A required stylesheet, image, audio file, or other asset could not be found. */
     MISSING_ASSET("Missing asset"),
+    /** Static content or route/display definitions failed validation. */
     INVALID_CONTENT("Invalid content"),
+    /** Save data exists but does not match the supported schema. */
     INCOMPATIBLE_SAVE("Incompatible save"),
+    /** Unexpected code or wiring failure not covered by a player-facing category. */
     PROGRAMMING_ERROR("Programming error");
 
     private final String displayName;
@@ -13,6 +17,7 @@ public enum StartupFailureCategory {
         this.displayName = displayName;
     }
 
+    /** Returns the short player-facing category label for startup dialogs. */
     public String displayName() {
         return displayName;
     }

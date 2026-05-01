@@ -8,7 +8,13 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-/** Registry for generic actions used until application-authored actions are registered. */
+/**
+ * Registry for generic actions used until application-authored actions are registered.
+ *
+ * <p>Actions are keyed by stable ID and retained in registration order. Duplicate
+ * IDs are rejected, lookup misses return empty optionals, and collection views are
+ * immutable snapshots for UI grouping and diagnostics.</p>
+ */
 public final class ActionRegistry {
     private final Map<String, GameAction> actions = new LinkedHashMap<>();
 

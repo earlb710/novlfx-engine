@@ -13,6 +13,11 @@ import java.util.Optional;
  * <p>Ren'Py exposes global music and sound helpers. This service replaces that
  * with named channel definitions, preference-backed master volume, and validated
  * playback commands that can later be bridged to JavaFX media classes.</p>
+ *
+ * <p>Callers must initialize the service with loaded preferences before reading
+ * volume state or issuing playback commands. Channel IDs are validated, mutable
+ * volume settings are clamped to {@code 0.0..1.0}, and muting is represented by
+ * silent playback commands without forgetting configured volumes.</p>
  */
 public final class AudioService {
     public static final String MUSIC_CHANNEL = "music";
@@ -27,7 +32,12 @@ public final class AudioService {
     private boolean muted;
     private double masterVolume;
 
-    /** Registers default channel names for the audio system and loads master volume. */
+    /**
+     * Registers default channel names for the audio system and loads master volume.
+     *
+     * @param preferencesService loaded preferences supplying persisted audio settings
+     * @throws IllegalArgumentException when preferences are unavailable
+     */
     public void initialize(PreferencesService preferencesService) {
         if (preferencesService == null) {
             throw new IllegalArgumentException("Preferences service is required for audio initialization.");
@@ -49,7 +59,11 @@ public final class AudioService {
         return initialized;
     }
 
-    /** Registers or replaces a channel definition. */
+    /**
+     * Registers or replaces a channel definition and resets its channel volume.
+     *
+     * @param definition validated channel metadata keyed by stable ID
+     */
     public void registerChannel(AudioChannelDefinition definition) {
         channels.put(definition.id(), definition);
         channelVolumes.put(definition.id(), definition.defaultVolume());
@@ -98,7 +112,14 @@ public final class AudioService {
         return muted;
     }
 
-    /** Validates a request and returns the command a JavaFX media adapter should execute. */
+    /**
+     * Validates a request and returns the command a JavaFX media adapter should execute.
+     *
+     * @param request authored asset request with channel, loop flag, and relative volume
+     * @return command containing the effective master/channel/request volume product
+     * @throws IllegalStateException when uninitialized or the channel is unknown
+     * @throws IllegalArgumentException when looping is requested on a non-looping channel
+     */
     public AudioPlaybackCommand play(SoundRequest request) {
         assertInitialized();
         requireChannel(request.channelId());

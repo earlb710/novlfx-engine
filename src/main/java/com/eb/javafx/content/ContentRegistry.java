@@ -56,12 +56,21 @@ public final class ContentRegistry {
         requireDefinition("ui.captureTest.title");
     }
 
-    /** Returns an immutable view so controllers cannot mutate static startup data. */
+    /**
+     * Returns an immutable view so controllers cannot mutate static startup data.
+     *
+     * <p>Definitions remain owned by the registry; later content modules should
+     * register through explicit methods rather than modifying the returned map.</p>
+     */
     public Map<String, String> definitions() {
         return Collections.unmodifiableMap(definitions);
     }
 
-    /** Retrieves a single definition by ID for UI labels or future service wiring. */
+    /**
+     * Retrieves a single definition by ID for UI labels or future service wiring.
+     *
+     * @throws IllegalStateException when the requested definition is missing
+     */
     public String definition(String id) {
         requireDefinition(id);
         return definitions.get(id);

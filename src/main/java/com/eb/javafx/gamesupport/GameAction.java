@@ -3,7 +3,13 @@ package com.eb.javafx.gamesupport;
 import java.util.List;
 import java.util.Objects;
 
-/** Generic action definition with requirements and effects, independent of eb authored content. */
+/**
+ * Generic action definition with requirements and effects, independent of eb authored content.
+ *
+ * <p>Actions evaluate requirements in registration order and execute effects in
+ * order only after all requirements pass. The final successful effect result is
+ * returned; the first blocking requirement or failed effect stops execution.</p>
+ */
 public final class GameAction {
     private final String id;
     private final String title;
@@ -11,6 +17,15 @@ public final class GameAction {
     private final List<ActionRequirement> requirements;
     private final List<ActionEffect> effects;
 
+    /**
+     * Creates an immutable action definition.
+     *
+     * @param id non-blank stable action ID
+     * @param title non-blank player-facing title
+     * @param category non-blank grouping key used by registries and UI
+     * @param requirements ordered requirement checks copied into an immutable list
+     * @param effects ordered effects copied into an immutable list
+     */
     public GameAction(
             String id,
             String title,

@@ -17,7 +17,9 @@ import com.eb.javafx.ui.UiTheme;
  *
  * <p>The JavaFX port should avoid hidden global coupling, so the bootstrap layer returns a
  * small context containing the services and state that downstream controllers need
- * for the first screen.</p>
+ * for the first screen. Services in this context are initialized singletons for
+ * the current application run, while {@link GameState} is the mutable per-save
+ * object created for the new-game placeholder.</p>
  */
 public final class BootContext {
     private final PreferencesService preferencesService;
@@ -33,6 +35,22 @@ public final class BootContext {
     private final GameState gameState;
     private final BootstrapReport bootstrapReport;
 
+    /**
+     * Creates a completed startup handoff containing initialized services and state.
+     *
+     * @param preferencesService loaded preference service
+     * @param contentRegistry validated static text/content definitions
+     * @param imageDisplayRegistry validated image, transform, layer, and animation definitions
+     * @param saveLoadService initialized versioned save/load boundary
+     * @param randomService initialized gameplay/UI random streams
+     * @param audioService initialized channel-based audio boundary
+     * @param gameSupportService initialized generic support systems
+     * @param globalApiAdapter adapter for migrated global API calls
+     * @param sceneRouter registered route table
+     * @param uiTheme initialized theme tokens and stylesheet lookup
+     * @param gameState mutable runtime state for the current session
+     * @param bootstrapReport immutable phase diagnostics
+     */
     public BootContext(
             PreferencesService preferencesService,
             ContentRegistry contentRegistry,
