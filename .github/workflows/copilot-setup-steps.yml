@@ -24,7 +24,11 @@ jobs:
         run: |
           set -euo pipefail
           if [ -z "${LR2ALT_TOKEN}" ]; then
-            echo "LR2ALT_TOKEN must be configured as a secret in the copilot environment."
+            echo "LR2ALT_TOKEN must be configured as a secret in the copilot environment." >&2
             exit 1
           fi
-          git config --global url."https://x-access-token:${LR2ALT_TOKEN}@github.com/earlb710/Lr2Alt".insteadOf "https://github.com/earlb710/Lr2Alt"
+          umask 077
+          {
+            printf '[url "https://x-access-token:%s@github.com/earlb710/Lr2Alt"]\n' "${LR2ALT_TOKEN}"
+            printf '    insteadOf = https://github.com/earlb710/Lr2Alt\n'
+          } >> "${HOME}/.gitconfig"
