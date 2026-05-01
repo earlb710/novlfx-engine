@@ -1,0 +1,36 @@
+.root {
+    -fx-background-color: #101828;
+    -fx-font-family: "System";
+}
+
+.screen-root {
+    -fx-background-color: linear-gradient(to bottom, #101828, #0a1426);
+}
+
+.screen-title {
+    -fx-font-size: 28px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #66c1e0;
+}
+
+.screen-panel {
+    -fx-background-color: rgba(10, 20, 38, 0.85);
+    -fx-border-color: #0099cc;
+    -fx-border-radius: 6px;
+    -fx-background-radius: 6px;
+}
+
+.label {
+    -fx-text-fill: #ffffff;
+    -fx-font-size: 14px;
+}
+
+.button {
+    -fx-background-color: #0a1426;
+    -fx-text-fill: #dddddd;
+    -fx-border-color: #143869;
+}
+
+.button:hover {
+    -fx-background-color: #143869;
+}
