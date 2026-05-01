@@ -42,5 +42,5 @@ This initial snapshot intentionally preserves the existing `com.lr2alt.javafx.*`
 
 - Open the repository root as a Gradle project in Android Studio.
 - Let Android Studio use the checked-in Gradle wrapper during sync.
-- Use the shared **Build** and **Test** Gradle run configurations, or run the same tasks from the Gradle tool window.
+- Run Gradle tasks such as `build` and `test` from the Gradle tool window or create local run configurations in your IDE.
 - Keep `local.properties` local to your machine; Android Studio will create or update it with your SDK path as needed.
