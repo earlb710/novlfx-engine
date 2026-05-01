@@ -45,10 +45,10 @@ final class GameSupportServiceTest {
     }
 
     @Test
-    void codeTablesRepresentGenericSectionTwoCategories() {
-        CodeTableDefinition roles = codeTable("roles",
-                new CodeDefinition("manager", "Manager", 20, List.of("work")),
-                new CodeDefinition("founder", "Founder", 10, List.of("work")));
+    void codeTablesRepresentGenericSectionTwoCategories() throws URISyntaxException {
+        CategoryCodeTableDefinition categories = CategoryCodeTableDefinition.load(testResource(
+                "category-code-tables.en.json"));
+        CodeTableDefinition roles = categories.table("roles").orElseThrow();
 
         assertEquals(List.of("founder", "manager"), roles.codes().stream().map(CodeDefinition::id).toList());
         assertTrue(roles.contains("manager"));
