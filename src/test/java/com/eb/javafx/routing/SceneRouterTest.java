@@ -1,6 +1,7 @@
 package com.eb.javafx.routing;
 
 import com.eb.javafx.content.ContentRegistry;
+import com.eb.javafx.content.EnginePlaceholderContentModule;
 import com.eb.javafx.display.ImageDisplayRegistry;
 import com.eb.javafx.prefs.PreferencesService;
 import com.eb.javafx.save.SaveLoadService;
@@ -33,6 +34,7 @@ final class SceneRouterTest {
     void defaultRoutesExposeMetadataAndValidateTitleDefinitions() {
         ContentRegistry registry = new ContentRegistry();
         registry.registerBaseContent();
+        new EnginePlaceholderContentModule().register(registry, null);
         PreferencesService preferencesService = new PreferencesService();
         preferencesService.load();
         SaveLoadService saveLoadService = new SaveLoadService();
@@ -102,6 +104,7 @@ final class SceneRouterTest {
     void customRouteModuleParticipatesInTitleValidation() {
         ContentRegistry registry = new ContentRegistry();
         registry.registerBaseContent();
+        new EnginePlaceholderContentModule().register(registry, null);
         SceneRouter router = new SceneRouter();
         router.registerRoutes(minimalRouteContext(router), List.of(target -> target.registerRoute(new RouteDescriptor(
                         "custom-route",

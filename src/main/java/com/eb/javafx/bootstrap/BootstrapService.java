@@ -2,6 +2,7 @@ package com.eb.javafx.bootstrap;
 
 import com.eb.javafx.audio.AudioService;
 import com.eb.javafx.content.ContentRegistry;
+import com.eb.javafx.content.EnginePlaceholderContentModule;
 import com.eb.javafx.content.StaticContentModule;
 import com.eb.javafx.display.ImageDisplayRegistry;
 import com.eb.javafx.gamesupport.GameSupportService;
@@ -127,6 +128,7 @@ public final class BootstrapService {
         // Static content registries: replace define/import side effects with named registry calls.
         contentRegistry.registerBaseContent();
         imageDisplayRegistry.registerBaseDisplayContent();
+        new EnginePlaceholderContentModule().register(contentRegistry, imageDisplayRegistry);
         staticContentModules.forEach(module -> module.register(contentRegistry, imageDisplayRegistry));
         completePhase(completedPhases, phaseMessages, BootstrapPhase.STATIC_CONTENT_REGISTRIES,
                 "Base static content and display definitions registered.");
@@ -134,6 +136,7 @@ public final class BootstrapService {
         // Game rules: validate required definitions before any screen can depend on them.
         contentRegistry.validateRules();
         imageDisplayRegistry.validateDisplayContent();
+        new EnginePlaceholderContentModule().validate(contentRegistry, imageDisplayRegistry);
         staticContentModules.forEach(module -> module.validate(contentRegistry, imageDisplayRegistry));
         completePhase(completedPhases, phaseMessages, BootstrapPhase.GAME_RULES,
                 "Required content and display definitions validated.");

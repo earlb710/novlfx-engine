@@ -18,7 +18,7 @@ public final class MainMenuScreen {
         menu.setPadding(new Insets(8));
         menu.getChildren().addAll(
                 new Label(context.contentRegistry().definition("application.name")),
-                new Label(context.contentRegistry().definition("migration.slice")),
+                new Label(context.contentRegistry().definition("ui.mainMenu.status")),
                 new Label("Startup phase complete. Section 1.1 services, section 1.2 shell routes, and section 1.4-1.8 support foundations are ready."));
 
         for (RouteDescriptor descriptor : context.sceneRouter().routeDescriptors().values()) {

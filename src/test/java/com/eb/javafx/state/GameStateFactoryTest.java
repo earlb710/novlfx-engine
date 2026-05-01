@@ -11,7 +11,9 @@ final class GameStateFactoryTest {
     @Test
     void createNewGameUsesStartupRouteFromContentRegistry() {
         ContentRegistry registry = new ContentRegistry();
-        registry.registerBaseContent();
+        registry.registerRequiredDefinition("startup.route");
+        registry.registerDefinition("startup.route", "main-menu");
+        registry.validateRules();
 
         GameState state = new GameStateFactory().createNewGame(registry);
 
