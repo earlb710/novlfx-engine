@@ -25,3 +25,11 @@ dependencies {
 tasks.withType(Test).configureEach {
     useJUnitPlatform()
 }
+
+tasks.register('runTestScreen', JavaExec) {
+    group = 'application'
+    description = 'Launches the manual test screen UI from the test source set.'
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.lr2alt.javafx.testscreen.TestScreenApplication'
+    systemProperty 'lr2alt.application.version', project.version.toString()
+}
