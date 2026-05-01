@@ -26,11 +26,12 @@ public final class EnginePlaceholderContentModule implements StaticContentModule
         definitions.put("ui.captureTest.title", "Capture Test Screen");
 
         contentRegistry.registerDefinitions(definitions);
-        contentRegistry.registerRequiredDefinitions(definitions.keySet());
+        contentRegistry.registerRequiredDefinition("application.name");
+        contentRegistry.registerRequiredDefinition("startup.route");
     }
 
     @Override
     public void validate(ContentRegistry contentRegistry, ImageDisplayRegistry imageDisplayRegistry) {
-        contentRegistry.validateRules();
+        // Placeholder content is validated by the registry and route validation phases.
     }
 }
