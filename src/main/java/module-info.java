@@ -9,7 +9,7 @@ module com.novlfx.engine {
     exports com.eb.javafx.gamesupport;
     exports com.eb.javafx.prefs;
     exports com.eb.javafx.random;
-    exports com.eb.javafx.renpy;
+    exports com.eb.javafx.globalApi;
     exports com.eb.javafx.routing;
     exports com.eb.javafx.save;
     exports com.eb.javafx.state;

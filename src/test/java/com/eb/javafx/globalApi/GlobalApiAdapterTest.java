@@ -1,4 +1,4 @@
-package com.eb.javafx.renpy;
+package com.eb.javafx.globalApi;
 
 import com.eb.javafx.audio.AudioService;
 import com.eb.javafx.content.ContentRegistry;
@@ -18,7 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-final class RenpyApiAdapterTest {
+final class GlobalApiAdapterTest {
     private final Preferences preferences = Preferences.userNodeForPackage(PreferencesService.class);
 
     @AfterEach
@@ -44,12 +44,12 @@ final class RenpyApiAdapterTest {
         randomService.initialize();
         AudioService audioService = new AudioService();
         audioService.initialize(preferencesService);
-        RenpyApiAdapter adapter = new RenpyApiAdapter(randomService, sceneRouter, audioService);
+        GlobalApiAdapter adapter = new GlobalApiAdapter(randomService, sceneRouter, audioService);
 
-        assertEquals(RenpyRouteAction.JUMP, adapter.jump(SceneRouter.MAIN_MENU_ROUTE).action());
-        assertEquals(RenpyRouteAction.SHOW_SCREEN, adapter.showScreen(SceneRouter.HUD_ROUTE).action());
+        assertEquals(GlobalRouteAction.JUMP, adapter.jump(SceneRouter.MAIN_MENU_ROUTE).action());
+        assertEquals(GlobalRouteAction.SHOW_SCREEN, adapter.showScreen(SceneRouter.HUD_ROUTE).action());
         assertTrue(adapter.visibleScreens().contains(SceneRouter.HUD_ROUTE));
-        assertEquals(RenpyRouteAction.HIDE_SCREEN, adapter.hideScreen(SceneRouter.HUD_ROUTE).action());
+        assertEquals(GlobalRouteAction.HIDE_SCREEN, adapter.hideScreen(SceneRouter.HUD_ROUTE).action());
         assertTrue(adapter.visibleScreens().isEmpty());
         assertThrows(IllegalStateException.class, () -> adapter.jump("missing"));
     }

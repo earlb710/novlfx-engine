@@ -6,7 +6,7 @@ import com.eb.javafx.display.ImageDisplayRegistry;
 import com.eb.javafx.gamesupport.GameSupportService;
 import com.eb.javafx.prefs.PreferencesService;
 import com.eb.javafx.random.GameRandomService;
-import com.eb.javafx.renpy.RenpyApiAdapter;
+import com.eb.javafx.globalApi.GlobalApiAdapter;
 import com.eb.javafx.routing.SceneRouter;
 import com.eb.javafx.save.SaveLoadService;
 import com.eb.javafx.state.GameState;
@@ -15,8 +15,7 @@ import com.eb.javafx.ui.UiTheme;
 /**
  * Immutable handoff object returned after startup completes.
  *
- * <p>Ren'Py modules can read global variables after init blocks run. The JavaFX
- * port should avoid that hidden global coupling, so the bootstrap layer returns a
+ * <p>The JavaFX port should avoid hidden global coupling, so the bootstrap layer returns a
  * small context containing the services and state that downstream controllers need
  * for the first screen.</p>
  */
@@ -28,7 +27,7 @@ public final class BootContext {
     private final GameRandomService randomService;
     private final AudioService audioService;
     private final GameSupportService gameSupportService;
-    private final RenpyApiAdapter renpyApiAdapter;
+    private final GlobalApiAdapter globalApiAdapter;
     private final SceneRouter sceneRouter;
     private final UiTheme uiTheme;
     private final GameState gameState;
@@ -42,7 +41,7 @@ public final class BootContext {
             GameRandomService randomService,
             AudioService audioService,
             GameSupportService gameSupportService,
-            RenpyApiAdapter renpyApiAdapter,
+            GlobalApiAdapter globalApiAdapter,
             SceneRouter sceneRouter,
             UiTheme uiTheme,
             GameState gameState,
@@ -54,7 +53,7 @@ public final class BootContext {
         this.randomService = randomService;
         this.audioService = audioService;
         this.gameSupportService = gameSupportService;
-        this.renpyApiAdapter = renpyApiAdapter;
+        this.globalApiAdapter = globalApiAdapter;
         this.sceneRouter = sceneRouter;
         this.uiTheme = uiTheme;
         this.gameState = gameState;
@@ -96,12 +95,12 @@ public final class BootContext {
         return gameSupportService;
     }
 
-    /** Returns the adapter for migrated code replacing direct Ren'Py API calls. */
-    public RenpyApiAdapter renpyApiAdapter() {
-        return renpyApiAdapter;
+    /** Returns the adapter for migrated code replacing direct global API calls. */
+    public GlobalApiAdapter globalApiAdapter() {
+        return globalApiAdapter;
     }
 
-    /** Returns the router that replaces Ren'Py label/jump screen navigation. */
+    /** Returns the router that replaces global label/jump screen navigation. */
     public SceneRouter sceneRouter() {
         return sceneRouter;
     }

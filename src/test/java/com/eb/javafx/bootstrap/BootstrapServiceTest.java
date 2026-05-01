@@ -53,7 +53,7 @@ final class BootstrapServiceTest {
         assertTrue(context.gameSupportService().isInitialized());
         assertTrue(context.gameSupportService().actionRegistry().isEmpty());
         assertEquals("morning", context.gameSupportService().gameClock().currentTime().timeSlot().id());
-        assertTrue(context.renpyApiAdapter().lastRouteRequest().isEmpty());
+        assertTrue(context.globalApiAdapter().lastRouteRequest().isEmpty());
         assertEquals("main-menu", context.gameState().startupRoute());
     }
 }
