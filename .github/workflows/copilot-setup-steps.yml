@@ -1,0 +1,24 @@
+name: Copilot Setup Steps
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - .github/workflows/copilot-setup-steps.yml
+  pull_request:
+    paths:
+      - .github/workflows/copilot-setup-steps.yml
+
+jobs:
+  copilot-setup-steps:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Configure access to private Lr2Alt repository
+        env:
+          LR2ALT_TOKEN: ${{ secrets.LR2ALT_TOKEN }}
+        run: |
+          git config --global url."https://x-access-token:${LR2ALT_TOKEN}@github.com/".insteadOf "https://github.com/"
