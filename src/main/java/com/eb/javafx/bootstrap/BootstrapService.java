@@ -7,7 +7,7 @@ import com.eb.javafx.display.ImageDisplayRegistry;
 import com.eb.javafx.gamesupport.GameSupportService;
 import com.eb.javafx.prefs.PreferencesService;
 import com.eb.javafx.random.GameRandomService;
-import com.eb.javafx.renpy.RenpyApiAdapter;
+import com.eb.javafx.globalApi.GlobalApiAdapter;
 import com.eb.javafx.routing.SceneRouter;
 import com.eb.javafx.save.SaveLoadService;
 import com.eb.javafx.state.GameState;
@@ -26,7 +26,7 @@ import java.util.Map;
  * Coordinates deterministic startup for the JavaFX port.
  *
  * <p>This class implements the first migration slice from the plan: the boot
- * sequence is no longer a side effect of Ren'Py loading scripts. Every stage of
+ * sequence is no longer a side effect of engine loading scripts. Every stage of
  * startup is named, invoked once, and checked before the first scene is displayed.</p>
  */
 public final class BootstrapService {
@@ -42,6 +42,12 @@ public final class BootstrapService {
     private final UiTheme uiTheme;
     private final List<StaticContentModule> staticContentModules;
 
+    /**
+     * Creates a bootstrap service using default audio/game-support services and no static modules.
+     *
+     * <p>This constructor is useful for the minimal shell and tests that only need
+     * the core registries supplied directly.</p>
+     */
     public BootstrapService(
             PreferencesService preferencesService,
             ContentRegistry contentRegistry,
@@ -65,6 +71,12 @@ public final class BootstrapService {
                 Collections.emptyList());
     }
 
+    /**
+     * Creates a fully injectable bootstrap service for app/game content modules and tests.
+     *
+     * <p>The supplied services are owned for the duration of startup; static modules
+     * register after base registries are ready and validate before route creation.</p>
+     */
     public BootstrapService(
             PreferencesService preferencesService,
             ContentRegistry contentRegistry,
@@ -95,6 +107,7 @@ public final class BootstrapService {
      *
      * @param primaryStage JavaFX stage passed in so route factories can size scenes
      * @return initialized services plus the first mutable game state object
+     * @throws RuntimeException when any phase fails; the caller should report it via startup UI
      */
     public BootContext boot(Stage primaryStage) {
         Instant startedAt = Instant.now();
@@ -128,9 +141,9 @@ public final class BootstrapService {
         // UI routes/controllers: replace label and jump targets with explicit route IDs.
         sceneRouter.registerDefaultRoutes(primaryStage, preferencesService, contentRegistry, imageDisplayRegistry, saveLoadService, uiTheme);
         sceneRouter.validateRouteDefinitions(contentRegistry);
-        RenpyApiAdapter renpyApiAdapter = new RenpyApiAdapter(randomService, sceneRouter, audioService);
+        GlobalApiAdapter globalApiAdapter = new GlobalApiAdapter(randomService, sceneRouter, audioService);
         completePhase(completedPhases, phaseMessages, BootstrapPhase.UI_ROUTES_AND_CONTROLLERS,
-                "Default JavaFX shell routes and Ren'Py API adapter registered and validated.");
+                "Default JavaFX shell routes and Global API adapter registered and validated.");
 
         // Runtime state: create mutable new-game state only after services and registries exist.
         GameState newGameState = gameStateFactory.createNewGame(contentRegistry);
@@ -147,7 +160,7 @@ public final class BootstrapService {
                 randomService,
                 audioService,
                 gameSupportService,
-                renpyApiAdapter,
+                globalApiAdapter,
                 sceneRouter,
                 uiTheme,
                 newGameState,

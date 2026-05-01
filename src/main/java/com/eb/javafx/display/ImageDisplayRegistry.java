@@ -33,6 +33,7 @@ public final class ImageDisplayRegistry {
     private final Map<String, DisplayAnimation> animations = new LinkedHashMap<>();
     private final Map<String, LayeredCharacterDefinition> layeredCharacters = new LinkedHashMap<>();
 
+    /** Creates a registry rooted at the detected repository directory. */
     public ImageDisplayRegistry() {
         this(detectRepoRoot());
     }
@@ -61,6 +62,12 @@ public final class ImageDisplayRegistry {
                 true));
     }
 
+    /**
+     * Validates registry invariants required before screens build display nodes.
+     *
+     * <p>The base preview animation must exist and every image transform reference
+     * must resolve to a registered transform.</p>
+     */
     public void validateDisplayContent() {
         requireAnimation(DISPLAY_PREVIEW_PULSE_ANIMATION);
         images.values().stream()
@@ -68,18 +75,22 @@ public final class ImageDisplayRegistry {
                 .forEach(image -> requireTransform(image.transformId()));
     }
 
+    /** Returns immutable registered transforms keyed by transform ID. */
     public Map<String, DisplayTransform> transforms() {
         return Collections.unmodifiableMap(transforms);
     }
 
+    /** Returns immutable registered image aliases keyed by image ID. */
     public Map<String, ImageAssetDefinition> images() {
         return Collections.unmodifiableMap(images);
     }
 
+    /** Returns immutable registered animation profiles keyed by animation ID. */
     public Map<String, DisplayAnimation> animations() {
         return Collections.unmodifiableMap(animations);
     }
 
+    /** Returns immutable layered character definitions keyed by composite ID. */
     public Map<String, LayeredCharacterDefinition> layeredCharacters() {
         return Collections.unmodifiableMap(layeredCharacters);
     }
@@ -104,6 +115,7 @@ public final class ImageDisplayRegistry {
         return layeredCharacters.get(id);
     }
 
+    /** Resolves a registered image asset path from the checked-out game tree. */
     public Optional<Path> resolveAssetPath(String imageId) {
         return assetLocator.resolve(image(imageId).sourcePath());
     }
@@ -112,6 +124,12 @@ public final class ImageDisplayRegistry {
         return repoRoot;
     }
 
+    /**
+     * Creates an image view for a registered image when the asset exists.
+     *
+     * <p>Referenced transforms apply fit size and opacity. Missing files return
+     * empty so callers can choose an appropriate fallback UI.</p>
+     */
     public Optional<ImageView> createImageView(String imageId) {
         ImageAssetDefinition definition = image(imageId);
         Optional<Path> assetPath = assetLocator.resolve(definition.sourcePath());
@@ -130,6 +148,12 @@ public final class ImageDisplayRegistry {
         return Optional.of(view);
     }
 
+    /**
+     * Creates a display node for previews, using a missing-asset label fallback.
+     *
+     * @param imageId registered image ID to resolve
+     * @return image preview node or diagnostic label naming the missing asset
+     */
     public Node createDisplayNode(String imageId) {
         return createImageView(imageId)
                 .<Node>map(view -> {
@@ -141,18 +165,22 @@ public final class ImageDisplayRegistry {
                 .orElseGet(() -> new Label("Missing asset: " + imageId + " -> " + image(imageId).sourcePath()));
     }
 
+    /** Registers or replaces a transform by ID. */
     public void registerTransform(DisplayTransform transform) {
         transforms.put(transform.id(), transform);
     }
 
+    /** Registers or replaces an image alias by ID. */
     public void registerImage(ImageAssetDefinition definition) {
         images.put(definition.id(), definition);
     }
 
+    /** Registers or replaces an animation profile by ID. */
     public void registerAnimation(DisplayAnimation animation) {
         animations.put(animation.id(), animation);
     }
 
+    /** Registers or replaces a layered character/composite definition by ID. */
     public void registerLayeredCharacter(LayeredCharacterDefinition definition) {
         layeredCharacters.put(definition.id(), definition);
     }

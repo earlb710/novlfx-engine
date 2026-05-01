@@ -14,7 +14,13 @@ import java.util.Map;
  */
 public final class TextTagParser {
 
-    /** Parses text into styled text, pause, and paragraph tokens. */
+    /**
+     * Parses text into styled text, pause, and paragraph tokens.
+     *
+     * <p>Supported tags include bold, italic, color, wait, paragraph, gradient,
+     * kinetic, and glitch markers. Unknown tags are emitted as literal text, while
+     * malformed wait durations throw an {@link IllegalArgumentException}.</p>
+     */
     public List<TextToken> parse(String source) {
         if (source == null || source.isEmpty()) {
             return List.of();

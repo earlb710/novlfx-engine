@@ -14,7 +14,12 @@ public final class GameRandomService {
     private Random gameplayRandom;
     private Random uiRandom;
 
-    /** Creates deterministic gameplay random state and separate UI random state. */
+    /**
+     * Creates deterministic gameplay random state and separate UI random state.
+     *
+     * <p>The current placeholder seed is fixed at {@code 1L} so tests and future
+     * save migration can reproduce gameplay choices.</p>
+     */
     public void initialize() {
         gameplaySeed = 1L;
         gameplayRandom = new Random(gameplaySeed);
@@ -27,13 +32,21 @@ public final class GameRandomService {
         return gameplaySeed;
     }
 
-    /** Returns the next gameplay value that should be reproducible after loading. */
+    /**
+     * Returns the next gameplay value that should be reproducible after loading.
+     *
+     * @param bound exclusive upper bound passed to {@link Random#nextInt(int)}
+     */
     public int nextGameplayInt(int bound) {
         assertInitialized();
         return gameplayRandom.nextInt(bound);
     }
 
-    /** Returns the next UI-only value that should not be written to save data. */
+    /**
+     * Returns the next UI-only value that should not be written to save data.
+     *
+     * @param bound exclusive upper bound passed to {@link Random#nextInt(int)}
+     */
     public int nextUiInt(int bound) {
         assertInitialized();
         return uiRandom.nextInt(bound);

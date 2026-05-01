@@ -8,12 +8,21 @@ import javafx.scene.layout.VBox;
 
 /**
  * Shared layout for migrated screen placeholders, replacing repeated Ren'Py frames.
+ *
+ * <p>The shell creates a root border pane with a title label and styled content
+ * panel. It assumes the caller attaches the module stylesheet that defines the
+ * {@code screen-root}, {@code screen-title}, and {@code screen-panel} classes.</p>
  */
 public final class ScreenShell {
     private ScreenShell() {
     }
 
-    /** Builds a titled panel with consistent spacing and style classes. */
+    /**
+     * Builds a titled panel with consistent spacing and style classes.
+     *
+     * @param title screen title text shown above the content panel
+     * @param content JavaFX node placed in the central panel
+     */
     public static BorderPane titled(String title, Node content) {
         Label header = new Label(title);
         header.getStyleClass().add("screen-title");

@@ -11,9 +11,21 @@ import java.util.List;
 
 /**
  * Builds JavaFX timelines from reusable ATL-style animation profiles.
+ *
+ * <p>The player converts validated display animation steps into JavaFX key frames.
+ * Reduced-motion callers receive a zero-duration timeline after the node is moved
+ * directly to the final state.</p>
  */
 public final class DisplayAnimationPlayer {
 
+    /**
+     * Builds a JavaFX timeline for the supplied node and animation profile.
+     *
+     * @param node node whose opacity, scale, and translation properties are animated
+     * @param animation validated non-empty animation profile
+     * @param reducedMotion when true, skips interpolation and applies the final step immediately
+     * @return timeline configured with repeat count and auto-reverse behavior
+     */
     public Timeline buildTimeline(Node node, DisplayAnimation animation, boolean reducedMotion) {
         if (reducedMotion) {
             applyFinalState(node, animation.steps().get(animation.steps().size() - 1));

@@ -14,7 +14,7 @@ The library publishes reusable packages in the `com.eb.javafx.*` namespace throu
   - `gamesupport`
   - `prefs`
   - `random`
-  - `renpy`
+  - `globalApi`
   - `routing`
   - `save`
   - `state`

@@ -164,4 +164,13 @@ final class TestScreenApplicationTest {
                         + "methodName = 'categoryForSourceUsesFirstPackageSegmentBelowJavafxRoot', methodParameterTypes = '']")));
         assertEquals("unknown", TestScreenApplication.categoryForSource(Optional.empty()));
     }
+
+    @Test
+    void autoCategoryTestsExcludesManualTestsFromCategoryRuns() {
+        List<String> tests = List.of("auto first", "manual", "auto second");
+
+        List<String> autoTests = TestScreenApplication.autoCategoryTests(tests, test -> test.startsWith("auto"));
+
+        assertEquals(List.of("auto first", "auto second"), autoTests);
+    }
 }

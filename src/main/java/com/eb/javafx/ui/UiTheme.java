@@ -6,6 +6,11 @@ import java.net.URL;
 
 /**
  * JavaFX theme tokens replacing Ren'Py GUI variables and shared style declarations.
+ *
+ * <p>The theme derives font, high-contrast, and reduced-motion tokens from loaded
+ * preferences and combines them with fixed migrated color defaults. The stylesheet
+ * is loaded from module resources and reported as a startup asset failure when
+ * missing.</p>
  */
 public final class UiTheme {
     private String fontFamily;
@@ -17,7 +22,11 @@ public final class UiTheme {
     private boolean highContrast;
     private boolean reducedMotion;
 
-    /** Loads the first JavaFX theme from preferences and fixed migrated GUI values. */
+    /**
+     * Loads the first JavaFX theme from preferences and fixed migrated GUI values.
+     *
+     * @param preferencesService loaded preferences supplying font and accessibility tokens
+     */
     public void initialize(PreferencesService preferencesService) {
         fontFamily = preferencesService.fontFamily();
         fontScale = preferencesService.fontScale();
@@ -61,7 +70,11 @@ public final class UiTheme {
         return reducedMotion;
     }
 
-    /** Returns the module stylesheet used by migrated placeholder screens. */
+    /**
+     * Returns the module stylesheet used by migrated placeholder screens.
+     *
+     * @throws StartupFailureException when the CSS resource is missing
+     */
     public String stylesheet() {
         URL stylesheet = UiTheme.class.getResource("/com/eb/javafx/ui/eb.css");
         if (stylesheet == null) {

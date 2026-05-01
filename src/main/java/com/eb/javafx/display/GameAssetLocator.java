@@ -12,15 +12,31 @@ import java.util.stream.Stream;
 
 /**
  * Resolves display assets from the checked-out game tree.
+ *
+ * <p>The locator expects a repository root containing a {@code game} directory.
+ * It first tries a direct normalized path, then lazily indexes supported image
+ * files and matches by suffix or filename; unresolved or blank paths return
+ * {@link Optional#empty()} rather than throwing.</p>
  */
 public final class GameAssetLocator {
     private final Path repoRoot;
     private List<Path> indexedFiles;
 
+    /**
+     * Creates a locator rooted at the checked-out repository directory.
+     *
+     * @param repoRoot path whose {@code game} child contains migrated assets
+     */
     public GameAssetLocator(Path repoRoot) {
         this.repoRoot = repoRoot;
     }
 
+    /**
+     * Resolves an authored display source path to an existing image file.
+     *
+     * @param sourcePath relative game asset path using either slash style
+     * @return existing normalized path when found, otherwise empty
+     */
     public Optional<Path> resolve(String sourcePath) {
         if (sourcePath == null || sourcePath.isBlank()) {
             return Optional.empty();

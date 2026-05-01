@@ -11,7 +11,12 @@ import com.eb.javafx.content.ContentRegistry;
  */
 public final class GameStateFactory {
 
-    /** Creates the initial placeholder state for a new JavaFX game session. */
+    /**
+     * Creates the initial placeholder state for a new JavaFX game session.
+     *
+     * <p>The supplied content registry must already have validated the
+     * {@code startup.route} definition used to seed the state.</p>
+     */
     public GameState createNewGame(ContentRegistry contentRegistry) {
         return new GameState(contentRegistry.definition("startup.route"));
     }

@@ -2,6 +2,10 @@ package com.eb.javafx.routing;
 
 /**
  * Metadata for a JavaFX route replacing a Ren'Py screen or label entry point.
+ *
+ * <p>The descriptor records the stable route ID, content definition used for the
+ * title, high-level category, whether the route is fully migrated, and human
+ * status text for diagnostics or route inventory screens.</p>
  */
 public final class RouteDescriptor {
     private final String id;
@@ -10,6 +14,15 @@ public final class RouteDescriptor {
     private final boolean migrated;
     private final String status;
 
+    /**
+     * Creates route metadata.
+     *
+     * @param id stable route ID used by {@link SceneRouter#open(String)}
+     * @param titleDefinition content-registry key for the route title
+     * @param category route grouping for diagnostics and navigation
+     * @param migrated whether this route is implemented rather than a placeholder
+     * @param status human-readable migration or behavior note
+     */
     public RouteDescriptor(
             String id,
             String titleDefinition,
@@ -35,6 +48,7 @@ public final class RouteDescriptor {
         return category;
     }
 
+    /** Returns whether the route is considered migrated rather than placeholder-only. */
     public boolean migrated() {
         return migrated;
     }

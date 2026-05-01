@@ -49,7 +49,13 @@ public final class SceneRouter {
     private final Map<String, Supplier<Scene>> routes = new LinkedHashMap<>();
     private final Map<String, RouteDescriptor> routeDescriptors = new LinkedHashMap<>();
 
-    /** Registers routes that must exist before startup can display the first scene. */
+    /**
+     * Registers routes that must exist before startup can display the first scene.
+     *
+     * <p>Route factories capture initialized services and currently build shell or
+     * placeholder scenes. Re-registering a route ID replaces the previous factory
+     * and descriptor.</p>
+     */
     public void registerDefaultRoutes(
             Stage primaryStage,
             PreferencesService preferencesService,
@@ -166,7 +172,11 @@ public final class SceneRouter {
         return Collections.unmodifiableMap(routeDescriptors);
     }
 
-    /** Ensures every registered route has content-backed title text. */
+    /**
+     * Ensures every registered route has content-backed title text.
+     *
+     * @throws IllegalStateException when any descriptor references a missing title definition
+     */
     public void validateRouteDefinitions(ContentRegistry contentRegistry) {
         routeDescriptors.values().forEach(descriptor ->
                 contentRegistry.definition(descriptor.titleDefinition()));

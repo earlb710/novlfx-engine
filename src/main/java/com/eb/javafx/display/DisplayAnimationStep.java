@@ -2,6 +2,11 @@ package com.eb.javafx.display;
 
 /**
  * One ATL-style animation step for a JavaFX node.
+ *
+ * <p>Each step can pause, then transition a node toward target opacity, scale,
+ * and translation values using a supported interpolation curve. Durations are
+ * non-negative milliseconds, opacity is {@code 0.0..1.0}, and scale values must
+ * remain positive.</p>
  */
 public final class DisplayAnimationStep {
     private final long durationMillis;
@@ -13,6 +18,18 @@ public final class DisplayAnimationStep {
     private final double targetTranslateY;
     private final DisplayInterpolation interpolation;
 
+    /**
+     * Creates a validated animation step.
+     *
+     * @param durationMillis transition duration in milliseconds, zero or positive
+     * @param pauseBeforeMillis delay before this transition, zero or positive
+     * @param targetOpacity final opacity from {@code 0.0} to {@code 1.0}
+     * @param targetScaleX final horizontal scale, greater than zero
+     * @param targetScaleY final vertical scale, greater than zero
+     * @param targetTranslateX final horizontal translation in pixels
+     * @param targetTranslateY final vertical translation in pixels
+     * @param interpolation interpolation curve; linear when null
+     */
     public DisplayAnimationStep(
             long durationMillis,
             long pauseBeforeMillis,

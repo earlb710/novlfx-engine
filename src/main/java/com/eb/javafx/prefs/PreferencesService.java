@@ -40,7 +40,12 @@ public final class PreferencesService {
     private String inputMode;
     private double masterVolume;
 
-    /** Loads startup preferences with conservative defaults for the first shell. */
+    /**
+     * Loads startup preferences with conservative defaults for the first shell.
+     *
+     * <p>Values are read from Java user preferences and clamped or normalized before
+     * callers consume them during bootstrap.</p>
+     */
     public void load() {
         windowWidth = clamp(preferences.getInt(WIDTH_KEY, 1280), 640, 3840);
         windowHeight = clamp(preferences.getInt(HEIGHT_KEY, 720), 480, 2160);
@@ -127,7 +132,7 @@ public final class PreferencesService {
         return masterVolume;
     }
 
-    /** Persists a validated window size separately from save-game state. */
+    /** Persists a clamped window size separately from save-game state. */
     public void saveWindowSize(double width, double height) {
         preferences.putInt(WIDTH_KEY, clamp((int) Math.round(width), 640, 3840));
         preferences.putInt(HEIGHT_KEY, clamp((int) Math.round(height), 480, 2160));
@@ -151,7 +156,12 @@ public final class PreferencesService {
         preferences.putDouble(SAY_WINDOW_ALPHA_KEY, this.sayWindowAlpha);
     }
 
-    /** Persists font preferences and updates the loaded model. */
+    /**
+     * Persists font preferences and updates the loaded model.
+     *
+     * <p>Blank font families fall back to {@code System}; scale is clamped to the
+     * accessible startup range.</p>
+     */
     public void saveFontPreferences(String fontFamily, double fontScale) {
         this.fontFamily = fontFamily == null || fontFamily.isBlank() ? "System" : fontFamily;
         this.fontScale = clamp(fontScale, 0.75, 2.0);
@@ -167,13 +177,13 @@ public final class PreferencesService {
         this.reducedMotion = reducedMotion;
     }
 
-    /** Persists the preferred input mode and updates the loaded model. */
+    /** Persists the preferred input mode, accepting only keyboard, mouse, or touch. */
     public void saveInputMode(String inputMode) {
         this.inputMode = validatedInputMode(inputMode);
         preferences.put(INPUT_MODE_KEY, this.inputMode);
     }
 
-    /** Persists master volume for section 1.5 audio service startup. */
+    /** Persists clamped master volume for section 1.5 audio service startup. */
     public void saveMasterVolume(double masterVolume) {
         this.masterVolume = clamp(masterVolume, 0.0, 1.0);
         preferences.putDouble(MASTER_VOLUME_KEY, this.masterVolume);

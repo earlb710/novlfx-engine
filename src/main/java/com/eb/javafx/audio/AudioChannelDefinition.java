@@ -4,7 +4,9 @@ package com.eb.javafx.audio;
  * Describes a named audio channel that replaces Ren'Py music/sound channels.
  *
  * <p>The definition is intentionally data-only: migrated systems can validate
- * channel IDs before playback code loads JavaFX media resources.</p>
+ * channel IDs before playback code loads JavaFX media resources. IDs and
+ * descriptions must be non-blank, simultaneous sound capacity must be positive,
+ * and default volume must be within the inclusive {@code 0.0..1.0} range.</p>
  */
 public final class AudioChannelDefinition {
     private final String id;
@@ -13,6 +15,15 @@ public final class AudioChannelDefinition {
     private final int simultaneousSounds;
     private final double defaultVolume;
 
+    /**
+     * Creates validated channel metadata for the audio boundary.
+     *
+     * @param id stable channel ID used by {@link AudioService}
+     * @param description human-readable purpose shown in diagnostics
+     * @param loopingAllowed whether looped requests are valid on this channel
+     * @param simultaneousSounds maximum overlapping sounds the future adapter should allow
+     * @param defaultVolume startup multiplier from {@code 0.0} to {@code 1.0}
+     */
     public AudioChannelDefinition(
             String id,
             String description,

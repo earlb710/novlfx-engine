@@ -40,7 +40,11 @@ public final class SaveLoadService {
         this.configuredSaveDirectory = saveDirectory;
     }
 
-    /** Marks the service as ready so future load calls can assert startup order. */
+    /**
+     * Initializes schema metadata and creates the configured save directory.
+     *
+     * @throws IllegalStateException when the save directory cannot be created
+     */
     public void initialize() {
         schema = new SaveSchema(
                 CURRENT_SCHEMA_VERSION,
@@ -70,7 +74,13 @@ public final class SaveLoadService {
         return version == schema.version();
     }
 
-    /** Writes a lightweight versioned save-slot summary for migrated save/load UI. */
+    /**
+     * Writes a lightweight versioned save-slot summary for migrated save/load UI.
+     *
+     * <p>Slots are numbered 1 through 999 and stored as {@code slot-NNN.properties}
+     * files. This summary records metadata only; full game-state serialization is
+     * intentionally deferred.</p>
+     */
     public SaveSlotSummary writeSlotSummary(int slot, GameState gameState, String description, Instant savedAt) {
         assertInitialized();
         validateSlot(slot);
@@ -97,7 +107,11 @@ public final class SaveLoadService {
         return summary;
     }
 
-    /** Reads a versioned save-slot summary without hydrating full game state. */
+    /**
+     * Reads a versioned save-slot summary without hydrating full game state.
+     *
+     * @throws IllegalStateException when the slot is missing, unreadable, or schema-incompatible
+     */
     public SaveSlotSummary readSlotSummary(int slot) {
         assertInitialized();
         validateSlot(slot);
@@ -123,7 +137,7 @@ public final class SaveLoadService {
                 Instant.parse(properties.getProperty("savedAt")));
     }
 
-    /** Lists readable save-slot summaries ordered by slot number. */
+    /** Lists readable, schema-compatible save-slot summaries ordered by slot number. */
     public List<SaveSlotSummary> listSlotSummaries() {
         assertInitialized();
         List<SaveSlotSummary> summaries = new ArrayList<>();
@@ -141,7 +155,7 @@ public final class SaveLoadService {
         return List.copyOf(summaries);
     }
 
-    /** Returns the properties-file path for a save slot. */
+    /** Returns the validated properties-file path for a slot numbered 1 through 999. */
     public Path slotPath(int slot) {
         assertInitialized();
         validateSlot(slot);
@@ -160,7 +174,12 @@ public final class SaveLoadService {
         }
     }
 
-    /** Minimal versioned save schema descriptor for migrated save/load screens. */
+    /**
+     * Minimal versioned save schema descriptor for migrated save/load screens.
+     *
+     * <p>The version controls compatibility checks and the save directory is owned
+     * by {@link SaveLoadService}, which creates it during initialization.</p>
+     */
     public static final class SaveSchema {
         private final int version;
         private final Path saveDirectory;
@@ -170,16 +189,24 @@ public final class SaveLoadService {
             this.saveDirectory = saveDirectory;
         }
 
+        /** Returns the schema version that summaries must match to load without migration. */
         public int version() {
             return version;
         }
 
+        /** Returns the directory containing versioned save-slot property files. */
         public Path saveDirectory() {
             return saveDirectory;
         }
     }
 
-    /** Lightweight save-slot metadata used before full state hydration exists. */
+    /**
+     * Lightweight save-slot metadata used before full state hydration exists.
+     *
+     * <p>The summary captures slot number, schema version, startup route, optional
+     * description, and save timestamp so UI can list saves without deserializing
+     * future mutable gameplay state.</p>
+     */
     public static final class SaveSlotSummary {
         private final int slot;
         private final int schemaVersion;
@@ -195,22 +222,27 @@ public final class SaveLoadService {
             this.savedAt = savedAt;
         }
 
+        /** Returns the one-based save slot number. */
         public int slot() {
             return slot;
         }
 
+        /** Returns the schema version stored with this summary. */
         public int schemaVersion() {
             return schemaVersion;
         }
 
+        /** Returns the route that should be entered after loading this save. */
         public String startupRoute() {
             return startupRoute;
         }
 
+        /** Returns the optional player/debug-facing save description. */
         public String description() {
             return description;
         }
 
+        /** Returns the timestamp recorded when the summary was written. */
         public Instant savedAt() {
             return savedAt;
         }
