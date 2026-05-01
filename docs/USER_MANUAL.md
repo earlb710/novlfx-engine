@@ -80,6 +80,25 @@ Inspect the `BootstrapReport` when startup diagnostics matter. It records comple
 
 Do not use guarded services before initialization. Several services use initialization guards and will fail fast if called before bootstrap or explicit initialization.
 
+Applications can also keep an external `config.json` and load it with `ApplicationResourceConfig.load(Path)` when authored resources need to live outside the engine defaults. The config stores a category code-table JSON path, an image asset root, and a generic `resources` map for other overrideable files such as themes or image groups:
+
+```json
+{
+  "categoryCodeTablesPath": "config/category-code-tables.en.json",
+  "imageAssetRoot": "game",
+  "resources": {
+    "uiTheme": "src/main/resources/com/eb/javafx/ui/eb.css",
+    "backgrounds": "assets/backgrounds"
+  }
+}
+```
+
+Resolve those paths relative to an application-chosen base directory:
+
+- `resolveCategoryCodeTables(baseDir)` returns the authored category JSON file to pass into `CategoryCodeTableDefinition.load(...)`.
+- `resolveImageAssetRoot(baseDir)` returns the image root to pass into `new ImageDisplayRegistry(repoRoot, imageAssetRoot)`.
+- `resolveResource(baseDir, "backgrounds")` resolves other named override points that the application owns.
+
 ## 5. Content, routing, and scenes
 
 ### Static content

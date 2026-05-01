@@ -38,9 +38,20 @@ public final class ImageDisplayRegistry {
         this(detectRepoRoot());
     }
 
-    ImageDisplayRegistry(Path repoRoot) {
+    public ImageDisplayRegistry(Path repoRoot) {
         this.repoRoot = repoRoot;
         this.assetLocator = new GameAssetLocator(repoRoot);
+    }
+
+    /**
+     * Creates a registry rooted at the supplied repository/application directory and image asset root.
+     *
+     * <p>This overload is useful when an application supplies an external config file
+     * that relocates authored image assets away from the default {@code game} directory.</p>
+     */
+    public ImageDisplayRegistry(Path repoRoot, Path imageAssetRoot) {
+        this.repoRoot = repoRoot;
+        this.assetLocator = new GameAssetLocator(repoRoot, imageAssetRoot);
     }
 
     /**

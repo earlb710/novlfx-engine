@@ -2,6 +2,7 @@ package com.eb.javafx.gamesupport;
 
 import com.eb.javafx.util.Validation;
 import com.eb.javafx.util.JsonStrings;
+import com.eb.javafx.util.SimpleJson;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -49,7 +50,7 @@ public final class CategoryCodeTableDefinition {
     }
 
     static CategoryCodeTableDefinition fromJson(String json, String sourceName) {
-        Object root = new JsonParser(json, sourceName).parse();
+        Object root = SimpleJson.parse(json, sourceName);
         Map<String, Object> rootObject = requireObject(root, "root");
         String language = requireString(rootObject, "language", "root.language");
         List<CodeTableDefinition> tables = requireArray(rootObject, "tables", "root.tables").stream()
@@ -246,192 +247,4 @@ public final class CategoryCodeTableDefinition {
         }
     }
 
-    private static final class JsonParser {
-        private final String json;
-        private final String sourceName;
-        private int index;
-
-        private JsonParser(String json, String sourceName) {
-            this.json = Validation.requireNonNull(json, "Category code table JSON is required.");
-            this.sourceName = sourceName == null || sourceName.isBlank() ? "category code table JSON" : sourceName;
-        }
-
-        private Object parse() {
-            Object value = parseValue();
-            skipWhitespace();
-            if (index != json.length()) {
-                throw error("Unexpected content after JSON document.");
-            }
-            return value;
-        }
-
-        private Object parseValue() {
-            skipWhitespace();
-            if (index >= json.length()) {
-                throw error("Unexpected end of JSON document.");
-            }
-            char character = json.charAt(index);
-            return switch (character) {
-                case '{' -> parseObject();
-                case '[' -> parseArray();
-                case '"' -> parseString();
-                case '-' -> parseNumber();
-                default -> {
-                    if (Character.isDigit(character)) {
-                        yield parseNumber();
-                    }
-                    if (json.startsWith("true", index)) {
-                        index += 4;
-                        yield Boolean.TRUE;
-                    }
-                    if (json.startsWith("false", index)) {
-                        index += 5;
-                        yield Boolean.FALSE;
-                    }
-                    if (json.startsWith("null", index)) {
-                        index += 4;
-                        yield null;
-                    }
-                    throw error("Unsupported JSON value.");
-                }
-            };
-        }
-
-        private Map<String, Object> parseObject() {
-            expect('{');
-            Map<String, Object> object = new LinkedHashMap<>();
-            skipWhitespace();
-            if (peek('}')) {
-                index++;
-                return object;
-            }
-            while (true) {
-                skipWhitespace();
-                String key = parseString();
-                skipWhitespace();
-                expect(':');
-                object.put(key, parseValue());
-                skipWhitespace();
-                if (peek('}')) {
-                    index++;
-                    return object;
-                }
-                expect(',');
-            }
-        }
-
-        private List<Object> parseArray() {
-            expect('[');
-            List<Object> values = new ArrayList<>();
-            skipWhitespace();
-            if (peek(']')) {
-                index++;
-                return values;
-            }
-            while (true) {
-                values.add(parseValue());
-                skipWhitespace();
-                if (peek(']')) {
-                    index++;
-                    return values;
-                }
-                expect(',');
-            }
-        }
-
-        private String parseString() {
-            expect('"');
-            StringBuilder parsed = new StringBuilder();
-            while (index < json.length()) {
-                char character = json.charAt(index++);
-                if (character == '"') {
-                    return parsed.toString();
-                }
-                if (character == '\\') {
-                    appendEscapedCharacter(parsed);
-                } else {
-                    if (character < 0x20) {
-                        throw error("Control character is not allowed in a JSON string.");
-                    }
-                    parsed.append(character);
-                }
-            }
-            throw error("Unterminated JSON string.");
-        }
-
-        private void appendEscapedCharacter(StringBuilder parsed) {
-            if (index >= json.length()) {
-                throw error("Unterminated JSON escape.");
-            }
-            char escaped = json.charAt(index++);
-            switch (escaped) {
-                case '"' -> parsed.append('"');
-                case '\\' -> parsed.append('\\');
-                case '/' -> parsed.append('/');
-                case 'b' -> parsed.append('\b');
-                case 'f' -> parsed.append('\f');
-                case 'n' -> parsed.append('\n');
-                case 'r' -> parsed.append('\r');
-                case 't' -> parsed.append('\t');
-                case 'u' -> parsed.append(parseUnicodeEscape());
-                default -> throw error("Unsupported JSON escape.");
-            }
-        }
-
-        private char parseUnicodeEscape() {
-            if (index + 4 > json.length()) {
-                throw error("Incomplete JSON unicode escape.");
-            }
-            try {
-                char value = (char) Integer.parseInt(json.substring(index, index + 4), 16);
-                index += 4;
-                return value;
-            } catch (NumberFormatException exception) {
-                throw error("Invalid JSON unicode escape.");
-            }
-        }
-
-        private int parseNumber() {
-            int start = index;
-            if (peek('-')) {
-                index++;
-            }
-            if (index >= json.length() || !Character.isDigit(json.charAt(index))) {
-                throw error("Invalid JSON integer.");
-            }
-            while (index < json.length() && Character.isDigit(json.charAt(index))) {
-                index++;
-            }
-            if (index < json.length() && (json.charAt(index) == '.' || json.charAt(index) == 'e' || json.charAt(index) == 'E')) {
-                throw error("Only JSON integers are supported here.");
-            }
-            try {
-                return Integer.parseInt(json.substring(start, index));
-            } catch (NumberFormatException exception) {
-                throw error("JSON integer is out of range.");
-            }
-        }
-
-        private void expect(char expected) {
-            skipWhitespace();
-            if (index >= json.length() || json.charAt(index) != expected) {
-                throw error("Expected '" + expected + "'.");
-            }
-            index++;
-        }
-
-        private boolean peek(char expected) {
-            return index < json.length() && json.charAt(index) == expected;
-        }
-
-        private void skipWhitespace() {
-            while (index < json.length() && Character.isWhitespace(json.charAt(index))) {
-                index++;
-            }
-        }
-
-        private IllegalArgumentException error(String message) {
-            return new IllegalArgumentException(message + " Source: " + sourceName + " at index " + index + ".");
-        }
-    }
 }

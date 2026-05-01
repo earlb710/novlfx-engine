@@ -22,6 +22,7 @@ import java.util.stream.Stream;
  */
 public final class GameAssetLocator {
     private final Path repoRoot;
+    private final Path assetRoot;
     private List<Path> indexedFiles;
 
     /**
@@ -30,7 +31,18 @@ public final class GameAssetLocator {
      * @param repoRoot path whose {@code game} child contains migrated assets
      */
     public GameAssetLocator(Path repoRoot) {
-        this.repoRoot = repoRoot;
+        this(repoRoot, repoRoot.resolve("game"));
+    }
+
+    /**
+     * Creates a locator rooted at the checked-out repository directory with a configurable image root.
+     *
+     * @param repoRoot repository/application root used for diagnostics
+     * @param assetRoot directory containing authored image assets
+     */
+    public GameAssetLocator(Path repoRoot, Path assetRoot) {
+        this.repoRoot = repoRoot.normalize();
+        this.assetRoot = assetRoot.normalize();
     }
 
     /**
@@ -45,8 +57,7 @@ public final class GameAssetLocator {
         }
 
         String normalized = PathUtils.normalizeSeparators(sourcePath);
-        Path gameRoot = repoRoot.resolve("game");
-        Path direct = PathUtils.resolveChild(gameRoot, normalized);
+        Path direct = PathUtils.resolveChild(assetRoot, normalized);
         if (Files.exists(direct)) {
             return Optional.of(direct.normalize());
         }
@@ -65,14 +76,13 @@ public final class GameAssetLocator {
     private List<Path> indexedFiles() {
         if (indexedFiles == null) {
             indexedFiles = new ArrayList<>();
-            Path gameRoot = repoRoot.resolve("game");
-            if (Files.isDirectory(gameRoot)) {
-                try (Stream<Path> stream = Files.walk(gameRoot)) {
+            if (Files.isDirectory(assetRoot)) {
+                try (Stream<Path> stream = Files.walk(assetRoot)) {
                     stream.filter(Files::isRegularFile)
                             .filter(this::isSupportedImage)
                             .forEach(indexedFiles::add);
                 } catch (IOException exception) {
-                    throw new IllegalStateException("Unable to index game assets from " + gameRoot, exception);
+                    throw new IllegalStateException("Unable to index game assets from " + assetRoot, exception);
                 }
             }
         }
@@ -85,6 +95,6 @@ public final class GameAssetLocator {
     }
 
     private String relativeGamePath(Path path) {
-        return PathUtils.normalizeSeparators(repoRoot.resolve("game").relativize(path).toString());
+        return PathUtils.normalizeSeparators(assetRoot.relativize(path).toString());
     }
 }
