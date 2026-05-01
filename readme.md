@@ -1,8 +1,8 @@
 # novlfx-engine
 
-Reusable JavaFX foundation extracted from Lr2Alt.
+Reusable JavaFX foundation extracted from eb.
 
-This initial snapshot intentionally preserves the existing `com.lr2alt.javafx.*` package names while publishing them from the `com.novlfx.engine` Java module. Rename packages later after Lr2Alt consumes the library dependency.
+This initial snapshot intentionally preserves the existing `com.eb.javafx.*` package names while publishing them from the `com.novlfx.engine` Java module. Rename packages later after eb consumes the library dependency.
 
 ## Included
 
@@ -20,17 +20,17 @@ This initial snapshot intentionally preserves the existing `com.lr2alt.javafx.*`
   - `state`
   - `text`
   - `ui`
-- `src/main/resources/com/lr2alt/javafx/ui/lr2alt.css`
+- `src/main/resources/com/eb/javafx/ui/eb.css`
 - Matching JUnit tests for the reusable packages
 - Test-only `testscreen` support used by the copied UI tests
 
 ## Excluded
 
-- Lr2Alt application entry point: `GameApplication`
-- Authored Lr2Alt game content: `gamecontent/display`
-- Ren'Py game scripts and assets from Lr2Alt's `game` directory
-- Extraction metadata classes from Lr2Alt's `engine` package
-- Lr2Alt-specific migration docs
+- eb application entry point: `GameApplication`
+- Authored eb game content: `gamecontent/display`
+- Ren'Py game scripts and assets from eb's `game` directory
+- Extraction metadata classes from eb's `engine` package
+- eb-specific migration docs
 
 ## Validate
 
