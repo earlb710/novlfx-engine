@@ -14,6 +14,9 @@ import com.eb.javafx.scene.SceneRegistry;
 import com.eb.javafx.state.GameState;
 import com.eb.javafx.ui.UiTheme;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
 /**
  * Immutable handoff object returned after startup completes.
  *
@@ -37,6 +40,8 @@ public final class BootContext {
     private final SceneRouter sceneRouter;
     private final UiTheme uiTheme;
     private final GameState gameState;
+    private final Path applicationRoot;
+    private final ApplicationResourceConfig resourceConfig;
     private final BootstrapReport bootstrapReport;
 
     /**
@@ -72,6 +77,31 @@ public final class BootContext {
             UiTheme uiTheme,
             GameState gameState,
             BootstrapReport bootstrapReport) {
+        this(preferencesService, contentRegistry, imageDisplayRegistry, saveLoadService, randomService, audioService,
+                gameSupportService, sceneRegistry, sceneExecutor, globalApiAdapter, sceneRouter, uiTheme, gameState,
+                Paths.get("").toAbsolutePath().normalize(), ApplicationResourceConfig.defaults(), bootstrapReport);
+    }
+
+    /**
+     * Creates a completed startup handoff with initialized services, state, and application resource paths.
+     */
+    public BootContext(
+            PreferencesService preferencesService,
+            ContentRegistry contentRegistry,
+            ImageDisplayRegistry imageDisplayRegistry,
+            SaveLoadService saveLoadService,
+            GameRandomService randomService,
+            AudioService audioService,
+            GameSupportService gameSupportService,
+            SceneRegistry sceneRegistry,
+            SceneExecutor sceneExecutor,
+            GlobalApiAdapter globalApiAdapter,
+            SceneRouter sceneRouter,
+            UiTheme uiTheme,
+            GameState gameState,
+            Path applicationRoot,
+            ApplicationResourceConfig resourceConfig,
+            BootstrapReport bootstrapReport) {
         this.preferencesService = preferencesService;
         this.contentRegistry = contentRegistry;
         this.imageDisplayRegistry = imageDisplayRegistry;
@@ -85,6 +115,8 @@ public final class BootContext {
         this.sceneRouter = sceneRouter;
         this.uiTheme = uiTheme;
         this.gameState = gameState;
+        this.applicationRoot = applicationRoot.toAbsolutePath().normalize();
+        this.resourceConfig = resourceConfig;
         this.bootstrapReport = bootstrapReport;
     }
 
@@ -118,7 +150,7 @@ public final class BootContext {
         return audioService;
     }
 
-    /** Returns no-content game support systems such as actions and clock/scheduling primitives. */
+    /** Returns generic game-support systems such as actions and clock/scheduling primitives. */
     public GameSupportService gameSupportService() {
         return gameSupportService;
     }
@@ -128,7 +160,7 @@ public final class BootContext {
         return sceneRegistry;
     }
 
-    /** Returns the headless executor for section 1.3 scene flows. */
+    /** Returns the headless executor for structured scene flows. */
     public SceneExecutor sceneExecutor() {
         return sceneExecutor;
     }
@@ -151,6 +183,16 @@ public final class BootContext {
     /** Returns the mutable runtime state for a new game placeholder. */
     public GameState gameState() {
         return gameState;
+    }
+
+    /** Returns the application directory used to resolve configured resource paths. */
+    public Path applicationRoot() {
+        return applicationRoot;
+    }
+
+    /** Returns resource locations supplied to bootstrap, or engine defaults when none were supplied. */
+    public ApplicationResourceConfig resourceConfig() {
+        return resourceConfig;
     }
 
     /** Returns phase-by-phase startup diagnostics for progress UI and tests. */

@@ -1,7 +1,7 @@
 package com.eb.javafx.gamesupport;
 
 /**
- * Owns generic section 2 support systems without registering authored game content.
+ * Owns generic game-support systems without registering authored game content.
  *
  * <p>The service creates reusable action and scheduling infrastructure during
  * startup, but intentionally does not register game-authored actions. Content

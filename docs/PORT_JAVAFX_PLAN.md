@@ -91,6 +91,8 @@ When porting code from an application into `novlfx-engine`:
 
 The engine currently publishes the `com.novlfx.engine` Java module with reusable `com.eb.javafx.*` packages for audio, bootstrap, content, display, game support, preferences, random, global API adapters, routing, save/load, scene flow, state, text, UI, and utilities.
 
+Bootstrap can be configured with `BootstrapOptions`, which groups an application root, JSON-backed `ApplicationResourceConfig`, static content modules, scene modules, and route modules. Options-based bootstrap keeps defaults available while allowing consuming applications to relocate image assets and other app-owned resources without hard-coding paths into the engine.
+
 Validation for this repository should continue to use the checked-in Gradle wrapper:
 
 ```bash

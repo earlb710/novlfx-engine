@@ -4,7 +4,7 @@ import java.util.Objects;
 import java.util.List;
 
 /**
- * Generic calendar/time-slot service for section 2 scheduling support.
+ * Generic calendar/time-slot service for reusable scheduling support.
  *
  * <p>The clock uses a project-supplied code table for slots so engines can define
  * any slot sequence instead of inheriting game-specific morning/afternoon-style

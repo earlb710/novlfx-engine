@@ -61,6 +61,8 @@ Use these packages from an application project instead of copying source-engine-
 
 Use `BootstrapService` when you want the engine to create and initialize the standard reusable services in the correct order. The bootstrap process loads preferences, initializes save/load, random, audio, game-support, and theme services, registers static content and route modules, validates game rules, and creates runtime state.
 
+For application integration, prefer `BootstrapOptions` with the options-based `BootstrapService` constructor. Options group the application root, `ApplicationResourceConfig`, static content modules, scene modules, and route modules. When created this way, bootstrap constructs its `ImageDisplayRegistry` from the configured image asset root and exposes both the application root and resource config from `BootContext`.
+
 The main result is a `BootContext`. Use it to access initialized services such as:
 
 - `PreferencesService`
@@ -96,8 +98,18 @@ Applications can also keep an external `config.json` and load it with `Applicati
 Resolve those paths relative to an application-chosen base directory:
 
 - `resolveCategoryCodeTables(baseDir)` returns the authored category JSON file to pass into `CategoryCodeTableDefinition.load(...)`.
-- `resolveImageAssetRoot(baseDir)` returns the image root to pass into `new ImageDisplayRegistry(repoRoot, imageAssetRoot)`.
+- `resolveImageAssetRoot(baseDir)` returns the image root used by options-based bootstrap or to pass into `new ImageDisplayRegistry(repoRoot, imageAssetRoot)`.
 - `resolveResource(baseDir, "backgrounds")` resolves other named override points that the application owns.
+
+```java
+BootstrapOptions options = BootstrapOptions.fromConfig(appRoot.resolve("config.json"))
+        .withStaticContentModules(staticModules)
+        .withSceneModules(sceneModules)
+        .withRouteModules(routeModules);
+BootContext context = new BootstrapService(options).boot(primaryStage);
+```
+
+Use `context.resourceConfig().resolveCategoryCodeTables(context.applicationRoot())` when app-owned content modules need to load generic category JSON during startup.
 
 ## 5. Content, routing, and scenes
 

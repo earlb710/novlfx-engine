@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-/** Generic deterministic registry for no-content section 2 descriptors. */
+/** Generic deterministic registry for reusable static game-support descriptors. */
 public final class DefinitionRegistry<T extends IdentifiedDefinition> {
     private final String definitionName;
     private final Map<String, T> definitions = new LinkedHashMap<>();
