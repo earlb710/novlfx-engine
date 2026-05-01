@@ -40,7 +40,7 @@ This initial snapshot intentionally preserves the existing `com.lr2alt.javafx.*`
 
 ## Android Studio
 
-- Open `/home/runner/work/novlfx-engine/novlfx-engine` as a Gradle project in Android Studio.
+- Open the repository root as a Gradle project in Android Studio.
 - Let Android Studio use the checked-in Gradle wrapper during sync.
 - Use the shared **Build** and **Test** Gradle run configurations, or run the same tasks from the Gradle tool window.
 - Keep `local.properties` local to your machine; Android Studio will create or update it with your SDK path as needed.
