@@ -92,7 +92,9 @@ public final class ContentRegistry {
     }
 
     private String validateId(String id) {
-        Objects.requireNonNull(id, "Definition ID must not be null.");
+        if (id == null) {
+            throw new IllegalArgumentException("Definition ID must not be null.");
+        }
         if (id.isBlank()) {
             throw new IllegalArgumentException("Definition ID must not be blank.");
         }

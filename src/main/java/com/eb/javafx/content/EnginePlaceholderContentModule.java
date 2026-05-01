@@ -25,9 +25,9 @@ public final class EnginePlaceholderContentModule implements StaticContentModule
         definitions.put("ui.displayBindings.title", "Display Bindings Preview");
         definitions.put("ui.captureTest.title", "Capture Test Screen");
 
-        contentRegistry.registerDefinitions(definitions);
         contentRegistry.registerRequiredDefinition("application.name");
         contentRegistry.registerRequiredDefinition("startup.route");
+        contentRegistry.registerDefinitions(definitions);
     }
 
     @Override

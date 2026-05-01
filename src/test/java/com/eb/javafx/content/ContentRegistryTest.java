@@ -117,4 +117,14 @@ final class ContentRegistryTest {
 
         assertEquals("Definition ID must not be blank.", exception.getMessage());
     }
+
+    @Test
+    void nullDefinitionIdsFailClearly() {
+        ContentRegistry registry = new ContentRegistry();
+
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
+                registry.registerDefinition(null, "value"));
+
+        assertEquals("Definition ID must not be null.", exception.getMessage());
+    }
 }
