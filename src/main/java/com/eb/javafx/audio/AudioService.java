@@ -27,7 +27,7 @@ public final class AudioService {
     private boolean muted;
     private double masterVolume;
 
-    /** Registers default eb-compatible channel names and loads master volume. */
+    /** Registers default channel names and loads master volume. */
     public void initialize(PreferencesService preferencesService) {
         if (preferencesService == null) {
             throw new IllegalArgumentException("Preferences service is required for audio initialization.");

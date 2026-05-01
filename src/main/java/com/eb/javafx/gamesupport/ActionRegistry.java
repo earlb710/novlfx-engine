@@ -8,7 +8,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-/** Registry for generic actions before authored eb action content is migrated. */
+/** Registry for generic authored actions. */
 public final class ActionRegistry {
     private final Map<String, GameAction> actions = new LinkedHashMap<>();
 
