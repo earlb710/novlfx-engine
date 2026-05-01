@@ -123,7 +123,7 @@ public final class BootContext {
         return sceneRouter;
     }
 
-    /** Returns JavaFX theme tokens replacing Ren'Py GUI/style values. */
+    /** Returns JavaFX theme tokens for GUI/style values. */
     public UiTheme uiTheme() {
         return uiTheme;
     }

@@ -7,7 +7,7 @@ import java.util.Random;
 /**
  * Separates deterministic gameplay randomness from non-persistent UI effects.
  *
- * <p>Ren'Py's random helpers are globally available. The JavaFX port keeps random
+ * <p>Source engines often expose random helpers globally. The JavaFX port keeps random
  * values behind this service so gameplay seeds can later be serialized without
  * making UI animation randomness part of save-game state.</p>
  */

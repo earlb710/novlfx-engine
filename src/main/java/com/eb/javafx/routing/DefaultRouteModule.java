@@ -50,7 +50,7 @@ public final class DefaultRouteModule implements RouteModule {
                         "Placeholder route for future command-backed choice menus."),
                 context -> PlaceholderScreen.createScene(context,
                         "ui.choice.title",
-                        "Ren'Py menu choices will become route-backed command selections here."));
+                        "Menu choices can become route-backed command selections here."));
         router.registerRoute(new RouteDescriptor(
                         SceneRouter.HUD_ROUTE,
                         "ui.hud.title",

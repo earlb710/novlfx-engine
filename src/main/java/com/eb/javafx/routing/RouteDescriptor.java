@@ -1,7 +1,7 @@
 package com.eb.javafx.routing;
 
 /**
- * Metadata for a JavaFX route replacing a Ren'Py screen or label entry point.
+ * Metadata for a JavaFX route representing a screen or label entry point.
  *
  * <p>The descriptor records the stable route ID, content definition used for the
  * title, high-level category, whether the route is fully migrated, and human

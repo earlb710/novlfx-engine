@@ -21,7 +21,7 @@ import java.util.regex.Pattern;
 /**
  * Section 1.8 boundary for the explicit JavaFX save/load lifecycle.
  *
- * <p>Ren'Py serializes live Python objects. The JavaFX port should instead load
+ * <p>Some source engines serialize live runtime objects. The JavaFX port should instead load
  * registries and services first, then hydrate mutable game state from a versioned
  * schema. This service now writes versioned slot summaries as properties files so
  * save/load screens can validate schema metadata before full game-state

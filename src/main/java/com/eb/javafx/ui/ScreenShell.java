@@ -7,7 +7,7 @@ import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.VBox;
 
 /**
- * Shared layout for migrated screen placeholders, replacing repeated Ren'Py frames.
+ * Shared layout for migrated screen placeholders with reusable JavaFX frames.
  *
  * <p>The shell creates a root border pane with a title label and styled content
  * panel. It assumes the caller attaches the module stylesheet that defines the

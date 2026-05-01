@@ -20,9 +20,10 @@ Exclude code that belongs in an application repository:
 
 - application entry points and launcher wiring
 - project-specific screen content, story scripts, characters, locations, assets, or save schemas
-- extracted Ren'Py scripts, generated metadata, or one-off migration helpers
+- extracted source scripts, generated metadata, or one-off migration helpers
 - hard-coded project names, labels, routes, or asset paths that are not defaults for reusable tests
 - bespoke gameplay rules that are not represented as reusable interfaces or extension points
+- source-engine-specific names or references in code identifiers, string literals, or comments
 
 ## Reusable startup sequence
 

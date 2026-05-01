@@ -5,7 +5,7 @@ import com.eb.javafx.prefs.PreferencesService;
 import java.net.URL;
 
 /**
- * JavaFX theme tokens replacing Ren'Py GUI variables and shared style declarations.
+ * JavaFX theme tokens for GUI variables and shared style declarations.
  *
  * <p>The theme derives font, high-contrast, and reduced-motion tokens from loaded
  * preferences and combines them with fixed migrated color defaults. The stylesheet

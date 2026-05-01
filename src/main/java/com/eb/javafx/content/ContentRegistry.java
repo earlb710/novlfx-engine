@@ -11,7 +11,7 @@ import java.util.Set;
 /**
  * Holds static definitions loaded during application startup.
  *
- * <p>Ren'Py define variables and module-level lists currently create many static
+ * <p>Source-game define variables and module-level lists can create many static
  * game definitions as files are imported. This registry is the Java equivalent: it
  * gives those definitions an explicit home so migrated content can be loaded before
  * mutable save data is created.</p>

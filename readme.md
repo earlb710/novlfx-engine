@@ -29,7 +29,7 @@ The library publishes reusable packages in the `com.eb.javafx.*` namespace throu
 
 - eb application entry point: `GameApplication`
 - Authored eb game content: `gamecontent/display`
-- Ren'Py game scripts and assets from eb's `game` directory
+- Source game scripts and assets from eb's `game` directory
 - Extraction metadata classes from eb's `engine` package
 - eb-specific migration docs
 

@@ -1,7 +1,7 @@
 package com.eb.javafx.display;
 
 /**
- * Ordered JavaFX display layers replacing Ren'Py image layer placement.
+ * Ordered JavaFX display layers for visual novel image placement.
  */
 public enum DisplayLayer {
     /** Background scenery behind characters and UI overlays. */

@@ -1,7 +1,7 @@
 package com.eb.javafx.text;
 
 /**
- * Parsed text, pause, or paragraph marker produced from Ren'Py text tags.
+ * Parsed text, pause, or paragraph marker produced from visual novel text tags.
  *
  * <p>Only text tokens use the text/style fields meaningfully; pause tokens use
  * duration seconds, and paragraph tokens act as structural markers with plain

@@ -3,7 +3,7 @@ package com.eb.javafx.state;
 /**
  * Minimal mutable game state placeholder for the JavaFX bootstrap slice.
  *
- * <p>Ren'Py default variables are per-save values. This object represents the
+ * <p>Visual novel default variables are per-save values. This object represents the
  * JavaFX replacement location for those mutable defaults once gameplay systems are
  * migrated into Java domain classes.</p>
  */

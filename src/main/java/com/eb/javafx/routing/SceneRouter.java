@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Route table that replaces Ren'Py labels, jumps, calls, and screen entry points.
+ * Route table for labels, jumps, calls, and screen entry points.
  *
  * <p>The router is intentionally limited to route metadata, route factories, and
  * navigation. Scene construction belongs to reusable {@link RouteFactory}
@@ -81,7 +81,7 @@ public final class SceneRouter {
     /**
      * Opens a route by ID and returns the JavaFX scene owned by that route.
      *
-     * @param routeId stable route ID, currently replacing a Ren'Py label/screen name
+     * @param routeId stable route ID representing a label or screen name
      * @return scene to attach to the primary stage
      */
     public Scene open(String routeId) {
