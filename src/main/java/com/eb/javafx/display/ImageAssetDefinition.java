@@ -1,5 +1,7 @@
 package com.eb.javafx.display;
 
+import com.eb.javafx.util.Validation;
+
 /**
  * Static image alias migrated from Ren'Py image declarations.
  *
@@ -22,19 +24,10 @@ public final class ImageAssetDefinition {
      * @param layer display layer used for composition and diagnostics
      */
     public ImageAssetDefinition(String id, String sourcePath, String transformId, DisplayLayer layer) {
-        if (id == null || id.isBlank()) {
-            throw new IllegalArgumentException("Image asset id is required.");
-        }
-        if (sourcePath == null || sourcePath.isBlank()) {
-            throw new IllegalArgumentException("Image asset source path is required.");
-        }
-        if (layer == null) {
-            throw new IllegalArgumentException("Image asset layer is required.");
-        }
-        this.id = id;
-        this.sourcePath = sourcePath;
+        this.id = Validation.requireNonBlank(id, "Image asset id is required.");
+        this.sourcePath = Validation.requireNonBlank(sourcePath, "Image asset source path is required.");
         this.transformId = transformId;
-        this.layer = layer;
+        this.layer = Validation.requireNonNull(layer, "Image asset layer is required.");
     }
 
     public String id() {

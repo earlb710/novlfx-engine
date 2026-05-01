@@ -15,4 +15,5 @@ module com.novlfx.engine {
     exports com.eb.javafx.state;
     exports com.eb.javafx.text;
     exports com.eb.javafx.ui;
+    exports com.eb.javafx.util;
 }

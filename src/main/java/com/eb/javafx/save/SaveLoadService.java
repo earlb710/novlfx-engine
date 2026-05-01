@@ -1,6 +1,9 @@
 package com.eb.javafx.save;
 
 import com.eb.javafx.state.GameState;
+import com.eb.javafx.util.InitializationGuard;
+import com.eb.javafx.util.TimeFormatting;
+import com.eb.javafx.util.Validation;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -29,7 +32,7 @@ public final class SaveLoadService {
     private static final Pattern SLOT_FILE_PATTERN = Pattern.compile("slot-(\\d{3})\\.properties");
 
     private final Path configuredSaveDirectory;
-    private boolean initialized;
+    private final InitializationGuard initializationGuard = new InitializationGuard("Save/load service used before initialization.");
     private SaveSchema schema;
 
     public SaveLoadService() {
@@ -54,12 +57,12 @@ public final class SaveLoadService {
         } catch (IOException exception) {
             throw new IllegalStateException("Unable to create save directory: " + schema.saveDirectory(), exception);
         }
-        initialized = true;
+        initializationGuard.markInitialized();
     }
 
     /** Returns whether startup has prepared the save/load boundary. */
     public boolean isInitialized() {
-        return initialized;
+        return initializationGuard.isInitialized();
     }
 
     /** Returns explicit save schema metadata created during startup. */
@@ -84,9 +87,7 @@ public final class SaveLoadService {
     public SaveSlotSummary writeSlotSummary(int slot, GameState gameState, String description, Instant savedAt) {
         assertInitialized();
         validateSlot(slot);
-        if (gameState == null) {
-            throw new IllegalArgumentException("Game state is required for save summary writing.");
-        }
+        Validation.requireNonNull(gameState, "Game state is required for save summary writing.");
         Instant effectiveSavedAt = savedAt == null ? Instant.now() : savedAt;
         SaveSlotSummary summary = new SaveSlotSummary(
                 slot,
@@ -98,7 +99,7 @@ public final class SaveLoadService {
         properties.setProperty("schemaVersion", Integer.toString(summary.schemaVersion()));
         properties.setProperty("startupRoute", summary.startupRoute());
         properties.setProperty("description", summary.description());
-        properties.setProperty("savedAt", summary.savedAt().toString());
+        properties.setProperty("savedAt", TimeFormatting.formatInstant(summary.savedAt()));
         try (OutputStream outputStream = Files.newOutputStream(slotPath(slot))) {
             properties.store(outputStream, "eb JavaFX save summary");
         } catch (IOException exception) {
@@ -134,7 +135,7 @@ public final class SaveLoadService {
                 schemaVersion,
                 properties.getProperty("startupRoute", ""),
                 properties.getProperty("description", ""),
-                Instant.parse(properties.getProperty("savedAt")));
+                TimeFormatting.parseInstant(properties.getProperty("savedAt")));
     }
 
     /** Lists readable, schema-compatible save-slot summaries ordered by slot number. */
@@ -163,15 +164,11 @@ public final class SaveLoadService {
     }
 
     private void assertInitialized() {
-        if (!initialized) {
-            throw new IllegalStateException("Save/load service used before initialization.");
-        }
+        initializationGuard.requireInitialized();
     }
 
     private void validateSlot(int slot) {
-        if (slot < 1 || slot > 999) {
-            throw new IllegalArgumentException("Save slot must be between 1 and 999.");
-        }
+        Validation.requireSlot(slot);
     }
 
     /**

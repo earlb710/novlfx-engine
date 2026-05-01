@@ -1,5 +1,7 @@
 package com.eb.javafx.random;
 
+import com.eb.javafx.util.InitializationGuard;
+
 import java.util.Random;
 
 /**
@@ -10,6 +12,7 @@ import java.util.Random;
  * making UI animation randomness part of save-game state.</p>
  */
 public final class GameRandomService {
+    private final InitializationGuard initializationGuard = new InitializationGuard("Random service used before initialization.");
     private long gameplaySeed;
     private Random gameplayRandom;
     private Random uiRandom;
@@ -24,6 +27,7 @@ public final class GameRandomService {
         gameplaySeed = 1L;
         gameplayRandom = new Random(gameplaySeed);
         uiRandom = new Random();
+        initializationGuard.markInitialized();
     }
 
     /** Returns the persisted seed for the current new-game placeholder state. */
@@ -53,8 +57,6 @@ public final class GameRandomService {
     }
 
     private void assertInitialized() {
-        if (gameplayRandom == null || uiRandom == null) {
-            throw new IllegalStateException("Random service used before initialization.");
-        }
+        initializationGuard.requireInitialized();
     }
 }

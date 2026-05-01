@@ -1,7 +1,8 @@
 package com.eb.javafx.text;
 
+import com.eb.javafx.util.ImmutableCollections;
+
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
@@ -29,9 +30,7 @@ public final class TextStyle {
         this.bold = bold;
         this.italic = italic;
         this.color = color;
-        this.effects = effects == null
-                ? Collections.emptyMap()
-                : Collections.unmodifiableMap(new LinkedHashMap<>(effects));
+        this.effects = ImmutableCollections.copyMap(effects);
     }
 
     /** Returns an unstyled text style with no color or effects. */

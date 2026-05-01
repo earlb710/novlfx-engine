@@ -1,5 +1,7 @@
 package com.eb.javafx.audio;
 
+import com.eb.javafx.util.Validation;
+
 /**
  * Immutable request to play an authored sound or music asset on a named channel.
  *
@@ -22,19 +24,10 @@ public final class SoundRequest {
      * @param relativeVolume per-request multiplier from {@code 0.0} to {@code 1.0}
      */
     public SoundRequest(String channelId, String sourcePath, boolean loop, double relativeVolume) {
-        if (channelId == null || channelId.isBlank()) {
-            throw new IllegalArgumentException("Sound request channel id is required.");
-        }
-        if (sourcePath == null || sourcePath.isBlank()) {
-            throw new IllegalArgumentException("Sound request source path is required.");
-        }
-        if (relativeVolume < 0.0 || relativeVolume > 1.0) {
-            throw new IllegalArgumentException("Sound request relative volume must be between 0 and 1.");
-        }
-        this.channelId = channelId;
-        this.sourcePath = sourcePath;
+        this.channelId = Validation.requireNonBlank(channelId, "Sound request channel id is required.");
+        this.sourcePath = Validation.requireNonBlank(sourcePath, "Sound request source path is required.");
         this.loop = loop;
-        this.relativeVolume = relativeVolume;
+        this.relativeVolume = Validation.requireUnitInterval(relativeVolume, "Sound request relative volume must be between 0 and 1.");
     }
 
     public String channelId() {

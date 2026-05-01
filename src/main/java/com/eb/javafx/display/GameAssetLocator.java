@@ -1,12 +1,13 @@
 package com.eb.javafx.display;
 
+import com.eb.javafx.util.PathUtils;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Locale;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -42,20 +43,20 @@ public final class GameAssetLocator {
             return Optional.empty();
         }
 
-        String normalized = normalize(sourcePath);
+        String normalized = PathUtils.normalizeSeparators(sourcePath);
         Path gameRoot = repoRoot.resolve("game");
-        Path direct = gameRoot.resolve(normalized);
+        Path direct = PathUtils.resolveChild(gameRoot, normalized);
         if (Files.exists(direct)) {
             return Optional.of(direct.normalize());
         }
 
-        String fileName = Path.of(normalized).getFileName().toString().toLowerCase(Locale.ROOT);
+        String fileName = PathUtils.fileNameLowercase(normalized);
         return indexedFiles().stream()
                 .sorted(Comparator.comparingInt(path -> relativeGamePath(path).length()))
                 .filter(path -> {
-                    String relative = relativeGamePath(path).toLowerCase(Locale.ROOT);
-                    return relative.endsWith(normalized.toLowerCase(Locale.ROOT))
-                            || path.getFileName().toString().toLowerCase(Locale.ROOT).equals(fileName);
+                    String relative = relativeGamePath(path).toLowerCase();
+                    return relative.endsWith(normalized.toLowerCase())
+                            || PathUtils.fileNameLowercase(path.toString()).equals(fileName);
                 })
                 .findFirst();
     }
@@ -78,15 +79,11 @@ public final class GameAssetLocator {
     }
 
     private boolean isSupportedImage(Path path) {
-        String name = path.getFileName().toString().toLowerCase(Locale.ROOT);
-        return name.endsWith(".png") || name.endsWith(".jpg") || name.endsWith(".jpeg") || name.endsWith(".webp");
+        String extension = PathUtils.extensionLowercase(path);
+        return extension.equals(".png") || extension.equals(".jpg") || extension.equals(".jpeg") || extension.equals(".webp");
     }
 
     private String relativeGamePath(Path path) {
-        return normalize(repoRoot.resolve("game").relativize(path).toString());
-    }
-
-    private String normalize(String path) {
-        return path.replace('\\', '/');
+        return PathUtils.normalizeSeparators(repoRoot.resolve("game").relativize(path).toString());
     }
 }

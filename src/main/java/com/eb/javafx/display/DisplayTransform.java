@@ -1,5 +1,7 @@
 package com.eb.javafx.display;
 
+import com.eb.javafx.util.Validation;
+
 /**
  * First-pass Java model for Ren'Py ATL transforms used by migrated images.
  *
@@ -27,24 +29,12 @@ public final class DisplayTransform {
      * @param yAlign vertical alignment anchor from top {@code 0.0} to bottom {@code 1.0}
      */
     public DisplayTransform(String id, int fitWidth, int fitHeight, double opacity, double xAlign, double yAlign) {
-        if (id == null || id.isBlank()) {
-            throw new IllegalArgumentException("Display transform id is required.");
-        }
-        if (fitWidth <= 0 || fitHeight <= 0) {
-            throw new IllegalArgumentException("Display transform size must be positive.");
-        }
-        if (opacity < 0.0 || opacity > 1.0) {
-            throw new IllegalArgumentException("Display transform opacity must be between 0 and 1.");
-        }
-        if (xAlign < 0.0 || xAlign > 1.0 || yAlign < 0.0 || yAlign > 1.0) {
-            throw new IllegalArgumentException("Display transform alignment must be between 0 and 1.");
-        }
-        this.id = id;
-        this.fitWidth = fitWidth;
-        this.fitHeight = fitHeight;
-        this.opacity = opacity;
-        this.xAlign = xAlign;
-        this.yAlign = yAlign;
+        this.id = Validation.requireNonBlank(id, "Display transform id is required.");
+        this.fitWidth = Validation.requirePositive(fitWidth, "Display transform size must be positive.");
+        this.fitHeight = Validation.requirePositive(fitHeight, "Display transform size must be positive.");
+        this.opacity = Validation.requireUnitInterval(opacity, "Display transform opacity must be between 0 and 1.");
+        this.xAlign = Validation.requireUnitInterval(xAlign, "Display transform alignment must be between 0 and 1.");
+        this.yAlign = Validation.requireUnitInterval(yAlign, "Display transform alignment must be between 0 and 1.");
     }
 
     public String id() {
