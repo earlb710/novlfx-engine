@@ -158,7 +158,7 @@ Actual `MediaPlayer` or `AudioClip` playback, audio asset discovery, fades, cros
 
 Use `GameSupportService` and `ActionRegistry` to register reusable `GameAction` objects. Actions can use `ActionRequirement` checks, `ActionEffect` outcomes, `ActionContext`, `RequirementResult`, and `ActionResult` to keep generic game-rule plumbing separate from authored domain rules.
 
-Use `GameClock`, `GameDateTime`, and `TimeSlot` to model reusable time progression without embedding a specific game calendar or schedule.
+Use `CodeTableDefinition` and `CodeDefinition` to define project-supplied code lists such as time slots, roles, goals, postures, positions, duties, or listener types. `GameClock` and `GameDateTime` use a time-slot code table so reusable time progression does not embed a specific game calendar or schedule.
 
 ### State
 

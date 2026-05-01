@@ -2,9 +2,10 @@ package com.eb.javafx.scene;
 
 import com.eb.javafx.gamesupport.ActionContext;
 import com.eb.javafx.gamesupport.ActionResult;
+import com.eb.javafx.gamesupport.CodeDefinition;
+import com.eb.javafx.gamesupport.CodeTableDefinition;
 import com.eb.javafx.gamesupport.GameClock;
 import com.eb.javafx.gamesupport.RequirementResult;
-import com.eb.javafx.gamesupport.TimeSlot;
 import com.eb.javafx.random.GameRandomService;
 import com.eb.javafx.state.GameState;
 import org.junit.jupiter.api.Test;
@@ -43,7 +44,7 @@ final class SceneExecutorTest {
 
         SceneExecutionResult complete = executor.selectChoice(context, choice.state(), "advance");
         assertEquals(SceneExecutionStatus.COMPLETED, complete.status());
-        assertEquals(TimeSlot.AFTERNOON, context.gameClock().currentTime().timeSlot());
+        assertEquals("second", context.gameClock().currentTime().timeSlotId());
         assertEquals(List.of("advance"), complete.state().selectedChoiceIds());
     }
 
@@ -115,6 +116,9 @@ final class SceneExecutorTest {
     private ActionContext actionContext() {
         GameRandomService randomService = new GameRandomService();
         randomService.initialize();
-        return new ActionContext(new GameState("main-menu"), randomService, new GameClock());
+        CodeTableDefinition timeSlots = new CodeTableDefinition("time-slots", "Time Slots", List.of(
+                new CodeDefinition("first", "First", 10, List.of()),
+                new CodeDefinition("second", "Second", 20, List.of())));
+        return new ActionContext(new GameState("main-menu"), randomService, new GameClock(timeSlots));
     }
 }

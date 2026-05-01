@@ -53,7 +53,7 @@ final class BootstrapServiceTest {
         assertTrue(context.audioService().channels().containsKey("music"));
         assertTrue(context.gameSupportService().isInitialized());
         assertTrue(context.gameSupportService().actionRegistry().isEmpty());
-        assertEquals("morning", context.gameSupportService().gameClock().currentTime().timeSlot().id());
+        assertEquals("default", context.gameSupportService().gameClock().currentTime().timeSlotId());
         assertTrue(context.sceneRegistry().scene(EnginePlaceholderSceneModule.DEMO_DIALOGUE_SCENE).isPresent());
         assertEquals(2, context.sceneRegistry().scenes().size());
         assertEquals(EnginePlaceholderSceneModule.DEMO_DIALOGUE_SCENE,

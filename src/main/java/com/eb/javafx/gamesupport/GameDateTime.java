@@ -1,48 +1,43 @@
 package com.eb.javafx.gamesupport;
 
-/**
- * Immutable generic day/time-slot value for scheduling and turn-advance support.
- *
- * <p>Days are one-based and time slots advance through {@link TimeSlot#next()}.
- * Advancing from night to morning rolls over to the next day.</p>
- */
+/** Immutable generic day/time-slot value for scheduling and turn-advance support. */
 public final class GameDateTime {
     private final int day;
-    private final TimeSlot timeSlot;
+    private final String timeSlotId;
 
     /**
      * Creates a valid game date/time value.
      *
      * @param day one-based day number
-     * @param timeSlot non-null slot within the day
+     * @param timeSlotId stable slot code within the owning time-slot table
      */
-    public GameDateTime(int day, TimeSlot timeSlot) {
+    public GameDateTime(int day, String timeSlotId) {
         if (day < 1) {
             throw new IllegalArgumentException("day must be at least 1.");
         }
-        if (timeSlot == null) {
-            throw new IllegalArgumentException("timeSlot must not be null.");
+        if (timeSlotId == null || timeSlotId.isBlank()) {
+            throw new IllegalArgumentException("timeSlotId must not be blank.");
         }
         this.day = day;
-        this.timeSlot = timeSlot;
+        this.timeSlotId = timeSlotId;
     }
 
     public int day() {
         return day;
     }
 
-    public TimeSlot timeSlot() {
-        return timeSlot;
+    public String timeSlotId() {
+        return timeSlotId;
     }
 
-    /** Returns the next slot, rolling to the next day after {@link TimeSlot#NIGHT}. */
-    public GameDateTime nextSlot() {
-        TimeSlot nextSlot = timeSlot.next();
-        return new GameDateTime(nextSlot == TimeSlot.MORNING ? day + 1 : day, nextSlot);
+    /** Returns the next slot according to the supplied table, rolling to the next day after the final code. */
+    public GameDateTime nextSlot(CodeTableDefinition timeSlots) {
+        String nextSlotId = timeSlots.nextCodeId(timeSlotId);
+        return new GameDateTime(nextSlotId.equals(timeSlots.firstCodeId()) ? day + 1 : day, nextSlotId);
     }
 
     @Override
     public String toString() {
-        return "day " + day + " " + timeSlot.id();
+        return "day " + day + " " + timeSlotId;
     }
 }
