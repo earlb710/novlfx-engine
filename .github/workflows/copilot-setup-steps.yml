@@ -21,4 +21,9 @@ jobs:
         env:
           LR2ALT_TOKEN: ${{ secrets.LR2ALT_TOKEN }}
         run: |
+          set -euo pipefail
+          if [ -z "${LR2ALT_TOKEN}" ]; then
+            echo "LR2ALT_TOKEN must be configured as a secret in the copilot environment."
+            exit 1
+          fi
           git config --global url."https://x-access-token:${LR2ALT_TOKEN}@github.com/earlb710/Lr2Alt".insteadOf "https://github.com/earlb710/Lr2Alt"
