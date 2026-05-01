@@ -182,6 +182,13 @@ Use `CategoryCodeTableDefinition.load(Path)` when category data should come from
 }
 ```
 
+Use the immutable helper methods to work with authored category files without hand-editing registry objects in memory:
+
+- `CategoryCodeTableDefinition.load(path)` loads a language-specific file.
+- `addTable(...)`, `editTable(...)`, and `removeTable(...)` return updated category sets.
+- `CodeTableDefinition.withTitle(...)`, `addCode(...)`, `editCode(...)`, and `removeCode(...)` return updated tables.
+- `save(path)` writes the updated category set back to JSON, and `toJson()` returns the same formatted JSON string for previews or tests.
+
 ### State
 
 Use `GameStateFactory` to create base `GameState` instances. Keep project-specific state fields and schemas in the application repository unless they are represented by reusable engine abstractions.

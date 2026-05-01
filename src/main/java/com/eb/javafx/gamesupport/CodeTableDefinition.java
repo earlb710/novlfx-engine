@@ -45,6 +45,36 @@ public final class CodeTableDefinition implements IdentifiedDefinition {
         return codes.definition(codeId);
     }
 
+    public CodeTableDefinition withTitle(String title) {
+        return new CodeTableDefinition(id, title, codes());
+    }
+
+    public CodeTableDefinition addCode(CodeDefinition code) {
+        List<CodeDefinition> updatedCodes = new java.util.ArrayList<>(codes());
+        updatedCodes.add(code);
+        return new CodeTableDefinition(id, title, updatedCodes);
+    }
+
+    public CodeTableDefinition removeCode(String codeId) {
+        requireExistingCode(codeId);
+        return new CodeTableDefinition(
+                id,
+                title,
+                codes().stream()
+                        .filter(code -> !code.id().equals(codeId))
+                        .toList());
+    }
+
+    public CodeTableDefinition editCode(CodeDefinition code) {
+        requireExistingCode(code.id());
+        return new CodeTableDefinition(
+                id,
+                title,
+                codes().stream()
+                        .map(existingCode -> existingCode.id().equals(code.id()) ? code : existingCode)
+                        .toList());
+    }
+
     public boolean contains(String codeId) {
         return code(codeId).isPresent();
     }
@@ -68,5 +98,11 @@ public final class CodeTableDefinition implements IdentifiedDefinition {
             throw new IllegalArgumentException(name + " must not be blank.");
         }
         return value;
+    }
+
+    private void requireExistingCode(String codeId) {
+        if (!contains(codeId)) {
+            throw new IllegalArgumentException("Unknown code in table " + id + ": " + codeId);
+        }
     }
 }

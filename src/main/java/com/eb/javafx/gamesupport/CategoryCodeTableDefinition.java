@@ -1,6 +1,7 @@
 package com.eb.javafx.gamesupport;
 
 import com.eb.javafx.util.Validation;
+import com.eb.javafx.util.JsonStrings;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -23,6 +24,10 @@ public final class CategoryCodeTableDefinition {
         this.language = Validation.requireNonBlank(language, "Category code table language must not be blank.");
         Validation.requireNonEmpty(tables, "Category code table file must contain at least one table.")
                 .forEach(this.tables::register);
+    }
+
+    public static CategoryCodeTableDefinition of(String language, List<CodeTableDefinition> tables) {
+        return new CategoryCodeTableDefinition(language, tables);
     }
 
     /**
@@ -67,6 +72,78 @@ public final class CategoryCodeTableDefinition {
 
     public boolean containsTable(String tableId) {
         return tables.contains(tableId);
+    }
+
+    public CategoryCodeTableDefinition addTable(CodeTableDefinition table) {
+        List<CodeTableDefinition> updatedTables = new ArrayList<>(tables());
+        updatedTables.add(Validation.requireNonNull(table, "Code table definition is required."));
+        return new CategoryCodeTableDefinition(language, updatedTables);
+    }
+
+    public CategoryCodeTableDefinition removeTable(String tableId) {
+        requireExistingTable(tableId);
+        return new CategoryCodeTableDefinition(
+                language,
+                tables().stream()
+                        .filter(table -> !table.id().equals(tableId))
+                        .toList());
+    }
+
+    public CategoryCodeTableDefinition editTable(CodeTableDefinition table) {
+        CodeTableDefinition checkedTable = Validation.requireNonNull(table, "Code table definition is required.");
+        requireExistingTable(checkedTable.id());
+        return new CategoryCodeTableDefinition(
+                language,
+                tables().stream()
+                        .map(existingTable -> existingTable.id().equals(checkedTable.id()) ? checkedTable : existingTable)
+                        .toList());
+    }
+
+    public String toJson() {
+        StringBuilder json = new StringBuilder();
+        json.append("{\n")
+                .append("  \"language\": ").append(JsonStrings.quote(language)).append(",\n")
+                .append("  \"tables\": [\n");
+        List<CodeTableDefinition> orderedTables = tables();
+        for (int tableIndex = 0; tableIndex < orderedTables.size(); tableIndex++) {
+            CodeTableDefinition table = orderedTables.get(tableIndex);
+            json.append("    {\n")
+                    .append("      \"id\": ").append(JsonStrings.quote(table.id())).append(",\n")
+                    .append("      \"title\": ").append(JsonStrings.quote(table.title())).append(",\n")
+                    .append("      \"codes\": [\n");
+            List<CodeDefinition> codes = table.codes();
+            for (int codeIndex = 0; codeIndex < codes.size(); codeIndex++) {
+                CodeDefinition code = codes.get(codeIndex);
+                json.append("        {\n")
+                        .append("          \"id\": ").append(JsonStrings.quote(code.id())).append(",\n")
+                        .append("          \"title\": ").append(JsonStrings.quote(code.title())).append(",\n")
+                        .append("          \"sortOrder\": ").append(code.sortOrder()).append(",\n")
+                        .append("          \"tags\": ").append(toJsonArray(code.tags())).append('\n')
+                        .append("        }");
+                if (codeIndex + 1 < codes.size()) {
+                    json.append(',');
+                }
+                json.append('\n');
+            }
+            json.append("      ]\n")
+                    .append("    }");
+            if (tableIndex + 1 < orderedTables.size()) {
+                json.append(',');
+            }
+            json.append('\n');
+        }
+        json.append("  ]\n")
+                .append("}\n");
+        return json.toString();
+    }
+
+    public void save(Path jsonPath) {
+        Validation.requireNonNull(jsonPath, "Category code table JSON path is required.");
+        try {
+            Files.writeString(jsonPath, toJson(), StandardCharsets.UTF_8);
+        } catch (IOException exception) {
+            throw new IllegalArgumentException("Unable to write category code table JSON: " + jsonPath, exception);
+        }
     }
 
     private static CodeTableDefinition toCodeTable(Object value) {
@@ -149,6 +226,24 @@ public final class CategoryCodeTableDefinition {
             return List.copyOf(list);
         }
         throw new IllegalArgumentException("Expected JSON array for " + description + ".");
+    }
+
+    private static String toJsonArray(List<String> values) {
+        StringBuilder json = new StringBuilder("[");
+        for (int index = 0; index < values.size(); index++) {
+            if (index > 0) {
+                json.append(", ");
+            }
+            json.append(JsonStrings.quote(values.get(index)));
+        }
+        json.append(']');
+        return json.toString();
+    }
+
+    private void requireExistingTable(String tableId) {
+        if (!containsTable(tableId)) {
+            throw new IllegalArgumentException("Unknown code table: " + tableId);
+        }
     }
 
     private static final class JsonParser {
