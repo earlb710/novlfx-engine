@@ -1,0 +1,41 @@
+{
+  "language": "en",
+  "tables": [
+    {
+      "id": "roles",
+      "title": "Roles",
+      "codes": [
+        {
+          "id": "manager",
+          "title": "Manager",
+          "sortOrder": 20,
+          "tags": ["work"]
+        },
+        {
+          "id": "assistant",
+          "title": "Assistant",
+          "sortOrder": 10,
+          "tags": ["work", "support"]
+        }
+      ]
+    },
+    {
+      "id": "time-slots",
+      "title": "Time Slots",
+      "codes": [
+        {
+          "id": "morning",
+          "title": "Morning",
+          "sortOrder": 10,
+          "tags": ["day"]
+        },
+        {
+          "id": "evening",
+          "title": "Evening",
+          "sortOrder": 20,
+          "tags": ["day"]
+        }
+      ]
+    }
+  ]
+}

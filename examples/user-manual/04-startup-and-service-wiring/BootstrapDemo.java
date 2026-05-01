@@ -1,8 +1,11 @@
 import com.eb.javafx.bootstrap.ApplicationResourceConfig;
 import com.eb.javafx.bootstrap.BootContext;
 import com.eb.javafx.bootstrap.BootstrapOptions;
+import com.eb.javafx.bootstrap.BootstrapReport;
 import com.eb.javafx.bootstrap.BootstrapService;
+import com.eb.javafx.audio.AudioService;
 import com.eb.javafx.content.ContentRegistry;
+import com.eb.javafx.content.JsonDisplayContentModule;
 import com.eb.javafx.content.StaticContentModule;
 import com.eb.javafx.display.ImageDisplayRegistry;
 import com.eb.javafx.routing.RouteModule;
@@ -17,26 +20,41 @@ public final class BootstrapDemo {
     }
 
     public static BootContext bootDemo(Stage primaryStage) {
-        Path appRoot = Path.of("/games/demo");
-        ApplicationResourceConfig resourceConfig = ApplicationResourceConfig.of(
-                "config/category-code-tables.en.json",
-                "assets/images",
-                java.util.Map.of("displayDefinitions", "config/display-definitions.json"));
+        Path configPath = Path.of("examples/user-manual/04-startup-and-service-wiring/config.demo.json")
+                .toAbsolutePath()
+                .normalize();
+        Path appRoot = configPath.getParent();
+        ApplicationResourceConfig resourceConfig = ApplicationResourceConfig.load(configPath);
+        Path displayDefinitions = resourceConfig.resolveResource(appRoot, "displayDefinitions").orElseThrow();
 
         BootstrapOptions options = BootstrapOptions.of(appRoot, resourceConfig)
-                .withStaticContentModules(List.of(new DemoStaticContentModule()))
+                .withStaticContentModules(List.of(
+                        new DemoStaticContentModule(),
+                        new JsonDisplayContentModule(displayDefinitions)))
                 .withSceneModules(List.<SceneModule>of(sceneRegistry -> {
                 }))
                 .withRouteModules(List.<RouteModule>of(router -> {
                 }));
 
         BootContext context = new BootstrapService(options).boot(primaryStage);
-        Path displayDefinitions = context.resourceConfig()
-                .resolveResource(context.applicationRoot(), "displayDefinitions")
-                .orElseThrow();
+        BootstrapReport report = context.bootstrapReport();
+        System.out.println("Startup complete: " + report.isComplete());
+        System.out.println("Completed phases: " + report.completedPhases());
+        System.out.println("Elapsed startup time: " + report.elapsedTime());
         System.out.println("Booted route IDs: " + context.sceneRouter().routeDescriptors().keySet());
-        System.out.println("Display definitions path: " + displayDefinitions);
+        System.out.println("Display definitions path: " + context.resourceConfig()
+                .resolveResource(context.applicationRoot(), "displayDefinitions")
+                .orElseThrow());
+        showGuardedServiceFailure();
         return context;
+    }
+
+    private static void showGuardedServiceFailure() {
+        try {
+            new AudioService().masterVolume();
+        } catch (IllegalStateException exception) {
+            System.out.println("Guarded service example: " + exception.getMessage());
+        }
     }
 
     private static final class DemoStaticContentModule implements StaticContentModule {

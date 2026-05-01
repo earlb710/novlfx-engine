@@ -1,0 +1,8 @@
+{
+  "categoryCodeTablesPath": "../09-game-support-state-save-prefs-random/category-code-tables.demo.json",
+  "imageAssetRoot": "../07-display-support/assets",
+  "resources": {
+    "displayDefinitions": "../07-display-support/display-definitions.demo.json",
+    "uiTheme": "../../../src/main/resources/com/eb/javafx/ui/eb.css"
+  }
+}

@@ -1,0 +1,112 @@
+{
+  "scenes": [
+    {
+      "id": "chapter-start",
+      "metadata": {
+        "chapter": "1"
+      },
+      "steps": [
+        {
+          "id": "intro",
+          "type": "NARRATION",
+          "textDefinition": "scene.chapter.intro",
+          "transition": {
+            "type": "NEXT"
+          },
+          "metadata": {
+            "mood": "arriving"
+          },
+          "choices": []
+        },
+        {
+          "id": "branch",
+          "type": "CHOICE",
+          "transition": {
+            "type": "NEXT"
+          },
+          "metadata": {
+            "kind": "branch"
+          },
+          "choices": [
+            {
+              "id": "ask-guide",
+              "textDefinition": "scene.chapter.choice.askGuide",
+              "transition": {
+                "type": "CALL",
+                "targetSceneId": "station-guide"
+              },
+              "metadata": {
+                "path": "guided"
+              }
+            },
+            {
+              "id": "skip-ahead",
+              "textDefinition": "scene.chapter.choice.skipAhead",
+              "transition": {
+                "type": "JUMP",
+                "targetSceneId": "chapter-end"
+              },
+              "metadata": {
+                "path": "direct"
+              }
+            }
+          ]
+        },
+        {
+          "id": "resume",
+          "type": "NARRATION",
+          "textDefinition": "scene.chapter.resume",
+          "transition": {
+            "type": "NEXT"
+          },
+          "metadata": {
+            "kind": "return-point"
+          },
+          "choices": []
+        }
+      ]
+    },
+    {
+      "id": "station-guide",
+      "metadata": {
+        "character": "guide"
+      },
+      "steps": [
+        {
+          "id": "guide-line",
+          "type": "DIALOGUE",
+          "speakerId": "guide",
+          "textDefinition": "scene.stationGuide.response",
+          "displayReference": "hero-neutral",
+          "transition": {
+            "type": "RETURN"
+          },
+          "metadata": {
+            "portrait": "guide-neutral"
+          },
+          "choices": []
+        }
+      ]
+    },
+    {
+      "id": "chapter-end",
+      "metadata": {
+        "chapter": "1"
+      },
+      "steps": [
+        {
+          "id": "closing",
+          "type": "NARRATION",
+          "textDefinition": "scene.chapter.end",
+          "transition": {
+            "type": "COMPLETE"
+          },
+          "metadata": {
+            "kind": "ending"
+          },
+          "choices": []
+        }
+      ]
+    }
+  ]
+}

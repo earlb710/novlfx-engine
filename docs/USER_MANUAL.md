@@ -120,9 +120,17 @@ Use `context.resourceConfig().resolveResource(context.applicationRoot(), "displa
 
 Example/demo code: [`examples/user-manual/04-startup-and-service-wiring/BootstrapDemo.java`](../examples/user-manual/04-startup-and-service-wiring/BootstrapDemo.java)
 
+Additional example/demo code:
+- [`examples/user-manual/04-startup-and-service-wiring/ApplicationResourceConfigDemo.java`](../examples/user-manual/04-startup-and-service-wiring/ApplicationResourceConfigDemo.java)
+- [`examples/user-manual/04-startup-and-service-wiring/config.demo.json`](../examples/user-manual/04-startup-and-service-wiring/config.demo.json)
+
 ## 5. Content, routing, and scenes
 
 Example/demo code: [`examples/user-manual/05-content-routing-and-scenes/SceneFlowDemo.java`](../examples/user-manual/05-content-routing-and-scenes/SceneFlowDemo.java)
+
+Additional example/demo code:
+- [`examples/user-manual/05-content-routing-and-scenes/SceneExecutionAndJsonDemo.java`](../examples/user-manual/05-content-routing-and-scenes/SceneExecutionAndJsonDemo.java)
+- [`examples/user-manual/05-content-routing-and-scenes/scene-definitions.demo.json`](../examples/user-manual/05-content-routing-and-scenes/scene-definitions.demo.json)
 
 ### Static content
 
@@ -170,6 +178,9 @@ Applications can use these screens directly for prototypes or replace route fact
 
 Example/demo code: [`examples/user-manual/06-ui-screens-and-themes/UiScreenDemo.java`](../examples/user-manual/06-ui-screens-and-themes/UiScreenDemo.java)
 
+Additional example/demo code:
+- [`examples/user-manual/06-ui-screens-and-themes/UiScreenCatalogDemo.java`](../examples/user-manual/06-ui-screens-and-themes/UiScreenCatalogDemo.java)
+
 ## 7. Display support
 
 Use `ImageDisplayRegistry` as the central registry for reusable visual definitions. It can register and resolve:
@@ -187,6 +198,9 @@ The registry can resolve image paths from a checked-out game tree through `GameA
 Use `DisplayDefinitionJsonLoader` to load app-owned display JSON into an `ImageDisplayRegistry`, or wrap that loading in `JsonDisplayContentModule` for bootstrap registration. The supported root fields are `transforms`, `images`, and `layeredCharacters`; authored image files and IDs remain outside the engine.
 
 Example/demo code: [`examples/user-manual/07-display-support/display-definitions.demo.json`](../examples/user-manual/07-display-support/display-definitions.demo.json)
+
+Additional example/demo code:
+- [`examples/user-manual/07-display-support/DisplaySupportDemo.java`](../examples/user-manual/07-display-support/DisplaySupportDemo.java)
 
 ## 8. Audio support
 
@@ -262,6 +276,10 @@ Use `PreferencesService` for user preferences such as window size, fullscreen st
 Use `GameRandomService` for reusable random behavior. Initialize it before use so tests and application code can rely on deterministic service state where applicable.
 
 Example/demo code: [`examples/user-manual/09-game-support-state-save-prefs-random/SupportServicesDemo.java`](../examples/user-manual/09-game-support-state-save-prefs-random/SupportServicesDemo.java)
+
+Additional example/demo code:
+- [`examples/user-manual/09-game-support-state-save-prefs-random/CategoryCodeTableDefinitionDemo.java`](../examples/user-manual/09-game-support-state-save-prefs-random/CategoryCodeTableDefinitionDemo.java)
+- [`examples/user-manual/09-game-support-state-save-prefs-random/category-code-tables.demo.json`](../examples/user-manual/09-game-support-state-save-prefs-random/category-code-tables.demo.json)
 
 ## 10. Text and utility helpers
 
