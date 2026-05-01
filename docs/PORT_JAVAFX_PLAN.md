@@ -12,6 +12,7 @@ Include code in this engine only when it is useful to multiple visual novel or J
 - generic UI shells, placeholder screens, theme helpers, and startup error reporting
 - save/load, preferences, random, time, and game-state abstractions
 - audio request and channel abstractions
+- reusable scene-flow definitions, validation, execution, choice modeling, and resumable flow snapshots
 - image display definitions, layered character definitions, transforms, interpolation, and animation playback
 - text tokenization and style parsing that is independent of authored dialogue
 - utility classes for validation, immutable collections, paths, time formatting, JSON string escaping, and initialization guards
@@ -51,6 +52,10 @@ Provide registries and content-module interfaces for static definitions loaded d
 
 Provide route descriptors, route modules, route factories, route contexts, and adapters for global navigation-style actions. Route definitions should describe reusable metadata and delegate screen construction to application or test modules.
 
+### `scene`
+
+Provide the reusable section 1.3 dialogue and scene-scripting foundation. Scene code should model stable scene IDs, typed dialogue/narration/action/choice/transition steps, menu-choice requirements and effects, explicit jump/call/return/complete transitions, resumable flow snapshots, scene modules, registry validation, and UI-neutral view models. Application repositories should provide authored dialogue, character IDs, plotline scenes, domain-specific conditions, and game-specific effects through modules rather than embedding them in the engine.
+
 ### `ui`
 
 Provide generic screens, shell/navigation helpers, theme support, startup error reporting, and manual/test UI surfaces. UI classes should avoid game-specific text beyond reusable defaults or test placeholders.
@@ -84,7 +89,7 @@ When porting code from an application into `novlfx-engine`:
 
 ## Current reusable scope in `novlfx-engine`
 
-The engine currently publishes the `com.novlfx.engine` Java module with reusable `com.eb.javafx.*` packages for audio, bootstrap, content, display, game support, preferences, random, global API adapters, routing, save/load, state, text, UI, and utilities.
+The engine currently publishes the `com.novlfx.engine` Java module with reusable `com.eb.javafx.*` packages for audio, bootstrap, content, display, game support, preferences, random, global API adapters, routing, save/load, scene flow, state, text, UI, and utilities.
 
 Validation for this repository should continue to use the checked-in Gradle wrapper:
 

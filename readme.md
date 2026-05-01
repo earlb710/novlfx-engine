@@ -17,6 +17,7 @@ The library publishes reusable packages in the `com.eb.javafx.*` namespace throu
   - `globalApi`
   - `routing`
   - `save`
+  - `scene`
   - `state`
   - `text`
   - `ui`

@@ -9,6 +9,8 @@ import com.eb.javafx.random.GameRandomService;
 import com.eb.javafx.globalApi.GlobalApiAdapter;
 import com.eb.javafx.routing.SceneRouter;
 import com.eb.javafx.save.SaveLoadService;
+import com.eb.javafx.scene.SceneExecutor;
+import com.eb.javafx.scene.SceneRegistry;
 import com.eb.javafx.state.GameState;
 import com.eb.javafx.ui.UiTheme;
 
@@ -29,6 +31,8 @@ public final class BootContext {
     private final GameRandomService randomService;
     private final AudioService audioService;
     private final GameSupportService gameSupportService;
+    private final SceneRegistry sceneRegistry;
+    private final SceneExecutor sceneExecutor;
     private final GlobalApiAdapter globalApiAdapter;
     private final SceneRouter sceneRouter;
     private final UiTheme uiTheme;
@@ -45,6 +49,8 @@ public final class BootContext {
      * @param randomService initialized gameplay/UI random streams
      * @param audioService initialized channel-based audio boundary
      * @param gameSupportService initialized generic support systems
+     * @param sceneRegistry validated structured scene definitions
+     * @param sceneExecutor headless scene-flow executor
      * @param globalApiAdapter adapter for migrated global API calls
      * @param sceneRouter registered route table
      * @param uiTheme initialized theme tokens and stylesheet lookup
@@ -59,6 +65,8 @@ public final class BootContext {
             GameRandomService randomService,
             AudioService audioService,
             GameSupportService gameSupportService,
+            SceneRegistry sceneRegistry,
+            SceneExecutor sceneExecutor,
             GlobalApiAdapter globalApiAdapter,
             SceneRouter sceneRouter,
             UiTheme uiTheme,
@@ -71,6 +79,8 @@ public final class BootContext {
         this.randomService = randomService;
         this.audioService = audioService;
         this.gameSupportService = gameSupportService;
+        this.sceneRegistry = sceneRegistry;
+        this.sceneExecutor = sceneExecutor;
         this.globalApiAdapter = globalApiAdapter;
         this.sceneRouter = sceneRouter;
         this.uiTheme = uiTheme;
@@ -111,6 +121,16 @@ public final class BootContext {
     /** Returns no-content game support systems such as actions and clock/scheduling primitives. */
     public GameSupportService gameSupportService() {
         return gameSupportService;
+    }
+
+    /** Returns validated structured dialogue/scene definitions. */
+    public SceneRegistry sceneRegistry() {
+        return sceneRegistry;
+    }
+
+    /** Returns the headless executor for section 1.3 scene flows. */
+    public SceneExecutor sceneExecutor() {
+        return sceneExecutor;
     }
 
     /** Returns the adapter for migrated code replacing direct global API calls. */

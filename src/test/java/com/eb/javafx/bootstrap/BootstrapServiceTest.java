@@ -6,6 +6,7 @@ import com.eb.javafx.prefs.PreferencesService;
 import com.eb.javafx.random.GameRandomService;
 import com.eb.javafx.routing.SceneRouter;
 import com.eb.javafx.save.SaveLoadService;
+import com.eb.javafx.scene.EnginePlaceholderSceneModule;
 import com.eb.javafx.state.GameStateFactory;
 import com.eb.javafx.ui.UiTheme;
 import org.junit.jupiter.api.AfterEach;
@@ -53,6 +54,10 @@ final class BootstrapServiceTest {
         assertTrue(context.gameSupportService().isInitialized());
         assertTrue(context.gameSupportService().actionRegistry().isEmpty());
         assertEquals("morning", context.gameSupportService().gameClock().currentTime().timeSlot().id());
+        assertTrue(context.sceneRegistry().scene(EnginePlaceholderSceneModule.DEMO_DIALOGUE_SCENE).isPresent());
+        assertEquals(2, context.sceneRegistry().scenes().size());
+        assertEquals(EnginePlaceholderSceneModule.DEMO_DIALOGUE_SCENE,
+                context.sceneExecutor().start(EnginePlaceholderSceneModule.DEMO_DIALOGUE_SCENE).activeSceneId());
         assertTrue(context.globalApiAdapter().lastRouteRequest().isEmpty());
         assertEquals("main-menu", context.gameState().startupRoute());
     }

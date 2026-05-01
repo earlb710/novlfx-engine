@@ -2,8 +2,14 @@ package com.eb.javafx.routing;
 
 import com.eb.javafx.content.ContentRegistry;
 import com.eb.javafx.display.ImageDisplayRegistry;
+import com.eb.javafx.gamesupport.GameSupportService;
 import com.eb.javafx.prefs.PreferencesService;
+import com.eb.javafx.random.GameRandomService;
 import com.eb.javafx.save.SaveLoadService;
+import com.eb.javafx.scene.EnginePlaceholderSceneModule;
+import com.eb.javafx.scene.SceneExecutor;
+import com.eb.javafx.scene.SceneRegistry;
+import com.eb.javafx.state.GameState;
 import com.eb.javafx.ui.UiTheme;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
@@ -51,12 +57,41 @@ public final class SceneRouter {
             ImageDisplayRegistry imageDisplayRegistry,
             SaveLoadService saveLoadService,
             UiTheme uiTheme) {
+        GameRandomService randomService = new GameRandomService();
+        randomService.initialize();
+        GameSupportService gameSupportService = new GameSupportService();
+        gameSupportService.initialize();
+        SceneRegistry sceneRegistry = new SceneRegistry();
+        new EnginePlaceholderSceneModule().registerScenes(sceneRegistry);
+        sceneRegistry.validateScenes();
+        registerDefaultRoutes(primaryStage, preferencesService, contentRegistry, imageDisplayRegistry, saveLoadService,
+                randomService, gameSupportService, new GameState(contentRegistry.definition("startup.route")),
+                sceneRegistry, new SceneExecutor(sceneRegistry), uiTheme);
+    }
+
+    public void registerDefaultRoutes(
+            Stage primaryStage,
+            PreferencesService preferencesService,
+            ContentRegistry contentRegistry,
+            ImageDisplayRegistry imageDisplayRegistry,
+            SaveLoadService saveLoadService,
+            GameRandomService randomService,
+            GameSupportService gameSupportService,
+            GameState gameState,
+            SceneRegistry sceneRegistry,
+            SceneExecutor sceneExecutor,
+            UiTheme uiTheme) {
         registerRoutes(new RouteContext(
                 primaryStage,
                 preferencesService,
                 contentRegistry,
                 imageDisplayRegistry,
                 saveLoadService,
+                randomService,
+                gameSupportService,
+                gameState,
+                sceneRegistry,
+                sceneExecutor,
                 uiTheme,
                 this), List.of(new DefaultRouteModule()));
     }
