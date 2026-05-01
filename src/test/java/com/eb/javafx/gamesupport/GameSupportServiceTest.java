@@ -4,6 +4,9 @@ import com.eb.javafx.random.GameRandomService;
 import com.eb.javafx.state.GameState;
 import org.junit.jupiter.api.Test;
 
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.nio.file.Path;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -51,6 +54,28 @@ final class GameSupportServiceTest {
         assertTrue(roles.contains("manager"));
         assertThrows(UnsupportedOperationException.class, () ->
                 roles.codes().add(new CodeDefinition("other", "Other", 30, List.of())));
+    }
+
+    @Test
+    void categoryCodeTablesLoadTranslatedDefinitionsFromJson() throws URISyntaxException {
+        CategoryCodeTableDefinition categories = CategoryCodeTableDefinition.load(testResource(
+                "category-code-tables.en.json"));
+
+        assertEquals("en", categories.language());
+        assertTrue(categories.containsTable("roles"));
+        assertTrue(categories.containsTable("postures"));
+        assertTrue(categories.containsTable("goals"));
+
+        CodeTableDefinition duties = categories.table("duties").orElseThrow();
+        assertEquals("Duties", duties.title());
+        assertEquals(List.of("closer", "opener"), duties.codes().stream().map(CodeDefinition::id).toList());
+        assertEquals(List.of("work", "night"), duties.code("closer").orElseThrow().tags());
+    }
+
+    @Test
+    void categoryCodeTablesRejectMissingLanguage() {
+        assertThrows(IllegalArgumentException.class, () ->
+                CategoryCodeTableDefinition.fromJson("{\"tables\":[]}", "missing-language.json"));
     }
 
     @Test
@@ -111,5 +136,13 @@ final class GameSupportServiceTest {
 
     private static CodeTableDefinition codeTable(String id, CodeDefinition... codes) {
         return new CodeTableDefinition(id, id, List.of(codes));
+    }
+
+    private static Path testResource(String name) throws URISyntaxException {
+        URL resource = GameSupportServiceTest.class.getResource("/com/eb/javafx/gamesupport/" + name);
+        if (resource == null) {
+            throw new IllegalArgumentException("Missing test resource: " + name);
+        }
+        return Path.of(resource.toURI());
     }
 }

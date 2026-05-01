@@ -1,0 +1,101 @@
+{
+  "language": "en",
+  "tables": [
+    {
+      "id": "roles",
+      "title": "Roles",
+      "codes": [
+        {
+          "id": "founder",
+          "title": "Founder",
+          "sortOrder": 10,
+          "tags": ["work"]
+        },
+        {
+          "id": "manager",
+          "title": "Manager",
+          "sortOrder": 20,
+          "tags": ["work"]
+        }
+      ]
+    },
+    {
+      "id": "postures",
+      "title": "Postures",
+      "codes": [
+        {
+          "id": "standing",
+          "title": "Standing",
+          "sortOrder": 10,
+          "tags": ["body"]
+        },
+        {
+          "id": "seated",
+          "title": "Seated",
+          "sortOrder": 20,
+          "tags": ["body"]
+        }
+      ]
+    },
+    {
+      "id": "positions",
+      "title": "Positions",
+      "codes": [
+        {
+          "id": "front",
+          "title": "Front",
+          "sortOrder": 10,
+          "tags": ["layout"]
+        },
+        {
+          "id": "back",
+          "title": "Back",
+          "sortOrder": 20,
+          "tags": ["layout"]
+        }
+      ]
+    },
+    {
+      "id": "duties",
+      "title": "Duties",
+      "codes": [
+        {
+          "id": "opener",
+          "title": "Opener",
+          "sortOrder": 20,
+          "tags": ["work", "morning"]
+        },
+        {
+          "id": "closer",
+          "title": "Closer",
+          "sortOrder": 10,
+          "tags": ["work", "night"]
+        }
+      ]
+    },
+    {
+      "id": "listeners",
+      "title": "Listeners",
+      "codes": [
+        {
+          "id": "nearby",
+          "title": "Nearby",
+          "sortOrder": 10,
+          "tags": ["scene"]
+        }
+      ]
+    },
+    {
+      "id": "goals",
+      "title": "Goals",
+      "codes": [
+        {
+          "id": "investigate",
+          "title": "Investigate",
+          "sortOrder": 10,
+          "tags": ["story"]
+        }
+      ]
+    }
+  ]
+}

@@ -160,6 +160,28 @@ Use `GameSupportService` and `ActionRegistry` to register reusable `GameAction` 
 
 Use `CodeTableDefinition` and `CodeDefinition` to define project-supplied code lists such as time slots, roles, goals, postures, positions, duties, or listener types. `GameClock` and `GameDateTime` use a time-slot code table so reusable time progression does not embed a specific game calendar or schedule.
 
+Use `CategoryCodeTableDefinition.load(Path)` when category data should come from authored JSON. The root object contains a `language` field and a `tables` array; titles in that file are interpreted as text for that language so applications can provide parallel files for later translation:
+
+```json
+{
+  "language": "en",
+  "tables": [
+    {
+      "id": "roles",
+      "title": "Roles",
+      "codes": [
+        {
+          "id": "manager",
+          "title": "Manager",
+          "sortOrder": 20,
+          "tags": ["work"]
+        }
+      ]
+    }
+  ]
+}
+```
+
 ### State
 
 Use `GameStateFactory` to create base `GameState` instances. Keep project-specific state fields and schemas in the application repository unless they are represented by reusable engine abstractions.
