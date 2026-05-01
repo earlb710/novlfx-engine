@@ -185,6 +185,18 @@ public final class CategoryCodeTableDefinition {
                     if (Character.isDigit(character)) {
                         yield parseNumber();
                     }
+                    if (json.startsWith("true", index)) {
+                        index += 4;
+                        yield Boolean.TRUE;
+                    }
+                    if (json.startsWith("false", index)) {
+                        index += 5;
+                        yield Boolean.FALSE;
+                    }
+                    if (json.startsWith("null", index)) {
+                        index += 4;
+                        yield null;
+                    }
                     throw error("Unsupported JSON value.");
                 }
             };

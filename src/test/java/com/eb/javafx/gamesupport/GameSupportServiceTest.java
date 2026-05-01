@@ -134,10 +134,6 @@ final class GameSupportServiceTest {
         return new CodeTableDefinition("time-slots", "Time Slots", List.of(codes));
     }
 
-    private static CodeTableDefinition codeTable(String id, CodeDefinition... codes) {
-        return new CodeTableDefinition(id, id, List.of(codes));
-    }
-
     private static Path testResource(String name) throws URISyntaxException {
         URL resource = GameSupportServiceTest.class.getResource("/com/eb/javafx/gamesupport/" + name);
         if (resource == null) {
