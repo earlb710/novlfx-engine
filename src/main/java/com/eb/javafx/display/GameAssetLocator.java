@@ -8,6 +8,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -54,8 +55,8 @@ public final class GameAssetLocator {
         return indexedFiles().stream()
                 .sorted(Comparator.comparingInt(path -> relativeGamePath(path).length()))
                 .filter(path -> {
-                    String relative = relativeGamePath(path).toLowerCase();
-                    return relative.endsWith(normalized.toLowerCase())
+                    String relative = relativeGamePath(path).toLowerCase(Locale.ROOT);
+                    return relative.endsWith(normalized.toLowerCase(Locale.ROOT))
                             || PathUtils.fileNameLowercase(path.toString()).equals(fileName);
                 })
                 .findFirst();
