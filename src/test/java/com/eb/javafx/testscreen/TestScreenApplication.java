@@ -52,6 +52,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.regex.Matcher;
@@ -245,15 +246,18 @@ public final class TestScreenApplication {
     private void updateSelectedTest() {
         TestCase selectedTest = selectedTest();
         runButton.setEnabled(selectedTest != null);
-        runAllButton.setEnabled(!selectedCategoryTests().isEmpty());
+        runAllButton.setEnabled(!selectedAutoCategoryTests().isEmpty());
         if (selectedTest == null) {
             TestCategory selectedCategory = selectedCategory();
             if (selectedCategory == null) {
                 descriptionArea.setText("");
             } else {
+                int autoTestCount = selectedAutoCategoryTests().size();
                 descriptionArea.setText("Category: " + selectedCategory.name()
                         + "\nTests: " + selectedCategory.testCount()
-                        + "\nPress Run All in Category to run every test in this category.");
+                        + "\nAuto tests: " + autoTestCount
+                        + "\nPress Run All in Category to run every auto test in this category."
+                        + "\nManual tests must be run individually.");
             }
             return;
         }
@@ -303,15 +307,15 @@ public final class TestScreenApplication {
     }
 
     private void runAllCategoryTests() {
-        List<TestCase> categoryTests = selectedCategoryTests();
+        List<TestCase> categoryTests = selectedAutoCategoryTests();
         if (categoryTests.isEmpty()) {
-            outputArea.setText("Select a test category first.");
+            outputArea.setText("Select a category with auto tests first. Manual tests must be run individually.");
             return;
         }
         String category = selectedCategoryName().orElse("selected category");
 
         setRunning(true);
-        outputArea.setText("Running " + categoryTests.size() + " tests in " + category + "...\n");
+        outputArea.setText("Running " + categoryTests.size() + " auto tests in " + category + "...\n");
 
         new SwingWorker<String, Void>() {
             @Override
@@ -342,7 +346,7 @@ public final class TestScreenApplication {
 
     private void setRunning(boolean running) {
         runButton.setEnabled(!running && selectedTest() != null);
-        runAllButton.setEnabled(!running && !selectedCategoryTests().isEmpty());
+        runAllButton.setEnabled(!running && !selectedAutoCategoryTests().isEmpty());
     }
 
     private RunResult executeTestAndRecord(TestCase testCase) {
@@ -736,6 +740,16 @@ public final class TestScreenApplication {
             }
         }
         return categoryTests;
+    }
+
+    private List<TestCase> selectedAutoCategoryTests() {
+        return autoCategoryTests(selectedCategoryTests(), TestCase::auto);
+    }
+
+    static <T> List<T> autoCategoryTests(List<T> tests, Predicate<T> autoPredicate) {
+        return tests.stream()
+                .filter(autoPredicate)
+                .collect(Collectors.toList());
     }
 
     private static boolean parseBoolean(String value, boolean defaultValue) {
