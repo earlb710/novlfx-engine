@@ -13,7 +13,8 @@ public final class SceneRegistry {
 
     public void register(SceneDefinition sceneDefinition) {
         if (scenes.containsKey(sceneDefinition.id())) {
-            throw new IllegalArgumentException("Scene already registered: " + sceneDefinition.id());
+            throw new IllegalArgumentException("Duplicate scene id '" + sceneDefinition.id()
+                    + "' cannot be registered. Scene IDs must be unique across all scene modules.");
         }
         scenes.put(sceneDefinition.id(), sceneDefinition);
     }
@@ -25,7 +26,8 @@ public final class SceneRegistry {
     public SceneDefinition requireScene(String id) {
         SceneDefinition sceneDefinition = scenes.get(id);
         if (sceneDefinition == null) {
-            throw new IllegalStateException("Missing scene definition: " + id);
+            throw new IllegalStateException("Missing scene definition '" + id
+                    + "'. Register the scene before starting or linking to it.");
         }
         return sceneDefinition;
     }
@@ -46,7 +48,8 @@ public final class SceneRegistry {
         Set<String> stepIds = new HashSet<>();
         for (SceneStep step : sceneDefinition.steps()) {
             if (!stepIds.add(step.id())) {
-                throw new IllegalStateException("Duplicate scene step id in " + sceneDefinition.id() + ": " + step.id());
+                throw new IllegalStateException("Duplicate scene step id '" + step.id() + "' in scene '"
+                        + sceneDefinition.id() + "'. Step IDs must be unique within a scene.");
             }
             validateTransition(sceneDefinition.id(), step.id(), step.transition());
             if (step.type() == SceneStepType.CHOICE) {
@@ -59,7 +62,8 @@ public final class SceneRegistry {
         Set<String> choiceIds = new HashSet<>();
         for (SceneChoice choice : step.choices()) {
             if (!choiceIds.add(choice.id())) {
-                throw new IllegalStateException("Duplicate choice id in " + sceneDefinition.id() + "/" + step.id() + ": " + choice.id());
+                throw new IllegalStateException("Duplicate choice id '" + choice.id() + "' in scene '"
+                        + sceneDefinition.id() + "' step '" + step.id() + "'. Choice IDs must be unique within a choice step.");
             }
             validateTransition(sceneDefinition.id(), step.id(), choice.transition());
         }
@@ -68,8 +72,9 @@ public final class SceneRegistry {
     private void validateTransition(String sceneId, String stepId, SceneTransition transition) {
         if ((transition.type() == SceneTransitionType.JUMP || transition.type() == SceneTransitionType.CALL)
                 && !scenes.containsKey(transition.targetSceneId())) {
-            throw new IllegalStateException("Scene " + sceneId + " step " + stepId
-                    + " references missing scene: " + transition.targetSceneId());
+            throw new IllegalStateException("Scene '" + sceneId + "' step '" + stepId
+                    + "' has " + transition.type() + " transition to missing scene '"
+                    + transition.targetSceneId() + "'. Register that scene or change the transition target.");
         }
     }
 }

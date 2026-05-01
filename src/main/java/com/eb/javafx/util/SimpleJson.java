@@ -9,7 +9,7 @@ import java.util.Map;
  * Minimal JSON parser for small engine-owned configuration documents.
  *
  * <p>This parser supports objects, arrays, strings, booleans, null, and
- * integer numbers. It is intentionally small so reusable engine data classes
+     * numeric values. It is intentionally small so reusable engine data classes
  * can parse authored JSON without adding a dependency.</p>
  */
 public final class SimpleJson {
@@ -165,7 +165,7 @@ public final class SimpleJson {
             }
         }
 
-        private int parseNumber() {
+        private Number parseNumber() {
             int start = index;
             if (peek('-')) {
                 index++;
@@ -176,13 +176,38 @@ public final class SimpleJson {
             while (index < json.length() && Character.isDigit(json.charAt(index))) {
                 index++;
             }
-            if (index < json.length() && (json.charAt(index) == '.' || json.charAt(index) == 'e' || json.charAt(index) == 'E')) {
-                throw error("Only JSON integers are supported here.");
+            boolean floatingPoint = false;
+            if (index < json.length() && json.charAt(index) == '.') {
+                floatingPoint = true;
+                index++;
+                if (index >= json.length() || !Character.isDigit(json.charAt(index))) {
+                    throw error("Invalid JSON number.");
+                }
+                while (index < json.length() && Character.isDigit(json.charAt(index))) {
+                    index++;
+                }
+            }
+            if (index < json.length() && (json.charAt(index) == 'e' || json.charAt(index) == 'E')) {
+                floatingPoint = true;
+                index++;
+                if (index < json.length() && (json.charAt(index) == '+' || json.charAt(index) == '-')) {
+                    index++;
+                }
+                if (index >= json.length() || !Character.isDigit(json.charAt(index))) {
+                    throw error("Invalid JSON number exponent.");
+                }
+                while (index < json.length() && Character.isDigit(json.charAt(index))) {
+                    index++;
+                }
             }
             try {
-                return Integer.parseInt(json.substring(start, index));
+                String number = json.substring(start, index);
+                if (floatingPoint) {
+                    return Double.parseDouble(number);
+                }
+                return Integer.parseInt(number);
             } catch (NumberFormatException exception) {
-                throw error("JSON integer is out of range.");
+                throw error("JSON number is out of range.");
             }
         }
 
