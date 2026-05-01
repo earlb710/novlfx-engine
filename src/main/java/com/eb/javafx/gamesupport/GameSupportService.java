@@ -10,6 +10,7 @@ package com.eb.javafx.gamesupport;
  */
 public final class GameSupportService {
     private final ActionRegistry actionRegistry = new ActionRegistry();
+    private final LocationRegistry locationRegistry = new LocationRegistry();
     private final GameClock gameClock = new GameClock();
     private boolean initialized;
 
@@ -32,6 +33,12 @@ public final class GameSupportService {
     public GameClock gameClock() {
         ensureInitialized();
         return gameClock;
+    }
+
+    /** Returns the initialized generic location registry for map descriptors. */
+    public LocationRegistry locationRegistry() {
+        ensureInitialized();
+        return locationRegistry;
     }
 
     private void ensureInitialized() {

@@ -70,7 +70,7 @@ Provide sound requests, playback commands, channel definitions, and audio servic
 
 ### `gamesupport`, `state`, `save`, `prefs`, and `random`
 
-Provide reusable abstractions for actions, requirements, effects, game clock/date-time, mutable game state creation, save/load workflows, preferences, and deterministic random behavior. Keep domain-specific rules outside the engine unless represented as generic extension points.
+Provide reusable abstractions for actions, requirements, effects, generic definition registries, location descriptors, location occupancy, game clock/date-time, mutable game state creation, save/load workflows, preferences, and deterministic random behavior. Keep domain-specific rules outside the engine unless represented as generic extension points.
 
 ### `text` and `util`
 

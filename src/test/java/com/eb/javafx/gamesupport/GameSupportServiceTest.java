@@ -24,6 +24,7 @@ final class GameSupportServiceTest {
 
         assertTrue(service.isInitialized());
         assertTrue(service.actionRegistry().isEmpty());
+        assertTrue(service.locationRegistry().isEmpty());
         assertEquals(1, service.gameClock().currentTime().day());
         assertEquals(TimeSlot.MORNING, service.gameClock().currentTime().timeSlot());
     }
