@@ -1,0 +1,39 @@
+name: Copilot Setup Steps
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - .github/workflows/copilot-setup-steps.yml
+  pull_request:
+    paths:
+      - .github/workflows/copilot-setup-steps.yml
+
+jobs:
+  copilot-setup-steps:
+    runs-on: ubuntu-latest
+    environment: copilot
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Configure access to private Lr2Alt repository
+        env:
+          LR2ALT_TOKEN: ${{ secrets.LR2ALT_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -z "${LR2ALT_TOKEN}" ]; then
+            echo "LR2ALT_TOKEN must be configured as an environment secret under Settings > Environments > copilot." >&2
+            exit 1
+          fi
+          echo "::add-mask::${LR2ALT_TOKEN}"
+          umask 077
+          git_config="${HOME}/.gitconfig"
+          touch "${git_config}"
+          if ! grep -Eq '^[[:space:]]*insteadOf[[:space:]]*=[[:space:]]*https://github.com/earlb710/Lr2Alt$' "${git_config}"; then
+            {
+              printf '[url "https://x-access-token:%s@github.com/earlb710/Lr2Alt"]\n' "${LR2ALT_TOKEN}"
+              printf '    insteadOf = https://github.com/earlb710/Lr2Alt\n'
+            } >> "${git_config}"
+          fi
