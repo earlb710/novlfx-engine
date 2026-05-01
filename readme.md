@@ -1,8 +1,8 @@
 # novlfx-engine
 
-Reusable JavaFX foundation for eb.
+Reusable JavaFX foundation for visual novel games.
 
-The library publishes reusable packages under `com.eb.javafx.*` from the `com.novlfx.engine` Java module.
+The library publishes reusable packages in the `com.eb.javafx.*` namespace through the `com.novlfx.engine` Java module.
 
 ## Included
 
