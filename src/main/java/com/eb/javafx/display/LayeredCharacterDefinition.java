@@ -1,7 +1,7 @@
 package com.eb.javafx.display;
 
-import java.util.Collections;
-import java.util.LinkedHashMap;
+import com.eb.javafx.util.ImmutableCollections;
+import com.eb.javafx.util.Validation;
 import java.util.List;
 import java.util.Map;
 
@@ -31,18 +31,10 @@ public final class LayeredCharacterDefinition {
             List<String> drawOrder,
             String defaultTransformId,
             Map<String, String> metadata) {
-        if (id == null || id.isBlank()) {
-            throw new IllegalArgumentException("Layered display id is required.");
-        }
-        if (drawOrder == null || drawOrder.isEmpty()) {
-            throw new IllegalArgumentException("Layered display draw order is required.");
-        }
-        this.id = id;
-        this.drawOrder = List.copyOf(drawOrder);
+        this.id = Validation.requireNonBlank(id, "Layered display id is required.");
+        this.drawOrder = List.copyOf(Validation.requireNonEmpty(drawOrder, "Layered display draw order is required."));
         this.defaultTransformId = defaultTransformId;
-        this.metadata = metadata == null
-                ? Collections.emptyMap()
-                : Collections.unmodifiableMap(new LinkedHashMap<>(metadata));
+        this.metadata = ImmutableCollections.copyMap(metadata);
     }
 
     public String id() {

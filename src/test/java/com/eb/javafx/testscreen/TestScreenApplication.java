@@ -1,5 +1,6 @@
 package com.eb.javafx.testscreen;
 
+import com.eb.javafx.util.JsonStrings;
 import org.junit.platform.engine.TestExecutionResult;
 import org.junit.platform.engine.discovery.DiscoverySelectors;
 import org.junit.platform.launcher.Launcher;
@@ -542,7 +543,7 @@ public final class TestScreenApplication {
                 continue;
             }
 
-            ParsedJsonString parsedKey = parseJsonString(json, index);
+            JsonStrings.ParsedString parsedKey = JsonStrings.parse(json, index);
             index = skipWhitespace(json, parsedKey.endIndex());
             if (key.equals(parsedKey.value()) && index < json.length() && json.charAt(index) == ':') {
                 int valueStart = skipWhitespace(json, index + 1);
@@ -564,7 +565,7 @@ public final class TestScreenApplication {
                 continue;
             }
 
-            ParsedJsonString key = parseJsonString(recordBody, index);
+            JsonStrings.ParsedString key = JsonStrings.parse(recordBody, index);
             index = skipWhitespaceAndCommas(recordBody, key.endIndex());
             if (index >= recordBody.length() || recordBody.charAt(index) != ':') {
                 continue;
@@ -572,7 +573,7 @@ public final class TestScreenApplication {
             index = skipWhitespaceAndCommas(recordBody, index + 1);
 
             if (index < recordBody.length() && recordBody.charAt(index) == '"') {
-                ParsedJsonString value = parseJsonString(recordBody, index);
+                JsonStrings.ParsedString value = JsonStrings.parse(recordBody, index);
                 fields.put(key.value(), value.value());
                 index = value.endIndex();
             } else if (recordBody.startsWith("true", index)) {
@@ -607,28 +608,6 @@ public final class TestScreenApplication {
             index++;
         }
         return index;
-    }
-
-    private static ParsedJsonString parseJsonString(String value, int startIndex) {
-        StringBuilder parsed = new StringBuilder();
-        int index = startIndex + 1;
-        while (index < value.length()) {
-            char character = value.charAt(index);
-            if (character == '"') {
-                return new ParsedJsonString(parsed.toString(), index + 1);
-            }
-            if (character == '\\' && index + 1 < value.length()) {
-                index++;
-                appendEscapedJsonCharacter(parsed, value, index);
-                if (value.charAt(index) == 'u' && index + 4 < value.length()) {
-                    index += 4;
-                }
-            } else {
-                parsed.append(character);
-            }
-            index++;
-        }
-        return new ParsedJsonString(parsed.toString(), index);
     }
 
     private void saveResultRecords() {
@@ -879,108 +858,17 @@ public final class TestScreenApplication {
     }
 
     private static String jsonNullableString(String value) {
-        return value == null ? "null" : jsonString(value);
+        return JsonStrings.nullableQuote(value);
     }
 
     private static String jsonString(String value) {
-        return '"' + escapeJson(value) + '"';
-    }
-
-    private static String escapeJson(String value) {
-        StringBuilder escaped = new StringBuilder();
-        for (int index = 0; index < value.length(); index++) {
-            char character = value.charAt(index);
-            switch (character) {
-                case '"':
-                    escaped.append("\\\"");
-                    break;
-                case '\\':
-                    escaped.append("\\\\");
-                    break;
-                case '\b':
-                    escaped.append("\\b");
-                    break;
-                case '\f':
-                    escaped.append("\\f");
-                    break;
-                case '\n':
-                    escaped.append("\\n");
-                    break;
-                case '\r':
-                    escaped.append("\\r");
-                    break;
-                case '\t':
-                    escaped.append("\\t");
-                    break;
-                default:
-                    if (character < 0x20) {
-                        escaped.append(String.format("\\u%04x", (int) character));
-                    } else {
-                        escaped.append(character);
-                    }
-                    break;
-            }
-        }
-        return escaped.toString();
-    }
-
-    private static void appendEscapedJsonCharacter(StringBuilder parsed, String value, int escapeIndex) {
-        char escaped = value.charAt(escapeIndex);
-        switch (escaped) {
-            case '"':
-                parsed.append('"');
-                break;
-            case '\\':
-                parsed.append('\\');
-                break;
-            case 'b':
-                parsed.append('\b');
-                break;
-            case 'f':
-                parsed.append('\f');
-                break;
-            case 'n':
-                parsed.append('\n');
-                break;
-            case 'r':
-                parsed.append('\r');
-                break;
-            case 't':
-                parsed.append('\t');
-                break;
-            case 'u':
-                if (escapeIndex + 5 <= value.length()) {
-                    parsed.append((char) Integer.parseInt(value.substring(escapeIndex + 1, escapeIndex + 5), 16));
-                }
-                break;
-            default:
-                parsed.append(escaped);
-                break;
-        }
+        return JsonStrings.quote(value);
     }
 
     private static String stackTrace(Throwable throwable) {
         StringWriter writer = new StringWriter();
         throwable.printStackTrace(new PrintWriter(writer));
         return writer.toString();
-    }
-
-    private static final class ParsedJsonString {
-        private final String value;
-        private final int endIndex;
-
-        private ParsedJsonString(String value, int endIndex) {
-            this.value = value;
-            this.endIndex = endIndex;
-        }
-
-        String value() {
-            return value;
-        }
-
-        int endIndex() {
-            return endIndex;
-        }
     }
 
     private static final class RunResult {

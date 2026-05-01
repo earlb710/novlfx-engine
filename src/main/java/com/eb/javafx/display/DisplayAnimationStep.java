@@ -1,5 +1,7 @@
 package com.eb.javafx.display;
 
+import com.eb.javafx.util.Validation;
+
 /**
  * One ATL-style animation step for a JavaFX node.
  *
@@ -39,20 +41,11 @@ public final class DisplayAnimationStep {
             double targetTranslateX,
             double targetTranslateY,
             DisplayInterpolation interpolation) {
-        if (durationMillis < 0 || pauseBeforeMillis < 0) {
-            throw new IllegalArgumentException("Animation durations must be zero or positive.");
-        }
-        if (targetOpacity < 0.0 || targetOpacity > 1.0) {
-            throw new IllegalArgumentException("Animation opacity must be between 0 and 1.");
-        }
-        if (targetScaleX <= 0.0 || targetScaleY <= 0.0) {
-            throw new IllegalArgumentException("Animation scale must be positive.");
-        }
-        this.durationMillis = durationMillis;
-        this.pauseBeforeMillis = pauseBeforeMillis;
-        this.targetOpacity = targetOpacity;
-        this.targetScaleX = targetScaleX;
-        this.targetScaleY = targetScaleY;
+        this.durationMillis = Validation.requireZeroOrPositive(durationMillis, "Animation durations must be zero or positive.");
+        this.pauseBeforeMillis = Validation.requireZeroOrPositive(pauseBeforeMillis, "Animation durations must be zero or positive.");
+        this.targetOpacity = Validation.requireUnitInterval(targetOpacity, "Animation opacity must be between 0 and 1.");
+        this.targetScaleX = Validation.requirePositive(targetScaleX, "Animation scale must be positive.");
+        this.targetScaleY = Validation.requirePositive(targetScaleY, "Animation scale must be positive.");
         this.targetTranslateX = targetTranslateX;
         this.targetTranslateY = targetTranslateY;
         this.interpolation = interpolation == null ? DisplayInterpolation.LINEAR : interpolation;

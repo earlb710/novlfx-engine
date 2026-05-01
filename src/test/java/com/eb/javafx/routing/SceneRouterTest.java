@@ -10,9 +10,13 @@ import org.junit.jupiter.api.Test;
 
 import java.util.prefs.BackingStoreException;
 import java.util.prefs.Preferences;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -53,6 +57,84 @@ final class SceneRouterTest {
     }
 
     @Test
+    void routeFactoriesAreNotBuiltDuringRegistration() {
+        SceneRouter router = new SceneRouter();
+        AtomicInteger sceneConstructionCount = new AtomicInteger();
+        RouteModule routeModule = target -> target.registerRoute(new RouteDescriptor(
+                        "custom-route",
+                        "ui.mainMenu.title",
+                        RouteCategory.MENU,
+                        true,
+                        "Custom test route."),
+                context -> {
+                    sceneConstructionCount.incrementAndGet();
+                    return null;
+                });
+
+        router.registerRoutes(minimalRouteContext(router), List.of(routeModule));
+
+        assertEquals(1, router.routes().size());
+        assertEquals(0, sceneConstructionCount.get());
+    }
+
+    @Test
+    void openingRoutePassesSharedContextToFactory() {
+        SceneRouter router = new SceneRouter();
+        RouteContext routeContext = minimalRouteContext(router);
+        AtomicReference<RouteContext> receivedContext = new AtomicReference<>();
+        router.registerRoutes(routeContext, List.of(target -> target.registerRoute(new RouteDescriptor(
+                        "custom-route",
+                        "ui.mainMenu.title",
+                        RouteCategory.MENU,
+                        true,
+                        "Custom test route."),
+                context -> {
+                    receivedContext.set(context);
+                    return null;
+                })));
+
+        router.open("custom-route");
+
+        assertSame(routeContext, receivedContext.get());
+    }
+
+    @Test
+    void customRouteModuleParticipatesInTitleValidation() {
+        ContentRegistry registry = new ContentRegistry();
+        registry.registerBaseContent();
+        SceneRouter router = new SceneRouter();
+        router.registerRoutes(minimalRouteContext(router), List.of(target -> target.registerRoute(new RouteDescriptor(
+                        "custom-route",
+                        "missing.title",
+                        RouteCategory.MENU,
+                        false,
+                        "Custom test route."),
+                context -> null)));
+
+        IllegalStateException exception = assertThrows(IllegalStateException.class, () ->
+                router.validateRouteDefinitions(registry));
+
+        assertEquals("Missing required content definition: missing.title", exception.getMessage());
+    }
+
+    @Test
+    void openingRegisteredRouteWithoutContextFailsClearly() {
+        SceneRouter router = new SceneRouter();
+        router.registerRoute(new RouteDescriptor(
+                        "custom-route",
+                        "ui.mainMenu.title",
+                        RouteCategory.MENU,
+                        true,
+                        "Custom test route."),
+                context -> null);
+
+        IllegalStateException exception = assertThrows(IllegalStateException.class, () ->
+                router.open("custom-route"));
+
+        assertEquals("JavaFX route context has not been registered.", exception.getMessage());
+    }
+
+    @Test
     void openingUnknownRouteFailsBeforeSceneConstruction() {
         SceneRouter router = new SceneRouter();
 
@@ -60,5 +142,9 @@ final class SceneRouterTest {
                 router.open("missing-route"));
 
         assertEquals("Unknown JavaFX route: missing-route", exception.getMessage());
+    }
+
+    private RouteContext minimalRouteContext(SceneRouter router) {
+        return new RouteContext(null, null, null, null, null, null, router);
     }
 }

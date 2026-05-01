@@ -1,6 +1,8 @@
 package com.eb.javafx.audio;
 
 import com.eb.javafx.prefs.PreferencesService;
+import com.eb.javafx.util.InitializationGuard;
+import com.eb.javafx.util.Validation;
 
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -28,7 +30,7 @@ public final class AudioService {
     private final Map<String, AudioChannelDefinition> channels = new LinkedHashMap<>();
     private final Map<String, Double> channelVolumes = new LinkedHashMap<>();
     private final Map<String, AudioPlaybackCommand> lastPlaybackCommands = new LinkedHashMap<>();
-    private boolean initialized;
+    private final InitializationGuard initializationGuard = new InitializationGuard("Audio service used before initialization.");
     private boolean muted;
     private double masterVolume;
 
@@ -39,9 +41,7 @@ public final class AudioService {
      * @throws IllegalArgumentException when preferences are unavailable
      */
     public void initialize(PreferencesService preferencesService) {
-        if (preferencesService == null) {
-            throw new IllegalArgumentException("Preferences service is required for audio initialization.");
-        }
+        Validation.requireNonNull(preferencesService, "Preferences service is required for audio initialization.");
         channels.clear();
         channelVolumes.clear();
         lastPlaybackCommands.clear();
@@ -51,12 +51,12 @@ public final class AudioService {
         registerChannel(new AudioChannelDefinition(SOUND_CHANNEL, "Short one-shot UI and gameplay sounds.", false, 8, 1.0));
         registerChannel(new AudioChannelDefinition(EFFECTS_CHANNEL, "Reusable environmental and scene effects.", true, 4, 1.0));
         registerChannel(new AudioChannelDefinition(INTIMATE_EFFECTS_CHANNEL, "Dedicated migrated effect channel.", true, 2, 1.0));
-        initialized = true;
+        initializationGuard.markInitialized();
     }
 
     /** Returns whether startup has prepared the audio boundary. */
     public boolean isInitialized() {
-        return initialized;
+        return initializationGuard.isInitialized();
     }
 
     /**
@@ -154,9 +154,7 @@ public final class AudioService {
     }
 
     private void assertInitialized() {
-        if (!initialized) {
-            throw new IllegalStateException("Audio service used before initialization.");
-        }
+        initializationGuard.requireInitialized();
     }
 
     private void requireChannel(String channelId) {
@@ -166,6 +164,6 @@ public final class AudioService {
     }
 
     private double clampVolume(double volume) {
-        return Math.max(0.0, Math.min(1.0, volume));
+        return Validation.clampUnitInterval(volume);
     }
 }

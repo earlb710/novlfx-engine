@@ -1,5 +1,6 @@
 package com.eb.javafx.display;
 
+import com.eb.javafx.util.Validation;
 import javafx.animation.Animation;
 
 import java.util.List;
@@ -26,17 +27,11 @@ public final class DisplayAnimation {
      * @param autoReverse whether JavaFX should reverse direction on alternating cycles
      */
     public DisplayAnimation(String id, List<DisplayAnimationStep> steps, int repeatCount, boolean autoReverse) {
-        if (id == null || id.isBlank()) {
-            throw new IllegalArgumentException("Animation id is required.");
-        }
-        if (steps == null || steps.isEmpty()) {
-            throw new IllegalArgumentException("Animation steps are required.");
-        }
+        this.id = Validation.requireNonBlank(id, "Animation id is required.");
+        this.steps = List.copyOf(Validation.requireNonEmpty(steps, "Animation steps are required."));
         if (repeatCount == 0 || repeatCount < Animation.INDEFINITE) {
             throw new IllegalArgumentException("Animation repeat count must be positive or Animation.INDEFINITE.");
         }
-        this.id = id;
-        this.steps = List.copyOf(steps);
         this.repeatCount = repeatCount;
         this.autoReverse = autoReverse;
     }

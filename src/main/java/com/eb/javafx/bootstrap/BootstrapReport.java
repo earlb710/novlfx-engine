@@ -1,8 +1,9 @@
 package com.eb.javafx.bootstrap;
 
+import com.eb.javafx.util.ImmutableCollections;
+import com.eb.javafx.util.TimeFormatting;
+
 import java.time.Instant;
-import java.util.Collections;
-import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.Map;
 import java.util.Set;
@@ -36,7 +37,7 @@ public final class BootstrapReport {
         this.startedAt = startedAt;
         this.completedAt = completedAt;
         this.completedPhases = EnumSet.copyOf(completedPhases);
-        this.phaseMessages = new EnumMap<>(phaseMessages);
+        this.phaseMessages = ImmutableCollections.copyEnumMap(BootstrapPhase.class, phaseMessages);
     }
 
     public Instant startedAt() {
@@ -48,11 +49,16 @@ public final class BootstrapReport {
     }
 
     public Set<BootstrapPhase> completedPhases() {
-        return Collections.unmodifiableSet(completedPhases);
+        return ImmutableCollections.copyEnumSet(BootstrapPhase.class, completedPhases);
     }
 
     public Map<BootstrapPhase, String> phaseMessages() {
-        return Collections.unmodifiableMap(phaseMessages);
+        return phaseMessages;
+    }
+
+    /** Returns elapsed startup time formatted for diagnostics. */
+    public String elapsedTime() {
+        return TimeFormatting.formatElapsedMillis(startedAt, completedAt);
     }
 
     /** Returns whether every documented {@link BootstrapPhase} completed successfully. */
