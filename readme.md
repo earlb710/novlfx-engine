@@ -1,8 +1,8 @@
 # novlfx-engine
 
-Reusable JavaFX foundation extracted from eb.
+Reusable JavaFX foundation for eb.
 
-This initial snapshot intentionally preserves the existing `com.eb.javafx.*` package names while publishing them from the `com.novlfx.engine` Java module. Rename packages later after eb consumes the library dependency.
+The library publishes reusable packages under `com.eb.javafx.*` from the `com.novlfx.engine` Java module.
 
 ## Included
 
