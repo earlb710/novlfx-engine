@@ -37,6 +37,7 @@ import java.awt.FlowLayout;
 import java.awt.GridLayout;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
@@ -79,6 +80,8 @@ public final class TestScreenApplication {
     private static final Pattern METHOD_SOURCE_PATTERN = Pattern.compile(
             "className = '([^']+)', methodName = '([^']+)'");
     private static final Pattern STANDALONE_JAVA_MAIN_PATTERN = Pattern.compile("\\bpublic\\s+static\\s+void\\s+main\\s*\\(");
+    private static final String STANDALONE_EXAMPLE_PREFIX = "example:";
+    private static final int MAX_EXTERNAL_OUTPUT_BYTES = 1024 * 1024;
 
     private final Launcher launcher;
     private final DefaultMutableTreeNode testTreeRoot;
@@ -438,7 +441,7 @@ public final class TestScreenApplication {
                     .start();
             String processOutput;
             try (InputStream inputStream = process.getInputStream()) {
-                processOutput = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
+                processOutput = readProcessOutput(inputStream);
             }
             int exitCode = process.waitFor();
             output.append(processOutput);
@@ -474,6 +477,34 @@ public final class TestScreenApplication {
                 .append("Tests failed: ").append(summary.getTestsFailedCount()).append('\n')
                 .append("Tests skipped: ").append(summary.getTestsSkippedCount()).append('\n')
                 .append("Duration: ").append(summary.getTimeFinished() - summary.getTimeStarted()).append(" ms\n");
+    }
+
+    static String readProcessOutput(InputStream inputStream) throws IOException {
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        byte[] buffer = new byte[8192];
+        int totalBytes = 0;
+        boolean truncated = false;
+        int bytesRead;
+        while ((bytesRead = inputStream.read(buffer)) != -1) {
+            int writableBytes = Math.min(bytesRead, MAX_EXTERNAL_OUTPUT_BYTES - totalBytes);
+            if (writableBytes > 0) {
+                output.write(buffer, 0, writableBytes);
+                totalBytes += writableBytes;
+            }
+            if (writableBytes < bytesRead || totalBytes >= MAX_EXTERNAL_OUTPUT_BYTES) {
+                truncated = true;
+                while (inputStream.read(buffer) != -1) {
+                    // Drain remaining process output so the process can exit cleanly.
+                }
+                break;
+            }
+        }
+
+        String result = output.toString(StandardCharsets.UTF_8);
+        if (truncated) {
+            return result + "\n[Output truncated after " + MAX_EXTERNAL_OUTPUT_BYTES + " bytes]\n";
+        }
+        return result;
     }
 
     private Map<String, TestResultRecord> loadResultRecords() {
@@ -915,7 +946,7 @@ public final class TestScreenApplication {
 
     static String standaloneExampleUniqueId(Path path) {
         Path relativePath = REPO_ROOT.relativize(path.toAbsolutePath().normalize());
-        return "example:" + relativePath.toString().replace('\\', '/');
+        return STANDALONE_EXAMPLE_PREFIX + relativePath.toString().replace('\\', '/');
     }
 
     static String standaloneExampleDisplayName(Path path) {

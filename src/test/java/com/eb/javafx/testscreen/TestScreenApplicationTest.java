@@ -3,6 +3,8 @@ package com.eb.javafx.testscreen;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import java.io.ByteArrayInputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -262,6 +264,16 @@ final class TestScreenApplicationTest {
                 "failureOutput", "legacy failure")));
         assertEquals("legacy failure", TestScreenApplication.persistedOutput(Map.of(
                 "failureOutput", "legacy failure")));
+    }
+
+    @Test
+    void readProcessOutputTruncatesLargeExternalOutput() throws Exception {
+        byte[] bytes = "x".repeat(1024 * 1024 + 1).getBytes(StandardCharsets.UTF_8);
+
+        String output = TestScreenApplication.readProcessOutput(new ByteArrayInputStream(bytes));
+
+        assertTrue(output.contains("[Output truncated after 1048576 bytes]"));
+        assertEquals(1024 * 1024, output.indexOf("\n[Output truncated"));
     }
 
     @Test
