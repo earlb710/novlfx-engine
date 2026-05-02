@@ -1,3 +1,4 @@
+import com.eb.javafx.bootstrap.ApplicationResourceConfig;
 import com.eb.javafx.content.ContentRegistry;
 import com.eb.javafx.content.JsonDisplayContentModule;
 import com.eb.javafx.display.DisplayAnimation;
@@ -23,14 +24,17 @@ public final class DisplaySupportDemo {
 
     public static void main(String[] args) {
         Path repoRoot = Path.of("").toAbsolutePath().normalize();
-        Path definitionsPath = Path.of("examples/user-manual/07-display-support/display-definitions.demo.json")
+        Path configPath = Path.of("examples/user-manual/04-startup-and-service-wiring/config.demo.json")
                 .toAbsolutePath()
                 .normalize();
+        ApplicationResourceConfig resourceConfig = ApplicationResourceConfig.load(configPath);
+        Path definitionsPath = resourceConfig.resolveResource(repoRoot, "displayDefinitions").orElseThrow();
+        Path imageAssetRoot = resourceConfig.resolveImageAssetRoot(repoRoot);
 
         ContentRegistry contentRegistry = new ContentRegistry();
         contentRegistry.registerBaseContent();
 
-        ImageDisplayRegistry imageDisplayRegistry = new ImageDisplayRegistry(repoRoot, repoRoot.resolve("game"));
+        ImageDisplayRegistry imageDisplayRegistry = new ImageDisplayRegistry(repoRoot, imageAssetRoot);
         imageDisplayRegistry.registerBaseDisplayContent();
 
         JsonDisplayContentModule displayModule = new JsonDisplayContentModule(definitionsPath);
@@ -45,7 +49,7 @@ public final class DisplaySupportDemo {
                 2,
                 true));
 
-        GameAssetLocator assetLocator = new GameAssetLocator(repoRoot, repoRoot.resolve("game"));
+        GameAssetLocator assetLocator = new GameAssetLocator(repoRoot, imageAssetRoot);
         DisplayAnimation bobAnimation = imageDisplayRegistry.animation("hero.bob");
 
         System.out.println("Transforms: " + imageDisplayRegistry.transforms().keySet());

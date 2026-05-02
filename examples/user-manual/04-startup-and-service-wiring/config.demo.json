@@ -4,6 +4,7 @@
   "imageAssetRoot": "examples/user-manual/07-display-support/assets",
   "resources": {
     "displayDefinitions": "examples/user-manual/07-display-support/display-definitions.demo.json",
+    "sceneDefinitions": "examples/user-manual/05-content-routing-and-scenes/scene-definitions.demo.json",
     "uiTheme": "src/main/resources/com/eb/javafx/ui/eb.css"
   }
 }

@@ -95,6 +95,8 @@ Applications can also keep an external `config.json` and load it with `Applicati
   "categoryCodeTablesPath": "config/category-code-tables.en.json",
   "imageAssetRoot": "game",
   "resources": {
+    "sceneDefinitions": "content/scene-definitions.json",
+    "displayDefinitions": "content/display-definitions.json",
     "uiTheme": "src/main/resources/com/eb/javafx/ui/eb.css",
     "backgrounds": "assets/backgrounds"
   }
@@ -105,7 +107,7 @@ Resolve those paths relative to an application-chosen base directory:
 
 - `resolveCategoryCodeTables(baseDir)` returns the authored category JSON file to pass into `CategoryCodeTableDefinition.load(...)`.
 - `resolveImageAssetRoot(baseDir)` returns the image root used by options-based bootstrap or to pass into `new ImageDisplayRegistry(repoRoot, imageAssetRoot)`.
-- `resolveResource(baseDir, "backgrounds")` resolves other named override points that the application owns.
+- `resolveResource(baseDir, "sceneDefinitions")`, `resolveResource(baseDir, "displayDefinitions")`, or other named resource IDs resolve override points that the application owns.
 
 ```java
 BootstrapOptions options = BootstrapOptions.fromConfig(appRoot.resolve("config.json"))
@@ -116,7 +118,7 @@ BootContext context = new BootstrapService(options).boot(primaryStage);
 ```
 
 Use `context.resourceConfig().resolveCategoryCodeTables(context.applicationRoot())` when app-owned content modules need to load generic category JSON during startup.
-Use `context.resourceConfig().resolveResource(context.applicationRoot(), "displayDefinitions")` with `JsonDisplayContentModule` when app-owned display definitions should be loaded during the static content phase.
+Use `context.resourceConfig().resolveResource(context.applicationRoot(), "displayDefinitions")` with `JsonDisplayContentModule` when app-owned display definitions should be loaded during the static content phase, and use named resources such as `sceneDefinitions` to load JSON-authored scene modules from the application side.
 
 Example/demo code: [`examples/user-manual/04-startup-and-service-wiring/BootstrapDemo.java`](../examples/user-manual/04-startup-and-service-wiring/BootstrapDemo.java)
 
@@ -157,7 +159,7 @@ Use `SceneRegistry` to register `SceneModule` implementations. A scene is descri
 
 Use `SceneExecutor` to execute scene flow and return a `SceneExecutionResult`. Use `ScenePresenter` and view-model classes when JavaFX UI code needs a UI-neutral representation of the current scene and choices.
 
-Use `SceneDefinitionJson` for simple JSON-authored scenes that do not require executable Java `ActionRequirement` or `ActionEffect` instances. JSON scenes can include dialogue/narration text definition IDs, choices, transitions, display references, and string metadata. Register more complex requirements/effects through Java scene modules.
+Use `SceneDefinitionJson` for simple JSON-authored scenes that do not require executable Java `ActionRequirement` or `ActionEffect` instances. JSON scenes can include dialogue/narration text definition IDs, choices, transitions, display references, and string metadata. Register more complex requirements/effects through Java scene modules. In an application, keep the scene JSON path in `ApplicationResourceConfig.resources()` and resolve it with `resolveResource(applicationRoot, "sceneDefinitions")` before loading.
 
 Use `SceneFlowStateJson` to serialize and restore `SceneFlowState` snapshots containing the active scene, step index, call stack, selected choice IDs, and pending UI interruption marker.
 
@@ -195,7 +197,7 @@ Use `DisplayAnimationPlayer` to model animation playback state and interpolation
 
 The registry can resolve image paths from a checked-out game tree through `GameAssetLocator`, but concrete image assets remain application-owned.
 
-Use `DisplayDefinitionJsonLoader` to load app-owned display JSON into an `ImageDisplayRegistry`, or wrap that loading in `JsonDisplayContentModule` for bootstrap registration. The supported root fields are `transforms`, `images`, and `layeredCharacters`; authored image files and IDs remain outside the engine.
+Use `DisplayDefinitionJsonLoader` to load app-owned display JSON into an `ImageDisplayRegistry`, or wrap that loading in `JsonDisplayContentModule` for bootstrap registration. The supported root fields are `transforms`, `images`, and `layeredCharacters`; authored image files and IDs remain outside the engine. Applications can store this JSON path under a named `ApplicationResourceConfig` resource such as `displayDefinitions`.
 
 Example/demo code: [`examples/user-manual/07-display-support/display-definitions.demo.json`](../examples/user-manual/07-display-support/display-definitions.demo.json)
 
@@ -230,7 +232,7 @@ Use `GameSupportService` and `ActionRegistry` to register reusable `GameAction` 
 
 Use `CodeTableDefinition` and `CodeDefinition` to define project-supplied code lists such as time slots, roles, goals, postures, positions, duties, or listener types. `GameClock` and `GameDateTime` use a time-slot code table so reusable time progression does not embed a specific game calendar or schedule.
 
-Use `CategoryCodeTableDefinition.load(Path)` when category data should come from authored JSON. The root object contains a `language` field and a `tables` array; titles in that file are interpreted as text for that language so applications can provide parallel files for later translation:
+Use `CategoryCodeTableDefinition.load(Path)` when category data should come from authored JSON, typically with the path returned by `ApplicationResourceConfig.resolveCategoryCodeTables(applicationRoot)`. The root object contains a `language` field and a `tables` array; titles in that file are interpreted as text for that language so applications can provide parallel files for later translation:
 
 ```json
 {

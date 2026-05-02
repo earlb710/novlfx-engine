@@ -48,6 +48,13 @@ public final class JsonData {
         return requireList(object.get(key), description);
     }
 
+    public static List<Object> requiredList(Map<String, Object> object, String key, String description) {
+        if (!object.containsKey(key) || object.get(key) == null) {
+            throw new IllegalArgumentException("Missing JSON array for " + description + ".");
+        }
+        return requireList(object.get(key), description);
+    }
+
     public static List<Object> requireList(Object value, String description) {
         if (value instanceof List<?> list) {
             return List.copyOf(list);

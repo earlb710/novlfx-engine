@@ -1,15 +1,14 @@
 package com.eb.javafx.gamesupport;
 
+import com.eb.javafx.util.JsonData;
 import com.eb.javafx.util.Validation;
 import com.eb.javafx.util.JsonStrings;
-import com.eb.javafx.util.SimpleJson;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -50,10 +49,9 @@ public final class CategoryCodeTableDefinition {
     }
 
     static CategoryCodeTableDefinition fromJson(String json, String sourceName) {
-        Object root = SimpleJson.parse(json, sourceName);
-        Map<String, Object> rootObject = requireObject(root, "root");
-        String language = requireString(rootObject, "language", "root.language");
-        List<CodeTableDefinition> tables = requireArray(rootObject, "tables", "root.tables").stream()
+        Map<String, Object> rootObject = JsonData.rootObject(json, sourceName);
+        String language = JsonData.requiredString(rootObject, "language", "root.language");
+        List<CodeTableDefinition> tables = JsonData.requiredList(rootObject, "tables", "root.tables").stream()
                 .map(CategoryCodeTableDefinition::toCodeTable)
                 .toList();
         return new CategoryCodeTableDefinition(language, tables);
@@ -148,85 +146,24 @@ public final class CategoryCodeTableDefinition {
     }
 
     private static CodeTableDefinition toCodeTable(Object value) {
-        Map<String, Object> tableObject = requireObject(value, "table");
-        String tableId = requireString(tableObject, "id", "table.id");
-        String title = requireString(tableObject, "title", "table.title");
-        List<CodeDefinition> codes = requireArray(tableObject, "codes", "table.codes").stream()
+        Map<String, Object> tableObject = JsonData.requireObject(value, "table");
+        String tableId = JsonData.requiredString(tableObject, "id", "table.id");
+        String title = JsonData.requiredString(tableObject, "title", "table.title");
+        List<CodeDefinition> codes = JsonData.requiredList(tableObject, "codes", "table.codes").stream()
                 .map(CategoryCodeTableDefinition::toCode)
                 .toList();
         return new CodeTableDefinition(tableId, title, codes);
     }
 
     private static CodeDefinition toCode(Object value) {
-        Map<String, Object> codeObject = requireObject(value, "code");
-        String codeId = requireString(codeObject, "id", "code.id");
-        String title = requireString(codeObject, "title", "code.title");
-        int sortOrder = requireInt(codeObject, "sortOrder", "code.sortOrder");
-        List<String> tags = requireOptionalArray(codeObject, "tags", "code.tags").stream()
-                .map(tag -> requireStringValue(tag, "code.tags[]"))
-                .toList();
+        Map<String, Object> codeObject = JsonData.requireObject(value, "code");
+        String codeId = JsonData.requiredString(codeObject, "id", "code.id");
+        String title = JsonData.requiredString(codeObject, "title", "code.title");
+        int sortOrder = JsonData.requiredInt(codeObject, "sortOrder", "code.sortOrder");
+        List<String> tags = codeObject.containsKey("tags")
+                ? JsonData.stringList(codeObject.get("tags"), "code.tags")
+                : List.of();
         return new CodeDefinition(codeId, title, sortOrder, tags);
-    }
-
-    private static Map<String, Object> requireObject(Object value, String description) {
-        if (value instanceof Map<?, ?> map) {
-            Map<String, Object> result = new LinkedHashMap<>();
-            map.forEach((key, mapValue) -> {
-                if (!(key instanceof String stringKey)) {
-                    throw new IllegalArgumentException("JSON object key must be a string in " + description + ".");
-                }
-                result.put(stringKey, mapValue);
-            });
-            return result;
-        }
-        throw new IllegalArgumentException("Expected JSON object for " + description + ".");
-    }
-
-    private static String requireString(Map<String, Object> object, String key, String description) {
-        if (!object.containsKey(key)) {
-            throw new IllegalArgumentException("Missing JSON string field: " + description);
-        }
-        return Validation.requireNonBlank(requireStringValue(object.get(key), description), description + " must not be blank.");
-    }
-
-    private static String requireStringValue(Object value, String description) {
-        if (value instanceof String stringValue) {
-            return stringValue;
-        }
-        throw new IllegalArgumentException("Expected JSON string for " + description + ".");
-    }
-
-    private static int requireInt(Map<String, Object> object, String key, String description) {
-        if (!object.containsKey(key)) {
-            throw new IllegalArgumentException("Missing JSON integer field: " + description);
-        }
-        Object value = object.get(key);
-        if (value instanceof Integer integerValue) {
-            return integerValue;
-        }
-        throw new IllegalArgumentException("Expected JSON integer for " + description + ".");
-    }
-
-    private static List<Object> requireArray(Map<String, Object> object, String key, String description) {
-        if (!object.containsKey(key)) {
-            throw new IllegalArgumentException("Missing JSON array field: " + description);
-        }
-        Object value = object.get(key);
-        if (value instanceof List<?> list) {
-            return List.copyOf(list);
-        }
-        throw new IllegalArgumentException("Expected JSON array for " + description + ".");
-    }
-
-    private static List<Object> requireOptionalArray(Map<String, Object> object, String key, String description) {
-        if (!object.containsKey(key)) {
-            return List.of();
-        }
-        Object value = object.get(key);
-        if (value instanceof List<?> list) {
-            return List.copyOf(list);
-        }
-        throw new IllegalArgumentException("Expected JSON array for " + description + ".");
     }
 
     private static String toJsonArray(List<String> values) {

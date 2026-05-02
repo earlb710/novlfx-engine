@@ -1,3 +1,4 @@
+import com.eb.javafx.bootstrap.ApplicationResourceConfig;
 import com.eb.javafx.gamesupport.ActionContext;
 import com.eb.javafx.gamesupport.GameSupportService;
 import com.eb.javafx.random.GameRandomService;
@@ -25,9 +26,13 @@ public final class SceneExecutionAndJsonDemo {
     }
 
     public static void main(String[] args) {
-        Path jsonPath = Path.of("examples/user-manual/05-content-routing-and-scenes/scene-definitions.demo.json")
+        Path appRoot = Path.of("").toAbsolutePath().normalize();
+        Path configPath = Path.of("examples/user-manual/04-startup-and-service-wiring/config.demo.json")
                 .toAbsolutePath()
                 .normalize();
+        Path jsonPath = ApplicationResourceConfig.load(configPath)
+                .resolveResource(appRoot, "sceneDefinitions")
+                .orElseThrow();
 
         List<SceneDefinition> scenes = SceneDefinitionJson.load(jsonPath);
         SceneRegistry sceneRegistry = new SceneRegistry();
