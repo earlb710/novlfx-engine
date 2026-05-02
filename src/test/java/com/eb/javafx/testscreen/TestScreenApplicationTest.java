@@ -256,4 +256,13 @@ final class TestScreenApplicationTest {
         assertEquals("example:examples/user-manual/08-audio-support/AudioServiceDemo.java", uniqueId);
         assertNotEquals("example:examples\\user-manual\\08-audio-support\\AudioServiceDemo.java", uniqueId);
     }
+
+    @Test
+    void standaloneExampleDisplayNameUsesParentDirectoryAndFileName() {
+        String displayName = TestScreenApplication.standaloneExampleDisplayName(
+                Path.of("/home/runner/work/novlfx-engine/novlfx-engine/examples/user-manual/08-audio-support/AudioServiceDemo.java"));
+
+        assertEquals("08-audio-support/AudioServiceDemo.java", displayName);
+        assertNotEquals("examples/user-manual/08-audio-support/AudioServiceDemo.java", displayName);
+    }
 }

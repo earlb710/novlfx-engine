@@ -918,7 +918,15 @@ public final class TestScreenApplication {
 
     static String standaloneExampleDisplayName(Path path) {
         Path relativePath = REPO_ROOT.relativize(path.toAbsolutePath().normalize());
-        return relativePath.toString().replace('\\', '/');
+        Path fileName = relativePath.getFileName();
+        if (fileName == null) {
+            return relativePath.toString().replace('\\', '/');
+        }
+        Path parent = relativePath.getParent();
+        if (parent == null || parent.getFileName() == null) {
+            return fileName.toString();
+        }
+        return parent.getFileName() + "/" + fileName;
     }
 
     static List<String> commandForStandaloneExample(Path path) {
