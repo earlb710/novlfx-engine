@@ -204,7 +204,7 @@ public class VectorImage {
     // --- Conversion Methods ---
     
     /**
-     * Convert this vector image to a rasterized EbsImage.
+     * Convert this vector image to a rasterized JavaFX image.
      * 
      * @return WritableImage with rasterized version of this SVG
      * @throws IllegalStateException if conversion fails
@@ -214,7 +214,7 @@ public class VectorImage {
     }
     
     /**
-     * Convert this vector image to a rasterized EbsImage with specific dimensions.
+     * Convert this vector image to a rasterized JavaFX image with specific dimensions.
      * 
      * @param width Target width in pixels
      * @param height Target height in pixels
