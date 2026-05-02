@@ -223,16 +223,16 @@ final class TestScreenApplicationTest {
     }
 
     @Test
-    void shellCommandResolutionUsesBashExeFromWindowsPath() throws Exception {
+    void shellCommandResolutionReturnsEmptyOnWindowsEvenWhenBashExists() throws Exception {
         Path gitBin = Files.createDirectory(tempDir.resolve("git-bin"));
-        Path bash = Files.createFile(gitBin.resolve("bash.exe"));
+        Files.createFile(gitBin.resolve("bash.exe"));
 
-        List<String> shellCommand = TestScreenApplication.commandForStandaloneExample(
+        Optional<List<String>> shellCommand = TestScreenApplication.commandForStandaloneExample(
                 REPO_ROOT.resolve("examples/user-manual/02-project-setup-and-validation/demo.sh"),
                 "Windows 11",
-                Map.of("PATH", gitBin + ";C:\\missing")).orElseThrow();
+                Map.of("PATH", gitBin.toString()));
 
-        assertEquals(bash.toAbsolutePath().normalize().toString(), shellCommand.get(0));
+        assertTrue(shellCommand.isEmpty());
     }
 
     @Test
@@ -253,6 +253,15 @@ final class TestScreenApplicationTest {
 
         assertTrue(message.contains("bash-compatible shell"));
         assertTrue(message.contains("demo.sh"));
+    }
+
+    @Test
+    void persistedOutputPrefersOutputFieldAndFallsBackToLegacyFailureOutput() {
+        assertEquals("successful output", TestScreenApplication.persistedOutput(Map.of(
+                "output", "successful output",
+                "failureOutput", "legacy failure")));
+        assertEquals("legacy failure", TestScreenApplication.persistedOutput(Map.of(
+                "failureOutput", "legacy failure")));
     }
 
     @Test

@@ -42,7 +42,6 @@ import java.io.InputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.InvalidPathException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -296,6 +295,8 @@ public final class TestScreenApplication {
                 + "\nApplication version: " + selectedTest.applicationVersion().orElse("Unknown")
                 + "\nResult: " + selectedTest.resultLabel());
         descriptionArea.setCaretPosition(0);
+        outputArea.setText(selectedTest.resultOutput());
+        outputArea.setCaretPosition(0);
     }
 
 
@@ -419,7 +420,7 @@ public final class TestScreenApplication {
         appendSummary(output, summary);
         boolean success = summary.getTestsFailedCount() == 0 && summary.getTestsFoundCount() > 0;
         String resultOutput = output.toString();
-        testCase.recordResult(Instant.now().toString(), applicationVersion, success, success ? "" : resultOutput);
+        testCase.recordResult(Instant.now().toString(), applicationVersion, success, resultOutput);
         saveResultRecords();
         return new RunResult(success, resultOutput);
     }
@@ -444,7 +445,7 @@ public final class TestScreenApplication {
             output.append("\nExit code: ").append(exitCode).append('\n');
             boolean success = exitCode == 0;
             String resultOutput = output.toString();
-            testCase.recordResult(Instant.now().toString(), applicationVersion, success, success ? "" : resultOutput);
+            testCase.recordResult(Instant.now().toString(), applicationVersion, success, resultOutput);
             saveResultRecords();
             return new RunResult(success, resultOutput);
         } catch (InterruptedException exception) {
@@ -493,7 +494,7 @@ public final class TestScreenApplication {
                             fields.get("lastRunAt"),
                             fields.get("applicationVersion"),
                             parseNullableBoolean(fields.get("success")),
-                            fields.getOrDefault("failureOutput", ""),
+                            persistedOutput(fields),
                             fields.get("sourceSignature")));
                 }
             }
@@ -693,7 +694,8 @@ public final class TestScreenApplication {
                     .append("      \"lastRunAt\": ").append(jsonNullableString(testCase.lastRunAt().orElse(null))).append(",\n")
                     .append("      \"applicationVersion\": ").append(jsonNullableString(testCase.applicationVersion().orElse(null))).append(",\n")
                     .append("      \"success\": ").append(testCase.success().map(String::valueOf).orElse("null")).append(",\n")
-                    .append("      \"failureOutput\": ").append(jsonString(testCase.failureOutput())).append(",\n")
+                    .append("      \"output\": ").append(jsonString(testCase.resultOutput())).append(",\n")
+                    .append("      \"failureOutput\": ").append(jsonString(testCase.resultOutput())).append(",\n")
                     .append("      \"sourceSignature\": ").append(jsonNullableString(testCase.sourceSignature().orElse(null))).append('\n')
                     .append("    }");
             if (index + 1 < tests.size()) {
@@ -952,8 +954,8 @@ public final class TestScreenApplication {
 
     static String unsupportedStandaloneExampleMessage(Path path, String osName) {
         if (path.getFileName().toString().endsWith(".sh") && isWindows(osName)) {
-            return "Shell script examples require a bash-compatible shell on Windows. "
-                    + "Install Git Bash or run the script manually:\n"
+            return "Shell script examples are not supported by the test screen on Windows. "
+                    + "Run the script manually from a bash-compatible shell instead:\n"
                     + path.toAbsolutePath().normalize();
         }
         return "No supported launcher is available for standalone example:\n"
@@ -962,65 +964,10 @@ public final class TestScreenApplication {
 
     private static Optional<List<String>> resolveShellCommand(Path path, String osName, Map<String, String> environment) {
         Path normalizedPath = path.toAbsolutePath().normalize();
-        if (!isWindows(osName)) {
-            return Optional.of(List.of("bash", normalizedPath.toString()));
-        }
-        return findWindowsBash(environment)
-                .map(bash -> List.of(bash.toString(), normalizedPath.toString()));
-    }
-
-    private static Optional<Path> findWindowsBash(Map<String, String> environment) {
-        for (Path candidate : windowsBashCandidates(environment)) {
-            if (Files.isRegularFile(candidate)) {
-                return Optional.of(candidate.toAbsolutePath().normalize());
-            }
-        }
-        return Optional.empty();
-    }
-
-    private static List<Path> windowsBashCandidates(Map<String, String> environment) {
-        List<Path> candidates = new ArrayList<>();
-        String pathValue = environment.getOrDefault("PATH", "");
-        for (String entry : splitSearchPath(pathValue, ";")) {
-            if (entry.isBlank()) {
-                continue;
-            }
-            addWindowsBashCandidate(candidates, stripWrappedQuotes(entry), "bash.exe");
-        }
-        List<String[]> suffixes = List.of(
-                new String[]{"Git", "bin", "bash.exe"},
-                new String[]{"Git", "usr", "bin", "bash.exe"},
-                new String[]{"Programs", "Git", "bin", "bash.exe"},
-                new String[]{"Programs", "Git", "usr", "bin", "bash.exe"});
-        List<String> baseDirectories = new ArrayList<>();
-        baseDirectories.add(environment.get("ProgramFiles"));
-        baseDirectories.add(environment.get("ProgramFiles(x86)"));
-        baseDirectories.add(environment.get("LocalAppData"));
-        for (String baseDirectory : baseDirectories) {
-            for (String[] suffix : suffixes) {
-                addWindowsBashCandidate(candidates, baseDirectory, suffix);
-            }
-        }
-        return candidates;
-    }
-
-    private static void addWindowsBashCandidate(List<Path> candidates, String baseDirectory, String... segments) {
-        if (baseDirectory == null || baseDirectory.isBlank()) {
-            return;
-        }
-        safePath(baseDirectory, segments).ifPresent(candidates::add);
-    }
-
-    private static Optional<Path> safePath(String first, String... more) {
-        try {
-            return Optional.of(Path.of(first, more));
-        } catch (InvalidPathException exception) {
+        if (isWindows(osName)) {
             return Optional.empty();
         }
-    }
-
-    private static List<String> splitSearchPath(String pathValue, String separator) {
-        return List.of(pathValue.split(Pattern.quote(separator)));
+        return Optional.of(List.of("bash", normalizedPath.toString()));
     }
 
     private static String stripWrappedQuotes(String value) {
@@ -1044,6 +991,10 @@ public final class TestScreenApplication {
 
     static boolean buildResultMatchesCurrentSource(BuildResultRecord buildResultRecord, Instant modifiedAt) {
         return buildResultRecord.executedAt().isAfter(modifiedAt) || buildResultRecord.executedAt().equals(modifiedAt);
+    }
+
+    static String persistedOutput(Map<String, String> fields) {
+        return fields.getOrDefault("output", fields.getOrDefault("failureOutput", ""));
     }
 
     static TestResultRecord reconcileBuildResultRecord(
@@ -1126,7 +1077,7 @@ public final class TestScreenApplication {
         private final String lastRunAt;
         private final String applicationVersion;
         private final Optional<Boolean> success;
-        private final String failureOutput;
+        private final String resultOutput;
         private final String sourceSignature;
 
         TestResultRecord(
@@ -1135,14 +1086,14 @@ public final class TestScreenApplication {
                 String lastRunAt,
                 String applicationVersion,
                 Optional<Boolean> success,
-                String failureOutput,
+                String resultOutput,
                 String sourceSignature) {
             this.auto = auto;
             this.newTest = newTest;
             this.lastRunAt = lastRunAt;
             this.applicationVersion = applicationVersion;
             this.success = success;
-            this.failureOutput = failureOutput;
+            this.resultOutput = resultOutput;
             this.sourceSignature = sourceSignature;
         }
 
@@ -1166,8 +1117,12 @@ public final class TestScreenApplication {
             return success;
         }
 
+        String resultOutput() {
+            return resultOutput;
+        }
+
         String failureOutput() {
-            return failureOutput;
+            return resultOutput;
         }
 
         String sourceSignature() {
@@ -1187,7 +1142,7 @@ public final class TestScreenApplication {
         private String lastRunAt;
         private String applicationVersion;
         private Optional<Boolean> success;
-        private String failureOutput;
+        private String resultOutput;
         private String sourceSignature;
 
         private TestCase(
@@ -1212,7 +1167,7 @@ public final class TestScreenApplication {
             lastRunAt = record == null ? null : record.lastRunAt();
             applicationVersion = record == null ? null : record.applicationVersion();
             success = record == null ? Optional.empty() : record.success();
-            failureOutput = record == null ? "" : record.failureOutput();
+            resultOutput = record == null ? "" : record.resultOutput();
         }
 
         static TestCase from(TestIdentifier identifier, TestResultRecord record, BuildResultRecord buildResultRecord) {
@@ -1268,11 +1223,11 @@ public final class TestScreenApplication {
             throw new IllegalArgumentException("Unsupported example file: " + path);
         }
 
-        void recordResult(String lastRunAt, String applicationVersion, boolean success, String failureOutput) {
+        void recordResult(String lastRunAt, String applicationVersion, boolean success, String resultOutput) {
             this.lastRunAt = lastRunAt;
             this.applicationVersion = applicationVersion;
             this.success = Optional.of(success);
-            this.failureOutput = failureOutput;
+            this.resultOutput = resultOutput;
             this.sourceSignature = filePath().flatMap(TestScreenApplication::computeFileSignature)
                     .or(() -> source.flatMap(TestScreenApplication::computeSourceSignature))
                     .orElse(sourceSignature);
@@ -1321,8 +1276,12 @@ public final class TestScreenApplication {
             return success;
         }
 
+        String resultOutput() {
+            return resultOutput;
+        }
+
         String failureOutput() {
-            return failureOutput;
+            return resultOutput;
         }
 
         Optional<String> sourceSignature() {
