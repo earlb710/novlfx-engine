@@ -5,6 +5,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -18,7 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 final class TestScreenApplicationTest {
     private static final Path REPO_ROOT =
-            Path.of("/home/runner/work/novlfx-engine/novlfx-engine");
+            Paths.get("").toAbsolutePath().normalize();
 
     @TempDir
     Path tempDir;
