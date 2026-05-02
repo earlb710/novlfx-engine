@@ -1,6 +1,11 @@
 package com.eb.javafx.ui;
 
-/** Categories for boot failures surfaced during JavaFX startup. */
+/**
+ * Categories for boot failures surfaced during JavaFX startup.
+ *
+ * <p>The enum separates player-facing startup problems from programming errors so the error reporter can
+ * display a concise label while preserving a more specific exception message.</p>
+ */
 public enum StartupFailureCategory {
     /** A required stylesheet, image, audio file, or other asset could not be found. */
     MISSING_ASSET("Missing asset"),

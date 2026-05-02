@@ -2,7 +2,12 @@ package com.eb.javafx.scene;
 
 import java.util.List;
 
-/** UI-neutral scene presentation state. */
+/**
+ * UI-neutral scene presentation state.
+ *
+ * <p>The model carries resolved executor status plus the current step identifiers, text/display references,
+ * choices, and message so UI code can render scene progress without depending on executor objects.</p>
+ */
 public final class SceneViewModel {
     private final SceneExecutionStatus status;
     private final String sceneId;

@@ -2,7 +2,12 @@ package com.eb.javafx.scene;
 
 import java.util.List;
 
-/** Immutable scene execution result for UI adapters and tests. */
+/**
+ * Immutable scene execution result for UI adapters and tests.
+ *
+ * <p>Each result bundles the executor status, updated flow state, current UI-visible step, available choices,
+ * and any terminal or diagnostic message produced while advancing the scene.</p>
+ */
 public final class SceneExecutionResult {
     private final SceneExecutionStatus status;
     private final SceneFlowState state;

@@ -1,6 +1,11 @@
 package com.eb.javafx.util;
 
-/** Minimal JSON string escaping and parsing helpers for diagnostic JSON files. */
+/**
+ * Minimal JSON string escaping and parsing helpers for diagnostic JSON files.
+ *
+ * <p>The utility quotes nullable strings, escapes control characters, and parses one JSON string token at a
+ * caller-provided index for the lightweight {@link SimpleJson} parser.</p>
+ */
 public final class JsonStrings {
     private JsonStrings() {
     }

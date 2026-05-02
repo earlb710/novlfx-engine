@@ -6,7 +6,12 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.VBox;
 
-/** Renders a reusable screen from a UI-neutral view model. */
+/**
+ * Renders a reusable screen from a UI-neutral view model.
+ *
+ * <p>The adapter turns model lines into labels and actions into navigation buttons, then wraps them in the
+ * shared screen shell and themed scene supplied by the active route context.</p>
+ */
 public final class ViewModelScreen {
     private ViewModelScreen() {
     }

@@ -2,7 +2,12 @@ package com.eb.javafx.scene;
 
 import com.eb.javafx.util.Validation;
 
-/** Explicit target for scene-flow movement, calls, returns, completion, and failures. */
+/**
+ * Explicit target for scene-flow movement, calls, returns, completion, and failures.
+ *
+ * <p>Jump and call transitions require a target scene id, while next, return, complete, and fail transitions
+ * encode control-flow outcomes without exposing executor internals to authored steps.</p>
+ */
 public final class SceneTransition {
     private final SceneTransitionType type;
     private final String targetSceneId;

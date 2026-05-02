@@ -4,7 +4,12 @@ import com.eb.javafx.util.Validation;
 
 import java.util.List;
 
-/** Serializable snapshot of a resumable scene-flow position. */
+/**
+ * Serializable snapshot of a resumable scene-flow position.
+ *
+ * <p>The state records the active scene and step index, nested call return points, selected choice ids, and an
+ * optional pending UI interruption so save files can resume exactly where execution paused.</p>
+ */
 public final class SceneFlowState {
     private final String activeSceneId;
     private final int stepIndex;

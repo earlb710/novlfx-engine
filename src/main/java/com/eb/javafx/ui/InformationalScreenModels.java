@@ -4,7 +4,12 @@ import com.eb.javafx.routing.SceneRouter;
 
 import java.util.List;
 
-/** Factory methods for simple reusable informational screen models. */
+/**
+ * Factory methods for simple reusable informational screen models.
+ *
+ * <p>The helpers centralize fallback screen text for engine-owned routes such as startup errors and missing
+ * content, while still returning the same neutral {@link ScreenViewModel} used by authored screens.</p>
+ */
 public final class InformationalScreenModels {
     private InformationalScreenModels() {
     }

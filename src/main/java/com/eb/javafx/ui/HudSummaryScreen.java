@@ -6,7 +6,12 @@ import javafx.scene.Scene;
 
 import java.util.List;
 
-/** Reusable HUD route model wired to HUD preferences. */
+/**
+ * Reusable HUD route model wired to HUD preferences.
+ *
+ * <p>The route reads visibility and opacity preferences and turns them into a neutral summary model, giving
+ * applications a working HUD diagnostics screen before they add authored overlays.</p>
+ */
 public final class HudSummaryScreen {
     private HudSummaryScreen() {
     }

@@ -6,7 +6,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-/** Shared typed accessors for small JSON documents parsed with {@link SimpleJson}. */
+/**
+ * Shared typed accessors for small JSON documents parsed with {@link SimpleJson}.
+ *
+ * <p>The helpers validate expected object, array, string, number, enum, list, and map shapes while attaching
+ * caller-provided descriptions to error messages for easier configuration diagnostics.</p>
+ */
 public final class JsonData {
     private JsonData() {
     }

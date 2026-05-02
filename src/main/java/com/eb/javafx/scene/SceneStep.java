@@ -8,7 +8,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-/** One typed command in a structured reusable scene definition. */
+/**
+ * One typed command in a structured reusable scene definition.
+ *
+ * <p>Factory methods create dialogue, narration, choice, action, and transition steps with shape validation;
+ * omitted transitions default to advancing to the next step.</p>
+ */
 public final class SceneStep {
     private final String id;
     private final SceneStepType type;
