@@ -17,6 +17,8 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 final class TestScreenApplicationTest {
+    private static final Path REPO_ROOT =
+            Path.of("/home/runner/work/novlfx-engine/novlfx-engine");
 
     @TempDir
     Path tempDir;
@@ -195,7 +197,7 @@ final class TestScreenApplicationTest {
     @Test
     void standaloneExampleFilesIncludesRunnableExamplesAndExcludesDataFiles() {
         List<Path> examples = TestScreenApplication.standaloneExampleFiles(
-                Path.of("/home/runner/work/novlfx-engine/novlfx-engine/examples/user-manual"));
+                REPO_ROOT.resolve("examples/user-manual"));
 
         assertTrue(examples.stream().anyMatch(path -> path.toString().endsWith("02-project-setup-and-validation/demo.sh")));
         assertTrue(examples.stream().anyMatch(path -> path.toString().endsWith("08-audio-support/AudioServiceDemo.java")));
@@ -205,11 +207,11 @@ final class TestScreenApplicationTest {
     @Test
     void commandForStandaloneExampleUsesShellOrJavaSourceMode() {
         List<String> shellCommand = TestScreenApplication.commandForStandaloneExample(
-                Path.of("/home/runner/work/novlfx-engine/novlfx-engine/examples/user-manual/02-project-setup-and-validation/demo.sh"),
+                REPO_ROOT.resolve("examples/user-manual/02-project-setup-and-validation/demo.sh"),
                 "Linux",
                 Map.of()).orElseThrow();
         List<String> javaCommand = TestScreenApplication.commandForStandaloneExample(
-                Path.of("/home/runner/work/novlfx-engine/novlfx-engine/examples/user-manual/08-audio-support/AudioServiceDemo.java"),
+                REPO_ROOT.resolve("examples/user-manual/08-audio-support/AudioServiceDemo.java"),
                 "Linux",
                 Map.of()).orElseThrow();
 
@@ -225,7 +227,7 @@ final class TestScreenApplicationTest {
         Path bash = Files.createFile(gitBin.resolve("bash.exe"));
 
         List<String> shellCommand = TestScreenApplication.commandForStandaloneExample(
-                Path.of("/home/runner/work/novlfx-engine/novlfx-engine/examples/user-manual/02-project-setup-and-validation/demo.sh"),
+                REPO_ROOT.resolve("examples/user-manual/02-project-setup-and-validation/demo.sh"),
                 "Windows 11",
                 Map.of("PATH", gitBin + ";C:\\missing")).orElseThrow();
 
@@ -235,7 +237,7 @@ final class TestScreenApplicationTest {
     @Test
     void shellCommandResolutionReturnsEmptyOnWindowsWithoutBash() {
         Optional<List<String>> shellCommand = TestScreenApplication.commandForStandaloneExample(
-                Path.of("/home/runner/work/novlfx-engine/novlfx-engine/examples/user-manual/02-project-setup-and-validation/demo.sh"),
+                REPO_ROOT.resolve("examples/user-manual/02-project-setup-and-validation/demo.sh"),
                 "Windows 11",
                 Map.of("PATH", "C:\\missing"));
 
@@ -245,7 +247,7 @@ final class TestScreenApplicationTest {
     @Test
     void unsupportedStandaloneExampleMessageExplainsWindowsShellRequirement() {
         String message = TestScreenApplication.unsupportedStandaloneExampleMessage(
-                Path.of("/home/runner/work/novlfx-engine/novlfx-engine/examples/user-manual/02-project-setup-and-validation/demo.sh"),
+                REPO_ROOT.resolve("examples/user-manual/02-project-setup-and-validation/demo.sh"),
                 "Windows 11");
 
         assertTrue(message.contains("bash-compatible shell"));
@@ -255,7 +257,7 @@ final class TestScreenApplicationTest {
     @Test
     void standaloneExampleUniqueIdIsStableAndNormalized() {
         String uniqueId = TestScreenApplication.standaloneExampleUniqueId(
-                Path.of("/home/runner/work/novlfx-engine/novlfx-engine/examples/user-manual/08-audio-support/AudioServiceDemo.java"));
+                REPO_ROOT.resolve("examples/user-manual/08-audio-support/AudioServiceDemo.java"));
 
         assertEquals("example:examples/user-manual/08-audio-support/AudioServiceDemo.java", uniqueId);
         assertNotEquals("example:examples\\user-manual\\08-audio-support\\AudioServiceDemo.java", uniqueId);
@@ -264,7 +266,7 @@ final class TestScreenApplicationTest {
     @Test
     void standaloneExampleDisplayNameUsesParentDirectoryAndFileName() {
         String displayName = TestScreenApplication.standaloneExampleDisplayName(
-                Path.of("/home/runner/work/novlfx-engine/novlfx-engine/examples/user-manual/08-audio-support/AudioServiceDemo.java"));
+                REPO_ROOT.resolve("examples/user-manual/08-audio-support/AudioServiceDemo.java"));
 
         assertEquals("08-audio-support/AudioServiceDemo.java", displayName);
         assertNotEquals("examples/user-manual/08-audio-support/AudioServiceDemo.java", displayName);

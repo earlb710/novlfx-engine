@@ -1008,10 +1008,14 @@ public final class TestScreenApplication {
         if (baseDirectory == null || baseDirectory.isBlank()) {
             return;
         }
+        safePath(baseDirectory, segments).ifPresent(candidates::add);
+    }
+
+    private static Optional<Path> safePath(String first, String... more) {
         try {
-            candidates.add(Path.of(baseDirectory, segments));
-        } catch (InvalidPathException ignored) {
-            // Skip malformed environment-derived candidate paths.
+            return Optional.of(Path.of(first, more));
+        } catch (InvalidPathException exception) {
+            return Optional.empty();
         }
     }
 
