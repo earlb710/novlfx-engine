@@ -4,7 +4,7 @@ These examples mirror the sections in `docs/USER_MANUAL.md`. Each entry below sa
 
 | Example | What it shows | Expected result |
 | --- | --- | --- |
-| `02-project-setup-and-validation/demo.sh` | Project validation commands, including the Gradle wrapper build. | Prints the validation commands and exits successfully on macOS/Linux; on Windows, run it from a bash-compatible shell. |
+| `02-project-setup-and-validation/demo.sh` | Project validation commands, including the Gradle wrapper build. | Prints the validation commands and exits successfully on macOS/Linux, or on Windows when `bash.exe` is available on `PATH`. |
 | `03-module-and-package-layout/ModuleUsageExample.java` | How application modules can register engine services. | Prints the registered module/package summary and exits with code 0. |
 | `04-startup-and-service-wiring/BootstrapDemo.java` | Bootstrapping core services and startup routing. | Prints a successful bootstrap report and validated route information. |
 | `04-startup-and-service-wiring/ApplicationResourceConfigDemo.java` | Resolving authored resource paths from `config.demo.json`. | Prints resolved category table, image root, display definition, and exported config paths. |
