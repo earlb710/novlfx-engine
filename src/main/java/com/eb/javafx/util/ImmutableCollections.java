@@ -9,7 +9,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-/** Defensive immutable collection copy helpers that preserve authored ordering. */
+/**
+ * Defensive immutable collection copy helpers that preserve authored ordering.
+ *
+ * <p>Null or empty inputs become shared immutable empties, while maps are copied into predictable insertion or
+ * enum ordering before being exposed as unmodifiable values.</p>
+ */
 public final class ImmutableCollections {
     private ImmutableCollections() {
     }

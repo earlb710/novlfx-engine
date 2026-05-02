@@ -71,7 +71,7 @@ public final class UiTheme {
     }
 
     /**
-     * Returns the module stylesheet used by migrated placeholder screens.
+     * Returns the module stylesheet used by reusable screens.
      *
      * @throws StartupFailureException when the CSS resource is missing
      */

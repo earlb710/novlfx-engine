@@ -4,7 +4,12 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 
-/** Shared formatting helpers for timestamps and elapsed diagnostics. */
+/**
+ * Shared formatting helpers for timestamps and elapsed diagnostics.
+ *
+ * <p>Instants are formatted and parsed using ISO-8601 text, while elapsed helpers calculate duration in
+ * milliseconds for startup reports and diagnostic screens.</p>
+ */
 public final class TimeFormatting {
     private TimeFormatting() {
     }

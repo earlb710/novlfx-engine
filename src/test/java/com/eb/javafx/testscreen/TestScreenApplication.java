@@ -1,6 +1,7 @@
 package com.eb.javafx.testscreen;
 
 import com.eb.javafx.util.JsonStrings;
+import com.eb.javafx.util.PathUtils;
 import org.junit.platform.engine.TestExecutionResult;
 import org.junit.platform.engine.discovery.DiscoverySelectors;
 import org.junit.platform.launcher.Launcher;
@@ -22,7 +23,9 @@ import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
+import javax.swing.JTabbedPane;
 import javax.swing.JTextArea;
+import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
 import javax.swing.JTree;
@@ -33,14 +36,19 @@ import javax.swing.tree.TreeSelectionModel;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
+import java.awt.Font;
 import java.awt.GridLayout;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.attribute.FileTime;
@@ -51,6 +59,7 @@ import java.util.Enumeration;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Predicate;
@@ -69,16 +78,25 @@ public final class TestScreenApplication {
     private static final String RESULT_FILE = "testresult.json";
     public static final String TEST_SCREEN_ACTIVE_PROPERTY = "eb.testScreen.active";
     private static final Object TEST_SCREEN_ACTIVE_LOCK = new Object();
-    private static final Path TEST_SOURCE_ROOT = Paths.get("src", "test", "java");
-    private static final Path BUILD_RESULTS_ROOT = Paths.get("build", "test-results", "test");
+    private static final Path REPO_ROOT = findRepositoryRoot();
+    private static final Path TEST_SOURCE_ROOT = REPO_ROOT.resolve(Paths.get("src", "test", "java"));
+    private static final Path EXAMPLES_ROOT = REPO_ROOT.resolve(Paths.get("examples", "user-manual"));
+    private static final Path BUILD_RESULTS_ROOT = REPO_ROOT.resolve(Paths.get("build", "test-results", "test"));
     private static final Pattern METHOD_SOURCE_PATTERN = Pattern.compile(
             "className = '([^']+)', methodName = '([^']+)'");
+    private static final Pattern STANDALONE_JAVA_MAIN_PATTERN = Pattern.compile("\\bpublic\\s+static\\s+void\\s+main\\s*\\(");
+    private static final String STANDALONE_EXAMPLE_PREFIX = "example:";
+    private static final String SHELL_STANDALONE_RUNNER_SIGNATURE = "shell-windows-command-v2";
+    private static final String JAVA_STANDALONE_RUNNER_SIGNATURE = "java-source-command-v1";
+    private static final int MAX_EXTERNAL_OUTPUT_BYTES = 1024 * 1024;
 
     private final Launcher launcher;
     private final DefaultMutableTreeNode testTreeRoot;
     private final DefaultTreeModel testTreeModel;
     private final JTree testTree;
+    private final JTextField pathField;
     private final JTextArea descriptionArea;
+    private final JTextArea sourceCodeArea;
     private final JTextArea outputArea;
     private final JButton runButton;
     private final JButton runAllButton;
@@ -91,16 +109,59 @@ public final class TestScreenApplication {
         testTreeRoot = new DefaultMutableTreeNode("Tests");
         testTreeModel = new DefaultTreeModel(testTreeRoot);
         testTree = new JTree(testTreeModel);
+        pathField = new JTextField();
         descriptionArea = new JTextArea();
+        sourceCodeArea = new JTextArea();
         outputArea = new JTextArea();
         runButton = new JButton("Run");
         runAllButton = new JButton("Run All in Category");
-        resultPath = Paths.get(RESULT_FILE);
+        resultPath = REPO_ROOT.resolve(RESULT_FILE);
         applicationVersion = System.getProperty("eb.application.version", "unknown");
     }
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> new TestScreenApplication().show());
+    }
+
+    static Path repositoryRoot() {
+        return REPO_ROOT;
+    }
+
+    private static Path findRepositoryRoot() {
+        Path currentDirectory = Paths.get("").toAbsolutePath().normalize();
+        Optional<Path> currentRoot = findRepositoryRootFrom(currentDirectory);
+        if (currentRoot.isPresent()) {
+            return currentRoot.orElseThrow();
+        }
+
+        try {
+            Path classLocation = Path.of(TestScreenApplication.class
+                    .getProtectionDomain()
+                    .getCodeSource()
+                    .getLocation()
+                    .toURI()).toAbsolutePath().normalize();
+            Optional<Path> classRoot = findRepositoryRootFrom(classLocation);
+            if (classRoot.isPresent()) {
+                return classRoot.orElseThrow();
+            }
+        } catch (NullPointerException | IllegalArgumentException | SecurityException | URISyntaxException ignored) {
+            // Fall back to the launch directory when runtime class location is unavailable.
+        }
+
+        return currentDirectory;
+    }
+
+    private static Optional<Path> findRepositoryRootFrom(Path start) {
+        Path candidate = Files.isRegularFile(start) ? start.getParent() : start;
+        while (candidate != null) {
+            if (Files.isRegularFile(candidate.resolve("build.gradle"))
+                    && Files.isDirectory(candidate.resolve(Paths.get("examples", "user-manual")))
+                    && Files.isDirectory(candidate.resolve(Paths.get("src", "test", "java")))) {
+                return Optional.of(candidate.toAbsolutePath().normalize());
+            }
+            candidate = candidate.getParent();
+        }
+        return Optional.empty();
     }
 
     private void show() {
@@ -130,6 +191,12 @@ public final class TestScreenApplication {
         descriptionArea.setLineWrap(true);
         descriptionArea.setWrapStyleWord(true);
 
+        pathField.setEditable(false);
+
+        sourceCodeArea.setEditable(false);
+        sourceCodeArea.setLineWrap(false);
+        sourceCodeArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, sourceCodeArea.getFont().getSize()));
+
         outputArea.setEditable(false);
         outputArea.setLineWrap(false);
 
@@ -142,7 +209,7 @@ public final class TestScreenApplication {
 
         JPanel rightPanel = new JPanel(new BorderLayout(8, 8));
         rightPanel.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
-        rightPanel.add(buildDetailsPanel(), BorderLayout.CENTER);
+        rightPanel.add(buildDetailsTabs(), BorderLayout.CENTER);
         rightPanel.add(buildActionPanel(), BorderLayout.SOUTH);
 
         JScrollPane testTreePane = new JScrollPane(testTree);
@@ -161,8 +228,18 @@ public final class TestScreenApplication {
         return root;
     }
 
-    private JPanel buildDetailsPanel() {
-        JPanel detailsPanel = new JPanel(new GridLayout(2, 1, 8, 8));
+    private JTabbedPane buildDetailsTabs() {
+        JTabbedPane detailsTabs = new JTabbedPane();
+        detailsTabs.addTab("test", buildTestTab());
+        detailsTabs.addTab("source", buildSourceTab());
+        return detailsTabs;
+    }
+
+    private JPanel buildTestTab() {
+        JPanel testTab = new JPanel(new GridLayout(2, 1, 8, 8));
+
+        JScrollPane pathPane = new JScrollPane(pathField);
+        pathPane.setBorder(BorderFactory.createTitledBorder("File Path"));
 
         JScrollPane descriptionPane = new JScrollPane(descriptionArea);
         descriptionPane.setBorder(BorderFactory.createTitledBorder("Description"));
@@ -170,9 +247,19 @@ public final class TestScreenApplication {
         JScrollPane outputPane = new JScrollPane(outputArea);
         outputPane.setBorder(BorderFactory.createTitledBorder("Output"));
 
-        detailsPanel.add(descriptionPane);
-        detailsPanel.add(outputPane);
-        return detailsPanel;
+        JPanel selectionDetailsPanel = new JPanel(new BorderLayout(8, 8));
+        selectionDetailsPanel.add(pathPane, BorderLayout.NORTH);
+        selectionDetailsPanel.add(descriptionPane, BorderLayout.CENTER);
+
+        testTab.add(selectionDetailsPanel);
+        testTab.add(outputPane);
+        return testTab;
+    }
+
+    private JScrollPane buildSourceTab() {
+        JScrollPane sourceCodePane = new JScrollPane(sourceCodeArea);
+        sourceCodePane.setBorder(BorderFactory.createTitledBorder("Source Code"));
+        return sourceCodePane;
     }
 
     private JPanel buildActionPanel() {
@@ -196,13 +283,14 @@ public final class TestScreenApplication {
                         identifier,
                         existingRecords.get(identifier.getUniqueId()),
                         buildResultRecords.get(TestMethodKey.from(identifier.getSource().map(Object::toString).orElse(null)))))
-                .sorted(Comparator.comparing(TestCase::category)
-                        .thenComparing(Comparator.comparing(TestCase::newTest).reversed())
-                        .thenComparing(TestCase::displayName))
-                .collect(Collectors.toList());
+                .collect(Collectors.toCollection(ArrayList::new));
+        tests.addAll(discoverStandaloneExamples(existingRecords));
+        tests.sort(Comparator.comparing(TestCase::category)
+                .thenComparing(Comparator.comparing(TestCase::newTest).reversed())
+                .thenComparing(TestCase::displayName));
 
         populateTestTree(tests);
-        updateFrameTitle(tests.size());
+        updateFrameTitle(tests);
         runAllButton.setEnabled(!tests.isEmpty());
         saveResultRecords();
         if (!tests.isEmpty()) {
@@ -238,10 +326,26 @@ public final class TestScreenApplication {
         }
     }
 
-    private void updateFrameTitle(int totalTests) {
+    private void updateFrameTitle() {
+        updateFrameTitle(tests());
+    }
+
+    private void updateFrameTitle(List<TestCase> tests) {
         if (frame != null) {
-            frame.setTitle("eb Test Screen (" + totalTests + " tests)");
+            long successCount = tests.stream()
+                    .filter(testCase -> testCase.success().orElse(false))
+                    .count();
+            long errorCount = tests.stream()
+                    .filter(testCase -> testCase.success().map(success -> !success).orElse(false))
+                    .count();
+            frame.setTitle(frameTitle(tests.size(), successCount, errorCount));
         }
+    }
+
+    static String frameTitle(int totalTests, long successCount, long errorCount) {
+        return "eb Test Screen (" + totalTests + " tests, "
+                + successCount + " success, "
+                + errorCount + " errors)";
     }
 
     private void updateSelectedTest() {
@@ -250,6 +354,8 @@ public final class TestScreenApplication {
         runAllButton.setEnabled(!selectedAutoCategoryTests().isEmpty());
         if (selectedTest == null) {
             TestCategory selectedCategory = selectedCategory();
+            pathField.setText("");
+            sourceCodeArea.setText("");
             if (selectedCategory == null) {
                 descriptionArea.setText("");
             } else {
@@ -263,9 +369,14 @@ public final class TestScreenApplication {
             return;
         }
 
+        pathField.setText(selectedTest.filePath().map(path -> path.toAbsolutePath().normalize().toString()).orElse(""));
+        pathField.setCaretPosition(0);
         descriptionArea.setText("Name: " + selectedTest.displayName()
                 + "\nCategory: " + selectedTest.category()
+                + "\nType: " + selectedTest.executionLabel()
                 + "\nSource: " + selectedTest.source().orElse("Unknown")
+                + "\n\nWhat it tests/shows:\n" + selectedTest.subjectDescription()
+                + "\n\nWhat to expect:\n" + selectedTest.expectationDescription()
                 + "\nUnique ID: " + selectedTest.uniqueId()
                 + "\nNew test: " + selectedTest.newTest()
                 + "\nAuto: " + selectedTest.auto()
@@ -273,6 +384,10 @@ public final class TestScreenApplication {
                 + "\nApplication version: " + selectedTest.applicationVersion().orElse("Unknown")
                 + "\nResult: " + selectedTest.resultLabel());
         descriptionArea.setCaretPosition(0);
+        sourceCodeArea.setText(sourceCodeText(selectedTest.filePath()));
+        sourceCodeArea.setCaretPosition(0);
+        outputArea.setText(selectedTest.resultOutput());
+        outputArea.setCaretPosition(0);
     }
 
 
@@ -301,6 +416,7 @@ public final class TestScreenApplication {
                 } finally {
                     setRunning(false);
                     testTree.repaint();
+                    updateFrameTitle();
                     updateSelectedTest();
                 }
             }
@@ -339,6 +455,7 @@ public final class TestScreenApplication {
                 } finally {
                     setRunning(false);
                     testTree.repaint();
+                    updateFrameTitle();
                     updateSelectedTest();
                 }
             }
@@ -351,6 +468,9 @@ public final class TestScreenApplication {
     }
 
     private RunResult executeTestAndRecord(TestCase testCase) {
+        if (testCase.external()) {
+            return executeExternalTestAndRecord(testCase);
+        }
         StringBuilder output = new StringBuilder();
         SummaryGeneratingListener summaryListener = new SummaryGeneratingListener();
         TestExecutionListener outputListener = new TestExecutionListener() {
@@ -393,9 +513,57 @@ public final class TestScreenApplication {
         appendSummary(output, summary);
         boolean success = summary.getTestsFailedCount() == 0 && summary.getTestsFoundCount() > 0;
         String resultOutput = output.toString();
-        testCase.recordResult(Instant.now().toString(), applicationVersion, success, success ? "" : resultOutput);
+        testCase.recordResult(Instant.now().toString(), applicationVersion, success, resultOutput);
         saveResultRecords();
         return new RunResult(success, resultOutput);
+    }
+
+    private RunResult executeExternalTestAndRecord(TestCase testCase) {
+        StringBuilder output = new StringBuilder()
+                .append("File: ").append(testCase.filePath().map(Path::toString).orElse("Unknown")).append('\n')
+                .append("Working directory: ").append(REPO_ROOT).append("\n\n");
+        if (testCase.unsupportedOnCurrentOperatingSystem()) {
+            String resultOutput = output.append(testCase.unsupportedOperatingSystemMessage()).append('\n').toString();
+            testCase.recordResult(Instant.now().toString(), applicationVersion, true, resultOutput);
+            saveResultRecords();
+            return new RunResult(true, resultOutput);
+        }
+        try {
+            List<String> command = testCase.command();
+            output.append("Command: ").append(String.join(" ", command)).append("\n\n");
+            Process process = new ProcessBuilder(command)
+                    .directory(REPO_ROOT.toFile())
+                    .redirectErrorStream(true)
+                    .start();
+            String processOutput;
+            try (InputStream inputStream = process.getInputStream()) {
+                processOutput = readProcessOutput(inputStream, process::destroyForcibly);
+            }
+            int exitCode = process.waitFor();
+            output.append(processOutput);
+            output.append("\nExit code: ").append(exitCode).append('\n');
+            boolean success = exitCode == 0;
+            String resultOutput = output.toString();
+            testCase.recordResult(Instant.now().toString(), applicationVersion, success, resultOutput);
+            saveResultRecords();
+            return new RunResult(success, resultOutput);
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+            String resultOutput = output.append(stackTrace(exception)).toString();
+            testCase.recordResult(Instant.now().toString(), applicationVersion, false, resultOutput);
+            saveResultRecords();
+            return new RunResult(false, resultOutput);
+        } catch (IllegalStateException exception) {
+            String resultOutput = output.append(exception.getMessage()).append('\n').toString();
+            testCase.recordResult(Instant.now().toString(), applicationVersion, false, resultOutput);
+            saveResultRecords();
+            return new RunResult(false, resultOutput);
+        } catch (IOException exception) {
+            String resultOutput = output.append(stackTrace(exception)).toString();
+            testCase.recordResult(Instant.now().toString(), applicationVersion, false, resultOutput);
+            saveResultRecords();
+            return new RunResult(false, resultOutput);
+        }
     }
 
     private void appendSummary(StringBuilder output, TestExecutionSummary summary) {
@@ -405,6 +573,37 @@ public final class TestScreenApplication {
                 .append("Tests failed: ").append(summary.getTestsFailedCount()).append('\n')
                 .append("Tests skipped: ").append(summary.getTestsSkippedCount()).append('\n')
                 .append("Duration: ").append(summary.getTimeFinished() - summary.getTimeStarted()).append(" ms\n");
+    }
+
+    static String readProcessOutput(InputStream inputStream) throws IOException {
+        return readProcessOutput(inputStream, () -> {
+        });
+    }
+
+    private static String readProcessOutput(InputStream inputStream, Runnable onTruncated) throws IOException {
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        byte[] buffer = new byte[8192];
+        int totalBytes = 0;
+        boolean truncated = false;
+        int bytesRead;
+        while ((bytesRead = inputStream.read(buffer)) != -1) {
+            int writableBytes = Math.min(bytesRead, MAX_EXTERNAL_OUTPUT_BYTES - totalBytes);
+            if (writableBytes > 0) {
+                output.write(buffer, 0, writableBytes);
+                totalBytes += writableBytes;
+            }
+            if (writableBytes < bytesRead || totalBytes >= MAX_EXTERNAL_OUTPUT_BYTES) {
+                truncated = true;
+                onTruncated.run();
+                break;
+            }
+        }
+
+        String result = output.toString(StandardCharsets.UTF_8);
+        if (truncated) {
+            return result + "\n[Output truncated after " + MAX_EXTERNAL_OUTPUT_BYTES + " bytes]\n";
+        }
+        return result;
     }
 
     private Map<String, TestResultRecord> loadResultRecords() {
@@ -425,7 +624,7 @@ public final class TestScreenApplication {
                             fields.get("lastRunAt"),
                             fields.get("applicationVersion"),
                             parseNullableBoolean(fields.get("success")),
-                            fields.getOrDefault("failureOutput", ""),
+                            persistedOutput(fields),
                             fields.get("sourceSignature")));
                 }
             }
@@ -625,7 +824,8 @@ public final class TestScreenApplication {
                     .append("      \"lastRunAt\": ").append(jsonNullableString(testCase.lastRunAt().orElse(null))).append(",\n")
                     .append("      \"applicationVersion\": ").append(jsonNullableString(testCase.applicationVersion().orElse(null))).append(",\n")
                     .append("      \"success\": ").append(testCase.success().map(String::valueOf).orElse("null")).append(",\n")
-                    .append("      \"failureOutput\": ").append(jsonString(testCase.failureOutput())).append(",\n")
+                    .append("      \"output\": ").append(jsonString(testCase.resultOutput())).append(",\n")
+                    .append("      \"failureOutput\": ").append(jsonString(testCase.resultOutput())).append(",\n")
                     .append("      \"sourceSignature\": ").append(jsonNullableString(testCase.sourceSignature().orElse(null))).append('\n')
                     .append("    }");
             if (index + 1 < tests.size()) {
@@ -725,6 +925,12 @@ public final class TestScreenApplication {
         return autoCategoryTests(selectedCategoryTests(), TestCase::auto);
     }
 
+    private List<TestCase> discoverStandaloneExamples(Map<String, TestResultRecord> existingRecords) {
+        return standaloneExampleFiles(EXAMPLES_ROOT).stream()
+                .map(path -> TestCase.standaloneExample(path, existingRecords.get(standaloneExampleUniqueId(path))))
+                .collect(Collectors.toList());
+    }
+
     static <T> List<T> autoCategoryTests(List<T> tests, Predicate<T> autoPredicate) {
         return tests.stream()
                 .filter(autoPredicate)
@@ -758,17 +964,7 @@ public final class TestScreenApplication {
     }
 
     static Optional<String> computeSourceSignature(String source) {
-        return parseMethodSource(source)
-                .map(TestMethodKey::className)
-                .map(className -> TEST_SOURCE_ROOT.resolve(className.replace('.', '/') + ".java"))
-                .filter(Files::isRegularFile)
-                .flatMap(path -> {
-                    try {
-                        return Optional.of(Integer.toHexString(Files.readString(path, StandardCharsets.UTF_8).hashCode()));
-                    } catch (IOException exception) {
-                        return Optional.empty();
-                    }
-                });
+        return sourceFilePath(source).flatMap(TestScreenApplication::computeFileSignature);
     }
 
     /**
@@ -790,9 +986,7 @@ public final class TestScreenApplication {
     }
 
     static Optional<Instant> sourceLastModifiedAt(String source) {
-        return parseMethodSource(source)
-                .map(TestMethodKey::className)
-                .map(className -> TEST_SOURCE_ROOT.resolve(className.replace('.', '/') + ".java"))
+        return sourceFilePath(source)
                 .filter(Files::isRegularFile)
                 .flatMap(path -> {
                     try {
@@ -801,6 +995,168 @@ public final class TestScreenApplication {
                         return Optional.empty();
                     }
                 });
+    }
+
+    static Optional<Path> sourceFilePath(String source) {
+        return parseMethodSource(source)
+                .map(TestMethodKey::className)
+                .map(className -> TEST_SOURCE_ROOT.resolve(className.replace('.', '/') + ".java"))
+                .map(path -> path.toAbsolutePath().normalize())
+                .filter(Files::isRegularFile);
+    }
+
+    static Optional<String> computeFileSignature(Path path) {
+        try {
+            return Optional.of(Integer.toHexString(Files.readString(path, StandardCharsets.UTF_8).hashCode()));
+        } catch (IOException exception) {
+            return Optional.empty();
+        }
+    }
+
+    static String sourceCodeText(Optional<Path> path) {
+        return path.flatMap(TestScreenApplication::readSourceCode).orElse("");
+    }
+
+    private static Optional<String> readSourceCode(Path path) {
+        try {
+            return Optional.of(Files.readString(path, StandardCharsets.UTF_8));
+        } catch (IOException exception) {
+            return Optional.of("Unable to read " + path.toAbsolutePath().normalize() + ":\n"
+                    + exception.getMessage());
+        }
+    }
+
+    static Optional<String> standaloneExampleSourceSignature(Path path) {
+        return computeFileSignature(path)
+                .map(signature -> signature + ":" + standaloneExampleRunnerSignature(path));
+    }
+
+    private static String standaloneExampleRunnerSignature(Path path) {
+        return path.getFileName().toString().endsWith(".sh")
+                ? SHELL_STANDALONE_RUNNER_SIGNATURE
+                : JAVA_STANDALONE_RUNNER_SIGNATURE;
+    }
+
+    static List<Path> standaloneExampleFiles(Path examplesRoot) {
+        if (!Files.isDirectory(examplesRoot)) {
+            return List.of();
+        }
+        try (Stream<Path> paths = Files.walk(examplesRoot)) {
+            return paths.filter(Files::isRegularFile)
+                    .filter(TestScreenApplication::isStandaloneExampleFile)
+                    .sorted()
+                    .map(path -> path.toAbsolutePath().normalize())
+                    .collect(Collectors.toList());
+        } catch (IOException exception) {
+            return List.of();
+        }
+    }
+
+    static boolean isStandaloneExampleFile(Path path) {
+        String fileName = path.getFileName().toString();
+        if (fileName.endsWith(".sh")) {
+            return true;
+        }
+        if (!fileName.endsWith(".java")) {
+            return false;
+        }
+        try {
+            return STANDALONE_JAVA_MAIN_PATTERN.matcher(Files.readString(path, StandardCharsets.UTF_8)).find();
+        } catch (IOException exception) {
+            return false;
+        }
+    }
+
+    static String standaloneExampleUniqueId(Path path) {
+        Path relativePath = REPO_ROOT.relativize(path.toAbsolutePath().normalize());
+        return STANDALONE_EXAMPLE_PREFIX + PathUtils.normalizeSeparators(relativePath.toString());
+    }
+
+    static String standaloneExampleDisplayName(Path path) {
+        Path relativePath = REPO_ROOT.relativize(path.toAbsolutePath().normalize());
+        Path fileName = relativePath.getFileName();
+        if (fileName == null) {
+            return PathUtils.normalizeSeparators(relativePath.toString());
+        }
+        Path parent = relativePath.getParent();
+        if (parent == null || parent.getFileName() == null) {
+            return fileName.toString();
+        }
+        return parent.getFileName() + "/" + fileName;
+    }
+
+    static List<String> commandForStandaloneExample(Path path) {
+        return commandForStandaloneExample(path, System.getProperty("os.name", ""), System.getenv())
+                .orElseThrow(() -> new IllegalStateException(
+                        unsupportedStandaloneExampleMessage(path, System.getProperty("os.name", ""))));
+    }
+
+    static Optional<List<String>> commandForStandaloneExample(Path path, String osName, Map<String, String> environment) {
+        Objects.requireNonNull(environment, "environment");
+        String fileName = path.getFileName().toString();
+        if (fileName.endsWith(".sh")) {
+            return resolveShellCommand(path, osName, environment);
+        }
+        if (fileName.endsWith(".java")) {
+            return Optional.of(List.of(
+                    Path.of(System.getProperty("java.home"), "bin", "java").toString(),
+                    "-cp",
+                    System.getProperty("java.class.path"),
+                    path.toAbsolutePath().normalize().toString()));
+        }
+        throw new IllegalArgumentException("Unsupported standalone example file: " + path);
+    }
+
+    static String unsupportedStandaloneExampleMessage(Path path, String osName) {
+        if (path.getFileName().toString().endsWith(".sh") && isWindows(osName)) {
+            return "No bash.exe shell command was found on PATH for this Windows shell script example. "
+                    + "Install Git Bash or another bash-compatible shell and add it to PATH, then run:\n"
+                    + path.toAbsolutePath().normalize();
+        }
+        return "No supported launcher is available for standalone example:\n"
+                + path.toAbsolutePath().normalize();
+    }
+
+    private static Optional<List<String>> resolveShellCommand(Path path, String osName, Map<String, String> environment) {
+        Path normalizedPath = path.toAbsolutePath().normalize();
+        if (isWindows(osName)) {
+            return windowsShellCommand(normalizedPath, environment);
+        }
+        return Optional.of(List.of("bash", normalizedPath.toString()));
+    }
+
+    static Optional<List<String>> windowsShellCommand(Path path, Map<String, String> environment) {
+        return windowsBashExecutable(environment)
+                .map(bash -> List.of(
+                        bash.toString(),
+                        PathUtils.normalizeSeparators(path.toAbsolutePath().normalize().toString())));
+    }
+
+    private static Optional<Path> windowsBashExecutable(Map<String, String> environment) {
+        String pathValue = environment.entrySet().stream()
+                .filter(entry -> "PATH".equalsIgnoreCase(entry.getKey()))
+                .map(Map.Entry::getValue)
+                .filter(Objects::nonNull)
+                .findFirst()
+                .orElse("");
+        for (String pathEntry : pathValue.split(";")) {
+            if (pathEntry.isBlank()) {
+                continue;
+            }
+            try {
+                Path candidate = Path.of(pathEntry.trim(), "bash.exe");
+                if (Files.isRegularFile(candidate)) {
+                    return Optional.of(candidate.toAbsolutePath().normalize());
+                }
+            } catch (InvalidPathException ignored) {
+                // Ignore malformed PATH entries and continue searching for a usable shell.
+            }
+        }
+        return Optional.empty();
+    }
+
+    private static boolean isWindows(String osName) {
+        return osName != null && osName.toLowerCase(Locale.ROOT).contains("win");
     }
 
     static boolean isNewTest(TestResultRecord record, Optional<String> currentSourceSignature) {
@@ -813,6 +1169,10 @@ public final class TestScreenApplication {
 
     static boolean buildResultMatchesCurrentSource(BuildResultRecord buildResultRecord, Instant modifiedAt) {
         return buildResultRecord.executedAt().isAfter(modifiedAt) || buildResultRecord.executedAt().equals(modifiedAt);
+    }
+
+    static String persistedOutput(Map<String, String> fields) {
+        return fields.getOrDefault("output", fields.getOrDefault("failureOutput", ""));
     }
 
     static TestResultRecord reconcileBuildResultRecord(
@@ -871,6 +1231,56 @@ public final class TestScreenApplication {
         return writer.toString();
     }
 
+    static String junitSubjectDescription(String displayName, Optional<String> source) {
+        String subject = humanizeIdentifier(displayName);
+        String location = source.flatMap(TestScreenApplication::parseMethodSource)
+                .map(key -> " in " + key.className())
+                .orElse("");
+        return "Runs the " + subject + " JUnit test" + location + ".";
+    }
+
+    static String junitExpectationDescription(String displayName) {
+        return "Expect " + humanizeIdentifier(displayName)
+                + " to finish with a Success result. If it fails, the output shows the assertion error or stack trace.";
+    }
+
+    static String standaloneExampleSubjectDescription(Path path) {
+        String normalized = PathUtils.normalizeSeparators(REPO_ROOT.relativize(path.toAbsolutePath().normalize()).toString());
+        return switch (normalized) {
+            case "examples/user-manual/02-project-setup-and-validation/demo.sh" ->
+                    "Shows the project validation commands from the setup section, including the Gradle build.";
+            case "examples/user-manual/04-startup-and-service-wiring/ApplicationResourceConfigDemo.java" ->
+                    "Shows how an application resource config resolves category tables, image roots, and named authored resources.";
+            case "examples/user-manual/05-content-routing-and-scenes/SceneFlowDemo.java" ->
+                    "Shows registering content, scene definitions, and application routes for a simple chapter start flow.";
+            case "examples/user-manual/05-content-routing-and-scenes/SceneExecutionAndJsonDemo.java" ->
+                    "Shows loading scene JSON, presenting text and choices, selecting a branch, and round-tripping scene state.";
+            default -> "Shows the user-manual example in " + normalized + ".";
+        };
+    }
+
+    static String standaloneExampleExpectationDescription(Path path, ExecutionMode executionMode) {
+        if (executionMode == ExecutionMode.SHELL) {
+            return "Expect the script to run on macOS, Linux, or Windows when bash.exe is available on PATH.";
+        }
+        return "Expect the example to print a short demonstration transcript and exit with code 0.";
+    }
+
+    static String humanizeIdentifier(String identifier) {
+        Objects.requireNonNull(identifier, "identifier");
+        String withoutParameters = identifier.replaceFirst("\\(.*\\)$", "");
+        String spaced = withoutParameters
+                .replace('_', ' ')
+                .replace('-', ' ')
+                .replaceAll("(?<=[a-z0-9])(?=[A-Z])", " ")
+                .replaceAll("\\s+", " ")
+                .trim();
+        if (spaced.isEmpty()) {
+            return "selected";
+        }
+        return spaced.toLowerCase(Locale.ROOT);
+    }
+
     private static final class RunResult {
         private final boolean success;
         private final String output;
@@ -895,7 +1305,7 @@ public final class TestScreenApplication {
         private final String lastRunAt;
         private final String applicationVersion;
         private final Optional<Boolean> success;
-        private final String failureOutput;
+        private final String resultOutput;
         private final String sourceSignature;
 
         TestResultRecord(
@@ -904,14 +1314,14 @@ public final class TestScreenApplication {
                 String lastRunAt,
                 String applicationVersion,
                 Optional<Boolean> success,
-                String failureOutput,
+                String resultOutput,
                 String sourceSignature) {
             this.auto = auto;
             this.newTest = newTest;
             this.lastRunAt = lastRunAt;
             this.applicationVersion = applicationVersion;
             this.success = success;
-            this.failureOutput = failureOutput;
+            this.resultOutput = resultOutput;
             this.sourceSignature = sourceSignature;
         }
 
@@ -935,8 +1345,12 @@ public final class TestScreenApplication {
             return success;
         }
 
+        String resultOutput() {
+            return resultOutput;
+        }
+
         String failureOutput() {
-            return failureOutput;
+            return resultOutput;
         }
 
         String sourceSignature() {
@@ -949,26 +1363,39 @@ public final class TestScreenApplication {
         private final String uniqueId;
         private final Optional<String> source;
         private final String category;
+        private final Path filePath;
+        private final ExecutionMode executionMode;
         private boolean newTest;
         private boolean auto;
         private String lastRunAt;
         private String applicationVersion;
         private Optional<Boolean> success;
-        private String failureOutput;
+        private String resultOutput;
         private String sourceSignature;
 
-        private TestCase(String displayName, String uniqueId, Optional<String> source, TestResultRecord record) {
+        private TestCase(
+                String displayName,
+                String uniqueId,
+                Optional<String> source,
+                String category,
+                Path filePath,
+                ExecutionMode executionMode,
+                boolean defaultAuto,
+                TestResultRecord record,
+                String sourceSignature) {
             this.displayName = displayName;
             this.uniqueId = uniqueId;
             this.source = source;
-            this.category = categoryForSource(source);
-            sourceSignature = source.flatMap(TestScreenApplication::computeSourceSignature).orElse(null);
+            this.category = category;
+            this.filePath = filePath;
+            this.executionMode = executionMode;
+            this.sourceSignature = sourceSignature;
             newTest = isNewTest(record, Optional.ofNullable(sourceSignature));
-            auto = record == null ? defaultAutoForSource(source) : record.auto();
+            auto = record == null ? defaultAuto : record.auto();
             lastRunAt = record == null ? null : record.lastRunAt();
             applicationVersion = record == null ? null : record.applicationVersion();
             success = record == null ? Optional.empty() : record.success();
-            failureOutput = record == null ? "" : record.failureOutput();
+            resultOutput = record == null ? "" : record.resultOutput();
         }
 
         static TestCase from(TestIdentifier identifier, TestResultRecord record, BuildResultRecord buildResultRecord) {
@@ -986,7 +1413,12 @@ public final class TestScreenApplication {
                     identifier.getDisplayName(),
                     identifier.getUniqueId(),
                     source,
-                    effectiveRecord);
+                    categoryForSource(source),
+                    source.flatMap(TestScreenApplication::sourceFilePath).orElse(null),
+                    ExecutionMode.JUNIT,
+                    defaultAutoForSource(source),
+                    effectiveRecord,
+                    sourceSignature.orElse(null));
             if (effectiveRecord != null) {
                 testCase.sourceSignature = effectiveRecord.sourceSignature();
                 testCase.newTest = isNewTest(effectiveRecord, sourceSignature);
@@ -994,13 +1426,42 @@ public final class TestScreenApplication {
             return testCase;
         }
 
+        static TestCase standaloneExample(Path path, TestResultRecord record) {
+            Path normalizedPath = path.toAbsolutePath().normalize();
+            return new TestCase(
+                    standaloneExampleDisplayName(normalizedPath),
+                    standaloneExampleUniqueId(normalizedPath),
+                    Optional.of("Standalone example"),
+                    "examples",
+                    normalizedPath,
+                    executionModeForExample(normalizedPath),
+                    false,
+                    record,
+                    standaloneExampleSourceSignature(normalizedPath).orElse(null));
+        }
 
-        void recordResult(String lastRunAt, String applicationVersion, boolean success, String failureOutput) {
+        private static ExecutionMode executionModeForExample(Path path) {
+            String fileName = path.getFileName().toString();
+            if (fileName.endsWith(".sh")) {
+                return ExecutionMode.SHELL;
+            }
+            if (fileName.endsWith(".java")) {
+                return ExecutionMode.JAVA_SOURCE;
+            }
+            throw new IllegalArgumentException("Unsupported example file: " + path);
+        }
+
+        void recordResult(String lastRunAt, String applicationVersion, boolean success, String resultOutput) {
             this.lastRunAt = lastRunAt;
             this.applicationVersion = applicationVersion;
             this.success = Optional.of(success);
-            this.failureOutput = failureOutput;
-            this.sourceSignature = source.flatMap(TestScreenApplication::computeSourceSignature).orElse(sourceSignature);
+            this.resultOutput = resultOutput;
+            this.sourceSignature = filePath()
+                    .flatMap(path -> external()
+                            ? TestScreenApplication.standaloneExampleSourceSignature(path)
+                            : TestScreenApplication.computeFileSignature(path))
+                    .or(() -> source.flatMap(TestScreenApplication::computeSourceSignature))
+                    .orElse(sourceSignature);
             if (success) {
                 this.newTest = false;
             }
@@ -1020,6 +1481,10 @@ public final class TestScreenApplication {
 
         String category() {
             return category;
+        }
+
+        Optional<Path> filePath() {
+            return Optional.ofNullable(filePath);
         }
 
         boolean auto() {
@@ -1042,8 +1507,12 @@ public final class TestScreenApplication {
             return success;
         }
 
+        String resultOutput() {
+            return resultOutput;
+        }
+
         String failureOutput() {
-            return failureOutput;
+            return resultOutput;
         }
 
         Optional<String> sourceSignature() {
@@ -1052,6 +1521,53 @@ public final class TestScreenApplication {
 
         String resultLabel() {
             return success.map(result -> result ? "Success" : "Failure").orElse("Not run");
+        }
+
+        String subjectDescription() {
+            if (external()) {
+                return standaloneExampleSubjectDescription(filePath);
+            }
+            return junitSubjectDescription(displayName, source);
+        }
+
+        String expectationDescription() {
+            if (external()) {
+                return standaloneExampleExpectationDescription(filePath, executionMode);
+            }
+            return junitExpectationDescription(displayName);
+        }
+
+        boolean unsupportedOnCurrentOperatingSystem() {
+            return executionMode == ExecutionMode.SHELL
+                    && commandForStandaloneExample(filePath, System.getProperty("os.name", ""), System.getenv()).isEmpty();
+        }
+
+        String unsupportedOperatingSystemMessage() {
+            return unsupportedStandaloneExampleMessage(filePath, System.getProperty("os.name", ""));
+        }
+
+        boolean external() {
+            return executionMode != ExecutionMode.JUNIT;
+        }
+
+        String executionLabel() {
+            return switch (executionMode) {
+                case JUNIT -> "JUnit test";
+                case JAVA_SOURCE -> "Standalone Java source demo";
+                case SHELL -> "Standalone shell demo";
+            };
+        }
+
+        List<String> command() {
+            if (!external()) {
+                throw new IllegalStateException("JUnit tests do not expose an external command.");
+            }
+            try {
+                return commandForStandaloneExample(filePath);
+            } catch (IllegalStateException exception) {
+                throw new IllegalStateException("Unable to prepare " + executionLabel().toLowerCase(Locale.ROOT)
+                        + " command for " + filePath + ":\n" + exception.getMessage(), exception);
+            }
         }
 
         @Override
@@ -1084,6 +1600,12 @@ public final class TestScreenApplication {
         public String toString() {
             return name + " (" + testCount + ")";
         }
+    }
+
+    private enum ExecutionMode {
+        JUNIT,
+        JAVA_SOURCE,
+        SHELL
     }
 
     static final class TestMethodKey {

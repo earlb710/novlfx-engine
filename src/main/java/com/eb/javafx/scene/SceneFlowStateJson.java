@@ -6,7 +6,12 @@ import com.eb.javafx.util.JsonStrings;
 import java.util.List;
 import java.util.Map;
 
-/** JSON serialization for resumable scene-flow save snapshots. */
+/**
+ * JSON serialization for resumable scene-flow save snapshots.
+ *
+ * <p>The format persists active scene position, call stack, selected choices, and pending UI interruption
+ * fields using the shared small-JSON helpers rather than application-specific save schemas.</p>
+ */
 public final class SceneFlowStateJson {
     private SceneFlowStateJson() {
     }

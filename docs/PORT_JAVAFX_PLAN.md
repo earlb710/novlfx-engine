@@ -9,7 +9,7 @@ Include code in this engine only when it is useful to multiple visual novel or J
 - lifecycle orchestration and startup validation
 - reusable static content registries and module registration contracts
 - route descriptors, route modules, and scene navigation primitives
-- generic UI shells, placeholder screens, theme helpers, and startup error reporting
+- generic UI shells, view-model driven screens, theme helpers, and startup error reporting
 - save/load, preferences, random, time, and game-state abstractions
 - audio request and channel abstractions
 - reusable scene-flow definitions, validation, execution, choice modeling, and resumable flow snapshots
@@ -58,7 +58,7 @@ Provide the reusable section 1.3 dialogue and scene-scripting foundation. Scene 
 
 ### `ui`
 
-Provide generic screens, shell/navigation helpers, theme support, startup error reporting, and manual/test UI surfaces. UI classes should avoid game-specific text beyond reusable defaults or test placeholders.
+Provide generic screens, screen view models, shell/navigation helpers, theme support, startup error reporting, and manual/test UI surfaces. UI classes should avoid game-specific text beyond reusable defaults or test fixtures, and application-specific controls should remain in application route modules.
 
 ### `display`
 

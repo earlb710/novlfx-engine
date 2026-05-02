@@ -3,7 +3,12 @@ package com.eb.javafx.scene;
 import com.eb.javafx.gamesupport.ActionContext;
 import com.eb.javafx.gamesupport.RequirementResult;
 
-/** Converts executor results into UI-neutral presentation data. */
+/**
+ * Converts executor results into UI-neutral presentation data.
+ *
+ * <p>The presenter copies the current step, scene id, status, message, and evaluated choice availability into
+ * immutable view models that can be rendered by JavaFX or asserted in tests.</p>
+ */
 public final class ScenePresenter {
     public SceneViewModel present(ActionContext context, SceneExecutionResult result) {
         SceneStep step = result.step();

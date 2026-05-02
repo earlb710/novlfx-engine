@@ -1,0 +1,30 @@
+{
+  "transforms": [
+    {
+      "id": "center-stage",
+      "fitWidth": 720,
+      "fitHeight": 1080,
+      "opacity": 1.0,
+      "xAlign": 0.5,
+      "yAlign": 0.5
+    }
+  ],
+  "images": [
+    {
+      "id": "hero-neutral",
+      "sourcePath": "characters/hero/neutral.png",
+      "transformId": "center-stage",
+      "layer": "CHARACTER"
+    }
+  ],
+  "layeredCharacters": [
+    {
+      "id": "hero-layered",
+      "drawOrder": ["hero-neutral"],
+      "defaultTransformId": "center-stage",
+      "metadata": {
+        "mood": "neutral"
+      }
+    }
+  ]
+}

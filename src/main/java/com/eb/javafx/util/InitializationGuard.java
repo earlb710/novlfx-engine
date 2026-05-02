@@ -1,6 +1,11 @@
 package com.eb.javafx.util;
 
-/** Tracks and enforces initialization for services with explicit startup lifecycles. */
+/**
+ * Tracks and enforces initialization for services with explicit startup lifecycles.
+ *
+ * <p>Services can mark themselves initialized or uninitialized and call {@link #requireInitialized()} from
+ * public operations to fail fast with a service-specific message before startup completes.</p>
+ */
 public final class InitializationGuard {
     private final String uninitializedMessage;
     private boolean initialized;

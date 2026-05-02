@@ -7,7 +7,12 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-/** Startup registry for validated structured scene definitions. */
+/**
+ * Startup registry for validated structured scene definitions.
+ *
+ * <p>The registry preserves registered scenes by id, prevents duplicate definitions, and validates transition
+ * targets before the executor attempts to follow jumps or calls.</p>
+ */
 public final class SceneRegistry {
     private final Map<String, SceneDefinition> scenes = new LinkedHashMap<>();
 

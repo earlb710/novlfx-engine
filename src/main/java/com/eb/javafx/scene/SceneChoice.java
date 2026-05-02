@@ -12,7 +12,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-/** Menu choice definition with requirements, effects, and a typed transition target. */
+/**
+ * Menu choice definition with requirements, effects, and a typed transition target.
+ *
+ * <p>Availability evaluates every requirement and can replace the blocked reason with authored text; effects
+ * run in order and stop at the first failure before the executor follows the transition.</p>
+ */
 public final class SceneChoice {
     private final String id;
     private final String textDefinition;

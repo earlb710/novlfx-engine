@@ -1,0 +1,9 @@
+{
+  "_comment": "Paths in this demo config are resolved relative to the repository root.",
+  "categoryCodeTablesPath": "examples/user-manual/09-game-support-state-save-prefs-random/category-code-tables.demo.json",
+  "imageAssetRoot": "examples/user-manual/07-display-support/assets",
+  "resources": {
+    "displayDefinitions": "examples/user-manual/07-display-support/display-definitions.demo.json",
+    "uiTheme": "src/main/resources/com/eb/javafx/ui/eb.css"
+  }
+}

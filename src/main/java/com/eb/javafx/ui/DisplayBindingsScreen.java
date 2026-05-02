@@ -15,7 +15,12 @@ import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 
-/** Reusable diagnostic route for display registry bindings and previews. */
+/**
+ * Reusable diagnostic route for display registry bindings and previews.
+ *
+ * <p>The screen summarizes parsed image aliases, transforms, layered characters, and animation profiles,
+ * then renders a limited gallery of display nodes so route authors can verify asset wiring without custom UI.</p>
+ */
 public final class DisplayBindingsScreen {
     private DisplayBindingsScreen() {
     }

@@ -4,6 +4,8 @@
 
 This manual explains how to use the existing `novlfx-engine` code as a reusable JavaFX foundation for visual novel projects.
 
+Example/demo index: [`examples/user-manual/README.md`](../examples/user-manual/README.md)
+
 - **Project setup and validation**: open the repository, build it, run tests, and launch the manual test screen.
 - **Module and package layout**: understand the `com.novlfx.engine` module and exported `com.eb.javafx.*` packages.
 - **Startup and service wiring**: initialize the engine with `BootstrapService` and use the resulting `BootContext`.
@@ -33,7 +35,9 @@ Launch the manual test screen with:
 ./gradlew --no-daemon runTestScreen
 ```
 
-The test screen is supplied from the test source set and is useful for manually checking reusable UI surfaces without adding an application-specific entry point to the engine.
+The test screen is supplied from the test source set and is useful for manually checking reusable UI surfaces without adding an application-specific entry point to the engine. Its window title reports the total discovered tests plus recorded success and error counts. Shell script examples run directly on macOS/Linux and on Windows when `bash.exe` is available on `PATH`.
+
+Example/demo code: [`examples/user-manual/02-project-setup-and-validation/demo.sh`](../examples/user-manual/02-project-setup-and-validation/demo.sh)
 
 ## 3. Module and package layout
 
@@ -56,6 +60,8 @@ The engine publishes the Java module `com.novlfx.engine`. It exports reusable pa
 - `util`: validation, immutable collection, result, path, time, JSON string, and initialization helpers.
 
 Use these packages from an application project instead of copying source-engine-specific global code into the engine.
+
+Example/demo code: [`examples/user-manual/03-module-and-package-layout/ModuleUsageExample.java`](../examples/user-manual/03-module-and-package-layout/ModuleUsageExample.java)
 
 ## 4. Startup and service wiring
 
@@ -112,7 +118,19 @@ BootContext context = new BootstrapService(options).boot(primaryStage);
 Use `context.resourceConfig().resolveCategoryCodeTables(context.applicationRoot())` when app-owned content modules need to load generic category JSON during startup.
 Use `context.resourceConfig().resolveResource(context.applicationRoot(), "displayDefinitions")` with `JsonDisplayContentModule` when app-owned display definitions should be loaded during the static content phase.
 
+Example/demo code: [`examples/user-manual/04-startup-and-service-wiring/BootstrapDemo.java`](../examples/user-manual/04-startup-and-service-wiring/BootstrapDemo.java)
+
+Additional example/demo code:
+- [`examples/user-manual/04-startup-and-service-wiring/ApplicationResourceConfigDemo.java`](../examples/user-manual/04-startup-and-service-wiring/ApplicationResourceConfigDemo.java)
+- [`examples/user-manual/04-startup-and-service-wiring/config.demo.json`](../examples/user-manual/04-startup-and-service-wiring/config.demo.json)
+
 ## 5. Content, routing, and scenes
+
+Example/demo code: [`examples/user-manual/05-content-routing-and-scenes/SceneFlowDemo.java`](../examples/user-manual/05-content-routing-and-scenes/SceneFlowDemo.java)
+
+Additional example/demo code:
+- [`examples/user-manual/05-content-routing-and-scenes/SceneExecutionAndJsonDemo.java`](../examples/user-manual/05-content-routing-and-scenes/SceneExecutionAndJsonDemo.java)
+- [`examples/user-manual/05-content-routing-and-scenes/scene-definitions.demo.json`](../examples/user-manual/05-content-routing-and-scenes/scene-definitions.demo.json)
 
 ### Static content
 
@@ -124,7 +142,7 @@ Keep authored story content and game-specific data outside this repository. Regi
 
 Use `SceneRouter` to register `RouteModule` implementations and navigate by route ID. A route is described with `RouteDescriptor` metadata and constructed through a `RouteFactory` using a `RouteContext`.
 
-Routes are grouped by `RouteCategory`, which helps UI code distinguish menus, gameplay routes, diagnostics, and other navigation surfaces. `DefaultRouteModule` provides reusable placeholder routes for the engine.
+Routes are grouped by `RouteCategory`, which helps UI code distinguish menus, gameplay routes, diagnostics, and other navigation surfaces. `DefaultRouteModule` provides reusable route factories backed by UI-neutral view models for the engine.
 
 ### Scene definitions and execution
 
@@ -147,14 +165,21 @@ Use `SceneFlowStateJson` to serialize and restore `SceneFlowState` snapshots con
 
 The `ui` package provides reusable JavaFX surfaces and helpers:
 
+- `ScreenViewModel` and `ScreenActionViewModel` describe reusable screen text and route-backed actions without JavaFX control state.
+- `ViewModelScreen` renders a `ScreenViewModel` with generic labels and navigation buttons.
 - `ScreenShell` wraps screen content in a consistent shell.
 - `ScreenNavigation` centralizes navigation callbacks.
-- `MainMenuScreen`, `PlaceholderScreen`, `SceneFlowScreen`, `DisplayBindingsScreen`, `HudSummaryScreen`, `SaveLoadSummaryScreen`, and `PreferencesSummaryScreen` provide generic reusable screens.
+- `MainMenuScreen`, `SceneFlowScreen`, `DisplayBindingsScreen`, `HudSummaryScreen`, `SaveLoadSummaryScreen`, and `PreferencesSummaryScreen` provide generic reusable screens or screen models.
 - `CaptureTestScreen` supports test/manual capture workflows.
 - `UiTheme` loads the reusable stylesheet from `src/main/resources/com/eb/javafx/ui/eb.css`.
 - `StartupErrorReporter`, `StartupFailureException`, and `StartupFailureCategory` provide structured startup diagnostics.
 
-Applications can use these screens directly for prototypes or replace route factories with application-specific screens while keeping the same routing and bootstrap contracts.
+Applications can use these screens directly for prototypes or replace route factories with application-specific screens while keeping the same routing and bootstrap contracts. App-specific JavaFX controls should live in application route modules; reusable engine screens should consume view models or generic display contracts.
+
+Example/demo code: [`examples/user-manual/06-ui-screens-and-themes/UiScreenDemo.java`](../examples/user-manual/06-ui-screens-and-themes/UiScreenDemo.java)
+
+Additional example/demo code:
+- [`examples/user-manual/06-ui-screens-and-themes/UiScreenCatalogDemo.java`](../examples/user-manual/06-ui-screens-and-themes/UiScreenCatalogDemo.java)
 
 ## 7. Display support
 
@@ -171,6 +196,11 @@ Use `DisplayAnimationPlayer` to model animation playback state and interpolation
 The registry can resolve image paths from a checked-out game tree through `GameAssetLocator`, but concrete image assets remain application-owned.
 
 Use `DisplayDefinitionJsonLoader` to load app-owned display JSON into an `ImageDisplayRegistry`, or wrap that loading in `JsonDisplayContentModule` for bootstrap registration. The supported root fields are `transforms`, `images`, and `layeredCharacters`; authored image files and IDs remain outside the engine.
+
+Example/demo code: [`examples/user-manual/07-display-support/display-definitions.demo.json`](../examples/user-manual/07-display-support/display-definitions.demo.json)
+
+Additional example/demo code:
+- [`examples/user-manual/07-display-support/DisplaySupportDemo.java`](../examples/user-manual/07-display-support/DisplaySupportDemo.java)
 
 ## 8. Audio support
 
@@ -189,6 +219,8 @@ Audio support currently includes:
 - stop tracking for a channel
 
 Actual `MediaPlayer` or `AudioClip` playback, audio asset discovery, fades, crossfades, and channel-specific player pools are not part of the current implementation. Applications should provide concrete `AudioPlaybackAdapter` implementations if they need real sound output today.
+
+Example/demo code: [`examples/user-manual/08-audio-support/AudioServiceDemo.java`](../examples/user-manual/08-audio-support/AudioServiceDemo.java)
 
 ## 9. Game support, state, saves, preferences, and random behavior
 
@@ -243,6 +275,12 @@ Use `PreferencesService` for user preferences such as window size, fullscreen st
 
 Use `GameRandomService` for reusable random behavior. Initialize it before use so tests and application code can rely on deterministic service state where applicable.
 
+Example/demo code: [`examples/user-manual/09-game-support-state-save-prefs-random/SupportServicesDemo.java`](../examples/user-manual/09-game-support-state-save-prefs-random/SupportServicesDemo.java)
+
+Additional example/demo code:
+- [`examples/user-manual/09-game-support-state-save-prefs-random/CategoryCodeTableDefinitionDemo.java`](../examples/user-manual/09-game-support-state-save-prefs-random/CategoryCodeTableDefinitionDemo.java)
+- [`examples/user-manual/09-game-support-state-save-prefs-random/category-code-tables.demo.json`](../examples/user-manual/09-game-support-state-save-prefs-random/category-code-tables.demo.json)
+
 ## 10. Text and utility helpers
 
 Use `TextTagParser` to tokenize visual-novel-style text with simple styling metadata. Parsed output is represented through `TextToken`, `TextTokenType`, and `TextStyle`.
@@ -259,6 +297,8 @@ Use utility classes for common engine behavior:
 
 Prefer these helpers over duplicating validation and formatting logic in application code.
 
+Example/demo code: [`examples/user-manual/10-text-and-utility-helpers/TextAndUtilityDemo.java`](../examples/user-manual/10-text-and-utility-helpers/TextAndUtilityDemo.java)
+
 ## 11. Extension boundaries
 
 This repository is intended to stay reusable. Keep the following in application repositories rather than in `novlfx-engine`:
@@ -271,3 +311,5 @@ This repository is intended to stay reusable. Keep the following in application 
 - domain-specific progression rules that are not expressed as generic interfaces or extension points
 
 When adding new reusable behavior, preserve deterministic validation, initialize services explicitly, and add focused tests for the reusable behavior.
+
+Example/demo code: [`examples/user-manual/11-extension-boundaries/ApplicationRouteModuleDemo.java`](../examples/user-manual/11-extension-boundaries/ApplicationRouteModuleDemo.java)

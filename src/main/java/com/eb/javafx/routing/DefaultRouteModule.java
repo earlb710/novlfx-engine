@@ -3,11 +3,12 @@ package com.eb.javafx.routing;
 import com.eb.javafx.ui.CaptureTestScreen;
 import com.eb.javafx.ui.DisplayBindingsScreen;
 import com.eb.javafx.ui.HudSummaryScreen;
+import com.eb.javafx.ui.InformationalScreenModels;
 import com.eb.javafx.ui.MainMenuScreen;
-import com.eb.javafx.ui.PlaceholderScreen;
 import com.eb.javafx.ui.PreferencesSummaryScreen;
 import com.eb.javafx.ui.SaveLoadSummaryScreen;
 import com.eb.javafx.ui.SceneFlowScreen;
+import com.eb.javafx.ui.ViewModelScreen;
 
 /** Registers reusable engine-provided routes used by the initial JavaFX shell. */
 public final class DefaultRouteModule implements RouteModule {
@@ -18,21 +19,21 @@ public final class DefaultRouteModule implements RouteModule {
                         "ui.mainMenu.title",
                         RouteCategory.MENU,
                         true,
-                        "Shell route with navigation to registered JavaFX placeholders."),
+                        "Shell route with navigation to registered JavaFX screens."),
                 MainMenuScreen::createScene);
         router.registerRoute(new RouteDescriptor(
                         SceneRouter.PREFERENCES_ROUTE,
                         "ui.preferences.title",
                         RouteCategory.SETTINGS,
-                        false,
-                        "Placeholder route showing startup preference values."),
+                        true,
+                        "Reusable view-model route showing startup preference values."),
                 PreferencesSummaryScreen::createScene);
         router.registerRoute(new RouteDescriptor(
                         SceneRouter.SAVE_LOAD_ROUTE,
                         "ui.saveLoad.title",
                         RouteCategory.SAVE_LOAD,
-                        false,
-                        "Placeholder route showing explicit save schema metadata."),
+                        true,
+                        "Reusable view-model route showing explicit save schema metadata."),
                 SaveLoadSummaryScreen::createScene);
         router.registerRoute(new RouteDescriptor(
                         SceneRouter.DIALOGUE_ROUTE,
@@ -52,27 +53,27 @@ public final class DefaultRouteModule implements RouteModule {
                         SceneRouter.HUD_ROUTE,
                         "ui.hud.title",
                         RouteCategory.HUD,
-                        false,
-                        "Placeholder route showing persistent HUD preference wiring."),
+                        true,
+                        "Reusable view-model route showing persistent HUD preference wiring."),
                 HudSummaryScreen::createScene);
         router.registerRoute(new RouteDescriptor(
                         SceneRouter.NOTIFICATION_ROUTE,
                         "ui.notification.title",
                         RouteCategory.OVERLAY,
-                        false,
-                        "Placeholder route for notification and modal overlay layering."),
-                context -> PlaceholderScreen.createScene(context,
-                        "ui.notification.title",
-                        "Notifications and modal overlays share this JavaFX layer strategy."));
+                        true,
+                        "Reusable view-model route for notification and modal overlay layering."),
+                context -> ViewModelScreen.createScene(context, InformationalScreenModels.backToMainMenu(
+                        context.contentRegistry().definition("ui.notification.title"),
+                        "Notifications and modal overlays share this JavaFX layer strategy.")));
         router.registerRoute(new RouteDescriptor(
                         SceneRouter.TOOLTIP_ROUTE,
                         "ui.tooltip.title",
                         RouteCategory.TOOLTIP,
-                        false,
-                        "Placeholder route for reusable tooltip panels."),
-                context -> PlaceholderScreen.createScene(context,
-                        "ui.tooltip.title",
-                        "Reusable tooltip panels for domain data, actions, requirements, and generic help will render here."));
+                        true,
+                        "Reusable view-model route for tooltip panels."),
+                context -> ViewModelScreen.createScene(context, InformationalScreenModels.backToMainMenu(
+                        context.contentRegistry().definition("ui.tooltip.title"),
+                        "Reusable tooltip panels for domain data, actions, requirements, and generic help render here.")));
         router.registerRoute(new RouteDescriptor(
                         SceneRouter.DISPLAY_BINDINGS_ROUTE,
                         "ui.displayBindings.title",
