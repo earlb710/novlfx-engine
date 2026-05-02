@@ -1,3 +1,4 @@
+import com.eb.javafx.bootstrap.ApplicationResourceConfig;
 import com.eb.javafx.gamesupport.CategoryCodeTableDefinition;
 import com.eb.javafx.gamesupport.CodeDefinition;
 import com.eb.javafx.gamesupport.CodeTableDefinition;
@@ -15,9 +16,11 @@ public final class CategoryCodeTableDefinitionDemo {
     }
 
     public static void main(String[] args) {
-        Path jsonPath = Path.of("examples/user-manual/09-game-support-state-save-prefs-random/category-code-tables.demo.json")
+        Path appRoot = Path.of("").toAbsolutePath().normalize();
+        Path configPath = Path.of("examples/user-manual/04-startup-and-service-wiring/config.demo.json")
                 .toAbsolutePath()
                 .normalize();
+        Path jsonPath = ApplicationResourceConfig.load(configPath).resolveCategoryCodeTables(appRoot);
         CategoryCodeTableDefinition tables = CategoryCodeTableDefinition.load(jsonPath);
 
         CodeTableDefinition roles = tables.table("roles").orElseThrow();

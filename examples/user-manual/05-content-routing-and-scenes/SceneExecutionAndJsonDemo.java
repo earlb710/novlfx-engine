@@ -1,6 +1,8 @@
+import com.eb.javafx.bootstrap.ApplicationResourceConfig;
 import com.eb.javafx.gamesupport.ActionContext;
 import com.eb.javafx.gamesupport.GameSupportService;
 import com.eb.javafx.random.GameRandomService;
+import com.eb.javafx.save.SaveSnapshotSection;
 import com.eb.javafx.scene.SceneDefinition;
 import com.eb.javafx.scene.SceneDefinitionJson;
 import com.eb.javafx.scene.SceneExecutionResult;
@@ -25,9 +27,13 @@ public final class SceneExecutionAndJsonDemo {
     }
 
     public static void main(String[] args) {
-        Path jsonPath = Path.of("examples/user-manual/05-content-routing-and-scenes/scene-definitions.demo.json")
+        Path appRoot = Path.of("").toAbsolutePath().normalize();
+        Path configPath = Path.of("examples/user-manual/04-startup-and-service-wiring/config.demo.json")
                 .toAbsolutePath()
                 .normalize();
+        Path jsonPath = ApplicationResourceConfig.load(configPath)
+                .resolveResource(appRoot, "sceneDefinitions")
+                .orElseThrow();
 
         List<SceneDefinition> scenes = SceneDefinitionJson.load(jsonPath);
         SceneRegistry sceneRegistry = new SceneRegistry();
@@ -63,8 +69,11 @@ public final class SceneExecutionAndJsonDemo {
 
         String savedStateJson = SceneFlowStateJson.toJson(afterChoice.state());
         SceneFlowState restoredState = SceneFlowStateJson.fromJson(savedStateJson, jsonPath.toString());
+        SaveSnapshotSection sceneFlowSection = SceneFlowStateJson.toSnapshotSection(afterChoice.state());
         SceneExecutionResult resumed = executor.continueFromText(actionContext, restoredState);
         System.out.println("Scene after RETURN transition: " + resumed.state().activeSceneId());
+        System.out.println("Scene-flow save section: " + sceneFlowSection.sectionId()
+                + " v" + sceneFlowSection.schemaVersion());
         System.out.println("Round-trip scene JSON length: " + SceneDefinitionJson.toJson(scenes).length());
     }
 }
