@@ -222,10 +222,15 @@ public class VectorImage {
      * @throws IllegalStateException if conversion fails
      */
     public javafx.scene.image.WritableImage toRasterImage(int width, int height) {
+        byte[] svgBytes;
         try {
             // Serialize SVG to bytes
-            byte[] svgBytes = toBytes();
-            
+            svgBytes = toBytes();
+        } catch (IllegalStateException ex) {
+            throw new IllegalStateException("VectorImage.toRasterImage: failed to serialize SVG", ex);
+        }
+
+        try {
             // Use Batik transcoder to rasterize
             ByteArrayInputStream bais = new ByteArrayInputStream(svgBytes);
             TranscoderInput input = new TranscoderInput(bais);
