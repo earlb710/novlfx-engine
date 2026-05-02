@@ -37,6 +37,7 @@ import java.awt.FlowLayout;
 import java.awt.GridLayout;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
@@ -53,6 +54,7 @@ import java.util.Enumeration;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Predicate;
@@ -423,11 +425,12 @@ public final class TestScreenApplication {
     }
 
     private RunResult executeExternalTestAndRecord(TestCase testCase) {
-        List<String> command = testCase.command();
         StringBuilder output = new StringBuilder()
-                .append("Command: ").append(String.join(" ", command)).append('\n')
+                .append("File: ").append(testCase.filePath().map(Path::toString).orElse("Unknown")).append('\n')
                 .append("Working directory: ").append(REPO_ROOT).append("\n\n");
         try {
+            List<String> command = testCase.command();
+            output.append("Command: ").append(String.join(" ", command)).append("\n\n");
             Process process = new ProcessBuilder(command)
                     .directory(REPO_ROOT.toFile())
                     .redirectErrorStream(true)
@@ -447,6 +450,11 @@ public final class TestScreenApplication {
         } catch (InterruptedException exception) {
             Thread.currentThread().interrupt();
             String resultOutput = output.append(stackTrace(exception)).toString();
+            testCase.recordResult(Instant.now().toString(), applicationVersion, false, resultOutput);
+            saveResultRecords();
+            return new RunResult(false, resultOutput);
+        } catch (IllegalStateException exception) {
+            String resultOutput = output.append(exception.getMessage()).append('\n').toString();
             testCase.recordResult(Instant.now().toString(), applicationVersion, false, resultOutput);
             saveResultRecords();
             return new RunResult(false, resultOutput);
@@ -914,18 +922,93 @@ public final class TestScreenApplication {
     }
 
     static List<String> commandForStandaloneExample(Path path) {
+        return commandForStandaloneExample(path, System.getProperty("os.name", ""), System.getenv())
+                .orElseThrow(() -> new IllegalStateException(
+                        unsupportedStandaloneExampleMessage(path, System.getProperty("os.name", ""))));
+    }
+
+    static Optional<List<String>> commandForStandaloneExample(Path path, String osName, Map<String, String> environment) {
         String fileName = path.getFileName().toString();
         if (fileName.endsWith(".sh")) {
-            return List.of("bash", path.toAbsolutePath().normalize().toString());
+            return resolveShellCommand(path, osName, environment);
         }
         if (fileName.endsWith(".java")) {
-            return List.of(
+            return Optional.of(List.of(
                     Path.of(System.getProperty("java.home"), "bin", "java").toString(),
                     "-cp",
                     System.getProperty("java.class.path"),
-                    path.toAbsolutePath().normalize().toString());
+                    path.toAbsolutePath().normalize().toString()));
         }
         throw new IllegalArgumentException("Unsupported standalone example file: " + path);
+    }
+
+    static String unsupportedStandaloneExampleMessage(Path path, String osName) {
+        if (path.getFileName().toString().endsWith(".sh") && isWindows(osName)) {
+            return "Shell script examples require a bash-compatible shell on Windows. "
+                    + "Install Git Bash or run the script manually:\n"
+                    + path.toAbsolutePath().normalize();
+        }
+        return "No supported launcher is available for standalone example:\n"
+                + path.toAbsolutePath().normalize();
+    }
+
+    private static Optional<List<String>> resolveShellCommand(Path path, String osName, Map<String, String> environment) {
+        Path normalizedPath = path.toAbsolutePath().normalize();
+        if (!isWindows(osName)) {
+            return Optional.of(List.of("bash", normalizedPath.toString()));
+        }
+        return findWindowsBash(environment)
+                .map(bash -> List.of(bash.toString(), normalizedPath.toString()));
+    }
+
+    private static Optional<Path> findWindowsBash(Map<String, String> environment) {
+        for (Path candidate : windowsBashCandidates(environment)) {
+            if (Files.isRegularFile(candidate)) {
+                return Optional.of(candidate.toAbsolutePath().normalize());
+            }
+        }
+        return Optional.empty();
+    }
+
+    private static List<Path> windowsBashCandidates(Map<String, String> environment) {
+        List<Path> candidates = new ArrayList<>();
+        String pathValue = environment.getOrDefault("PATH", "");
+        for (String entry : splitSearchPath(pathValue, true)) {
+            if (entry.isBlank()) {
+                continue;
+            }
+            candidates.add(Path.of(stripWrappedQuotes(entry)).resolve("bash.exe"));
+        }
+        addWindowsBashCandidate(candidates, environment.get("ProgramFiles"), "Git", "bin", "bash.exe");
+        addWindowsBashCandidate(candidates, environment.get("ProgramFiles"), "Git", "usr", "bin", "bash.exe");
+        addWindowsBashCandidate(candidates, environment.get("ProgramFiles(x86)"), "Git", "bin", "bash.exe");
+        addWindowsBashCandidate(candidates, environment.get("ProgramFiles(x86)"), "Git", "usr", "bin", "bash.exe");
+        addWindowsBashCandidate(candidates, environment.get("LocalAppData"), "Programs", "Git", "bin", "bash.exe");
+        addWindowsBashCandidate(candidates, environment.get("LocalAppData"), "Programs", "Git", "usr", "bin", "bash.exe");
+        return candidates;
+    }
+
+    private static void addWindowsBashCandidate(List<Path> candidates, String baseDirectory, String... segments) {
+        if (baseDirectory == null || baseDirectory.isBlank()) {
+            return;
+        }
+        candidates.add(Path.of(baseDirectory, segments));
+    }
+
+    private static List<String> splitSearchPath(String pathValue, boolean windows) {
+        String separator = windows ? ";" : File.pathSeparator;
+        return List.of(pathValue.split(Pattern.quote(separator)));
+    }
+
+    private static String stripWrappedQuotes(String value) {
+        if (value.length() >= 2 && value.startsWith("\"") && value.endsWith("\"")) {
+            return value.substring(1, value.length() - 1);
+        }
+        return value;
+    }
+
+    private static boolean isWindows(String osName) {
+        return osName != null && osName.toLowerCase(Locale.ROOT).contains("win");
     }
 
     static boolean isNewTest(TestResultRecord record, Optional<String> currentSourceSignature) {

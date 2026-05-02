@@ -2,9 +2,11 @@ package com.eb.javafx.testscreen;
 
 import org.junit.jupiter.api.Test;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -199,14 +201,51 @@ final class TestScreenApplicationTest {
     @Test
     void commandForStandaloneExampleUsesShellOrJavaSourceMode() {
         List<String> shellCommand = TestScreenApplication.commandForStandaloneExample(
-                Path.of("/home/runner/work/novlfx-engine/novlfx-engine/examples/user-manual/02-project-setup-and-validation/demo.sh"));
+                Path.of("/home/runner/work/novlfx-engine/novlfx-engine/examples/user-manual/02-project-setup-and-validation/demo.sh"),
+                "Linux",
+                Map.of()).orElseThrow();
         List<String> javaCommand = TestScreenApplication.commandForStandaloneExample(
-                Path.of("/home/runner/work/novlfx-engine/novlfx-engine/examples/user-manual/08-audio-support/AudioServiceDemo.java"));
+                Path.of("/home/runner/work/novlfx-engine/novlfx-engine/examples/user-manual/08-audio-support/AudioServiceDemo.java"),
+                "Linux",
+                Map.of()).orElseThrow();
 
         assertEquals("bash", shellCommand.get(0));
         assertEquals("java", Path.of(javaCommand.get(0)).getFileName().toString());
         assertEquals("-cp", javaCommand.get(1));
         assertTrue(javaCommand.get(3).endsWith("AudioServiceDemo.java"));
+    }
+
+    @Test
+    void shellCommandResolutionUsesBashExeFromWindowsPath() throws Exception {
+        Path gitBin = Files.createTempDirectory("git-bin");
+        Path bash = Files.createFile(gitBin.resolve("bash.exe"));
+
+        List<String> shellCommand = TestScreenApplication.commandForStandaloneExample(
+                Path.of("/home/runner/work/novlfx-engine/novlfx-engine/examples/user-manual/02-project-setup-and-validation/demo.sh"),
+                "Windows 11",
+                Map.of("PATH", gitBin + ";C:\\missing")).orElseThrow();
+
+        assertEquals(bash.toAbsolutePath().normalize().toString(), shellCommand.get(0));
+    }
+
+    @Test
+    void shellCommandResolutionReturnsEmptyOnWindowsWithoutBash() {
+        Optional<List<String>> shellCommand = TestScreenApplication.commandForStandaloneExample(
+                Path.of("/home/runner/work/novlfx-engine/novlfx-engine/examples/user-manual/02-project-setup-and-validation/demo.sh"),
+                "Windows 11",
+                Map.of("PATH", "C:\\missing"));
+
+        assertTrue(shellCommand.isEmpty());
+    }
+
+    @Test
+    void unsupportedStandaloneExampleMessageExplainsWindowsShellRequirement() {
+        String message = TestScreenApplication.unsupportedStandaloneExampleMessage(
+                Path.of("/home/runner/work/novlfx-engine/novlfx-engine/examples/user-manual/02-project-setup-and-validation/demo.sh"),
+                "Windows 11");
+
+        assertTrue(message.contains("bash-compatible shell"));
+        assertTrue(message.contains("demo.sh"));
     }
 
     @Test
