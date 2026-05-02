@@ -23,6 +23,7 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
 import javax.swing.JTextArea;
+import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
 import javax.swing.JTree;
@@ -37,6 +38,7 @@ import java.awt.GridLayout;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
@@ -69,15 +71,19 @@ public final class TestScreenApplication {
     private static final String RESULT_FILE = "testresult.json";
     public static final String TEST_SCREEN_ACTIVE_PROPERTY = "eb.testScreen.active";
     private static final Object TEST_SCREEN_ACTIVE_LOCK = new Object();
+    private static final Path REPO_ROOT = Paths.get("").toAbsolutePath().normalize();
     private static final Path TEST_SOURCE_ROOT = Paths.get("src", "test", "java");
+    private static final Path EXAMPLES_ROOT = Paths.get("examples", "user-manual");
     private static final Path BUILD_RESULTS_ROOT = Paths.get("build", "test-results", "test");
     private static final Pattern METHOD_SOURCE_PATTERN = Pattern.compile(
             "className = '([^']+)', methodName = '([^']+)'");
+    private static final Pattern STANDALONE_JAVA_MAIN_PATTERN = Pattern.compile("\\bpublic\\s+static\\s+void\\s+main\\s*\\(");
 
     private final Launcher launcher;
     private final DefaultMutableTreeNode testTreeRoot;
     private final DefaultTreeModel testTreeModel;
     private final JTree testTree;
+    private final JTextField pathField;
     private final JTextArea descriptionArea;
     private final JTextArea outputArea;
     private final JButton runButton;
@@ -91,6 +97,7 @@ public final class TestScreenApplication {
         testTreeRoot = new DefaultMutableTreeNode("Tests");
         testTreeModel = new DefaultTreeModel(testTreeRoot);
         testTree = new JTree(testTreeModel);
+        pathField = new JTextField();
         descriptionArea = new JTextArea();
         outputArea = new JTextArea();
         runButton = new JButton("Run");
@@ -130,6 +137,8 @@ public final class TestScreenApplication {
         descriptionArea.setLineWrap(true);
         descriptionArea.setWrapStyleWord(true);
 
+        pathField.setEditable(false);
+
         outputArea.setEditable(false);
         outputArea.setLineWrap(false);
 
@@ -164,13 +173,20 @@ public final class TestScreenApplication {
     private JPanel buildDetailsPanel() {
         JPanel detailsPanel = new JPanel(new GridLayout(2, 1, 8, 8));
 
+        JScrollPane pathPane = new JScrollPane(pathField);
+        pathPane.setBorder(BorderFactory.createTitledBorder("File Path"));
+
         JScrollPane descriptionPane = new JScrollPane(descriptionArea);
         descriptionPane.setBorder(BorderFactory.createTitledBorder("Description"));
 
         JScrollPane outputPane = new JScrollPane(outputArea);
         outputPane.setBorder(BorderFactory.createTitledBorder("Output"));
 
-        detailsPanel.add(descriptionPane);
+        JPanel selectionDetailsPanel = new JPanel(new BorderLayout(8, 8));
+        selectionDetailsPanel.add(pathPane, BorderLayout.NORTH);
+        selectionDetailsPanel.add(descriptionPane, BorderLayout.CENTER);
+
+        detailsPanel.add(selectionDetailsPanel);
         detailsPanel.add(outputPane);
         return detailsPanel;
     }
@@ -196,10 +212,11 @@ public final class TestScreenApplication {
                         identifier,
                         existingRecords.get(identifier.getUniqueId()),
                         buildResultRecords.get(TestMethodKey.from(identifier.getSource().map(Object::toString).orElse(null)))))
-                .sorted(Comparator.comparing(TestCase::category)
-                        .thenComparing(Comparator.comparing(TestCase::newTest).reversed())
-                        .thenComparing(TestCase::displayName))
-                .collect(Collectors.toList());
+                .collect(Collectors.toCollection(ArrayList::new));
+        tests.addAll(discoverStandaloneExamples(existingRecords));
+        tests.sort(Comparator.comparing(TestCase::category)
+                .thenComparing(Comparator.comparing(TestCase::newTest).reversed())
+                .thenComparing(TestCase::displayName));
 
         populateTestTree(tests);
         updateFrameTitle(tests.size());
@@ -250,6 +267,7 @@ public final class TestScreenApplication {
         runAllButton.setEnabled(!selectedAutoCategoryTests().isEmpty());
         if (selectedTest == null) {
             TestCategory selectedCategory = selectedCategory();
+            pathField.setText("");
             if (selectedCategory == null) {
                 descriptionArea.setText("");
             } else {
@@ -263,8 +281,11 @@ public final class TestScreenApplication {
             return;
         }
 
+        pathField.setText(selectedTest.filePath().map(path -> path.toAbsolutePath().normalize().toString()).orElse(""));
+        pathField.setCaretPosition(0);
         descriptionArea.setText("Name: " + selectedTest.displayName()
                 + "\nCategory: " + selectedTest.category()
+                + "\nType: " + selectedTest.executionLabel()
                 + "\nSource: " + selectedTest.source().orElse("Unknown")
                 + "\nUnique ID: " + selectedTest.uniqueId()
                 + "\nNew test: " + selectedTest.newTest()
@@ -351,6 +372,9 @@ public final class TestScreenApplication {
     }
 
     private RunResult executeTestAndRecord(TestCase testCase) {
+        if (testCase.external()) {
+            return executeExternalTestAndRecord(testCase);
+        }
         StringBuilder output = new StringBuilder();
         SummaryGeneratingListener summaryListener = new SummaryGeneratingListener();
         TestExecutionListener outputListener = new TestExecutionListener() {
@@ -396,6 +420,42 @@ public final class TestScreenApplication {
         testCase.recordResult(Instant.now().toString(), applicationVersion, success, success ? "" : resultOutput);
         saveResultRecords();
         return new RunResult(success, resultOutput);
+    }
+
+    private RunResult executeExternalTestAndRecord(TestCase testCase) {
+        List<String> command = testCase.command();
+        StringBuilder output = new StringBuilder()
+                .append("Command: ").append(String.join(" ", command)).append('\n')
+                .append("Working directory: ").append(REPO_ROOT).append("\n\n");
+        try {
+            Process process = new ProcessBuilder(command)
+                    .directory(REPO_ROOT.toFile())
+                    .redirectErrorStream(true)
+                    .start();
+            String processOutput;
+            try (InputStream inputStream = process.getInputStream()) {
+                processOutput = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
+            }
+            int exitCode = process.waitFor();
+            output.append(processOutput);
+            output.append("\nExit code: ").append(exitCode).append('\n');
+            boolean success = exitCode == 0;
+            String resultOutput = output.toString();
+            testCase.recordResult(Instant.now().toString(), applicationVersion, success, success ? "" : resultOutput);
+            saveResultRecords();
+            return new RunResult(success, resultOutput);
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+            String resultOutput = output.append(stackTrace(exception)).toString();
+            testCase.recordResult(Instant.now().toString(), applicationVersion, false, resultOutput);
+            saveResultRecords();
+            return new RunResult(false, resultOutput);
+        } catch (IOException exception) {
+            String resultOutput = output.append(stackTrace(exception)).toString();
+            testCase.recordResult(Instant.now().toString(), applicationVersion, false, resultOutput);
+            saveResultRecords();
+            return new RunResult(false, resultOutput);
+        }
     }
 
     private void appendSummary(StringBuilder output, TestExecutionSummary summary) {
@@ -725,6 +785,12 @@ public final class TestScreenApplication {
         return autoCategoryTests(selectedCategoryTests(), TestCase::auto);
     }
 
+    private List<TestCase> discoverStandaloneExamples(Map<String, TestResultRecord> existingRecords) {
+        return standaloneExampleFiles(EXAMPLES_ROOT).stream()
+                .map(path -> TestCase.standaloneExample(path, existingRecords.get(standaloneExampleUniqueId(path))))
+                .collect(Collectors.toList());
+    }
+
     static <T> List<T> autoCategoryTests(List<T> tests, Predicate<T> autoPredicate) {
         return tests.stream()
                 .filter(autoPredicate)
@@ -758,17 +824,7 @@ public final class TestScreenApplication {
     }
 
     static Optional<String> computeSourceSignature(String source) {
-        return parseMethodSource(source)
-                .map(TestMethodKey::className)
-                .map(className -> TEST_SOURCE_ROOT.resolve(className.replace('.', '/') + ".java"))
-                .filter(Files::isRegularFile)
-                .flatMap(path -> {
-                    try {
-                        return Optional.of(Integer.toHexString(Files.readString(path, StandardCharsets.UTF_8).hashCode()));
-                    } catch (IOException exception) {
-                        return Optional.empty();
-                    }
-                });
+        return sourceFilePath(source).flatMap(TestScreenApplication::computeFileSignature);
     }
 
     /**
@@ -790,9 +846,7 @@ public final class TestScreenApplication {
     }
 
     static Optional<Instant> sourceLastModifiedAt(String source) {
-        return parseMethodSource(source)
-                .map(TestMethodKey::className)
-                .map(className -> TEST_SOURCE_ROOT.resolve(className.replace('.', '/') + ".java"))
+        return sourceFilePath(source)
                 .filter(Files::isRegularFile)
                 .flatMap(path -> {
                     try {
@@ -801,6 +855,77 @@ public final class TestScreenApplication {
                         return Optional.empty();
                     }
                 });
+    }
+
+    static Optional<Path> sourceFilePath(String source) {
+        return parseMethodSource(source)
+                .map(TestMethodKey::className)
+                .map(className -> TEST_SOURCE_ROOT.resolve(className.replace('.', '/') + ".java"))
+                .map(path -> path.toAbsolutePath().normalize())
+                .filter(Files::isRegularFile);
+    }
+
+    static Optional<String> computeFileSignature(Path path) {
+        try {
+            return Optional.of(Integer.toHexString(Files.readString(path, StandardCharsets.UTF_8).hashCode()));
+        } catch (IOException exception) {
+            return Optional.empty();
+        }
+    }
+
+    static List<Path> standaloneExampleFiles(Path examplesRoot) {
+        if (!Files.isDirectory(examplesRoot)) {
+            return List.of();
+        }
+        try (Stream<Path> paths = Files.walk(examplesRoot)) {
+            return paths.filter(Files::isRegularFile)
+                    .filter(TestScreenApplication::isStandaloneExampleFile)
+                    .sorted()
+                    .map(path -> path.toAbsolutePath().normalize())
+                    .collect(Collectors.toList());
+        } catch (IOException exception) {
+            return List.of();
+        }
+    }
+
+    static boolean isStandaloneExampleFile(Path path) {
+        String fileName = path.getFileName().toString();
+        if (fileName.endsWith(".sh")) {
+            return true;
+        }
+        if (!fileName.endsWith(".java")) {
+            return false;
+        }
+        try {
+            return STANDALONE_JAVA_MAIN_PATTERN.matcher(Files.readString(path, StandardCharsets.UTF_8)).find();
+        } catch (IOException exception) {
+            return false;
+        }
+    }
+
+    static String standaloneExampleUniqueId(Path path) {
+        Path relativePath = REPO_ROOT.relativize(path.toAbsolutePath().normalize());
+        return "example:" + relativePath.toString().replace('\\', '/');
+    }
+
+    static String standaloneExampleDisplayName(Path path) {
+        Path relativePath = REPO_ROOT.relativize(path.toAbsolutePath().normalize());
+        return relativePath.toString().replace('\\', '/');
+    }
+
+    static List<String> commandForStandaloneExample(Path path) {
+        String fileName = path.getFileName().toString();
+        if (fileName.endsWith(".sh")) {
+            return List.of("bash", path.toAbsolutePath().normalize().toString());
+        }
+        if (fileName.endsWith(".java")) {
+            return List.of(
+                    Path.of(System.getProperty("java.home"), "bin", "java").toString(),
+                    "-cp",
+                    System.getProperty("java.class.path"),
+                    path.toAbsolutePath().normalize().toString());
+        }
+        throw new IllegalArgumentException("Unsupported standalone example file: " + path);
     }
 
     static boolean isNewTest(TestResultRecord record, Optional<String> currentSourceSignature) {
@@ -949,6 +1074,8 @@ public final class TestScreenApplication {
         private final String uniqueId;
         private final Optional<String> source;
         private final String category;
+        private final Path filePath;
+        private final ExecutionMode executionMode;
         private boolean newTest;
         private boolean auto;
         private String lastRunAt;
@@ -957,14 +1084,25 @@ public final class TestScreenApplication {
         private String failureOutput;
         private String sourceSignature;
 
-        private TestCase(String displayName, String uniqueId, Optional<String> source, TestResultRecord record) {
+        private TestCase(
+                String displayName,
+                String uniqueId,
+                Optional<String> source,
+                String category,
+                Path filePath,
+                ExecutionMode executionMode,
+                boolean defaultAuto,
+                TestResultRecord record,
+                String sourceSignature) {
             this.displayName = displayName;
             this.uniqueId = uniqueId;
             this.source = source;
-            this.category = categoryForSource(source);
-            sourceSignature = source.flatMap(TestScreenApplication::computeSourceSignature).orElse(null);
+            this.category = category;
+            this.filePath = filePath;
+            this.executionMode = executionMode;
+            this.sourceSignature = sourceSignature;
             newTest = isNewTest(record, Optional.ofNullable(sourceSignature));
-            auto = record == null ? defaultAutoForSource(source) : record.auto();
+            auto = record == null ? defaultAuto : record.auto();
             lastRunAt = record == null ? null : record.lastRunAt();
             applicationVersion = record == null ? null : record.applicationVersion();
             success = record == null ? Optional.empty() : record.success();
@@ -986,7 +1124,12 @@ public final class TestScreenApplication {
                     identifier.getDisplayName(),
                     identifier.getUniqueId(),
                     source,
-                    effectiveRecord);
+                    categoryForSource(source),
+                    source.flatMap(TestScreenApplication::sourceFilePath).orElse(null),
+                    ExecutionMode.JUNIT,
+                    defaultAutoForSource(source),
+                    effectiveRecord,
+                    sourceSignature.orElse(null));
             if (effectiveRecord != null) {
                 testCase.sourceSignature = effectiveRecord.sourceSignature();
                 testCase.newTest = isNewTest(effectiveRecord, sourceSignature);
@@ -994,13 +1137,39 @@ public final class TestScreenApplication {
             return testCase;
         }
 
+        static TestCase standaloneExample(Path path, TestResultRecord record) {
+            Path normalizedPath = path.toAbsolutePath().normalize();
+            return new TestCase(
+                    standaloneExampleDisplayName(normalizedPath),
+                    standaloneExampleUniqueId(normalizedPath),
+                    Optional.of("Standalone example"),
+                    "examples",
+                    normalizedPath,
+                    executionModeForExample(normalizedPath),
+                    false,
+                    record,
+                    computeFileSignature(normalizedPath).orElse(null));
+        }
+
+        private static ExecutionMode executionModeForExample(Path path) {
+            String fileName = path.getFileName().toString();
+            if (fileName.endsWith(".sh")) {
+                return ExecutionMode.SHELL;
+            }
+            if (fileName.endsWith(".java")) {
+                return ExecutionMode.JAVA_SOURCE;
+            }
+            throw new IllegalArgumentException("Unsupported example file: " + path);
+        }
 
         void recordResult(String lastRunAt, String applicationVersion, boolean success, String failureOutput) {
             this.lastRunAt = lastRunAt;
             this.applicationVersion = applicationVersion;
             this.success = Optional.of(success);
             this.failureOutput = failureOutput;
-            this.sourceSignature = source.flatMap(TestScreenApplication::computeSourceSignature).orElse(sourceSignature);
+            this.sourceSignature = filePath().flatMap(TestScreenApplication::computeFileSignature)
+                    .or(() -> source.flatMap(TestScreenApplication::computeSourceSignature))
+                    .orElse(sourceSignature);
             if (success) {
                 this.newTest = false;
             }
@@ -1020,6 +1189,10 @@ public final class TestScreenApplication {
 
         String category() {
             return category;
+        }
+
+        Optional<Path> filePath() {
+            return Optional.ofNullable(filePath);
         }
 
         boolean auto() {
@@ -1054,6 +1227,25 @@ public final class TestScreenApplication {
             return success.map(result -> result ? "Success" : "Failure").orElse("Not run");
         }
 
+        boolean external() {
+            return executionMode != ExecutionMode.JUNIT;
+        }
+
+        String executionLabel() {
+            return switch (executionMode) {
+                case JUNIT -> "JUnit test";
+                case JAVA_SOURCE -> "Standalone Java source demo";
+                case SHELL -> "Standalone shell demo";
+            };
+        }
+
+        List<String> command() {
+            if (!external()) {
+                throw new IllegalStateException("JUnit tests do not expose an external command.");
+            }
+            return commandForStandaloneExample(filePath);
+        }
+
         @Override
         public String toString() {
             return (newTest ? "[new] " : "") + (auto ? "[auto] " : "[manual] ") + success
@@ -1084,6 +1276,12 @@ public final class TestScreenApplication {
         public String toString() {
             return name + " (" + testCount + ")";
         }
+    }
+
+    private enum ExecutionMode {
+        JUNIT,
+        JAVA_SOURCE,
+        SHELL
     }
 
     static final class TestMethodKey {

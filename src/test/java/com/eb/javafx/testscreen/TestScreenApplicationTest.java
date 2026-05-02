@@ -2,12 +2,14 @@ package com.eb.javafx.testscreen;
 
 import org.junit.jupiter.api.Test;
 
+import java.nio.file.Path;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -43,6 +45,16 @@ final class TestScreenApplicationTest {
 
         assertTrue(signature.isPresent());
         assertFalse(signature.orElseThrow().isBlank());
+    }
+
+    @Test
+    void sourceFilePathFindsExistingTestSource() {
+        Optional<Path> path = TestScreenApplication.sourceFilePath(
+                "MethodSource [className = 'com.eb.javafx.testscreen.TestScreenApplicationTest', "
+                        + "methodName = 'sourceFilePathFindsExistingTestSource', methodParameterTypes = '']");
+
+        assertTrue(path.isPresent());
+        assertTrue(path.orElseThrow().toString().endsWith("src/test/java/com/eb/javafx/testscreen/TestScreenApplicationTest.java"));
     }
 
     @Test
@@ -172,5 +184,37 @@ final class TestScreenApplicationTest {
         List<String> autoTests = TestScreenApplication.autoCategoryTests(tests, test -> test.startsWith("auto"));
 
         assertEquals(List.of("auto first", "auto second"), autoTests);
+    }
+
+    @Test
+    void standaloneExampleFilesIncludesRunnableExamplesAndExcludesDataFiles() {
+        List<Path> examples = TestScreenApplication.standaloneExampleFiles(
+                Path.of("/home/runner/work/novlfx-engine/novlfx-engine/examples/user-manual"));
+
+        assertTrue(examples.stream().anyMatch(path -> path.toString().endsWith("02-project-setup-and-validation/demo.sh")));
+        assertTrue(examples.stream().anyMatch(path -> path.toString().endsWith("08-audio-support/AudioServiceDemo.java")));
+        assertFalse(examples.stream().anyMatch(path -> path.toString().endsWith("07-display-support/display-definitions.demo.json")));
+    }
+
+    @Test
+    void commandForStandaloneExampleUsesShellOrJavaSourceMode() {
+        List<String> shellCommand = TestScreenApplication.commandForStandaloneExample(
+                Path.of("/home/runner/work/novlfx-engine/novlfx-engine/examples/user-manual/02-project-setup-and-validation/demo.sh"));
+        List<String> javaCommand = TestScreenApplication.commandForStandaloneExample(
+                Path.of("/home/runner/work/novlfx-engine/novlfx-engine/examples/user-manual/08-audio-support/AudioServiceDemo.java"));
+
+        assertEquals("bash", shellCommand.get(0));
+        assertEquals("java", Path.of(javaCommand.get(0)).getFileName().toString());
+        assertEquals("-cp", javaCommand.get(1));
+        assertTrue(javaCommand.get(3).endsWith("AudioServiceDemo.java"));
+    }
+
+    @Test
+    void standaloneExampleUniqueIdIsStableAndNormalized() {
+        String uniqueId = TestScreenApplication.standaloneExampleUniqueId(
+                Path.of("/home/runner/work/novlfx-engine/novlfx-engine/examples/user-manual/08-audio-support/AudioServiceDemo.java"));
+
+        assertEquals("example:examples/user-manual/08-audio-support/AudioServiceDemo.java", uniqueId);
+        assertNotEquals("example:examples\\user-manual\\08-audio-support\\AudioServiceDemo.java", uniqueId);
     }
 }
