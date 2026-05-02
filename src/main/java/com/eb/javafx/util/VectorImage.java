@@ -1142,7 +1142,7 @@ public class VectorImage {
     }
 
     /**
-     * Remove external href/src references and style URLs while preserving local fragment references.
+     * Remove external href/src references and style URLs while preserving local fragment references and elements.
      */
     public VectorImage removeExternalReferences() {
         SVGDocument newDoc = copyDocument();
@@ -1292,7 +1292,7 @@ public class VectorImage {
             int start = urlIndex + 4;
             int end = normalized.indexOf(')', start);
             String reference = end < 0 ? normalized.substring(start) : normalized.substring(start, end);
-            reference = reference.trim().replace("\"", "").replace("'", "");
+            reference = reference.trim().replaceAll("[\"']", "");
             if (isExternalReference(reference)) {
                 return true;
             }
@@ -1345,6 +1345,9 @@ public class VectorImage {
     }
 
     private String formatNumber(double value) {
+        if (value == 0) {
+            return "0";
+        }
         if (Math.rint(value) == value) {
             return String.format(Locale.ROOT, "%.0f", value);
         }
