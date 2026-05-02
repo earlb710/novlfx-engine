@@ -1334,7 +1334,12 @@ public final class TestScreenApplication {
             if (!external()) {
                 throw new IllegalStateException("JUnit tests do not expose an external command.");
             }
-            return commandForStandaloneExample(filePath);
+            try {
+                return commandForStandaloneExample(filePath);
+            } catch (IllegalStateException exception) {
+                throw new IllegalStateException("Unable to prepare " + executionLabel().toLowerCase(Locale.ROOT)
+                        + " command for " + filePath + ":\n" + exception.getMessage(), exception);
+            }
         }
 
         @Override
