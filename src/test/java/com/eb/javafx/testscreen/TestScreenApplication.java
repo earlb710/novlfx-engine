@@ -958,14 +958,14 @@ public final class TestScreenApplication {
 
     static String standaloneExampleUniqueId(Path path) {
         Path relativePath = REPO_ROOT.relativize(path.toAbsolutePath().normalize());
-        return STANDALONE_EXAMPLE_PREFIX + relativePath.toString().replace('\\', '/');
+        return STANDALONE_EXAMPLE_PREFIX + PathUtils.normalizeSeparators(relativePath.toString());
     }
 
     static String standaloneExampleDisplayName(Path path) {
         Path relativePath = REPO_ROOT.relativize(path.toAbsolutePath().normalize());
         Path fileName = relativePath.getFileName();
         if (fileName == null) {
-            return relativePath.toString().replace('\\', '/');
+            return PathUtils.normalizeSeparators(relativePath.toString());
         }
         Path parent = relativePath.getParent();
         if (parent == null || parent.getFileName() == null) {
