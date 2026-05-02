@@ -43,6 +43,7 @@ import java.io.InputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -985,7 +986,7 @@ public final class TestScreenApplication {
             if (entry.isBlank()) {
                 continue;
             }
-            candidates.add(Path.of(stripWrappedQuotes(entry)).resolve("bash.exe"));
+            addWindowsBashCandidate(candidates, stripWrappedQuotes(entry), "bash.exe");
         }
         List<String[]> suffixes = List.of(
                 new String[]{"Git", "bin", "bash.exe"},
@@ -1008,7 +1009,11 @@ public final class TestScreenApplication {
         if (baseDirectory == null || baseDirectory.isBlank()) {
             return;
         }
-        candidates.add(Path.of(baseDirectory, segments));
+        try {
+            candidates.add(Path.of(baseDirectory, segments));
+        } catch (InvalidPathException ignored) {
+            // Skip malformed environment-derived candidate paths.
+        }
     }
 
     private static List<String> splitSearchPath(String pathValue, boolean windows) {

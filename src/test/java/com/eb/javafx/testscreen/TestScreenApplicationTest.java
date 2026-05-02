@@ -1,6 +1,7 @@
 package com.eb.javafx.testscreen;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -16,6 +17,9 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 final class TestScreenApplicationTest {
+
+    @TempDir
+    Path tempDir;
 
     @Test
     void parseMethodSourceExtractsClassAndMethodName() {
@@ -217,7 +221,7 @@ final class TestScreenApplicationTest {
 
     @Test
     void shellCommandResolutionUsesBashExeFromWindowsPath() throws Exception {
-        Path gitBin = Files.createTempDirectory("git-bin");
+        Path gitBin = Files.createDirectory(tempDir.resolve("git-bin"));
         Path bash = Files.createFile(gitBin.resolve("bash.exe"));
 
         List<String> shellCommand = TestScreenApplication.commandForStandaloneExample(
