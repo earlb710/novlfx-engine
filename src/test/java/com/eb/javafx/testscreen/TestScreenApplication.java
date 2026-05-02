@@ -441,7 +441,7 @@ public final class TestScreenApplication {
                     .start();
             String processOutput;
             try (InputStream inputStream = process.getInputStream()) {
-                processOutput = readProcessOutput(inputStream);
+                processOutput = readProcessOutput(inputStream, process::destroyForcibly);
             }
             int exitCode = process.waitFor();
             output.append(processOutput);
@@ -480,6 +480,11 @@ public final class TestScreenApplication {
     }
 
     static String readProcessOutput(InputStream inputStream) throws IOException {
+        return readProcessOutput(inputStream, () -> {
+        });
+    }
+
+    private static String readProcessOutput(InputStream inputStream, Runnable onTruncated) throws IOException {
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         byte[] buffer = new byte[8192];
         int totalBytes = 0;
@@ -493,9 +498,7 @@ public final class TestScreenApplication {
             }
             if (writableBytes < bytesRead || totalBytes >= MAX_EXTERNAL_OUTPUT_BYTES) {
                 truncated = true;
-                while (inputStream.read(buffer) != -1) {
-                    // Drain remaining process output so the process can exit cleanly.
-                }
+                onTruncated.run();
                 break;
             }
         }
@@ -969,6 +972,7 @@ public final class TestScreenApplication {
     }
 
     static Optional<List<String>> commandForStandaloneExample(Path path, String osName, Map<String, String> environment) {
+        Objects.requireNonNull(environment, "environment");
         String fileName = path.getFileName().toString();
         if (fileName.endsWith(".sh")) {
             return resolveShellCommand(path, osName, environment);

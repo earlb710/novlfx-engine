@@ -69,6 +69,13 @@ final class TestScreenApplicationTest {
     }
 
     @Test
+    void sourceFilePathReturnsEmptyForMalformedSource() {
+        Optional<Path> path = TestScreenApplication.sourceFilePath("not a method source");
+
+        assertTrue(path.isEmpty());
+    }
+
+    @Test
     void isNewTestRequiresMatchingSignatureAndRecordedResult() {
         assertTrue(TestScreenApplication.isNewTest(null, Optional.of("abc")));
         assertTrue(TestScreenApplication.isNewTest(
@@ -282,7 +289,7 @@ final class TestScreenApplicationTest {
                 REPO_ROOT.resolve("examples/user-manual/08-audio-support/AudioServiceDemo.java"));
 
         assertEquals("example:examples/user-manual/08-audio-support/AudioServiceDemo.java", uniqueId);
-        assertNotEquals("example:examples\\user-manual\\08-audio-support\\AudioServiceDemo.java", uniqueId);
+        assertFalse(uniqueId.contains("\\"));
     }
 
     @Test
