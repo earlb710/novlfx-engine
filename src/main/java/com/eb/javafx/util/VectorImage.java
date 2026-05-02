@@ -275,8 +275,10 @@ public class VectorImage {
             transformer.transform(new DOMSource(svgDocument), new StreamResult(writer));
 
             return writer.toString().getBytes(StandardCharsets.UTF_8);
-        } catch (TransformerException | IllegalArgumentException ex) {
+        } catch (TransformerException ex) {
             throw new IllegalStateException("VectorImage.toBytes: " + ex.getMessage(), ex);
+        } catch (IllegalArgumentException ex) {
+            throw new IllegalStateException("VectorImage.toBytes: failed to configure secure XML serialization", ex);
         }
     }
     
