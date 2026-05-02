@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-cd /path/to/novlfx-engine
+script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+repo_root="$(cd -- "$script_dir/../../.." && pwd)"
+
+cd "$repo_root"
 
 ./gradlew --no-daemon build
 ./gradlew --no-daemon runTestScreen

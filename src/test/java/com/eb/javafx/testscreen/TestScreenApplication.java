@@ -37,7 +37,6 @@ import java.awt.FlowLayout;
 import java.awt.GridLayout;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
@@ -982,7 +981,7 @@ public final class TestScreenApplication {
     private static List<Path> windowsBashCandidates(Map<String, String> environment) {
         List<Path> candidates = new ArrayList<>();
         String pathValue = environment.getOrDefault("PATH", "");
-        for (String entry : splitSearchPath(pathValue, true)) {
+        for (String entry : splitSearchPath(pathValue, ";")) {
             if (entry.isBlank()) {
                 continue;
             }
@@ -1016,8 +1015,7 @@ public final class TestScreenApplication {
         }
     }
 
-    private static List<String> splitSearchPath(String pathValue, boolean windows) {
-        String separator = windows ? ";" : File.pathSeparator;
+    private static List<String> splitSearchPath(String pathValue, String separator) {
         return List.of(pathValue.split(Pattern.quote(separator)));
     }
 
