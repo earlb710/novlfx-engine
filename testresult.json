@@ -9,6 +9,7 @@
       "lastRunAt": "2026-05-01T14:38:51.398217800Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "16fa8de9"
     },
@@ -21,6 +22,7 @@
       "lastRunAt": "2026-05-01T14:38:51.417716700Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "16fa8de9"
     },
@@ -33,6 +35,7 @@
       "lastRunAt": "2026-05-02T07:15:13.541979Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "1159263d"
     },
@@ -45,6 +48,7 @@
       "lastRunAt": "2026-05-02T07:15:13.559954200Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "f0eb7d74"
     },
@@ -57,6 +61,7 @@
       "lastRunAt": "2026-05-02T07:15:13.574455600Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "f0eb7d74"
     },
@@ -69,6 +74,7 @@
       "lastRunAt": "2026-05-02T07:15:13.589456500Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "f0eb7d74"
     },
@@ -81,6 +87,7 @@
       "lastRunAt": "2026-05-02T07:15:13.607455700Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "1159263d"
     },
@@ -93,6 +100,7 @@
       "lastRunAt": "2026-05-02T07:15:17.205693700Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "a3188c02"
     },
@@ -105,6 +113,7 @@
       "lastRunAt": "2026-05-02T07:15:17.217193800Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "a3188c02"
     },
@@ -117,6 +126,7 @@
       "lastRunAt": "2026-05-02T07:15:17.228724500Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "a3188c02"
     },
@@ -129,6 +139,7 @@
       "lastRunAt": "2026-05-02T07:15:17.240294600Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "a3188c02"
     },
@@ -141,6 +152,7 @@
       "lastRunAt": "2026-05-02T07:15:17.251301800Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "a3188c02"
     },
@@ -153,6 +165,7 @@
       "lastRunAt": "2026-05-02T07:15:17.262302200Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "a3188c02"
     },
@@ -165,6 +178,7 @@
       "lastRunAt": "2026-05-02T07:15:17.272801700Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "a3188c02"
     },
@@ -177,6 +191,7 @@
       "lastRunAt": "2026-05-02T07:15:17.283801500Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "a3188c02"
     },
@@ -189,6 +204,7 @@
       "lastRunAt": "2026-05-02T07:15:17.295332800Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "a3188c02"
     },
@@ -201,44 +217,9 @@
       "lastRunAt": "2026-05-02T07:15:17.308301800Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "a3188c02"
-    },
-    {
-      "id": "[engine:junit-jupiter]/[class:com.eb.javafx.display.DisplayDefinitionJsonLoaderTest]/[method:loadsGenericDisplayDefinitionsFromJson()]",
-      "name": "loadsGenericDisplayDefinitionsFromJson()",
-      "source": "MethodSource [className = 'com.eb.javafx.display.DisplayDefinitionJsonLoaderTest', methodName = 'loadsGenericDisplayDefinitionsFromJson', methodParameterTypes = '']",
-      "auto": true,
-      "new": false,
-      "lastRunAt": "2026-05-02T07:15:21.325895400Z",
-      "applicationVersion": "0.1.0",
-      "success": true,
-      "failureOutput": "",
-      "sourceSignature": "6c43c836"
-    },
-    {
-      "id": "[engine:junit-jupiter]/[class:com.eb.javafx.display.GameAssetLocatorTest]/[method:locatorResolvesAssetsFromConfiguredRoot()]",
-      "name": "locatorResolvesAssetsFromConfiguredRoot()",
-      "source": "MethodSource [className = 'com.eb.javafx.display.GameAssetLocatorTest', methodName = 'locatorResolvesAssetsFromConfiguredRoot', methodParameterTypes = '']",
-      "auto": true,
-      "new": false,
-      "lastRunAt": "2026-05-02T07:15:21.343370600Z",
-      "applicationVersion": "0.1.0",
-      "success": true,
-      "failureOutput": "",
-      "sourceSignature": "eecc70c5"
-    },
-    {
-      "id": "[engine:junit-jupiter]/[class:com.eb.javafx.display.GameAssetLocatorTest]/[method:registryCanUseConfiguredImageRoot()]",
-      "name": "registryCanUseConfiguredImageRoot()",
-      "source": "MethodSource [className = 'com.eb.javafx.display.GameAssetLocatorTest', methodName = 'registryCanUseConfiguredImageRoot', methodParameterTypes = '']",
-      "auto": true,
-      "new": false,
-      "lastRunAt": "2026-05-02T07:15:21.359538900Z",
-      "applicationVersion": "0.1.0",
-      "success": true,
-      "failureOutput": "",
-      "sourceSignature": "eecc70c5"
     },
     {
       "id": "[engine:junit-jupiter]/[class:com.eb.javafx.display.DisplayAnimationPlayerTest]/[method:buildTimelineCreatesRepeatableAnimatedKeyFrames()]",
@@ -249,6 +230,7 @@
       "lastRunAt": "2026-05-02T07:15:21.769920400Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "972e942f"
     },
@@ -261,6 +243,7 @@
       "lastRunAt": "2026-05-02T07:15:21.780920800Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "36ca7a07"
     },
@@ -273,8 +256,35 @@
       "lastRunAt": "2026-05-02T07:15:21.791921100Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "36ca7a07"
+    },
+    {
+      "id": "[engine:junit-jupiter]/[class:com.eb.javafx.display.DisplayDefinitionJsonLoaderTest]/[method:loadsGenericDisplayDefinitionsFromJson()]",
+      "name": "loadsGenericDisplayDefinitionsFromJson()",
+      "source": "MethodSource [className = 'com.eb.javafx.display.DisplayDefinitionJsonLoaderTest', methodName = 'loadsGenericDisplayDefinitionsFromJson', methodParameterTypes = '']",
+      "auto": true,
+      "new": false,
+      "lastRunAt": "2026-05-02T07:15:21.325895400Z",
+      "applicationVersion": "0.1.0",
+      "success": true,
+      "output": "",
+      "failureOutput": "",
+      "sourceSignature": "6c43c836"
+    },
+    {
+      "id": "[engine:junit-jupiter]/[class:com.eb.javafx.display.GameAssetLocatorTest]/[method:locatorResolvesAssetsFromConfiguredRoot()]",
+      "name": "locatorResolvesAssetsFromConfiguredRoot()",
+      "source": "MethodSource [className = 'com.eb.javafx.display.GameAssetLocatorTest', methodName = 'locatorResolvesAssetsFromConfiguredRoot', methodParameterTypes = '']",
+      "auto": true,
+      "new": false,
+      "lastRunAt": "2026-05-02T07:15:21.343370600Z",
+      "applicationVersion": "0.1.0",
+      "success": true,
+      "output": "",
+      "failureOutput": "",
+      "sourceSignature": "eecc70c5"
     },
     {
       "id": "[engine:junit-jupiter]/[class:com.eb.javafx.display.DisplayAnimationPlayerTest]/[method:reducedMotionAppliesFinalStateWithoutAnimatedDuration()]",
@@ -285,6 +295,7 @@
       "lastRunAt": "2026-05-02T07:15:21.802921Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "972e942f"
     },
@@ -297,8 +308,22 @@
       "lastRunAt": "2026-05-02T07:15:21.814422100Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "36ca7a07"
+    },
+    {
+      "id": "[engine:junit-jupiter]/[class:com.eb.javafx.display.GameAssetLocatorTest]/[method:registryCanUseConfiguredImageRoot()]",
+      "name": "registryCanUseConfiguredImageRoot()",
+      "source": "MethodSource [className = 'com.eb.javafx.display.GameAssetLocatorTest', methodName = 'registryCanUseConfiguredImageRoot', methodParameterTypes = '']",
+      "auto": true,
+      "new": false,
+      "lastRunAt": "2026-05-02T07:15:21.359538900Z",
+      "applicationVersion": "0.1.0",
+      "success": true,
+      "output": "",
+      "failureOutput": "",
+      "sourceSignature": "eecc70c5"
     },
     {
       "id": "[engine:junit-jupiter]/[class:com.eb.javafx.display.ImageDisplayRegistryTest]/[method:registryViewsCannotBeMutatedByCallers()]",
@@ -309,6 +334,7 @@
       "lastRunAt": "2026-05-02T07:15:21.825420200Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "36ca7a07"
     },
@@ -321,138 +347,150 @@
       "lastRunAt": "2026-05-02T07:15:21.836422400Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "36ca7a07"
     },
     {
       "id": "example:examples/user-manual/02-project-setup-and-validation/demo.sh",
-      "name": "examples/user-manual/02-project-setup-and-validation/demo.sh",
+      "name": "02-project-setup-and-validation/demo.sh",
       "source": "Standalone example",
       "auto": false,
       "new": true,
-      "lastRunAt": "2026-05-02T07:11:00.174272800Z",
+      "lastRunAt": "2026-05-02T08:21:22.723850700Z",
       "applicationVersion": "0.1.0",
       "success": false,
-      "failureOutput": "Command: bash C:\\Earl\\Java\\AI\\novlfx-engine\\examples\\user-manual\\02-project-setup-and-validation\\demo.sh\nWorking directory: C:\\Earl\\Java\\AI\\novlfx-engine\n\njava.io.IOException: Cannot run program \"bash\" (in directory \"C:\\Earl\\Java\\AI\\novlfx-engine\"): CreateProcess error=2, The system cannot find the file specified\r\n\tat java.base/java.lang.ProcessBuilder.start(ProcessBuilder.java:1143)\r\n\tat java.base/java.lang.ProcessBuilder.start(ProcessBuilder.java:1073)\r\n\tat com.eb.javafx.testscreen.TestScreenApplication.executeExternalTestAndRecord(TestScreenApplication.java:434)\r\n\tat com.eb.javafx.testscreen.TestScreenApplication.executeTestAndRecord(TestScreenApplication.java:376)\r\n\tat com.eb.javafx.testscreen.TestScreenApplication$2.doInBackground(TestScreenApplication.java:312)\r\n\tat com.eb.javafx.testscreen.TestScreenApplication$2.doInBackground(TestScreenApplication.java:309)\r\n\tat java.desktop/javax.swing.SwingWorker$1.call(SwingWorker.java:304)\r\n\tat java.base/java.util.concurrent.FutureTask.run(FutureTask.java:264)\r\n\tat java.desktop/javax.swing.SwingWorker.run(SwingWorker.java:343)\r\n\tat java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)\r\n\tat java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)\r\n\tat java.base/java.lang.Thread.run(Thread.java:840)\r\nCaused by: java.io.IOException: CreateProcess error=2, The system cannot find the file specified\r\n\tat java.base/java.lang.ProcessImpl.create(Native Method)\r\n\tat java.base/java.lang.ProcessImpl.<init>(ProcessImpl.java:505)\r\n\tat java.base/java.lang.ProcessImpl.start(ProcessImpl.java:158)\r\n\tat java.base/java.lang.ProcessBuilder.start(ProcessBuilder.java:1110)\r\n\t... 11 more\r\n",
-      "sourceSignature": "72ca3843"
-    },
-    {
-      "id": "example:examples/user-manual/03-module-and-package-layout/ModuleUsageExample.java",
-      "name": "examples/user-manual/03-module-and-package-layout/ModuleUsageExample.java",
-      "source": "Standalone example",
-      "auto": false,
-      "new": false,
-      "lastRunAt": "2026-05-02T07:13:09.745846800Z",
-      "applicationVersion": "0.1.0",
-      "success": true,
-      "failureOutput": "",
-      "sourceSignature": "6e03aab"
+      "output": "File: C:\\Earl\\Java\\AI\\novlfx-engine\\examples\\user-manual\\02-project-setup-and-validation\\demo.sh\nWorking directory: C:\\Earl\\Java\\AI\\novlfx-engine\n\nUnable to prepare standalone shell demo command for C:\\Earl\\Java\\AI\\novlfx-engine\\examples\\user-manual\\02-project-setup-and-validation\\demo.sh:\nShell script examples are not supported by the test screen on Windows. Run the script manually from a bash-compatible shell instead:\nC:\\Earl\\Java\\AI\\novlfx-engine\\examples\\user-manual\\02-project-setup-and-validation\\demo.sh\n",
+      "failureOutput": "File: C:\\Earl\\Java\\AI\\novlfx-engine\\examples\\user-manual\\02-project-setup-and-validation\\demo.sh\nWorking directory: C:\\Earl\\Java\\AI\\novlfx-engine\n\nUnable to prepare standalone shell demo command for C:\\Earl\\Java\\AI\\novlfx-engine\\examples\\user-manual\\02-project-setup-and-validation\\demo.sh:\nShell script examples are not supported by the test screen on Windows. Run the script manually from a bash-compatible shell instead:\nC:\\Earl\\Java\\AI\\novlfx-engine\\examples\\user-manual\\02-project-setup-and-validation\\demo.sh\n",
+      "sourceSignature": "818d2da"
     },
     {
       "id": "example:examples/user-manual/04-startup-and-service-wiring/ApplicationResourceConfigDemo.java",
-      "name": "examples/user-manual/04-startup-and-service-wiring/ApplicationResourceConfigDemo.java",
+      "name": "04-startup-and-service-wiring/ApplicationResourceConfigDemo.java",
       "source": "Standalone example",
       "auto": false,
       "new": true,
-      "lastRunAt": "2026-05-02T07:13:28.396936800Z",
+      "lastRunAt": "2026-05-02T08:21:35.087139Z",
       "applicationVersion": "0.1.0",
       "success": false,
-      "failureOutput": "Command: C:\\Users\\Earl\\.jdks\\ms-17.0.18\\bin\\java -cp C:\\Earl\\Java\\AI\\novlfx-engine\\build\\classes\\java\\test;C:\\Earl\\Java\\AI\\novlfx-engine\\build\\resources\\test;C:\\Earl\\Java\\AI\\novlfx-engine\\build\\classes\\java\\main;C:\\Earl\\Java\\AI\\novlfx-engine\\build\\resources\\main;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.openjfx\\javafx-controls\\17.0.16\\7adf934e24908ed9a4a95e6932bdb0aaa3a2a61d\\javafx-controls-17.0.16-win.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.junit.platform\\junit-platform-launcher\\1.10.2\\8125dd29e847ca274dd1a7a9ca54859acc284cb3\\junit-platform-launcher-1.10.2.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.junit.jupiter\\junit-jupiter-params\\5.10.2\\359132c82a9d3fa87a325db6edd33b5fdc67a3d8\\junit-jupiter-params-5.10.2.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.junit.jupiter\\junit-jupiter-engine\\5.10.2\\f1f8fe97bd58e85569205f071274d459c2c4f8cd\\junit-jupiter-engine-5.10.2.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.junit.jupiter\\junit-jupiter-api\\5.10.2\\fb55d6e2bce173f35fd28422e7975539621055ef\\junit-jupiter-api-5.10.2.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.junit.platform\\junit-platform-engine\\1.10.2\\d53bb4e0ce7f211a498705783440614bfaf0df2e\\junit-platform-engine-1.10.2.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.junit.platform\\junit-platform-commons\\1.10.2\\3197154a1f0c88da46c47a9ca27611ac7ec5d797\\junit-platform-commons-1.10.2.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.junit.jupiter\\junit-jupiter\\5.10.2\\831c0b86ddc2ce38391c5b81ea662b0cfdc02cce\\junit-jupiter-5.10.2.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.openjfx\\javafx-graphics\\17.0.16\\4ac8115f0f296dc7e2fee96a1a962cf126e30e2e\\javafx-graphics-17.0.16-win.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.openjfx\\javafx-base\\17.0.16\\87d9f1c49f87037e979f7220bc9754c8a182360a\\javafx-base-17.0.16-win.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.opentest4j\\opentest4j\\1.3.0\\152ea56b3a72f655d4fd677fc0ef2596c3dd5e6e\\opentest4j-1.3.0.jar C:\\Earl\\Java\\AI\\novlfx-engine\\examples\\user-manual\\04-startup-and-service-wiring\\ApplicationResourceConfigDemo.java\nWorking directory: C:\\Earl\\Java\\AI\\novlfx-engine\n\nException in thread \"main\" java.lang.IllegalArgumentException: Child path escapes root: ../09-game-support-state-save-prefs-random/category-code-tables.demo.json\r\n\tat com.eb.javafx.util.PathUtils.resolveChild(PathUtils.java:21)\r\n\tat com.eb.javafx.bootstrap.ApplicationResourceConfig.resolveCategoryCodeTables(ApplicationResourceConfig.java:98)\r\n\tat ApplicationResourceConfigDemo.main(ApplicationResourceConfigDemo.java:19)\r\n\nExit code: 1\n",
+      "output": "File: C:\\Earl\\Java\\AI\\novlfx-engine\\examples\\user-manual\\04-startup-and-service-wiring\\ApplicationResourceConfigDemo.java\nWorking directory: C:\\Earl\\Java\\AI\\novlfx-engine\n\nCommand: C:\\Users\\Earl\\.jdks\\ms-17.0.18\\bin\\java -cp C:\\Earl\\Java\\AI\\novlfx-engine\\build\\classes\\java\\test;C:\\Earl\\Java\\AI\\novlfx-engine\\build\\resources\\test;C:\\Earl\\Java\\AI\\novlfx-engine\\build\\classes\\java\\main;C:\\Earl\\Java\\AI\\novlfx-engine\\build\\resources\\main;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.openjfx\\javafx-controls\\17.0.16\\7adf934e24908ed9a4a95e6932bdb0aaa3a2a61d\\javafx-controls-17.0.16-win.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.junit.platform\\junit-platform-launcher\\1.10.2\\8125dd29e847ca274dd1a7a9ca54859acc284cb3\\junit-platform-launcher-1.10.2.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.junit.jupiter\\junit-jupiter-params\\5.10.2\\359132c82a9d3fa87a325db6edd33b5fdc67a3d8\\junit-jupiter-params-5.10.2.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.junit.jupiter\\junit-jupiter-engine\\5.10.2\\f1f8fe97bd58e85569205f071274d459c2c4f8cd\\junit-jupiter-engine-5.10.2.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.junit.jupiter\\junit-jupiter-api\\5.10.2\\fb55d6e2bce173f35fd28422e7975539621055ef\\junit-jupiter-api-5.10.2.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.junit.platform\\junit-platform-engine\\1.10.2\\d53bb4e0ce7f211a498705783440614bfaf0df2e\\junit-platform-engine-1.10.2.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.junit.platform\\junit-platform-commons\\1.10.2\\3197154a1f0c88da46c47a9ca27611ac7ec5d797\\junit-platform-commons-1.10.2.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.junit.jupiter\\junit-jupiter\\5.10.2\\831c0b86ddc2ce38391c5b81ea662b0cfdc02cce\\junit-jupiter-5.10.2.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.openjfx\\javafx-graphics\\17.0.16\\4ac8115f0f296dc7e2fee96a1a962cf126e30e2e\\javafx-graphics-17.0.16-win.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.openjfx\\javafx-base\\17.0.16\\87d9f1c49f87037e979f7220bc9754c8a182360a\\javafx-base-17.0.16-win.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.opentest4j\\opentest4j\\1.3.0\\152ea56b3a72f655d4fd677fc0ef2596c3dd5e6e\\opentest4j-1.3.0.jar C:\\Earl\\Java\\AI\\novlfx-engine\\examples\\user-manual\\04-startup-and-service-wiring\\ApplicationResourceConfigDemo.java\n\nException in thread \"main\" java.lang.IllegalArgumentException: Child path escapes root: ../09-game-support-state-save-prefs-random/category-code-tables.demo.json\r\n\tat com.eb.javafx.util.PathUtils.resolveChild(PathUtils.java:21)\r\n\tat com.eb.javafx.bootstrap.ApplicationResourceConfig.resolveCategoryCodeTables(ApplicationResourceConfig.java:98)\r\n\tat ApplicationResourceConfigDemo.main(ApplicationResourceConfigDemo.java:19)\r\n\nExit code: 1\n",
+      "failureOutput": "File: C:\\Earl\\Java\\AI\\novlfx-engine\\examples\\user-manual\\04-startup-and-service-wiring\\ApplicationResourceConfigDemo.java\nWorking directory: C:\\Earl\\Java\\AI\\novlfx-engine\n\nCommand: C:\\Users\\Earl\\.jdks\\ms-17.0.18\\bin\\java -cp C:\\Earl\\Java\\AI\\novlfx-engine\\build\\classes\\java\\test;C:\\Earl\\Java\\AI\\novlfx-engine\\build\\resources\\test;C:\\Earl\\Java\\AI\\novlfx-engine\\build\\classes\\java\\main;C:\\Earl\\Java\\AI\\novlfx-engine\\build\\resources\\main;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.openjfx\\javafx-controls\\17.0.16\\7adf934e24908ed9a4a95e6932bdb0aaa3a2a61d\\javafx-controls-17.0.16-win.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.junit.platform\\junit-platform-launcher\\1.10.2\\8125dd29e847ca274dd1a7a9ca54859acc284cb3\\junit-platform-launcher-1.10.2.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.junit.jupiter\\junit-jupiter-params\\5.10.2\\359132c82a9d3fa87a325db6edd33b5fdc67a3d8\\junit-jupiter-params-5.10.2.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.junit.jupiter\\junit-jupiter-engine\\5.10.2\\f1f8fe97bd58e85569205f071274d459c2c4f8cd\\junit-jupiter-engine-5.10.2.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.junit.jupiter\\junit-jupiter-api\\5.10.2\\fb55d6e2bce173f35fd28422e7975539621055ef\\junit-jupiter-api-5.10.2.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.junit.platform\\junit-platform-engine\\1.10.2\\d53bb4e0ce7f211a498705783440614bfaf0df2e\\junit-platform-engine-1.10.2.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.junit.platform\\junit-platform-commons\\1.10.2\\3197154a1f0c88da46c47a9ca27611ac7ec5d797\\junit-platform-commons-1.10.2.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.junit.jupiter\\junit-jupiter\\5.10.2\\831c0b86ddc2ce38391c5b81ea662b0cfdc02cce\\junit-jupiter-5.10.2.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.openjfx\\javafx-graphics\\17.0.16\\4ac8115f0f296dc7e2fee96a1a962cf126e30e2e\\javafx-graphics-17.0.16-win.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.openjfx\\javafx-base\\17.0.16\\87d9f1c49f87037e979f7220bc9754c8a182360a\\javafx-base-17.0.16-win.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.opentest4j\\opentest4j\\1.3.0\\152ea56b3a72f655d4fd677fc0ef2596c3dd5e6e\\opentest4j-1.3.0.jar C:\\Earl\\Java\\AI\\novlfx-engine\\examples\\user-manual\\04-startup-and-service-wiring\\ApplicationResourceConfigDemo.java\n\nException in thread \"main\" java.lang.IllegalArgumentException: Child path escapes root: ../09-game-support-state-save-prefs-random/category-code-tables.demo.json\r\n\tat com.eb.javafx.util.PathUtils.resolveChild(PathUtils.java:21)\r\n\tat com.eb.javafx.bootstrap.ApplicationResourceConfig.resolveCategoryCodeTables(ApplicationResourceConfig.java:98)\r\n\tat ApplicationResourceConfigDemo.main(ApplicationResourceConfigDemo.java:19)\r\n\nExit code: 1\n",
       "sourceSignature": "3b7e145a"
     },
     {
       "id": "example:examples/user-manual/05-content-routing-and-scenes/SceneExecutionAndJsonDemo.java",
-      "name": "examples/user-manual/05-content-routing-and-scenes/SceneExecutionAndJsonDemo.java",
+      "name": "05-content-routing-and-scenes/SceneExecutionAndJsonDemo.java",
       "source": "Standalone example",
       "auto": false,
       "new": true,
-      "lastRunAt": "2026-05-02T07:13:44.378132500Z",
+      "lastRunAt": "2026-05-02T08:21:40.365896600Z",
       "applicationVersion": "0.1.0",
       "success": false,
-      "failureOutput": "Command: C:\\Users\\Earl\\.jdks\\ms-17.0.18\\bin\\java -cp C:\\Earl\\Java\\AI\\novlfx-engine\\build\\classes\\java\\test;C:\\Earl\\Java\\AI\\novlfx-engine\\build\\resources\\test;C:\\Earl\\Java\\AI\\novlfx-engine\\build\\classes\\java\\main;C:\\Earl\\Java\\AI\\novlfx-engine\\build\\resources\\main;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.openjfx\\javafx-controls\\17.0.16\\7adf934e24908ed9a4a95e6932bdb0aaa3a2a61d\\javafx-controls-17.0.16-win.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.junit.platform\\junit-platform-launcher\\1.10.2\\8125dd29e847ca274dd1a7a9ca54859acc284cb3\\junit-platform-launcher-1.10.2.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.junit.jupiter\\junit-jupiter-params\\5.10.2\\359132c82a9d3fa87a325db6edd33b5fdc67a3d8\\junit-jupiter-params-5.10.2.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.junit.jupiter\\junit-jupiter-engine\\5.10.2\\f1f8fe97bd58e85569205f071274d459c2c4f8cd\\junit-jupiter-engine-5.10.2.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.junit.jupiter\\junit-jupiter-api\\5.10.2\\fb55d6e2bce173f35fd28422e7975539621055ef\\junit-jupiter-api-5.10.2.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.junit.platform\\junit-platform-engine\\1.10.2\\d53bb4e0ce7f211a498705783440614bfaf0df2e\\junit-platform-engine-1.10.2.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.junit.platform\\junit-platform-commons\\1.10.2\\3197154a1f0c88da46c47a9ca27611ac7ec5d797\\junit-platform-commons-1.10.2.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.junit.jupiter\\junit-jupiter\\5.10.2\\831c0b86ddc2ce38391c5b81ea662b0cfdc02cce\\junit-jupiter-5.10.2.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.openjfx\\javafx-graphics\\17.0.16\\4ac8115f0f296dc7e2fee96a1a962cf126e30e2e\\javafx-graphics-17.0.16-win.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.openjfx\\javafx-base\\17.0.16\\87d9f1c49f87037e979f7220bc9754c8a182360a\\javafx-base-17.0.16-win.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.opentest4j\\opentest4j\\1.3.0\\152ea56b3a72f655d4fd677fc0ef2596c3dd5e6e\\opentest4j-1.3.0.jar C:\\Earl\\Java\\AI\\novlfx-engine\\examples\\user-manual\\05-content-routing-and-scenes\\SceneExecutionAndJsonDemo.java\nWorking directory: C:\\Earl\\Java\\AI\\novlfx-engine\n\nIntro status: DISPLAYING_TEXT\r\nIntro choices: []\r\nException in thread \"main\" java.lang.IllegalStateException: Scene is not waiting for a choice: intro\r\n\tat com.eb.javafx.scene.SceneExecutor.selectChoice(SceneExecutor.java:69)\r\n\tat SceneExecutionAndJsonDemo.main(SceneExecutionAndJsonDemo.java:49)\r\n\nExit code: 1\n",
+      "output": "File: C:\\Earl\\Java\\AI\\novlfx-engine\\examples\\user-manual\\05-content-routing-and-scenes\\SceneExecutionAndJsonDemo.java\nWorking directory: C:\\Earl\\Java\\AI\\novlfx-engine\n\nCommand: C:\\Users\\Earl\\.jdks\\ms-17.0.18\\bin\\java -cp C:\\Earl\\Java\\AI\\novlfx-engine\\build\\classes\\java\\test;C:\\Earl\\Java\\AI\\novlfx-engine\\build\\resources\\test;C:\\Earl\\Java\\AI\\novlfx-engine\\build\\classes\\java\\main;C:\\Earl\\Java\\AI\\novlfx-engine\\build\\resources\\main;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.openjfx\\javafx-controls\\17.0.16\\7adf934e24908ed9a4a95e6932bdb0aaa3a2a61d\\javafx-controls-17.0.16-win.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.junit.platform\\junit-platform-launcher\\1.10.2\\8125dd29e847ca274dd1a7a9ca54859acc284cb3\\junit-platform-launcher-1.10.2.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.junit.jupiter\\junit-jupiter-params\\5.10.2\\359132c82a9d3fa87a325db6edd33b5fdc67a3d8\\junit-jupiter-params-5.10.2.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.junit.jupiter\\junit-jupiter-engine\\5.10.2\\f1f8fe97bd58e85569205f071274d459c2c4f8cd\\junit-jupiter-engine-5.10.2.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.junit.jupiter\\junit-jupiter-api\\5.10.2\\fb55d6e2bce173f35fd28422e7975539621055ef\\junit-jupiter-api-5.10.2.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.junit.platform\\junit-platform-engine\\1.10.2\\d53bb4e0ce7f211a498705783440614bfaf0df2e\\junit-platform-engine-1.10.2.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.junit.platform\\junit-platform-commons\\1.10.2\\3197154a1f0c88da46c47a9ca27611ac7ec5d797\\junit-platform-commons-1.10.2.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.junit.jupiter\\junit-jupiter\\5.10.2\\831c0b86ddc2ce38391c5b81ea662b0cfdc02cce\\junit-jupiter-5.10.2.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.openjfx\\javafx-graphics\\17.0.16\\4ac8115f0f296dc7e2fee96a1a962cf126e30e2e\\javafx-graphics-17.0.16-win.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.openjfx\\javafx-base\\17.0.16\\87d9f1c49f87037e979f7220bc9754c8a182360a\\javafx-base-17.0.16-win.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.opentest4j\\opentest4j\\1.3.0\\152ea56b3a72f655d4fd677fc0ef2596c3dd5e6e\\opentest4j-1.3.0.jar C:\\Earl\\Java\\AI\\novlfx-engine\\examples\\user-manual\\05-content-routing-and-scenes\\SceneExecutionAndJsonDemo.java\n\nIntro status: DISPLAYING_TEXT\r\nIntro choices: []\r\nException in thread \"main\" java.lang.IllegalStateException: Scene is not waiting for a choice: intro\r\n\tat com.eb.javafx.scene.SceneExecutor.selectChoice(SceneExecutor.java:69)\r\n\tat SceneExecutionAndJsonDemo.main(SceneExecutionAndJsonDemo.java:49)\r\n\nExit code: 1\n",
+      "failureOutput": "File: C:\\Earl\\Java\\AI\\novlfx-engine\\examples\\user-manual\\05-content-routing-and-scenes\\SceneExecutionAndJsonDemo.java\nWorking directory: C:\\Earl\\Java\\AI\\novlfx-engine\n\nCommand: C:\\Users\\Earl\\.jdks\\ms-17.0.18\\bin\\java -cp C:\\Earl\\Java\\AI\\novlfx-engine\\build\\classes\\java\\test;C:\\Earl\\Java\\AI\\novlfx-engine\\build\\resources\\test;C:\\Earl\\Java\\AI\\novlfx-engine\\build\\classes\\java\\main;C:\\Earl\\Java\\AI\\novlfx-engine\\build\\resources\\main;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.openjfx\\javafx-controls\\17.0.16\\7adf934e24908ed9a4a95e6932bdb0aaa3a2a61d\\javafx-controls-17.0.16-win.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.junit.platform\\junit-platform-launcher\\1.10.2\\8125dd29e847ca274dd1a7a9ca54859acc284cb3\\junit-platform-launcher-1.10.2.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.junit.jupiter\\junit-jupiter-params\\5.10.2\\359132c82a9d3fa87a325db6edd33b5fdc67a3d8\\junit-jupiter-params-5.10.2.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.junit.jupiter\\junit-jupiter-engine\\5.10.2\\f1f8fe97bd58e85569205f071274d459c2c4f8cd\\junit-jupiter-engine-5.10.2.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.junit.jupiter\\junit-jupiter-api\\5.10.2\\fb55d6e2bce173f35fd28422e7975539621055ef\\junit-jupiter-api-5.10.2.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.junit.platform\\junit-platform-engine\\1.10.2\\d53bb4e0ce7f211a498705783440614bfaf0df2e\\junit-platform-engine-1.10.2.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.junit.platform\\junit-platform-commons\\1.10.2\\3197154a1f0c88da46c47a9ca27611ac7ec5d797\\junit-platform-commons-1.10.2.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.junit.jupiter\\junit-jupiter\\5.10.2\\831c0b86ddc2ce38391c5b81ea662b0cfdc02cce\\junit-jupiter-5.10.2.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.openjfx\\javafx-graphics\\17.0.16\\4ac8115f0f296dc7e2fee96a1a962cf126e30e2e\\javafx-graphics-17.0.16-win.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.openjfx\\javafx-base\\17.0.16\\87d9f1c49f87037e979f7220bc9754c8a182360a\\javafx-base-17.0.16-win.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.opentest4j\\opentest4j\\1.3.0\\152ea56b3a72f655d4fd677fc0ef2596c3dd5e6e\\opentest4j-1.3.0.jar C:\\Earl\\Java\\AI\\novlfx-engine\\examples\\user-manual\\05-content-routing-and-scenes\\SceneExecutionAndJsonDemo.java\n\nIntro status: DISPLAYING_TEXT\r\nIntro choices: []\r\nException in thread \"main\" java.lang.IllegalStateException: Scene is not waiting for a choice: intro\r\n\tat com.eb.javafx.scene.SceneExecutor.selectChoice(SceneExecutor.java:69)\r\n\tat SceneExecutionAndJsonDemo.main(SceneExecutionAndJsonDemo.java:49)\r\n\nExit code: 1\n",
       "sourceSignature": "4436a893"
     },
     {
       "id": "example:examples/user-manual/05-content-routing-and-scenes/SceneFlowDemo.java",
-      "name": "examples/user-manual/05-content-routing-and-scenes/SceneFlowDemo.java",
+      "name": "05-content-routing-and-scenes/SceneFlowDemo.java",
       "source": "Standalone example",
       "auto": false,
       "new": true,
-      "lastRunAt": "2026-05-02T07:13:51.557171300Z",
+      "lastRunAt": "2026-05-02T08:21:45.827740200Z",
       "applicationVersion": "0.1.0",
       "success": false,
-      "failureOutput": "Command: C:\\Users\\Earl\\.jdks\\ms-17.0.18\\bin\\java -cp C:\\Earl\\Java\\AI\\novlfx-engine\\build\\classes\\java\\test;C:\\Earl\\Java\\AI\\novlfx-engine\\build\\resources\\test;C:\\Earl\\Java\\AI\\novlfx-engine\\build\\classes\\java\\main;C:\\Earl\\Java\\AI\\novlfx-engine\\build\\resources\\main;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.openjfx\\javafx-controls\\17.0.16\\7adf934e24908ed9a4a95e6932bdb0aaa3a2a61d\\javafx-controls-17.0.16-win.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.junit.platform\\junit-platform-launcher\\1.10.2\\8125dd29e847ca274dd1a7a9ca54859acc284cb3\\junit-platform-launcher-1.10.2.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.junit.jupiter\\junit-jupiter-params\\5.10.2\\359132c82a9d3fa87a325db6edd33b5fdc67a3d8\\junit-jupiter-params-5.10.2.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.junit.jupiter\\junit-jupiter-engine\\5.10.2\\f1f8fe97bd58e85569205f071274d459c2c4f8cd\\junit-jupiter-engine-5.10.2.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.junit.jupiter\\junit-jupiter-api\\5.10.2\\fb55d6e2bce173f35fd28422e7975539621055ef\\junit-jupiter-api-5.10.2.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.junit.platform\\junit-platform-engine\\1.10.2\\d53bb4e0ce7f211a498705783440614bfaf0df2e\\junit-platform-engine-1.10.2.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.junit.platform\\junit-platform-commons\\1.10.2\\3197154a1f0c88da46c47a9ca27611ac7ec5d797\\junit-platform-commons-1.10.2.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.junit.jupiter\\junit-jupiter\\5.10.2\\831c0b86ddc2ce38391c5b81ea662b0cfdc02cce\\junit-jupiter-5.10.2.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.openjfx\\javafx-graphics\\17.0.16\\4ac8115f0f296dc7e2fee96a1a962cf126e30e2e\\javafx-graphics-17.0.16-win.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.openjfx\\javafx-base\\17.0.16\\87d9f1c49f87037e979f7220bc9754c8a182360a\\javafx-base-17.0.16-win.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.opentest4j\\opentest4j\\1.3.0\\152ea56b3a72f655d4fd677fc0ef2596c3dd5e6e\\opentest4j-1.3.0.jar C:\\Earl\\Java\\AI\\novlfx-engine\\examples\\user-manual\\05-content-routing-and-scenes\\SceneFlowDemo.java\nWorking directory: C:\\Earl\\Java\\AI\\novlfx-engine\n\nC:\\Earl\\Java\\AI\\novlfx-engine\\examples\\user-manual\\05-content-routing-and-scenes\\SceneFlowDemo.java:65: error: ')' expected\r\n                            SceneChoice.of(\"board\", \"scene.chapter.choice.board\", SceneTransition.complete())))));\r\n                                                                                                                 ^\r\n1 error\r\nerror: compilation failed\r\n\nExit code: 1\n",
+      "output": "File: C:\\Earl\\Java\\AI\\novlfx-engine\\examples\\user-manual\\05-content-routing-and-scenes\\SceneFlowDemo.java\nWorking directory: C:\\Earl\\Java\\AI\\novlfx-engine\n\nCommand: C:\\Users\\Earl\\.jdks\\ms-17.0.18\\bin\\java -cp C:\\Earl\\Java\\AI\\novlfx-engine\\build\\classes\\java\\test;C:\\Earl\\Java\\AI\\novlfx-engine\\build\\resources\\test;C:\\Earl\\Java\\AI\\novlfx-engine\\build\\classes\\java\\main;C:\\Earl\\Java\\AI\\novlfx-engine\\build\\resources\\main;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.openjfx\\javafx-controls\\17.0.16\\7adf934e24908ed9a4a95e6932bdb0aaa3a2a61d\\javafx-controls-17.0.16-win.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.junit.platform\\junit-platform-launcher\\1.10.2\\8125dd29e847ca274dd1a7a9ca54859acc284cb3\\junit-platform-launcher-1.10.2.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.junit.jupiter\\junit-jupiter-params\\5.10.2\\359132c82a9d3fa87a325db6edd33b5fdc67a3d8\\junit-jupiter-params-5.10.2.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.junit.jupiter\\junit-jupiter-engine\\5.10.2\\f1f8fe97bd58e85569205f071274d459c2c4f8cd\\junit-jupiter-engine-5.10.2.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.junit.jupiter\\junit-jupiter-api\\5.10.2\\fb55d6e2bce173f35fd28422e7975539621055ef\\junit-jupiter-api-5.10.2.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.junit.platform\\junit-platform-engine\\1.10.2\\d53bb4e0ce7f211a498705783440614bfaf0df2e\\junit-platform-engine-1.10.2.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.junit.platform\\junit-platform-commons\\1.10.2\\3197154a1f0c88da46c47a9ca27611ac7ec5d797\\junit-platform-commons-1.10.2.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.junit.jupiter\\junit-jupiter\\5.10.2\\831c0b86ddc2ce38391c5b81ea662b0cfdc02cce\\junit-jupiter-5.10.2.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.openjfx\\javafx-graphics\\17.0.16\\4ac8115f0f296dc7e2fee96a1a962cf126e30e2e\\javafx-graphics-17.0.16-win.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.openjfx\\javafx-base\\17.0.16\\87d9f1c49f87037e979f7220bc9754c8a182360a\\javafx-base-17.0.16-win.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.opentest4j\\opentest4j\\1.3.0\\152ea56b3a72f655d4fd677fc0ef2596c3dd5e6e\\opentest4j-1.3.0.jar C:\\Earl\\Java\\AI\\novlfx-engine\\examples\\user-manual\\05-content-routing-and-scenes\\SceneFlowDemo.java\n\nC:\\Earl\\Java\\AI\\novlfx-engine\\examples\\user-manual\\05-content-routing-and-scenes\\SceneFlowDemo.java:65: error: ')' expected\r\n                            SceneChoice.of(\"board\", \"scene.chapter.choice.board\", SceneTransition.complete())))));\r\n                                                                                                                 ^\r\n1 error\r\nerror: compilation failed\r\n\nExit code: 1\n",
+      "failureOutput": "File: C:\\Earl\\Java\\AI\\novlfx-engine\\examples\\user-manual\\05-content-routing-and-scenes\\SceneFlowDemo.java\nWorking directory: C:\\Earl\\Java\\AI\\novlfx-engine\n\nCommand: C:\\Users\\Earl\\.jdks\\ms-17.0.18\\bin\\java -cp C:\\Earl\\Java\\AI\\novlfx-engine\\build\\classes\\java\\test;C:\\Earl\\Java\\AI\\novlfx-engine\\build\\resources\\test;C:\\Earl\\Java\\AI\\novlfx-engine\\build\\classes\\java\\main;C:\\Earl\\Java\\AI\\novlfx-engine\\build\\resources\\main;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.openjfx\\javafx-controls\\17.0.16\\7adf934e24908ed9a4a95e6932bdb0aaa3a2a61d\\javafx-controls-17.0.16-win.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.junit.platform\\junit-platform-launcher\\1.10.2\\8125dd29e847ca274dd1a7a9ca54859acc284cb3\\junit-platform-launcher-1.10.2.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.junit.jupiter\\junit-jupiter-params\\5.10.2\\359132c82a9d3fa87a325db6edd33b5fdc67a3d8\\junit-jupiter-params-5.10.2.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.junit.jupiter\\junit-jupiter-engine\\5.10.2\\f1f8fe97bd58e85569205f071274d459c2c4f8cd\\junit-jupiter-engine-5.10.2.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.junit.jupiter\\junit-jupiter-api\\5.10.2\\fb55d6e2bce173f35fd28422e7975539621055ef\\junit-jupiter-api-5.10.2.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.junit.platform\\junit-platform-engine\\1.10.2\\d53bb4e0ce7f211a498705783440614bfaf0df2e\\junit-platform-engine-1.10.2.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.junit.platform\\junit-platform-commons\\1.10.2\\3197154a1f0c88da46c47a9ca27611ac7ec5d797\\junit-platform-commons-1.10.2.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.junit.jupiter\\junit-jupiter\\5.10.2\\831c0b86ddc2ce38391c5b81ea662b0cfdc02cce\\junit-jupiter-5.10.2.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.openjfx\\javafx-graphics\\17.0.16\\4ac8115f0f296dc7e2fee96a1a962cf126e30e2e\\javafx-graphics-17.0.16-win.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.openjfx\\javafx-base\\17.0.16\\87d9f1c49f87037e979f7220bc9754c8a182360a\\javafx-base-17.0.16-win.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.opentest4j\\opentest4j\\1.3.0\\152ea56b3a72f655d4fd677fc0ef2596c3dd5e6e\\opentest4j-1.3.0.jar C:\\Earl\\Java\\AI\\novlfx-engine\\examples\\user-manual\\05-content-routing-and-scenes\\SceneFlowDemo.java\n\nC:\\Earl\\Java\\AI\\novlfx-engine\\examples\\user-manual\\05-content-routing-and-scenes\\SceneFlowDemo.java:65: error: ')' expected\r\n                            SceneChoice.of(\"board\", \"scene.chapter.choice.board\", SceneTransition.complete())))));\r\n                                                                                                                 ^\r\n1 error\r\nerror: compilation failed\r\n\nExit code: 1\n",
       "sourceSignature": "10929382"
     },
     {
+      "id": "example:examples/user-manual/03-module-and-package-layout/ModuleUsageExample.java",
+      "name": "03-module-and-package-layout/ModuleUsageExample.java",
+      "source": "Standalone example",
+      "auto": false,
+      "new": false,
+      "lastRunAt": "2026-05-02T08:21:15.915850Z",
+      "applicationVersion": "0.1.0",
+      "success": true,
+      "output": "File: C:\\Earl\\Java\\AI\\novlfx-engine\\examples\\user-manual\\03-module-and-package-layout\\ModuleUsageExample.java\nWorking directory: C:\\Earl\\Java\\AI\\novlfx-engine\n\nCommand: C:\\Users\\Earl\\.jdks\\ms-17.0.18\\bin\\java -cp C:\\Earl\\Java\\AI\\novlfx-engine\\build\\classes\\java\\test;C:\\Earl\\Java\\AI\\novlfx-engine\\build\\resources\\test;C:\\Earl\\Java\\AI\\novlfx-engine\\build\\classes\\java\\main;C:\\Earl\\Java\\AI\\novlfx-engine\\build\\resources\\main;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.openjfx\\javafx-controls\\17.0.16\\7adf934e24908ed9a4a95e6932bdb0aaa3a2a61d\\javafx-controls-17.0.16-win.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.junit.platform\\junit-platform-launcher\\1.10.2\\8125dd29e847ca274dd1a7a9ca54859acc284cb3\\junit-platform-launcher-1.10.2.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.junit.jupiter\\junit-jupiter-params\\5.10.2\\359132c82a9d3fa87a325db6edd33b5fdc67a3d8\\junit-jupiter-params-5.10.2.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.junit.jupiter\\junit-jupiter-engine\\5.10.2\\f1f8fe97bd58e85569205f071274d459c2c4f8cd\\junit-jupiter-engine-5.10.2.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.junit.jupiter\\junit-jupiter-api\\5.10.2\\fb55d6e2bce173f35fd28422e7975539621055ef\\junit-jupiter-api-5.10.2.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.junit.platform\\junit-platform-engine\\1.10.2\\d53bb4e0ce7f211a498705783440614bfaf0df2e\\junit-platform-engine-1.10.2.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.junit.platform\\junit-platform-commons\\1.10.2\\3197154a1f0c88da46c47a9ca27611ac7ec5d797\\junit-platform-commons-1.10.2.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.junit.jupiter\\junit-jupiter\\5.10.2\\831c0b86ddc2ce38391c5b81ea662b0cfdc02cce\\junit-jupiter-5.10.2.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.openjfx\\javafx-graphics\\17.0.16\\4ac8115f0f296dc7e2fee96a1a962cf126e30e2e\\javafx-graphics-17.0.16-win.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.openjfx\\javafx-base\\17.0.16\\87d9f1c49f87037e979f7220bc9754c8a182360a\\javafx-base-17.0.16-win.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.opentest4j\\opentest4j\\1.3.0\\152ea56b3a72f655d4fd677fc0ef2596c3dd5e6e\\opentest4j-1.3.0.jar C:\\Earl\\Java\\AI\\novlfx-engine\\examples\\user-manual\\03-module-and-package-layout\\ModuleUsageExample.java\n\nLoaded channels: [music, sound, effects, intimate-effects]\r\nParsed tokens: 2\r\n\nExit code: 0\n",
+      "failureOutput": "File: C:\\Earl\\Java\\AI\\novlfx-engine\\examples\\user-manual\\03-module-and-package-layout\\ModuleUsageExample.java\nWorking directory: C:\\Earl\\Java\\AI\\novlfx-engine\n\nCommand: C:\\Users\\Earl\\.jdks\\ms-17.0.18\\bin\\java -cp C:\\Earl\\Java\\AI\\novlfx-engine\\build\\classes\\java\\test;C:\\Earl\\Java\\AI\\novlfx-engine\\build\\resources\\test;C:\\Earl\\Java\\AI\\novlfx-engine\\build\\classes\\java\\main;C:\\Earl\\Java\\AI\\novlfx-engine\\build\\resources\\main;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.openjfx\\javafx-controls\\17.0.16\\7adf934e24908ed9a4a95e6932bdb0aaa3a2a61d\\javafx-controls-17.0.16-win.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.junit.platform\\junit-platform-launcher\\1.10.2\\8125dd29e847ca274dd1a7a9ca54859acc284cb3\\junit-platform-launcher-1.10.2.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.junit.jupiter\\junit-jupiter-params\\5.10.2\\359132c82a9d3fa87a325db6edd33b5fdc67a3d8\\junit-jupiter-params-5.10.2.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.junit.jupiter\\junit-jupiter-engine\\5.10.2\\f1f8fe97bd58e85569205f071274d459c2c4f8cd\\junit-jupiter-engine-5.10.2.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.junit.jupiter\\junit-jupiter-api\\5.10.2\\fb55d6e2bce173f35fd28422e7975539621055ef\\junit-jupiter-api-5.10.2.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.junit.platform\\junit-platform-engine\\1.10.2\\d53bb4e0ce7f211a498705783440614bfaf0df2e\\junit-platform-engine-1.10.2.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.junit.platform\\junit-platform-commons\\1.10.2\\3197154a1f0c88da46c47a9ca27611ac7ec5d797\\junit-platform-commons-1.10.2.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.junit.jupiter\\junit-jupiter\\5.10.2\\831c0b86ddc2ce38391c5b81ea662b0cfdc02cce\\junit-jupiter-5.10.2.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.openjfx\\javafx-graphics\\17.0.16\\4ac8115f0f296dc7e2fee96a1a962cf126e30e2e\\javafx-graphics-17.0.16-win.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.openjfx\\javafx-base\\17.0.16\\87d9f1c49f87037e979f7220bc9754c8a182360a\\javafx-base-17.0.16-win.jar;C:\\Users\\Earl\\.gradle\\caches\\modules-2\\files-2.1\\org.opentest4j\\opentest4j\\1.3.0\\152ea56b3a72f655d4fd677fc0ef2596c3dd5e6e\\opentest4j-1.3.0.jar C:\\Earl\\Java\\AI\\novlfx-engine\\examples\\user-manual\\03-module-and-package-layout\\ModuleUsageExample.java\n\nLoaded channels: [music, sound, effects, intimate-effects]\r\nParsed tokens: 2\r\n\nExit code: 0\n",
+      "sourceSignature": "6e03aab"
+    },
+    {
       "id": "example:examples/user-manual/06-ui-screens-and-themes/UiScreenCatalogDemo.java",
-      "name": "examples/user-manual/06-ui-screens-and-themes/UiScreenCatalogDemo.java",
+      "name": "06-ui-screens-and-themes/UiScreenCatalogDemo.java",
       "source": "Standalone example",
       "auto": false,
       "new": false,
       "lastRunAt": "2026-05-02T07:13:55.104706400Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "667bb030"
     },
     {
       "id": "example:examples/user-manual/07-display-support/DisplaySupportDemo.java",
-      "name": "examples/user-manual/07-display-support/DisplaySupportDemo.java",
+      "name": "07-display-support/DisplaySupportDemo.java",
       "source": "Standalone example",
       "auto": false,
       "new": false,
       "lastRunAt": "2026-05-02T07:14:12.846859100Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "e37b7bf6"
     },
     {
       "id": "example:examples/user-manual/08-audio-support/AudioServiceDemo.java",
-      "name": "examples/user-manual/08-audio-support/AudioServiceDemo.java",
+      "name": "08-audio-support/AudioServiceDemo.java",
       "source": "Standalone example",
       "auto": false,
       "new": false,
       "lastRunAt": "2026-05-02T07:14:19.607298600Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "fa8254c9"
     },
     {
       "id": "example:examples/user-manual/09-game-support-state-save-prefs-random/CategoryCodeTableDefinitionDemo.java",
-      "name": "examples/user-manual/09-game-support-state-save-prefs-random/CategoryCodeTableDefinitionDemo.java",
+      "name": "09-game-support-state-save-prefs-random/CategoryCodeTableDefinitionDemo.java",
       "source": "Standalone example",
       "auto": false,
       "new": false,
       "lastRunAt": "2026-05-02T07:14:22.461805Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "2da36e7d"
     },
     {
       "id": "example:examples/user-manual/09-game-support-state-save-prefs-random/SupportServicesDemo.java",
-      "name": "examples/user-manual/09-game-support-state-save-prefs-random/SupportServicesDemo.java",
+      "name": "09-game-support-state-save-prefs-random/SupportServicesDemo.java",
       "source": "Standalone example",
       "auto": false,
       "new": false,
       "lastRunAt": "2026-05-02T07:14:26.096664700Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "c1a32f3e"
     },
     {
       "id": "example:examples/user-manual/10-text-and-utility-helpers/TextAndUtilityDemo.java",
-      "name": "examples/user-manual/10-text-and-utility-helpers/TextAndUtilityDemo.java",
+      "name": "10-text-and-utility-helpers/TextAndUtilityDemo.java",
       "source": "Standalone example",
       "auto": false,
       "new": false,
       "lastRunAt": "2026-05-02T07:14:28.752859800Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "bb9e1445"
     },
@@ -465,6 +503,7 @@
       "lastRunAt": "2026-05-02T07:15:28.583996400Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "eba4bbe5"
     },
@@ -477,6 +516,7 @@
       "lastRunAt": "2026-05-02T07:15:28.595002800Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "eba4bbe5"
     },
@@ -489,6 +529,7 @@
       "lastRunAt": "2026-05-02T07:15:28.611473900Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "15e685b8"
     },
@@ -501,6 +542,7 @@
       "lastRunAt": "2026-05-02T07:15:28.622468500Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "eba4bbe5"
     },
@@ -513,6 +555,7 @@
       "lastRunAt": "2026-05-02T07:15:28.632527800Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "eba4bbe5"
     },
@@ -525,6 +568,7 @@
       "lastRunAt": "2026-05-02T07:15:28.649528200Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "15e685b8"
     },
@@ -537,6 +581,7 @@
       "lastRunAt": "2026-05-02T07:15:28.659567500Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "eba4bbe5"
     },
@@ -549,6 +594,7 @@
       "lastRunAt": "2026-05-02T07:15:28.673134100Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "15e685b8"
     },
@@ -561,6 +607,7 @@
       "lastRunAt": "2026-05-02T07:15:28.684060400Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "eba4bbe5"
     },
@@ -573,6 +620,7 @@
       "lastRunAt": "2026-05-02T07:15:28.696040400Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "15e685b8"
     },
@@ -585,6 +633,7 @@
       "lastRunAt": "2026-05-02T07:15:28.707031600Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "4cee211b"
     },
@@ -597,6 +646,7 @@
       "lastRunAt": "2026-05-02T07:15:28.718921100Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "4cee211b"
     },
@@ -609,6 +659,7 @@
       "lastRunAt": "2026-05-02T07:15:28.729920800Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "4cee211b"
     },
@@ -621,6 +672,7 @@
       "lastRunAt": "2026-05-02T07:15:28.741420900Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "4cee211b"
     },
@@ -633,6 +685,7 @@
       "lastRunAt": "2026-05-02T07:15:28.751921100Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "4cee211b"
     },
@@ -645,6 +698,7 @@
       "lastRunAt": "2026-05-02T07:15:28.762421200Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "eba4bbe5"
     },
@@ -657,6 +711,7 @@
       "lastRunAt": "2026-05-01T14:39:05.653800100Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "60a75707"
     },
@@ -669,6 +724,7 @@
       "lastRunAt": "2026-05-01T14:39:07.547638800Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "cf3d4c80"
     },
@@ -681,6 +737,7 @@
       "lastRunAt": "2026-05-01T14:39:07.561807900Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "cf3d4c80"
     },
@@ -693,6 +750,7 @@
       "lastRunAt": "2026-05-01T14:39:07.575811400Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "cf3d4c80"
     },
@@ -705,6 +763,7 @@
       "lastRunAt": "2026-05-01T14:39:07.587371500Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "cf3d4c80"
     },
@@ -717,6 +776,7 @@
       "lastRunAt": "2026-05-01T14:39:10.266215400Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "cc844c68"
     },
@@ -729,6 +789,7 @@
       "lastRunAt": "2026-05-01T14:39:10.275569600Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "cc844c68"
     },
@@ -741,6 +802,7 @@
       "lastRunAt": "2026-05-02T07:15:33.554068700Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "9faae76"
     },
@@ -753,6 +815,7 @@
       "lastRunAt": "2026-05-02T07:15:33.566590600Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "9faae76"
     },
@@ -765,6 +828,7 @@
       "lastRunAt": "2026-05-02T07:15:33.577068800Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "9faae76"
     },
@@ -777,6 +841,7 @@
       "lastRunAt": "2026-05-02T07:15:33.588568700Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "9faae76"
     },
@@ -789,6 +854,7 @@
       "lastRunAt": "2026-05-02T07:15:33.599053600Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "9faae76"
     },
@@ -801,6 +867,7 @@
       "lastRunAt": "2026-05-02T07:15:33.609553900Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "9faae76"
     },
@@ -813,6 +880,7 @@
       "lastRunAt": "2026-05-01T14:39:18.165437200Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "b0d4c973"
     },
@@ -825,6 +893,7 @@
       "lastRunAt": "2026-05-01T14:39:18.174469400Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "b0d4c973"
     },
@@ -837,6 +906,7 @@
       "lastRunAt": "2026-05-01T14:39:18.278438600Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "b0d4c973"
     },
@@ -849,6 +919,7 @@
       "lastRunAt": "2026-05-02T07:15:37.616975300Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "674d6ba6"
     },
@@ -861,6 +932,7 @@
       "lastRunAt": "2026-05-02T07:15:37.626974900Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "674d6ba6"
     },
@@ -873,6 +945,7 @@
       "lastRunAt": "2026-05-02T07:15:37.638474Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "94873cf2"
     },
@@ -885,6 +958,7 @@
       "lastRunAt": "2026-05-02T07:15:37.650150Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "20fe77b6"
     },
@@ -897,6 +971,7 @@
       "lastRunAt": "2026-05-02T07:15:37.660659700Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "20fe77b6"
     },
@@ -909,6 +984,7 @@
       "lastRunAt": "2026-05-02T07:15:37.672312500Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "674d6ba6"
     },
@@ -921,6 +997,7 @@
       "lastRunAt": "2026-05-02T07:15:37.682344600Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "94873cf2"
     },
@@ -933,6 +1010,7 @@
       "lastRunAt": "2026-05-02T07:15:37.692812900Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "20fe77b6"
     },
@@ -945,6 +1023,7 @@
       "lastRunAt": "2026-05-02T07:15:37.702812200Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "674d6ba6"
     },
@@ -957,6 +1036,7 @@
       "lastRunAt": "2026-05-02T07:15:37.714842100Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "94873cf2"
     },
@@ -969,6 +1049,7 @@
       "lastRunAt": "2026-05-02T07:15:37.724812200Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "94873cf2"
     },
@@ -981,6 +1062,7 @@
       "lastRunAt": "2026-05-01T14:39:15.968959900Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "6f6182c1"
     },
@@ -993,6 +1075,7 @@
       "lastRunAt": "2026-05-01T14:39:15.977489600Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "6f6182c1"
     },
@@ -1001,10 +1084,11 @@
       "name": "autoCategoryTestsExcludesManualTestsFromCategoryRuns()",
       "source": "MethodSource [className = 'com.eb.javafx.testscreen.TestScreenApplicationTest', methodName = 'autoCategoryTestsExcludesManualTestsFromCategoryRuns', methodParameterTypes = '']",
       "auto": true,
-      "new": false,
+      "new": true,
       "lastRunAt": "2026-05-02T07:15:42.651082600Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "67fac04a"
     },
@@ -1013,10 +1097,11 @@
       "name": "categoryForSourceUsesFirstPackageSegmentBelowJavafxRoot()",
       "source": "MethodSource [className = 'com.eb.javafx.testscreen.TestScreenApplicationTest', methodName = 'categoryForSourceUsesFirstPackageSegmentBelowJavafxRoot', methodParameterTypes = '']",
       "auto": true,
-      "new": false,
+      "new": true,
       "lastRunAt": "2026-05-02T07:15:42.661082400Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "67fac04a"
     },
@@ -1025,10 +1110,11 @@
       "name": "commandForStandaloneExampleUsesShellOrJavaSourceMode()",
       "source": "MethodSource [className = 'com.eb.javafx.testscreen.TestScreenApplicationTest', methodName = 'commandForStandaloneExampleUsesShellOrJavaSourceMode', methodParameterTypes = '']",
       "auto": true,
-      "new": false,
+      "new": true,
       "lastRunAt": "2026-05-02T07:15:42.672082Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "67fac04a"
     },
@@ -1037,10 +1123,11 @@
       "name": "computeSourceSignatureFindsExistingTestSource()",
       "source": "MethodSource [className = 'com.eb.javafx.testscreen.TestScreenApplicationTest', methodName = 'computeSourceSignatureFindsExistingTestSource', methodParameterTypes = '']",
       "auto": true,
-      "new": false,
+      "new": true,
       "lastRunAt": "2026-05-02T07:15:42.682584400Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "67fac04a"
     },
@@ -1049,10 +1136,11 @@
       "name": "currentBuildSuccessReconcilesLoadedFailureAndClearsNewFlag()",
       "source": "MethodSource [className = 'com.eb.javafx.testscreen.TestScreenApplicationTest', methodName = 'currentBuildSuccessReconcilesLoadedFailureAndClearsNewFlag', methodParameterTypes = '']",
       "auto": true,
-      "new": false,
+      "new": true,
       "lastRunAt": "2026-05-02T07:15:42.695082600Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "67fac04a"
     },
@@ -1061,10 +1149,11 @@
       "name": "extractRecordBodiesLoadsEveryPersistedTestFromTestsArray()",
       "source": "MethodSource [className = 'com.eb.javafx.testscreen.TestScreenApplicationTest', methodName = 'extractRecordBodiesLoadsEveryPersistedTestFromTestsArray', methodParameterTypes = '']",
       "auto": true,
-      "new": false,
+      "new": true,
       "lastRunAt": "2026-05-02T07:15:42.705082500Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "67fac04a"
     },
@@ -1073,10 +1162,11 @@
       "name": "isNewTestRequiresMatchingSignatureAndRecordedResult()",
       "source": "MethodSource [className = 'com.eb.javafx.testscreen.TestScreenApplicationTest', methodName = 'isNewTestRequiresMatchingSignatureAndRecordedResult', methodParameterTypes = '']",
       "auto": true,
-      "new": false,
+      "new": true,
       "lastRunAt": "2026-05-02T07:15:42.715082700Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "67fac04a"
     },
@@ -1085,10 +1175,11 @@
       "name": "manualTestAnnotationDefaultsAutoOffForNewRecords()",
       "source": "MethodSource [className = 'com.eb.javafx.testscreen.TestScreenApplicationTest', methodName = 'manualTestAnnotationDefaultsAutoOffForNewRecords', methodParameterTypes = '']",
       "auto": true,
-      "new": false,
+      "new": true,
       "lastRunAt": "2026-05-02T07:15:42.725082200Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "67fac04a"
     },
@@ -1097,10 +1188,11 @@
       "name": "normalizeMethodNameMatchesDiscoveryAndXmlFormats()",
       "source": "MethodSource [className = 'com.eb.javafx.testscreen.TestScreenApplicationTest', methodName = 'normalizeMethodNameMatchesDiscoveryAndXmlFormats', methodParameterTypes = '']",
       "auto": true,
-      "new": false,
+      "new": true,
       "lastRunAt": "2026-05-02T07:15:42.735599500Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "67fac04a"
     },
@@ -1109,12 +1201,65 @@
       "name": "parseMethodSourceExtractsClassAndMethodName()",
       "source": "MethodSource [className = 'com.eb.javafx.testscreen.TestScreenApplicationTest', methodName = 'parseMethodSourceExtractsClassAndMethodName', methodParameterTypes = '']",
       "auto": true,
-      "new": false,
+      "new": true,
       "lastRunAt": "2026-05-02T07:15:42.745582600Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "67fac04a"
+    },
+    {
+      "id": "[engine:junit-jupiter]/[class:com.eb.javafx.testscreen.TestScreenApplicationTest]/[method:persistedOutputPrefersOutputFieldAndFallsBackToLegacyFailureOutput()]",
+      "name": "persistedOutputPrefersOutputFieldAndFallsBackToLegacyFailureOutput()",
+      "source": "MethodSource [className = 'com.eb.javafx.testscreen.TestScreenApplicationTest', methodName = 'persistedOutputPrefersOutputFieldAndFallsBackToLegacyFailureOutput', methodParameterTypes = '']",
+      "auto": true,
+      "new": true,
+      "lastRunAt": null,
+      "applicationVersion": null,
+      "success": null,
+      "output": "",
+      "failureOutput": "",
+      "sourceSignature": "6ae438d6"
+    },
+    {
+      "id": "[engine:junit-jupiter]/[class:com.eb.javafx.testscreen.TestScreenApplicationTest]/[method:readProcessOutputTruncatesLargeExternalOutput()]",
+      "name": "readProcessOutputTruncatesLargeExternalOutput()",
+      "source": "MethodSource [className = 'com.eb.javafx.testscreen.TestScreenApplicationTest', methodName = 'readProcessOutputTruncatesLargeExternalOutput', methodParameterTypes = '']",
+      "auto": true,
+      "new": true,
+      "lastRunAt": null,
+      "applicationVersion": null,
+      "success": null,
+      "output": "",
+      "failureOutput": "",
+      "sourceSignature": "6ae438d6"
+    },
+    {
+      "id": "[engine:junit-jupiter]/[class:com.eb.javafx.testscreen.TestScreenApplicationTest]/[method:shellCommandResolutionReturnsEmptyOnWindowsEvenWhenBashExists()]",
+      "name": "shellCommandResolutionReturnsEmptyOnWindowsEvenWhenBashExists()",
+      "source": "MethodSource [className = 'com.eb.javafx.testscreen.TestScreenApplicationTest', methodName = 'shellCommandResolutionReturnsEmptyOnWindowsEvenWhenBashExists', methodParameterTypes = '']",
+      "auto": true,
+      "new": true,
+      "lastRunAt": null,
+      "applicationVersion": null,
+      "success": null,
+      "output": "",
+      "failureOutput": "",
+      "sourceSignature": "6ae438d6"
+    },
+    {
+      "id": "[engine:junit-jupiter]/[class:com.eb.javafx.testscreen.TestScreenApplicationTest]/[method:shellCommandResolutionReturnsEmptyOnWindowsWithoutBash()]",
+      "name": "shellCommandResolutionReturnsEmptyOnWindowsWithoutBash()",
+      "source": "MethodSource [className = 'com.eb.javafx.testscreen.TestScreenApplicationTest', methodName = 'shellCommandResolutionReturnsEmptyOnWindowsWithoutBash', methodParameterTypes = '']",
+      "auto": true,
+      "new": true,
+      "lastRunAt": null,
+      "applicationVersion": null,
+      "success": null,
+      "output": "",
+      "failureOutput": "",
+      "sourceSignature": "6ae438d6"
     },
     {
       "id": "[engine:junit-jupiter]/[class:com.eb.javafx.testscreen.TestScreenApplicationTest]/[method:sourceFilePathFindsExistingTestSource()]",
@@ -1125,20 +1270,48 @@
       "lastRunAt": "2026-05-02T07:15:42.760585900Z",
       "applicationVersion": "0.1.0",
       "success": false,
+      "output": "STARTED: sourceFilePathFindsExistingTestSource()\nFAILED: sourceFilePathFindsExistingTestSource()\norg.opentest4j.AssertionFailedError: expected: <true> but was: <false>\r\n\tat org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)\r\n\tat org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)\r\n\tat org.junit.jupiter.api.AssertTrue.failNotTrue(AssertTrue.java:63)\r\n\tat org.junit.jupiter.api.AssertTrue.assertTrue(AssertTrue.java:36)\r\n\tat org.junit.jupiter.api.AssertTrue.assertTrue(AssertTrue.java:31)\r\n\tat org.junit.jupiter.api.Assertions.assertTrue(Assertions.java:183)\r\n\tat com.eb.javafx.testscreen.TestScreenApplicationTest.sourceFilePathFindsExistingTestSource(TestScreenApplicationTest.java:57)\r\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\r\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\r\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\r\n\n\nTests found: 1\nTests succeeded: 0\nTests failed: 1\nTests skipped: 0\nDuration: 6 ms\n",
       "failureOutput": "STARTED: sourceFilePathFindsExistingTestSource()\nFAILED: sourceFilePathFindsExistingTestSource()\norg.opentest4j.AssertionFailedError: expected: <true> but was: <false>\r\n\tat org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)\r\n\tat org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)\r\n\tat org.junit.jupiter.api.AssertTrue.failNotTrue(AssertTrue.java:63)\r\n\tat org.junit.jupiter.api.AssertTrue.assertTrue(AssertTrue.java:36)\r\n\tat org.junit.jupiter.api.AssertTrue.assertTrue(AssertTrue.java:31)\r\n\tat org.junit.jupiter.api.Assertions.assertTrue(Assertions.java:183)\r\n\tat com.eb.javafx.testscreen.TestScreenApplicationTest.sourceFilePathFindsExistingTestSource(TestScreenApplicationTest.java:57)\r\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\r\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\r\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\r\n\n\nTests found: 1\nTests succeeded: 0\nTests failed: 1\nTests skipped: 0\nDuration: 6 ms\n",
       "sourceSignature": "67fac04a"
+    },
+    {
+      "id": "[engine:junit-jupiter]/[class:com.eb.javafx.testscreen.TestScreenApplicationTest]/[method:sourceFilePathReturnsEmptyForMalformedSource()]",
+      "name": "sourceFilePathReturnsEmptyForMalformedSource()",
+      "source": "MethodSource [className = 'com.eb.javafx.testscreen.TestScreenApplicationTest', methodName = 'sourceFilePathReturnsEmptyForMalformedSource', methodParameterTypes = '']",
+      "auto": true,
+      "new": true,
+      "lastRunAt": null,
+      "applicationVersion": null,
+      "success": null,
+      "output": "",
+      "failureOutput": "",
+      "sourceSignature": "6ae438d6"
     },
     {
       "id": "[engine:junit-jupiter]/[class:com.eb.javafx.testscreen.TestScreenApplicationTest]/[method:staleBuildResultDoesNotOverwriteLoadedJsonRecord()]",
       "name": "staleBuildResultDoesNotOverwriteLoadedJsonRecord()",
       "source": "MethodSource [className = 'com.eb.javafx.testscreen.TestScreenApplicationTest', methodName = 'staleBuildResultDoesNotOverwriteLoadedJsonRecord', methodParameterTypes = '']",
       "auto": true,
-      "new": false,
+      "new": true,
       "lastRunAt": "2026-05-02T07:15:42.770582400Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "67fac04a"
+    },
+    {
+      "id": "[engine:junit-jupiter]/[class:com.eb.javafx.testscreen.TestScreenApplicationTest]/[method:standaloneExampleDisplayNameUsesParentDirectoryAndFileName()]",
+      "name": "standaloneExampleDisplayNameUsesParentDirectoryAndFileName()",
+      "source": "MethodSource [className = 'com.eb.javafx.testscreen.TestScreenApplicationTest', methodName = 'standaloneExampleDisplayNameUsesParentDirectoryAndFileName', methodParameterTypes = '']",
+      "auto": true,
+      "new": true,
+      "lastRunAt": null,
+      "applicationVersion": null,
+      "success": null,
+      "output": "",
+      "failureOutput": "",
+      "sourceSignature": "6ae438d6"
     },
     {
       "id": "[engine:junit-jupiter]/[class:com.eb.javafx.testscreen.TestScreenApplicationTest]/[method:standaloneExampleFilesIncludesRunnableExamplesAndExcludesDataFiles()]",
@@ -1149,6 +1322,7 @@
       "lastRunAt": "2026-05-02T07:15:42.781082300Z",
       "applicationVersion": "0.1.0",
       "success": false,
+      "output": "STARTED: standaloneExampleFilesIncludesRunnableExamplesAndExcludesDataFiles()\nFAILED: standaloneExampleFilesIncludesRunnableExamplesAndExcludesDataFiles()\norg.opentest4j.AssertionFailedError: expected: <true> but was: <false>\r\n\tat org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)\r\n\tat org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)\r\n\tat org.junit.jupiter.api.AssertTrue.failNotTrue(AssertTrue.java:63)\r\n\tat org.junit.jupiter.api.AssertTrue.assertTrue(AssertTrue.java:36)\r\n\tat org.junit.jupiter.api.AssertTrue.assertTrue(AssertTrue.java:31)\r\n\tat org.junit.jupiter.api.Assertions.assertTrue(Assertions.java:183)\r\n\tat com.eb.javafx.testscreen.TestScreenApplicationTest.standaloneExampleFilesIncludesRunnableExamplesAndExcludesDataFiles(TestScreenApplicationTest.java:194)\r\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\r\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\r\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\r\n\n\nTests found: 1\nTests succeeded: 0\nTests failed: 1\nTests skipped: 0\nDuration: 1 ms\n",
       "failureOutput": "STARTED: standaloneExampleFilesIncludesRunnableExamplesAndExcludesDataFiles()\nFAILED: standaloneExampleFilesIncludesRunnableExamplesAndExcludesDataFiles()\norg.opentest4j.AssertionFailedError: expected: <true> but was: <false>\r\n\tat org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)\r\n\tat org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)\r\n\tat org.junit.jupiter.api.AssertTrue.failNotTrue(AssertTrue.java:63)\r\n\tat org.junit.jupiter.api.AssertTrue.assertTrue(AssertTrue.java:36)\r\n\tat org.junit.jupiter.api.AssertTrue.assertTrue(AssertTrue.java:31)\r\n\tat org.junit.jupiter.api.Assertions.assertTrue(Assertions.java:183)\r\n\tat com.eb.javafx.testscreen.TestScreenApplicationTest.standaloneExampleFilesIncludesRunnableExamplesAndExcludesDataFiles(TestScreenApplicationTest.java:194)\r\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\r\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\r\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\r\n\n\nTests found: 1\nTests succeeded: 0\nTests failed: 1\nTests skipped: 0\nDuration: 1 ms\n",
       "sourceSignature": "67fac04a"
     },
@@ -1161,6 +1335,7 @@
       "lastRunAt": "2026-05-02T07:15:42.791082900Z",
       "applicationVersion": "0.1.0",
       "success": false,
+      "output": "STARTED: standaloneExampleUniqueIdIsStableAndNormalized()\nFAILED: standaloneExampleUniqueIdIsStableAndNormalized()\norg.opentest4j.AssertionFailedError: expected: <example:examples/user-manual/08-audio-support/AudioServiceDemo.java> but was: <example:../../../../home/runner/work/novlfx-engine/novlfx-engine/examples/user-manual/08-audio-support/AudioServiceDemo.java>\r\n\tat org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)\r\n\tat org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)\r\n\tat org.junit.jupiter.api.AssertEquals.failNotEqual(AssertEquals.java:197)\r\n\tat org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:182)\r\n\tat org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:177)\r\n\tat org.junit.jupiter.api.Assertions.assertEquals(Assertions.java:1145)\r\n\tat com.eb.javafx.testscreen.TestScreenApplicationTest.standaloneExampleUniqueIdIsStableAndNormalized(TestScreenApplicationTest.java:217)\r\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\r\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\r\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\r\n\n\nTests found: 1\nTests succeeded: 0\nTests failed: 1\nTests skipped: 0\nDuration: 1 ms\n",
       "failureOutput": "STARTED: standaloneExampleUniqueIdIsStableAndNormalized()\nFAILED: standaloneExampleUniqueIdIsStableAndNormalized()\norg.opentest4j.AssertionFailedError: expected: <example:examples/user-manual/08-audio-support/AudioServiceDemo.java> but was: <example:../../../../home/runner/work/novlfx-engine/novlfx-engine/examples/user-manual/08-audio-support/AudioServiceDemo.java>\r\n\tat org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)\r\n\tat org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)\r\n\tat org.junit.jupiter.api.AssertEquals.failNotEqual(AssertEquals.java:197)\r\n\tat org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:182)\r\n\tat org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:177)\r\n\tat org.junit.jupiter.api.Assertions.assertEquals(Assertions.java:1145)\r\n\tat com.eb.javafx.testscreen.TestScreenApplicationTest.standaloneExampleUniqueIdIsStableAndNormalized(TestScreenApplicationTest.java:217)\r\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\r\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\r\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\r\n\n\nTests found: 1\nTests succeeded: 0\nTests failed: 1\nTests skipped: 0\nDuration: 1 ms\n",
       "sourceSignature": "67fac04a"
     },
@@ -1169,12 +1344,26 @@
       "name": "testScreenActivePropertyIsAvailableToManualTests()",
       "source": "MethodSource [className = 'com.eb.javafx.testscreen.TestScreenApplicationTest', methodName = 'testScreenActivePropertyIsAvailableToManualTests', methodParameterTypes = '']",
       "auto": true,
-      "new": false,
+      "new": true,
       "lastRunAt": "2026-05-02T07:15:42.801082400Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "67fac04a"
+    },
+    {
+      "id": "[engine:junit-jupiter]/[class:com.eb.javafx.testscreen.TestScreenApplicationTest]/[method:unsupportedStandaloneExampleMessageExplainsWindowsShellRequirement()]",
+      "name": "unsupportedStandaloneExampleMessageExplainsWindowsShellRequirement()",
+      "source": "MethodSource [className = 'com.eb.javafx.testscreen.TestScreenApplicationTest', methodName = 'unsupportedStandaloneExampleMessageExplainsWindowsShellRequirement', methodParameterTypes = '']",
+      "auto": true,
+      "new": true,
+      "lastRunAt": null,
+      "applicationVersion": null,
+      "success": null,
+      "output": "",
+      "failureOutput": "",
+      "sourceSignature": "6ae438d6"
     },
     {
       "id": "[engine:junit-jupiter]/[class:com.eb.javafx.text.TextTagParserTest]/[method:parsesStyledTextPausesParagraphsAndEffects()]",
@@ -1185,6 +1374,7 @@
       "lastRunAt": "2026-05-01T14:39:25.048119500Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "e92a6fbb"
     },
@@ -1197,32 +1387,9 @@
       "lastRunAt": "2026-05-01T14:39:25.057145Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "e92a6fbb"
-    },
-    {
-      "id": "[engine:junit-jupiter]/[class:com.eb.javafx.ui.ScreenViewModelTest]/[method:copiesLinesAndActionsForReusableScreenContracts()]",
-      "name": "copiesLinesAndActionsForReusableScreenContracts()",
-      "source": "MethodSource [className = 'com.eb.javafx.ui.ScreenViewModelTest', methodName = 'copiesLinesAndActionsForReusableScreenContracts', methodParameterTypes = '']",
-      "auto": true,
-      "new": false,
-      "lastRunAt": "2026-05-02T07:15:51.302403400Z",
-      "applicationVersion": "0.1.0",
-      "success": true,
-      "failureOutput": "",
-      "sourceSignature": "2ee48419"
-    },
-    {
-      "id": "[engine:junit-jupiter]/[class:com.eb.javafx.ui.ScreenViewModelTest]/[method:validatesRequiredTextForReusableScreenContracts()]",
-      "name": "validatesRequiredTextForReusableScreenContracts()",
-      "source": "MethodSource [className = 'com.eb.javafx.ui.ScreenViewModelTest', methodName = 'validatesRequiredTextForReusableScreenContracts', methodParameterTypes = '']",
-      "auto": true,
-      "new": false,
-      "lastRunAt": "2026-05-02T07:15:51.314904600Z",
-      "applicationVersion": "0.1.0",
-      "success": true,
-      "failureOutput": "",
-      "sourceSignature": "2ee48419"
     },
     {
       "id": "[engine:junit-jupiter]/[class:com.eb.javafx.ui.CaptureTestScreenTest]/[method:captureFormModelCapturesTrimsAndClearsFields()]",
@@ -1233,8 +1400,22 @@
       "lastRunAt": "2026-05-02T07:15:51.325903400Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "2e3f1bbe"
+    },
+    {
+      "id": "[engine:junit-jupiter]/[class:com.eb.javafx.ui.ScreenViewModelTest]/[method:copiesLinesAndActionsForReusableScreenContracts()]",
+      "name": "copiesLinesAndActionsForReusableScreenContracts()",
+      "source": "MethodSource [className = 'com.eb.javafx.ui.ScreenViewModelTest', methodName = 'copiesLinesAndActionsForReusableScreenContracts', methodParameterTypes = '']",
+      "auto": true,
+      "new": false,
+      "lastRunAt": "2026-05-02T07:15:51.302403400Z",
+      "applicationVersion": "0.1.0",
+      "success": true,
+      "output": "",
+      "failureOutput": "",
+      "sourceSignature": "2ee48419"
     },
     {
       "id": "[engine:junit-jupiter]/[class:com.eb.javafx.ui.StartupFailureExceptionTest]/[method:exceptionRetainsStartupFailureCategory()]",
@@ -1245,6 +1426,7 @@
       "lastRunAt": "2026-05-02T07:15:51.337403400Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "c8e9ca31"
     },
@@ -1257,6 +1439,7 @@
       "lastRunAt": "2026-05-02T07:15:51.352931500Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "f8708906"
     },
@@ -1269,8 +1452,22 @@
       "lastRunAt": "2026-05-01T14:39:28.899077600Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "2e3f1bbe"
+    },
+    {
+      "id": "[engine:junit-jupiter]/[class:com.eb.javafx.ui.ScreenViewModelTest]/[method:validatesRequiredTextForReusableScreenContracts()]",
+      "name": "validatesRequiredTextForReusableScreenContracts()",
+      "source": "MethodSource [className = 'com.eb.javafx.ui.ScreenViewModelTest', methodName = 'validatesRequiredTextForReusableScreenContracts', methodParameterTypes = '']",
+      "auto": true,
+      "new": false,
+      "lastRunAt": "2026-05-02T07:15:51.314904600Z",
+      "applicationVersion": "0.1.0",
+      "success": true,
+      "output": "",
+      "failureOutput": "",
+      "sourceSignature": "2ee48419"
     },
     {
       "id": "[engine:junit-jupiter]/[class:com.eb.javafx.util.UtilityClassesTest]/[method:immutableCollectionsCopyDefensively()]",
@@ -1281,6 +1478,7 @@
       "lastRunAt": "2026-05-02T07:15:48.146895200Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "c764e4b1"
     },
@@ -1293,6 +1491,7 @@
       "lastRunAt": "2026-05-02T07:15:48.156426300Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "c764e4b1"
     },
@@ -1305,6 +1504,7 @@
       "lastRunAt": "2026-05-02T07:15:48.167426100Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "c764e4b1"
     },
@@ -1317,6 +1517,7 @@
       "lastRunAt": "2026-05-02T07:15:48.177397500Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "c764e4b1"
     },
@@ -1329,6 +1530,7 @@
       "lastRunAt": "2026-05-02T07:15:48.188399100Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "c764e4b1"
     },
@@ -1341,6 +1543,7 @@
       "lastRunAt": "2026-05-02T07:15:48.200583100Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "c764e4b1"
     },
@@ -1353,6 +1556,7 @@
       "lastRunAt": "2026-05-02T07:15:48.211584Z",
       "applicationVersion": "0.1.0",
       "success": true,
+      "output": "",
       "failureOutput": "",
       "sourceSignature": "c764e4b1"
     }
