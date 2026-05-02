@@ -228,7 +228,7 @@ public class VectorImage {
             // Serialize SVG to bytes
             svgBytes = toBytes();
         } catch (IllegalStateException ex) {
-            throw new IllegalStateException("VectorImage.toRasterImage: failed to serialize SVG", ex);
+            throw new IllegalStateException("VectorImage.toRasterImage: unable to prepare SVG bytes", ex);
         }
 
         try {
@@ -275,7 +275,7 @@ public class VectorImage {
             transformer.transform(new DOMSource(svgDocument), new StreamResult(writer));
 
             return writer.toString().getBytes(StandardCharsets.UTF_8);
-        } catch (TransformerException ex) {
+        } catch (TransformerException | IllegalArgumentException ex) {
             throw new IllegalStateException("VectorImage.toBytes: " + ex.getMessage(), ex);
         }
     }
