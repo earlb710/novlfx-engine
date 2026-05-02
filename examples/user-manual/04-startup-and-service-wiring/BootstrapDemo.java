@@ -15,6 +15,11 @@ import javafx.stage.Stage;
 import java.nio.file.Path;
 import java.util.List;
 
+/**
+ * Demonstrates bootstrapping the reusable engine services, content modules, and startup route registry.
+ *
+ * <p>Expected output reports completed bootstrap phases, route IDs, resource paths, and a guarded-service failure.</p>
+ */
 public final class BootstrapDemo {
     private BootstrapDemo() {
     }

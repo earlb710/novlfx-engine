@@ -12,6 +12,11 @@ import javafx.animation.Animation;
 import java.nio.file.Path;
 import java.util.List;
 
+/**
+ * Demonstrates loading display definitions, resolving image metadata, and registering an animation definition.
+ *
+ * <p>Expected output prints display IDs, image lookup details, asset resolution state, and animation timing data.</p>
+ */
 public final class DisplaySupportDemo {
     private DisplaySupportDemo() {
     }

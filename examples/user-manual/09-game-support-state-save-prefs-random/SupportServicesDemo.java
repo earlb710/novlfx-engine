@@ -17,6 +17,11 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.util.List;
 
+/**
+ * Demonstrates reusable support services for preferences, saves, random values, game state, actions, and clocks.
+ *
+ * <p>Expected output prints saved state, preference, random roll, action, save slot, and time advancement values.</p>
+ */
 public final class SupportServicesDemo {
     private SupportServicesDemo() {
     }

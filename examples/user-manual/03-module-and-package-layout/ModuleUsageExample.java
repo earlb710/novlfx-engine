@@ -4,6 +4,11 @@ import com.eb.javafx.prefs.PreferencesService;
 import com.eb.javafx.routing.SceneRouter;
 import com.eb.javafx.text.TextTagParser;
 
+/**
+ * Demonstrates importing reusable engine packages and wiring their services from an application module.
+ *
+ * <p>Expected output lists the loaded audio channels and the number of tokens parsed from sample tagged text.</p>
+ */
 public final class ModuleUsageExample {
     private ModuleUsageExample() {
     }

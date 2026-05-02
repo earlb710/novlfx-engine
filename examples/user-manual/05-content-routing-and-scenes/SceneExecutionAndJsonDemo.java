@@ -15,6 +15,11 @@ import com.eb.javafx.state.GameState;
 import java.nio.file.Path;
 import java.util.List;
 
+/**
+ * Demonstrates loading JSON scene definitions, executing text and choice pauses, and serializing flow state.
+ *
+ * <p>Expected output prints a scene transcript, the chosen branch result, and the JSON round-trip length.</p>
+ */
 public final class SceneExecutionAndJsonDemo {
     private SceneExecutionAndJsonDemo() {
     }

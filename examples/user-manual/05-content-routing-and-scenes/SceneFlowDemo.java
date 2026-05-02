@@ -14,6 +14,11 @@ import com.eb.javafx.scene.SceneTransition;
 
 import java.util.List;
 
+/**
+ * Demonstrates registering static content, scene definitions, and route descriptors for a simple flow.
+ *
+ * <p>Expected output lists the registered scene IDs, content keys, and route IDs after validation.</p>
+ */
 public final class SceneFlowDemo {
     private SceneFlowDemo() {
     }

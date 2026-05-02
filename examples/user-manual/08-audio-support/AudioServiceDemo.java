@@ -5,6 +5,11 @@ import com.eb.javafx.audio.AudioService;
 import com.eb.javafx.audio.SoundRequest;
 import com.eb.javafx.prefs.PreferencesService;
 
+/**
+ * Demonstrates audio channel registration and playback-command calculation without real media playback.
+ *
+ * <p>Expected output logs music, ambience, muted sound commands, stop requests, and effective volume values.</p>
+ */
 public final class AudioServiceDemo {
     private AudioServiceDemo() {
     }

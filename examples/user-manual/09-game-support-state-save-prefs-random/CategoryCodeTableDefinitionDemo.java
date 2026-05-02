@@ -5,6 +5,11 @@ import com.eb.javafx.gamesupport.CodeTableDefinition;
 import java.nio.file.Path;
 import java.util.List;
 
+/**
+ * Demonstrates loading, editing, saving, and querying localized category code table definitions.
+ *
+ * <p>Expected output prints language, role table details, lookup results, and the exported JSON path.</p>
+ */
 public final class CategoryCodeTableDefinitionDemo {
     private CategoryCodeTableDefinitionDemo() {
     }
