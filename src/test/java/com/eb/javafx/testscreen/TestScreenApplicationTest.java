@@ -25,6 +25,10 @@ final class TestScreenApplicationTest {
     @TempDir
     Path tempDir;
 
+    private static String normalizedPath(Path path) {
+        return path.toString().replace('\\', '/');
+    }
+
     @Test
     void parseMethodSourceExtractsClassAndMethodName() {
         TestScreenApplication.TestMethodKey key = TestScreenApplication.parseMethodSource(
@@ -67,7 +71,7 @@ final class TestScreenApplicationTest {
 
         assertAll("sourceFilePathFindsExistingTestSource",
                 () -> assertTrue(path.isPresent(), () -> "Expected source path for " + methodSource),
-                () -> assertTrue(path.map(value -> value.toString().endsWith(expectedSuffix)).orElse(false),
+                () -> assertTrue(path.map(value -> normalizedPath(value).endsWith(expectedSuffix)).orElse(false),
                         () -> "Expected source path ending with " + expectedSuffix
                                 + " but was " + path.map(Path::toString).orElse("<empty>")));
     }
@@ -220,9 +224,9 @@ final class TestScreenApplicationTest {
         List<Path> examples = TestScreenApplication.standaloneExampleFiles(
                 REPO_ROOT.resolve("examples/user-manual"));
 
-        assertTrue(examples.stream().anyMatch(path -> path.toString().endsWith("02-project-setup-and-validation/demo.sh")));
-        assertTrue(examples.stream().anyMatch(path -> path.toString().endsWith("08-audio-support/AudioServiceDemo.java")));
-        assertFalse(examples.stream().anyMatch(path -> path.toString().endsWith("07-display-support/display-definitions.demo.json")));
+        assertTrue(examples.stream().anyMatch(path -> normalizedPath(path).endsWith("02-project-setup-and-validation/demo.sh")));
+        assertTrue(examples.stream().anyMatch(path -> normalizedPath(path).endsWith("08-audio-support/AudioServiceDemo.java")));
+        assertFalse(examples.stream().anyMatch(path -> normalizedPath(path).endsWith("07-display-support/display-definitions.demo.json")));
     }
 
     @Test

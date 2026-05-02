@@ -10,16 +10,27 @@ java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(17)
     }
+    modularity.inferModulePath = true
 }
 
 javafx {
     version = '17.0.16'
-    modules = ['javafx.controls']
+    modules = ['javafx.controls', 'javafx.swing']
 }
 
 dependencies {
+    api('org.apache.xmlgraphics:batik-all:1.18') {
+        exclude group: 'xml-apis', module: 'xml-apis'
+    }
     testImplementation 'org.junit.jupiter:junit-jupiter:5.10.2'
     testImplementation 'org.junit.platform:junit-platform-launcher:1.10.2'
+}
+
+tasks.named('compileJava') {
+    doFirst {
+        options.compilerArgs += ['--module-path', classpath.asPath]
+        classpath = files()
+    }
 }
 
 tasks.withType(Test).configureEach {
