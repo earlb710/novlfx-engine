@@ -1126,7 +1126,8 @@ public final class TestScreenApplication {
     }
 
     static String humanizeIdentifier(String identifier) {
-        String withoutParameters = identifier == null ? "" : identifier.replaceFirst("\\(.*\\)$", "");
+        Objects.requireNonNull(identifier, "identifier");
+        String withoutParameters = identifier.replaceFirst("\\(.*\\)$", "");
         String spaced = withoutParameters
                 .replace('_', ' ')
                 .replace('-', ' ')
