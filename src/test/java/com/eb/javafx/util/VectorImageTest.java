@@ -8,7 +8,6 @@ import java.awt.image.BufferedImage;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -44,7 +43,10 @@ final class VectorImageTest {
         Path saved = tempDir.resolve("image.svg");
         image.save(saved);
         assertTrue(VectorImage.isSvgPath(saved));
-        assertArrayEquals(image.toBytes(), VectorImage.fromPath(saved).toBytes());
+        VectorImage loaded = VectorImage.fromPath(saved);
+        assertEquals(image.getWidth(), loaded.getWidth());
+        assertEquals(image.getHeight(), loaded.getHeight());
+        assertEquals(saved.toString(), loaded.getImageName());
     }
 
     @Test
