@@ -3,7 +3,12 @@ package com.eb.javafx.util;
 import java.util.Collection;
 import java.util.Objects;
 
-/** Focused validation helpers for reusable engine value objects and services. */
+/**
+ * Focused validation helpers for reusable engine value objects and services.
+ *
+ * <p>The helpers centralize common argument checks, save-slot bounds, unit interval validation, and clamping
+ * so production classes report consistent {@link IllegalArgumentException} messages.</p>
+ */
 public final class Validation {
     private Validation() {
     }

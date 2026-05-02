@@ -3,7 +3,12 @@ package com.eb.javafx.util;
 import java.nio.file.Path;
 import java.util.Locale;
 
-/** Path helpers for authored assets and repository-relative resources. */
+/**
+ * Path helpers for authored assets and repository-relative resources.
+ *
+ * <p>The helpers normalize separators, safely resolve child paths without allowing root escapes, and derive
+ * normalized file names or extensions for asset lookup code.</p>
+ */
 public final class PathUtils {
     private PathUtils() {
     }

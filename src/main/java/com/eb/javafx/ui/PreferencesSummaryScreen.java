@@ -7,7 +7,12 @@ import javafx.scene.Scene;
 
 import java.util.List;
 
-/** Reusable preferences route model summarizing startup preference values. */
+/**
+ * Reusable preferences route model summarizing startup preference values.
+ *
+ * <p>The route snapshots persisted window, UI, accessibility, input, and volume preferences into display
+ * lines so users can verify startup state without editing the preferences service directly.</p>
+ */
 public final class PreferencesSummaryScreen {
     private PreferencesSummaryScreen() {
     }

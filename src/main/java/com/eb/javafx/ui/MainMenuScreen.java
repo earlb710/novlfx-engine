@@ -8,7 +8,12 @@ import javafx.scene.Scene;
 import java.util.ArrayList;
 import java.util.List;
 
-/** Reusable main menu route that lists registered JavaFX routes. */
+/**
+ * Reusable main menu route that lists registered JavaFX routes.
+ *
+ * <p>The screen builds its actions from the active {@link SceneRouter}, skips the main-menu route itself,
+ * and disables entries whose route descriptors are not marked as migrated.</p>
+ */
 public final class MainMenuScreen {
     private MainMenuScreen() {
     }

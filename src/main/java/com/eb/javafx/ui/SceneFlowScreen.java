@@ -14,7 +14,12 @@ import javafx.scene.Scene;
 import java.util.ArrayList;
 import java.util.List;
 
-/** Diagnostic route showing section 1.3 scene-flow state without authored game content. */
+/**
+ * Diagnostic route showing section 1.3 scene-flow state without authored game content.
+ *
+ * <p>The screen starts a placeholder scene flow, advances to the first UI-visible executor result, and renders
+ * the neutral presentation state for smoke testing dialogue and choice routing.</p>
+ */
 public final class SceneFlowScreen {
     private SceneFlowScreen() {
     }

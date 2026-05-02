@@ -2,7 +2,12 @@ package com.eb.javafx.ui;
 
 import com.eb.javafx.util.Validation;
 
-/** Reusable save-slot view contract independent of any app-specific save schema. */
+/**
+ * Reusable save-slot view contract independent of any app-specific save schema.
+ *
+ * <p>The record validates the slot number and stores already-renderable title, detail, and compatibility
+ * fields so save/load screens can show slots without decoding application-owned save payloads.</p>
+ */
 public record SaveSlotPresentation(int slot, String title, String detail, boolean compatible) {
     public SaveSlotPresentation {
         Validation.requireSlot(slot);

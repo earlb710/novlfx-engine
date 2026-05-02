@@ -11,7 +11,12 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 
-/** JSON import/export for simple app-authored scene definitions. */
+/**
+ * JSON import/export for simple app-authored scene definitions.
+ *
+ * <p>The serializer supports data-only scenes, steps, choices, transitions, and metadata. Executable
+ * requirements and effects are deliberately rejected from JSON and must be registered by code modules.</p>
+ */
 public final class SceneDefinitionJson {
     private SceneDefinitionJson() {
     }

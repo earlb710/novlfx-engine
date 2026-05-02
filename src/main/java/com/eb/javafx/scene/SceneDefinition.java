@@ -8,7 +8,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-/** Reusable scene definition containing typed command steps and metadata. */
+/**
+ * Reusable scene definition containing typed command steps and metadata.
+ *
+ * <p>Definitions validate that each scene has an id and at least one immutable step, while preserving optional
+ * entry requirements and metadata for code-registered modules.</p>
+ */
 public final class SceneDefinition {
     private final String id;
     private final List<ActionRequirement> entryRequirements;

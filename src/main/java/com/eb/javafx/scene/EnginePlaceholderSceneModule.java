@@ -3,7 +3,12 @@ package com.eb.javafx.scene;
 import java.util.List;
 import java.util.Map;
 
-/** Registers reusable no-content demo scenes used by diagnostic dialogue/choice routes. */
+/**
+ * Registers reusable no-content demo scenes used by diagnostic dialogue/choice routes.
+ *
+ * <p>The module gives the engine a safe built-in scene flow for testing executor and UI plumbing when an
+ * application has not yet registered authored scene definitions.</p>
+ */
 public final class EnginePlaceholderSceneModule implements SceneModule {
     public static final String DEMO_DIALOGUE_SCENE = "engine.demo.dialogue";
     public static final String DEMO_CHOICE_SCENE = "engine.demo.choice";

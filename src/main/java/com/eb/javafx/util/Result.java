@@ -2,7 +2,12 @@ package com.eb.javafx.util;
 
 import java.util.Optional;
 
-/** Lightweight success/failure value for operations that should not always throw. */
+/**
+ * Lightweight success/failure value for operations that should not always throw.
+ *
+ * <p>A result carries either an optional success value or a failure message with an optional cause, and can be
+ * queried, defaulted, or converted back into an exception at the boundary.</p>
+ */
 public final class Result<T> {
     private final T value;
     private final String failureMessage;

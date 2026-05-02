@@ -10,6 +10,11 @@ import com.eb.javafx.ui.ViewModelScreen;
 
 import java.util.List;
 
+/**
+ * Demonstrates application-owned content and route modules extending the reusable engine routing boundary.
+ *
+ * <p>Expected output prints the custom route descriptor, inventory screen model, and registered content value.</p>
+ */
 public final class ApplicationRouteModuleDemo {
     private ApplicationRouteModuleDemo() {
     }

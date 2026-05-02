@@ -6,7 +6,12 @@ import javafx.scene.Scene;
 
 import java.util.List;
 
-/** Reusable save/load route model summarizing explicit save schema metadata. */
+/**
+ * Reusable save/load route model summarizing explicit save schema metadata.
+ *
+ * <p>The route reports known save slots, compatibility, and schema details from the save service, making the
+ * reusable save foundation visible before an application provides a custom save browser.</p>
+ */
 public final class SaveLoadSummaryScreen {
     private SaveLoadSummaryScreen() {
     }

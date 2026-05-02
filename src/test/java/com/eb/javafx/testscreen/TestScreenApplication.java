@@ -45,6 +45,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.attribute.FileTime;
@@ -224,7 +225,7 @@ public final class TestScreenApplication {
                 .thenComparing(TestCase::displayName));
 
         populateTestTree(tests);
-        updateFrameTitle(tests.size());
+        updateFrameTitle(tests);
         runAllButton.setEnabled(!tests.isEmpty());
         saveResultRecords();
         if (!tests.isEmpty()) {
@@ -260,10 +261,26 @@ public final class TestScreenApplication {
         }
     }
 
-    private void updateFrameTitle(int totalTests) {
+    private void updateFrameTitle() {
+        updateFrameTitle(tests());
+    }
+
+    private void updateFrameTitle(List<TestCase> tests) {
         if (frame != null) {
-            frame.setTitle("eb Test Screen (" + totalTests + " tests)");
+            long successCount = tests.stream()
+                    .filter(testCase -> testCase.success().orElse(false))
+                    .count();
+            long errorCount = tests.stream()
+                    .filter(testCase -> testCase.success().map(success -> !success).orElse(false))
+                    .count();
+            frame.setTitle(frameTitle(tests.size(), successCount, errorCount));
         }
+    }
+
+    static String frameTitle(int totalTests, long successCount, long errorCount) {
+        return "eb Test Screen (" + totalTests + " tests, "
+                + successCount + " success, "
+                + errorCount + " errors)";
     }
 
     private void updateSelectedTest() {
@@ -331,6 +348,7 @@ public final class TestScreenApplication {
                 } finally {
                     setRunning(false);
                     testTree.repaint();
+                    updateFrameTitle();
                     updateSelectedTest();
                 }
             }
@@ -369,6 +387,7 @@ public final class TestScreenApplication {
                 } finally {
                     setRunning(false);
                     testTree.repaint();
+                    updateFrameTitle();
                     updateSelectedTest();
                 }
             }
@@ -998,8 +1017,8 @@ public final class TestScreenApplication {
 
     static String unsupportedStandaloneExampleMessage(Path path, String osName) {
         if (path.getFileName().toString().endsWith(".sh") && isWindows(osName)) {
-            return "Shell script examples are not supported by the test screen on Windows. "
-                    + "Run the script manually from a bash-compatible shell instead:\n"
+            return "No bash.exe shell command was found on PATH for this Windows shell script example. "
+                    + "Install Git Bash or another bash-compatible shell and add it to PATH, then run:\n"
                     + path.toAbsolutePath().normalize();
         }
         return "No supported launcher is available for standalone example:\n"
@@ -1009,9 +1028,39 @@ public final class TestScreenApplication {
     private static Optional<List<String>> resolveShellCommand(Path path, String osName, Map<String, String> environment) {
         Path normalizedPath = path.toAbsolutePath().normalize();
         if (isWindows(osName)) {
-            return Optional.empty();
+            return windowsShellCommand(normalizedPath, environment);
         }
         return Optional.of(List.of("bash", normalizedPath.toString()));
+    }
+
+    static Optional<List<String>> windowsShellCommand(Path path, Map<String, String> environment) {
+        return windowsBashExecutable(environment)
+                .map(bash -> List.of(
+                        bash.toString(),
+                        PathUtils.normalizeSeparators(path.toAbsolutePath().normalize().toString())));
+    }
+
+    private static Optional<Path> windowsBashExecutable(Map<String, String> environment) {
+        String pathValue = environment.entrySet().stream()
+                .filter(entry -> "PATH".equalsIgnoreCase(entry.getKey()))
+                .map(Map.Entry::getValue)
+                .filter(Objects::nonNull)
+                .findFirst()
+                .orElse("");
+        for (String pathEntry : pathValue.split(";")) {
+            if (pathEntry.isBlank()) {
+                continue;
+            }
+            try {
+                Path candidate = Path.of(pathEntry.trim(), "bash.exe");
+                if (Files.isRegularFile(candidate)) {
+                    return Optional.of(candidate.toAbsolutePath().normalize());
+                }
+            } catch (InvalidPathException ignored) {
+                // Ignore malformed PATH entries and continue searching for a usable shell.
+            }
+        }
+        return Optional.empty();
     }
 
     private static boolean isWindows(String osName) {
@@ -1120,7 +1169,7 @@ public final class TestScreenApplication {
 
     static String standaloneExampleExpectationDescription(Path path, ExecutionMode executionMode) {
         if (executionMode == ExecutionMode.SHELL) {
-            return "Expect the script to run on macOS or Linux. On Windows, run it manually from a bash-compatible shell.";
+            return "Expect the script to run on macOS, Linux, or Windows when bash.exe is available on PATH.";
         }
         return "Expect the example to print a short demonstration transcript and exit with code 0.";
     }
@@ -1394,7 +1443,8 @@ public final class TestScreenApplication {
         }
 
         boolean unsupportedOnCurrentOperatingSystem() {
-            return executionMode == ExecutionMode.SHELL && isWindows(System.getProperty("os.name", ""));
+            return executionMode == ExecutionMode.SHELL
+                    && commandForStandaloneExample(filePath, System.getProperty("os.name", ""), System.getenv()).isEmpty();
         }
 
         String unsupportedOperatingSystemMessage() {

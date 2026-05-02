@@ -14,6 +14,11 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Demonstrates text tag parsing together with validation, result, JSON, path, collection, and time helpers.
+ *
+ * <p>Expected output prints parsed token details plus representative utility helper results.</p>
+ */
 public final class TextAndUtilityDemo {
     private TextAndUtilityDemo() {
     }

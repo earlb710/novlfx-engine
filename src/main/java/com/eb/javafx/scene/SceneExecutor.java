@@ -9,7 +9,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-/** Headless executor for structured dialogue, choice, action, and transition steps. */
+/**
+ * Headless executor for structured dialogue, choice, action, and transition steps.
+ *
+ * <p>The executor advances scene state until it reaches a text display, a choice prompt, completion, or
+ * failure, leaving all JavaFX rendering and user input decisions to adapters.</p>
+ */
 public final class SceneExecutor {
     private final SceneRegistry sceneRegistry;
 

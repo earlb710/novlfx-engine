@@ -21,6 +21,11 @@ import com.eb.javafx.ui.UiTheme;
 import java.nio.file.Path;
 import java.time.Instant;
 
+/**
+ * Demonstrates building reusable UI screen view models and cataloging route-backed screen entries.
+ *
+ * <p>Expected output prints screen titles, registered route IDs, theme information, and startup error metadata.</p>
+ */
 public final class UiScreenCatalogDemo {
     private UiScreenCatalogDemo() {
     }

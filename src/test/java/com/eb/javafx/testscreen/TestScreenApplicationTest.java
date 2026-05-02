@@ -186,6 +186,12 @@ final class TestScreenApplicationTest {
     }
 
     @Test
+    void frameTitleIncludesTotalSuccessAndErrorCounts() {
+        assertEquals("eb Test Screen (12 tests, 8 success, 3 errors)",
+                TestScreenApplication.frameTitle(12, 8, 3));
+    }
+
+    @Test
     void categoryForSourceUsesFirstPackageSegmentBelowJavafxRoot() {
         assertEquals("ui", TestScreenApplication.categoryForSource(Optional.of(
                 "MethodSource [className = 'com.eb.javafx.ui.CaptureTestScreenTest', "
@@ -233,16 +239,19 @@ final class TestScreenApplicationTest {
     }
 
     @Test
-    void shellCommandResolutionReturnsEmptyOnWindowsEvenWhenBashExists() throws Exception {
+    void shellCommandResolutionUsesWindowsBashWhenAvailableOnPath() throws Exception {
         Path mockBashDir = Files.createDirectory(tempDir.resolve("mock-bash-dir"));
-        Files.createFile(mockBashDir.resolve("bash.exe"));
+        Path mockBash = Files.createFile(mockBashDir.resolve("bash.exe"));
+        Path scriptPath = REPO_ROOT.resolve("examples/user-manual/02-project-setup-and-validation/demo.sh");
 
         Optional<List<String>> shellCommand = TestScreenApplication.commandForStandaloneExample(
-                REPO_ROOT.resolve("examples/user-manual/02-project-setup-and-validation/demo.sh"),
+                scriptPath,
                 "Windows 11",
                 Map.of("PATH", mockBashDir.toString()));
 
-        assertTrue(shellCommand.isEmpty());
+        assertTrue(shellCommand.isPresent());
+        assertEquals(mockBash.toAbsolutePath().normalize().toString(), shellCommand.orElseThrow().get(0));
+        assertEquals(scriptPath.toAbsolutePath().normalize().toString().replace('\\', '/'), shellCommand.orElseThrow().get(1));
     }
 
     @Test
@@ -261,7 +270,8 @@ final class TestScreenApplicationTest {
                 REPO_ROOT.resolve("examples/user-manual/02-project-setup-and-validation/demo.sh"),
                 "Windows 11");
 
-        assertTrue(message.contains("bash-compatible shell"));
+        assertTrue(message.contains("bash.exe"));
+        assertTrue(message.contains("PATH"));
         assertTrue(message.contains("demo.sh"));
     }
 

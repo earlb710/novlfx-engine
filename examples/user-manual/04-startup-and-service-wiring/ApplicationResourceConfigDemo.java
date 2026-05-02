@@ -5,6 +5,11 @@ import com.eb.javafx.gamesupport.CategoryCodeTableDefinition;
 
 import java.nio.file.Path;
 
+/**
+ * Demonstrates loading application resource paths from the sample startup configuration JSON.
+ *
+ * <p>Expected output prints resolved category table, image asset root, display definition, and exported config paths.</p>
+ */
 public final class ApplicationResourceConfigDemo {
     private ApplicationResourceConfigDemo() {
     }
