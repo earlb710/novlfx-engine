@@ -1252,7 +1252,12 @@ public class VectorImage {
             element.removeAttributeNS(XLINK_NS, "href");
         }
         if (styleHasExternalUrl(element.getAttribute("style"))) {
-            element.removeAttribute("style");
+            String safeStyle = removeExternalStyleUrls(element.getAttribute("style"));
+            if (safeStyle.isBlank()) {
+                element.removeAttribute("style");
+            } else {
+                element.setAttribute("style", safeStyle);
+            }
         }
 
         NodeList children = element.getChildNodes();
@@ -1278,8 +1283,7 @@ public class VectorImage {
         return normalized.startsWith("http:")
                 || normalized.startsWith("https:")
                 || normalized.startsWith("file:")
-                || normalized.startsWith("//")
-                || normalized.startsWith("data:");
+                || normalized.startsWith("//");
     }
 
     private boolean styleHasExternalUrl(String style) {
@@ -1299,6 +1303,26 @@ public class VectorImage {
             urlIndex = normalized.indexOf("url(", start);
         }
         return false;
+    }
+
+    private String removeExternalStyleUrls(String style) {
+        if (style == null || style.isBlank()) {
+            return "";
+        }
+        StringBuilder safeStyle = new StringBuilder();
+        String[] declarations = style.split(";");
+        for (String declaration : declarations) {
+            if (!styleHasExternalUrl(declaration)) {
+                String trimmed = declaration.trim();
+                if (!trimmed.isEmpty()) {
+                    if (!safeStyle.isEmpty()) {
+                        safeStyle.append("; ");
+                    }
+                    safeStyle.append(trimmed);
+                }
+            }
+        }
+        return safeStyle.toString();
     }
 
     private void removeElementsByName(SVGDocument doc, String name) {
@@ -1345,6 +1369,9 @@ public class VectorImage {
     }
 
     private String formatNumber(double value) {
+        if (!Double.isFinite(value)) {
+            throw new IllegalArgumentException("VectorImage: numeric values must be finite");
+        }
         if (value == 0) {
             return "0";
         }
