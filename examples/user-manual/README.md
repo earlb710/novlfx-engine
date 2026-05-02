@@ -10,7 +10,7 @@ These examples mirror the sections in `docs/USER_MANUAL.md`. Each entry below sa
 | `04-startup-and-service-wiring/ApplicationResourceConfigDemo.java` | Resolving authored resource paths from `config.demo.json`. | Prints resolved category table, image root, scene and display definitions, and exported config paths. |
 | `04-startup-and-service-wiring/config.demo.json` | Sample resource configuration consumed by the startup demos. | Loaded by `ApplicationResourceConfigDemo.java`; it is not run directly. |
 | `05-content-routing-and-scenes/SceneFlowDemo.java` | Registering content, scenes, choices, and routes. | Prints the registered scene and route IDs. |
-| `05-content-routing-and-scenes/SceneExecutionAndJsonDemo.java` | Resolving scene JSON path and loading definitions, pausing on text/choice steps, selecting a choice, and restoring state. | Prints the scene execution transcript and JSON round-trip length. |
+| `05-content-routing-and-scenes/SceneExecutionAndJsonDemo.java` | Resolving scene JSON path, loading definitions, restoring flow state, and wrapping scene progress as a save snapshot section. | Prints the scene execution transcript, scene-flow save section metadata, and JSON round-trip length. |
 | `05-content-routing-and-scenes/scene-definitions.demo.json` | Sample scene definitions consumed by the scene execution demo. | Loaded by `SceneExecutionAndJsonDemo.java`; it is not run directly. |
 | `06-ui-screens-and-themes/UiScreenDemo.java` | Creating UI screen view models and theme references. | Prints screen model details and expected theme metadata. |
 | `06-ui-screens-and-themes/UiScreenCatalogDemo.java` | Registering and listing screen catalog entries. | Prints registered screen IDs and catalog metadata. |
