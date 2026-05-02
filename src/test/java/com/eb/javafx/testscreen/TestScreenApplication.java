@@ -23,6 +23,7 @@ import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
+import javax.swing.JTabbedPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
@@ -35,6 +36,7 @@ import javax.swing.tree.TreeSelectionModel;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
+import java.awt.Font;
 import java.awt.GridLayout;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
@@ -94,6 +96,7 @@ public final class TestScreenApplication {
     private final JTree testTree;
     private final JTextField pathField;
     private final JTextArea descriptionArea;
+    private final JTextArea sourceCodeArea;
     private final JTextArea outputArea;
     private final JButton runButton;
     private final JButton runAllButton;
@@ -108,6 +111,7 @@ public final class TestScreenApplication {
         testTree = new JTree(testTreeModel);
         pathField = new JTextField();
         descriptionArea = new JTextArea();
+        sourceCodeArea = new JTextArea();
         outputArea = new JTextArea();
         runButton = new JButton("Run");
         runAllButton = new JButton("Run All in Category");
@@ -189,6 +193,10 @@ public final class TestScreenApplication {
 
         pathField.setEditable(false);
 
+        sourceCodeArea.setEditable(false);
+        sourceCodeArea.setLineWrap(false);
+        sourceCodeArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, sourceCodeArea.getFont().getSize()));
+
         outputArea.setEditable(false);
         outputArea.setLineWrap(false);
 
@@ -201,7 +209,7 @@ public final class TestScreenApplication {
 
         JPanel rightPanel = new JPanel(new BorderLayout(8, 8));
         rightPanel.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
-        rightPanel.add(buildDetailsPanel(), BorderLayout.CENTER);
+        rightPanel.add(buildDetailsTabs(), BorderLayout.CENTER);
         rightPanel.add(buildActionPanel(), BorderLayout.SOUTH);
 
         JScrollPane testTreePane = new JScrollPane(testTree);
@@ -220,14 +228,23 @@ public final class TestScreenApplication {
         return root;
     }
 
-    private JPanel buildDetailsPanel() {
-        JPanel detailsPanel = new JPanel(new GridLayout(2, 1, 8, 8));
+    private JTabbedPane buildDetailsTabs() {
+        JTabbedPane detailsTabs = new JTabbedPane();
+        detailsTabs.addTab("source", buildSourceTab());
+        return detailsTabs;
+    }
+
+    private JPanel buildSourceTab() {
+        JPanel sourceTab = new JPanel(new GridLayout(3, 1, 8, 8));
 
         JScrollPane pathPane = new JScrollPane(pathField);
         pathPane.setBorder(BorderFactory.createTitledBorder("File Path"));
 
         JScrollPane descriptionPane = new JScrollPane(descriptionArea);
         descriptionPane.setBorder(BorderFactory.createTitledBorder("Description"));
+
+        JScrollPane sourceCodePane = new JScrollPane(sourceCodeArea);
+        sourceCodePane.setBorder(BorderFactory.createTitledBorder("Source Code"));
 
         JScrollPane outputPane = new JScrollPane(outputArea);
         outputPane.setBorder(BorderFactory.createTitledBorder("Output"));
@@ -236,9 +253,10 @@ public final class TestScreenApplication {
         selectionDetailsPanel.add(pathPane, BorderLayout.NORTH);
         selectionDetailsPanel.add(descriptionPane, BorderLayout.CENTER);
 
-        detailsPanel.add(selectionDetailsPanel);
-        detailsPanel.add(outputPane);
-        return detailsPanel;
+        sourceTab.add(selectionDetailsPanel);
+        sourceTab.add(sourceCodePane);
+        sourceTab.add(outputPane);
+        return sourceTab;
     }
 
     private JPanel buildActionPanel() {
@@ -334,6 +352,7 @@ public final class TestScreenApplication {
         if (selectedTest == null) {
             TestCategory selectedCategory = selectedCategory();
             pathField.setText("");
+            sourceCodeArea.setText("");
             if (selectedCategory == null) {
                 descriptionArea.setText("");
             } else {
@@ -362,6 +381,8 @@ public final class TestScreenApplication {
                 + "\nApplication version: " + selectedTest.applicationVersion().orElse("Unknown")
                 + "\nResult: " + selectedTest.resultLabel());
         descriptionArea.setCaretPosition(0);
+        sourceCodeArea.setText(sourceCodeText(selectedTest.filePath()));
+        sourceCodeArea.setCaretPosition(0);
         outputArea.setText(selectedTest.resultOutput());
         outputArea.setCaretPosition(0);
     }
@@ -986,6 +1007,19 @@ public final class TestScreenApplication {
             return Optional.of(Integer.toHexString(Files.readString(path, StandardCharsets.UTF_8).hashCode()));
         } catch (IOException exception) {
             return Optional.empty();
+        }
+    }
+
+    static String sourceCodeText(Optional<Path> path) {
+        return path.flatMap(TestScreenApplication::readSourceCode).orElse("");
+    }
+
+    private static Optional<String> readSourceCode(Path path) {
+        try {
+            return Optional.of(Files.readString(path, StandardCharsets.UTF_8));
+        } catch (IOException exception) {
+            return Optional.of("Unable to read " + path.toAbsolutePath().normalize() + ":\n"
+                    + exception.getMessage());
         }
     }
 

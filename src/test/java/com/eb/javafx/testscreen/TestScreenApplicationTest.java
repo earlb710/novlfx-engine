@@ -220,6 +220,14 @@ final class TestScreenApplicationTest {
     }
 
     @Test
+    void sourceCodeTextReadsSelectedTestFile() {
+        String sourceCode = TestScreenApplication.sourceCodeText(Optional.of(
+                REPO_ROOT.resolve("src/test/java/com/eb/javafx/testscreen/TestScreenApplicationTest.java")));
+
+        assertTrue(sourceCode.contains("sourceCodeTextReadsSelectedTestFile"));
+    }
+
+    @Test
     void commandForStandaloneExampleUsesShellOrJavaSourceMode() {
         List<String> shellCommand = TestScreenApplication.commandForStandaloneExample(
                 REPO_ROOT.resolve("examples/user-manual/02-project-setup-and-validation/demo.sh"),
