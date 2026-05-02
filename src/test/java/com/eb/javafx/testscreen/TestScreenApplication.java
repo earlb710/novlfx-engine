@@ -83,6 +83,8 @@ public final class TestScreenApplication {
             "className = '([^']+)', methodName = '([^']+)'");
     private static final Pattern STANDALONE_JAVA_MAIN_PATTERN = Pattern.compile("\\bpublic\\s+static\\s+void\\s+main\\s*\\(");
     private static final String STANDALONE_EXAMPLE_PREFIX = "example:";
+    private static final String SHELL_STANDALONE_RUNNER_SIGNATURE = "shell-windows-command-v2";
+    private static final String JAVA_STANDALONE_RUNNER_SIGNATURE = "java-source-command-v1";
     private static final int MAX_EXTERNAL_OUTPUT_BYTES = 1024 * 1024;
 
     private final Launcher launcher;
@@ -945,6 +947,17 @@ public final class TestScreenApplication {
         }
     }
 
+    static Optional<String> standaloneExampleSourceSignature(Path path) {
+        return computeFileSignature(path)
+                .map(signature -> signature + ":" + standaloneExampleRunnerSignature(path));
+    }
+
+    private static String standaloneExampleRunnerSignature(Path path) {
+        return path.getFileName().toString().endsWith(".sh")
+                ? SHELL_STANDALONE_RUNNER_SIGNATURE
+                : JAVA_STANDALONE_RUNNER_SIGNATURE;
+    }
+
     static List<Path> standaloneExampleFiles(Path examplesRoot) {
         if (!Files.isDirectory(examplesRoot)) {
             return List.of();
@@ -1345,7 +1358,7 @@ public final class TestScreenApplication {
                     executionModeForExample(normalizedPath),
                     false,
                     record,
-                    computeFileSignature(normalizedPath).orElse(null));
+                    standaloneExampleSourceSignature(normalizedPath).orElse(null));
         }
 
         private static ExecutionMode executionModeForExample(Path path) {
@@ -1364,7 +1377,10 @@ public final class TestScreenApplication {
             this.applicationVersion = applicationVersion;
             this.success = Optional.of(success);
             this.resultOutput = resultOutput;
-            this.sourceSignature = filePath().flatMap(TestScreenApplication::computeFileSignature)
+            this.sourceSignature = filePath()
+                    .flatMap(path -> external()
+                            ? TestScreenApplication.standaloneExampleSourceSignature(path)
+                            : TestScreenApplication.computeFileSignature(path))
                     .or(() -> source.flatMap(TestScreenApplication::computeSourceSignature))
                     .orElse(sourceSignature);
             if (success) {

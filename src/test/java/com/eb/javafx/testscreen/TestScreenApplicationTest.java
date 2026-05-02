@@ -244,14 +244,27 @@ final class TestScreenApplicationTest {
         Path mockBash = Files.createFile(mockBashDir.resolve("bash.exe"));
         Path scriptPath = REPO_ROOT.resolve("examples/user-manual/02-project-setup-and-validation/demo.sh");
 
+        Map<String, String> environment = Map.of("PATH", mockBashDir.toString());
+        Optional<List<String>> utilityCommand = TestScreenApplication.windowsShellCommand(scriptPath, environment);
         Optional<List<String>> shellCommand = TestScreenApplication.commandForStandaloneExample(
                 scriptPath,
                 "Windows 11",
-                Map.of("PATH", mockBashDir.toString()));
+                environment);
 
         assertTrue(shellCommand.isPresent());
+        assertEquals(utilityCommand, shellCommand);
         assertEquals(mockBash.toAbsolutePath().normalize().toString(), shellCommand.orElseThrow().get(0));
         assertEquals(scriptPath.toAbsolutePath().normalize().toString().replace('\\', '/'), shellCommand.orElseThrow().get(1));
+    }
+
+    @Test
+    void projectSetupShellSignatureIncludesWindowsShellRunnerVersion() {
+        Path scriptPath = REPO_ROOT.resolve("examples/user-manual/02-project-setup-and-validation/demo.sh");
+        String fileSignature = TestScreenApplication.computeFileSignature(scriptPath).orElseThrow();
+        String sourceSignature = TestScreenApplication.standaloneExampleSourceSignature(scriptPath).orElseThrow();
+
+        assertTrue(sourceSignature.startsWith(fileSignature + ":"));
+        assertTrue(sourceSignature.contains("shell-windows-command-v2"));
     }
 
     @Test
