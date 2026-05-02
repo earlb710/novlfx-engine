@@ -230,21 +230,19 @@ public final class TestScreenApplication {
 
     private JTabbedPane buildDetailsTabs() {
         JTabbedPane detailsTabs = new JTabbedPane();
+        detailsTabs.addTab("test", buildTestTab());
         detailsTabs.addTab("source", buildSourceTab());
         return detailsTabs;
     }
 
-    private JPanel buildSourceTab() {
-        JPanel sourceTab = new JPanel(new GridLayout(3, 1, 8, 8));
+    private JPanel buildTestTab() {
+        JPanel testTab = new JPanel(new GridLayout(2, 1, 8, 8));
 
         JScrollPane pathPane = new JScrollPane(pathField);
         pathPane.setBorder(BorderFactory.createTitledBorder("File Path"));
 
         JScrollPane descriptionPane = new JScrollPane(descriptionArea);
         descriptionPane.setBorder(BorderFactory.createTitledBorder("Description"));
-
-        JScrollPane sourceCodePane = new JScrollPane(sourceCodeArea);
-        sourceCodePane.setBorder(BorderFactory.createTitledBorder("Source Code"));
 
         JScrollPane outputPane = new JScrollPane(outputArea);
         outputPane.setBorder(BorderFactory.createTitledBorder("Output"));
@@ -253,10 +251,15 @@ public final class TestScreenApplication {
         selectionDetailsPanel.add(pathPane, BorderLayout.NORTH);
         selectionDetailsPanel.add(descriptionPane, BorderLayout.CENTER);
 
-        sourceTab.add(selectionDetailsPanel);
-        sourceTab.add(sourceCodePane);
-        sourceTab.add(outputPane);
-        return sourceTab;
+        testTab.add(selectionDetailsPanel);
+        testTab.add(outputPane);
+        return testTab;
+    }
+
+    private JScrollPane buildSourceTab() {
+        JScrollPane sourceCodePane = new JScrollPane(sourceCodeArea);
+        sourceCodePane.setBorder(BorderFactory.createTitledBorder("Source Code"));
+        return sourceCodePane;
     }
 
     private JPanel buildActionPanel() {
