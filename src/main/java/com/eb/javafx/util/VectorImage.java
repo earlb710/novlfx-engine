@@ -17,6 +17,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
+import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.charset.StandardCharsets;
@@ -1282,25 +1283,30 @@ public class VectorImage {
         String normalized = value.trim().toLowerCase(Locale.ROOT);
         return normalized.startsWith("http:")
                 || normalized.startsWith("https:")
+                || normalized.startsWith("ftp:")
                 || normalized.startsWith("file:")
-                || normalized.startsWith("//");
+                || normalized.startsWith("//")
+                || normalized.startsWith("/")
+                || normalized.startsWith("data:image/svg+xml")
+                || normalized.startsWith("data:text/html")
+                || normalized.startsWith("data:application/xhtml+xml");
     }
 
     private boolean styleHasExternalUrl(String style) {
         if (style == null || style.isBlank()) {
             return false;
         }
-        String normalized = style.toLowerCase(Locale.ROOT);
-        int urlIndex = normalized.indexOf("url(");
+        String lowerStyle = style.toLowerCase(Locale.ROOT);
+        int urlIndex = lowerStyle.indexOf("url(");
         while (urlIndex >= 0) {
             int start = urlIndex + 4;
-            int end = normalized.indexOf(')', start);
-            String reference = end < 0 ? normalized.substring(start) : normalized.substring(start, end);
+            int end = lowerStyle.indexOf(')', start);
+            String reference = end < 0 ? style.substring(start) : style.substring(start, end);
             reference = reference.trim().replaceAll("[\"']", "");
             if (isExternalReference(reference)) {
                 return true;
             }
-            urlIndex = normalized.indexOf("url(", start);
+            urlIndex = lowerStyle.indexOf("url(", start);
         }
         return false;
     }
@@ -1310,8 +1316,7 @@ public class VectorImage {
             return "";
         }
         StringBuilder safeStyle = new StringBuilder();
-        String[] declarations = style.split(";");
-        for (String declaration : declarations) {
+        for (String declaration : splitStyleDeclarations(style)) {
             if (!styleHasExternalUrl(declaration)) {
                 String trimmed = declaration.trim();
                 if (!trimmed.isEmpty()) {
@@ -1323,6 +1328,38 @@ public class VectorImage {
             }
         }
         return safeStyle.toString();
+    }
+
+    private List<String> splitStyleDeclarations(String style) {
+        List<String> declarations = new ArrayList<>();
+        StringBuilder current = new StringBuilder();
+        int parenthesesDepth = 0;
+        char quote = 0;
+        for (int index = 0; index < style.length(); index++) {
+            char currentChar = style.charAt(index);
+            if (quote != 0) {
+                current.append(currentChar);
+                if (currentChar == quote && (index == 0 || style.charAt(index - 1) != '\\')) {
+                    quote = 0;
+                }
+            } else if (currentChar == '"' || currentChar == '\'') {
+                quote = currentChar;
+                current.append(currentChar);
+            } else if (currentChar == '(') {
+                parenthesesDepth++;
+                current.append(currentChar);
+            } else if (currentChar == ')') {
+                parenthesesDepth = Math.max(0, parenthesesDepth - 1);
+                current.append(currentChar);
+            } else if (currentChar == ';' && parenthesesDepth == 0) {
+                declarations.add(current.toString());
+                current.setLength(0);
+            } else {
+                current.append(currentChar);
+            }
+        }
+        declarations.add(current.toString());
+        return declarations;
     }
 
     private void removeElementsByName(SVGDocument doc, String name) {
@@ -1375,10 +1412,7 @@ public class VectorImage {
         if (value == 0) {
             return "0";
         }
-        if (Math.rint(value) == value) {
-            return String.format(Locale.ROOT, "%.0f", value);
-        }
-        return String.format(Locale.ROOT, "%.6f", value).replaceAll("0+$", "").replaceAll("\\.$", "");
+        return BigDecimal.valueOf(value).stripTrailingZeros().toPlainString();
     }
     
     @Override
