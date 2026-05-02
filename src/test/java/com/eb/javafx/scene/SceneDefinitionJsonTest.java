@@ -70,7 +70,7 @@ final class SceneDefinitionJsonTest {
     }
 
     @Test
-    void wrapsSceneFlowStateAsApplicationComposableSaveSnapshotSection() {
+    void wrapsSceneFlowStateAsSaveSnapshotSection() {
         SceneFlowState state = new SceneFlowState(
                 "chapter-start",
                 1,
