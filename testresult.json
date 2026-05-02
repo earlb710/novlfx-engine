@@ -1292,13 +1292,13 @@
       "name": "sourceFilePathFindsExistingTestSource()",
       "source": "MethodSource [className = 'com.eb.javafx.testscreen.TestScreenApplicationTest', methodName = 'sourceFilePathFindsExistingTestSource', methodParameterTypes = '']",
       "auto": true,
-      "new": true,
-      "lastRunAt": "2026-05-02T09:09:07.195318400Z",
+      "new": false,
+      "lastRunAt": "2026-05-02T09:23:04.843689Z",
       "applicationVersion": "0.1.0",
-      "success": false,
-      "output": "STARTED: sourceFilePathFindsExistingTestSource()\nFAILED: sourceFilePathFindsExistingTestSource()\norg.opentest4j.AssertionFailedError: expected: <true> but was: <false>\r\n\tat org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)\r\n\tat org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)\r\n\tat org.junit.jupiter.api.AssertTrue.failNotTrue(AssertTrue.java:63)\r\n\tat org.junit.jupiter.api.AssertTrue.assertTrue(AssertTrue.java:36)\r\n\tat org.junit.jupiter.api.AssertTrue.assertTrue(AssertTrue.java:31)\r\n\tat org.junit.jupiter.api.Assertions.assertTrue(Assertions.java:183)\r\n\tat com.eb.javafx.testscreen.TestScreenApplicationTest.sourceFilePathFindsExistingTestSource(TestScreenApplicationTest.java:68)\r\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\r\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\r\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\r\n\n\nTests found: 1\nTests succeeded: 0\nTests failed: 1\nTests skipped: 0\nDuration: 3 ms\n",
-      "failureOutput": "STARTED: sourceFilePathFindsExistingTestSource()\nFAILED: sourceFilePathFindsExistingTestSource()\norg.opentest4j.AssertionFailedError: expected: <true> but was: <false>\r\n\tat org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)\r\n\tat org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)\r\n\tat org.junit.jupiter.api.AssertTrue.failNotTrue(AssertTrue.java:63)\r\n\tat org.junit.jupiter.api.AssertTrue.assertTrue(AssertTrue.java:36)\r\n\tat org.junit.jupiter.api.AssertTrue.assertTrue(AssertTrue.java:31)\r\n\tat org.junit.jupiter.api.Assertions.assertTrue(Assertions.java:183)\r\n\tat com.eb.javafx.testscreen.TestScreenApplicationTest.sourceFilePathFindsExistingTestSource(TestScreenApplicationTest.java:68)\r\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\r\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\r\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\r\n\n\nTests found: 1\nTests succeeded: 0\nTests failed: 1\nTests skipped: 0\nDuration: 3 ms\n",
-      "sourceSignature": "c1cff4cc"
+      "success": true,
+      "output": "STARTED: sourceFilePathFindsExistingTestSource()\nSUCCESSFUL: sourceFilePathFindsExistingTestSource()\n\nTests found: 1\nTests succeeded: 1\nTests failed: 0\nTests skipped: 0\nDuration: 2 ms\n",
+      "failureOutput": "STARTED: sourceFilePathFindsExistingTestSource()\nSUCCESSFUL: sourceFilePathFindsExistingTestSource()\n\nTests found: 1\nTests succeeded: 1\nTests failed: 0\nTests skipped: 0\nDuration: 2 ms\n",
+      "sourceSignature": "a2c83ffa"
     },
     {
       "id": "[engine:junit-jupiter]/[class:com.eb.javafx.testscreen.TestScreenApplicationTest]/[method:sourceFilePathReturnsEmptyForMalformedSource()]",
@@ -1344,13 +1344,13 @@
       "name": "standaloneExampleFilesIncludesRunnableExamplesAndExcludesDataFiles()",
       "source": "MethodSource [className = 'com.eb.javafx.testscreen.TestScreenApplicationTest', methodName = 'standaloneExampleFilesIncludesRunnableExamplesAndExcludesDataFiles', methodParameterTypes = '']",
       "auto": true,
-      "new": true,
-      "lastRunAt": "2026-05-02T09:09:12.135559700Z",
+      "new": false,
+      "lastRunAt": "2026-05-02T09:23:04.843689Z",
       "applicationVersion": "0.1.0",
-      "success": false,
-      "output": "STARTED: standaloneExampleFilesIncludesRunnableExamplesAndExcludesDataFiles()\nFAILED: standaloneExampleFilesIncludesRunnableExamplesAndExcludesDataFiles()\norg.opentest4j.AssertionFailedError: expected: <true> but was: <false>\r\n\tat org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)\r\n\tat org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)\r\n\tat org.junit.jupiter.api.AssertTrue.failNotTrue(AssertTrue.java:63)\r\n\tat org.junit.jupiter.api.AssertTrue.assertTrue(AssertTrue.java:36)\r\n\tat org.junit.jupiter.api.AssertTrue.assertTrue(AssertTrue.java:31)\r\n\tat org.junit.jupiter.api.Assertions.assertTrue(Assertions.java:183)\r\n\tat com.eb.javafx.testscreen.TestScreenApplicationTest.standaloneExampleFilesIncludesRunnableExamplesAndExcludesDataFiles(TestScreenApplicationTest.java:219)\r\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\r\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\r\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\r\n\n\nTests found: 1\nTests succeeded: 0\nTests failed: 1\nTests skipped: 0\nDuration: 8 ms\n",
-      "failureOutput": "STARTED: standaloneExampleFilesIncludesRunnableExamplesAndExcludesDataFiles()\nFAILED: standaloneExampleFilesIncludesRunnableExamplesAndExcludesDataFiles()\norg.opentest4j.AssertionFailedError: expected: <true> but was: <false>\r\n\tat org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)\r\n\tat org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)\r\n\tat org.junit.jupiter.api.AssertTrue.failNotTrue(AssertTrue.java:63)\r\n\tat org.junit.jupiter.api.AssertTrue.assertTrue(AssertTrue.java:36)\r\n\tat org.junit.jupiter.api.AssertTrue.assertTrue(AssertTrue.java:31)\r\n\tat org.junit.jupiter.api.Assertions.assertTrue(Assertions.java:183)\r\n\tat com.eb.javafx.testscreen.TestScreenApplicationTest.standaloneExampleFilesIncludesRunnableExamplesAndExcludesDataFiles(TestScreenApplicationTest.java:219)\r\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\r\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\r\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1511)\r\n\n\nTests found: 1\nTests succeeded: 0\nTests failed: 1\nTests skipped: 0\nDuration: 8 ms\n",
-      "sourceSignature": "c1cff4cc"
+      "success": true,
+      "output": "STARTED: standaloneExampleFilesIncludesRunnableExamplesAndExcludesDataFiles()\nSUCCESSFUL: standaloneExampleFilesIncludesRunnableExamplesAndExcludesDataFiles()\n\nTests found: 1\nTests succeeded: 1\nTests failed: 0\nTests skipped: 0\nDuration: 34 ms\n",
+      "failureOutput": "STARTED: standaloneExampleFilesIncludesRunnableExamplesAndExcludesDataFiles()\nSUCCESSFUL: standaloneExampleFilesIncludesRunnableExamplesAndExcludesDataFiles()\n\nTests found: 1\nTests succeeded: 1\nTests failed: 0\nTests skipped: 0\nDuration: 34 ms\n",
+      "sourceSignature": "a2c83ffa"
     },
     {
       "id": "[engine:junit-jupiter]/[class:com.eb.javafx.testscreen.TestScreenApplicationTest]/[method:standaloneExampleUniqueIdIsStableAndNormalized()]",
