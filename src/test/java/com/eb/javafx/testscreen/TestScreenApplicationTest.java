@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -58,12 +59,17 @@ final class TestScreenApplicationTest {
 
     @Test
     void sourceFilePathFindsExistingTestSource() {
+        String methodSource = "MethodSource [className = 'com.eb.javafx.testscreen.TestScreenApplicationTest', "
+                + "methodName = 'sourceFilePathFindsExistingTestSource', methodParameterTypes = '']";
+        String expectedSuffix = "src/test/java/com/eb/javafx/testscreen/TestScreenApplicationTest.java";
         Optional<Path> path = TestScreenApplication.sourceFilePath(
-                "MethodSource [className = 'com.eb.javafx.testscreen.TestScreenApplicationTest', "
-                        + "methodName = 'sourceFilePathFindsExistingTestSource', methodParameterTypes = '']");
+                methodSource);
 
-        assertTrue(path.isPresent());
-        assertTrue(path.orElseThrow().toString().endsWith("src/test/java/com/eb/javafx/testscreen/TestScreenApplicationTest.java"));
+        assertAll("sourceFilePathFindsExistingTestSource",
+                () -> assertTrue(path.isPresent(), () -> "Expected source path for " + methodSource),
+                () -> assertTrue(path.map(value -> value.toString().endsWith(expectedSuffix)).orElse(false),
+                        () -> "Expected source path ending with " + expectedSuffix
+                                + " but was " + path.map(Path::toString).orElse("<empty>")));
     }
 
     @Test
