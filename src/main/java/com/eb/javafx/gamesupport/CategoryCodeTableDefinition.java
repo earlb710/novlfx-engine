@@ -51,7 +51,7 @@ public final class CategoryCodeTableDefinition {
     static CategoryCodeTableDefinition fromJson(String json, String sourceName) {
         Map<String, Object> rootObject = JsonData.rootObject(json, sourceName);
         String language = JsonData.requiredString(rootObject, "language", "root.language");
-        List<CodeTableDefinition> tables = JsonData.requireList(rootObject, "tables", "root.tables").stream()
+        List<CodeTableDefinition> tables = JsonData.requiredList(rootObject, "tables", "root.tables").stream()
                 .map(CategoryCodeTableDefinition::toCodeTable)
                 .toList();
         return new CategoryCodeTableDefinition(language, tables);
@@ -149,7 +149,7 @@ public final class CategoryCodeTableDefinition {
         Map<String, Object> tableObject = JsonData.requireObject(value, "table");
         String tableId = JsonData.requiredString(tableObject, "id", "table.id");
         String title = JsonData.requiredString(tableObject, "title", "table.title");
-        List<CodeDefinition> codes = JsonData.requireList(tableObject, "codes", "table.codes").stream()
+        List<CodeDefinition> codes = JsonData.requiredList(tableObject, "codes", "table.codes").stream()
                 .map(CategoryCodeTableDefinition::toCode)
                 .toList();
         return new CodeTableDefinition(tableId, title, codes);

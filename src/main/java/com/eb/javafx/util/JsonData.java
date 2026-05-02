@@ -48,7 +48,7 @@ public final class JsonData {
         return requireList(object.get(key), description);
     }
 
-    public static List<Object> requireList(Map<String, Object> object, String key, String description) {
+    public static List<Object> requiredList(Map<String, Object> object, String key, String description) {
         if (!object.containsKey(key) || object.get(key) == null) {
             throw new IllegalArgumentException("Missing JSON array for " + description + ".");
         }
