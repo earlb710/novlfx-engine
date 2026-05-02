@@ -13,9 +13,10 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.StringWriter;
-import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 
 import javax.xml.transform.OutputKeys;
+import javax.xml.transform.TransformerException;
 import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
@@ -27,7 +28,7 @@ import javafx.embed.swing.SwingFXUtils;
  * Vector image data type for EBS scripting language.
  * Wraps an SVG DOM document for vector-based manipulation.
  * Supports SVG-specific operations while preserving vector format.
- * Can be converted to rasterized EbsImage for display or further pixel manipulation.
+ * Can be converted to a rasterized JavaFX image for display or further pixel manipulation.
  * 
  * @author Earl Bosch
  */
@@ -77,9 +78,9 @@ public class VectorImage {
      * Create an VectorImage from SVG byte array data.
      * 
      * @param bytes SVG file bytes
-     * @throws InterpreterError if the bytes don't represent a valid SVG
+     * @throws IllegalArgumentException if the bytes don't represent a valid SVG
      */
-    public VectorImage(byte[] bytes) throws InterpreterError {
+    public VectorImage(byte[] bytes) {
         this(bytes, null);
     }
     
@@ -88,11 +89,11 @@ public class VectorImage {
      * 
      * @param bytes SVG file bytes
      * @param name Optional image name/path
-     * @throws InterpreterError if the bytes don't represent a valid SVG
+     * @throws IllegalArgumentException if the bytes don't represent a valid SVG
      */
-    public VectorImage(byte[] bytes, String name) throws InterpreterError {
+    public VectorImage(byte[] bytes, String name) {
         if (bytes == null || bytes.length == 0) {
-            throw new InterpreterError("VectorImage: SVG bytes cannot be null or empty");
+            throw new IllegalArgumentException("VectorImage: SVG bytes cannot be null or empty");
         }
         
         this.originalBytes = bytes;
@@ -105,29 +106,8 @@ public class VectorImage {
             ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
             this.svgDocument = factory.createSVGDocument(null, bais);
         } catch (IOException ex) {
-            throw new InterpreterError("VectorImage: failed to parse SVG - " + ex.getMessage());
+            throw new IllegalArgumentException("VectorImage: failed to parse SVG - " + ex.getMessage(), ex);
         }
-    }
-    
-    /**
-     * Create an VectorImage from ArrayFixedByte.
-     * 
-     * @param array ArrayFixedByte containing SVG data
-     * @throws InterpreterError if the data is not a valid SVG
-     */
-    public VectorImage(ArrayFixedByte array) throws InterpreterError {
-        this(array.elements, null);
-    }
-    
-    /**
-     * Create an VectorImage from ArrayFixedByte with name.
-     * 
-     * @param array ArrayFixedByte containing SVG data
-     * @param name Optional image name/path
-     * @throws InterpreterError if the data is not a valid SVG
-     */
-    public VectorImage(ArrayFixedByte array, String name) throws InterpreterError {
-        this(array.elements, name);
     }
     
     /**
@@ -226,10 +206,10 @@ public class VectorImage {
     /**
      * Convert this vector image to a rasterized EbsImage.
      * 
-     * @return EbsImage with rasterized version of this SVG
-     * @throws InterpreterError if conversion fails
+     * @return WritableImage with rasterized version of this SVG
+     * @throws IllegalStateException if conversion fails
      */
-    public EbsImage toRasterImage() throws InterpreterError {
+    public javafx.scene.image.WritableImage toRasterImage() {
         return toRasterImage((int) getWidth(), (int) getHeight());
     }
     
@@ -238,12 +218,13 @@ public class VectorImage {
      * 
      * @param width Target width in pixels
      * @param height Target height in pixels
-     * @return EbsImage with rasterized version of this SVG
-     * @throws InterpreterError if conversion fails
+     * @return WritableImage with rasterized version of this SVG
+     * @throws IllegalStateException if conversion fails
      */
-    public javafx.scene.image.WritableImage toRasterImage(int width, int height) throws InterpreterError {
+    public javafx.scene.image.WritableImage toRasterImage(int width, int height) {
+        try {
             // Serialize SVG to bytes
-            byte[] svgBytes = toBytes().elements;
+            byte[] svgBytes = toBytes();
             
             // Use Batik transcoder to rasterize
             ByteArrayInputStream bais = new ByteArrayInputStream(svgBytes);
@@ -258,20 +239,24 @@ public class VectorImage {
             
             BufferedImage bufferedImage = transcoder.getBufferedImage();
             if (bufferedImage == null) {
-                throw new InterpreterError("VectorImage.toRasterImage: failed to rasterize SVG");
+                throw new IllegalStateException("VectorImage.toRasterImage: failed to rasterize SVG");
             }
             
             // Convert BufferedImage to JavaFX WritableImage
             javafx.scene.image.WritableImage fxImage = SwingFXUtils.toFXImage(bufferedImage, null);
             return fxImage;
+        } catch (TranscoderException ex) {
+            throw new IllegalStateException("VectorImage.toRasterImage: " + ex.getMessage(), ex);
+        }
     }
     
     /**
      * Get the SVG as byte array.
      * 
-     * @return ArrayFixedByte containing the SVG XML
+     * @return byte array containing the SVG XML
      */
     public byte[] toBytes() {
+        try {
             TransformerFactory transformerFactory = TransformerFactory.newInstance();
             Transformer transformer = transformerFactory.newTransformer();
             transformer.setOutputProperty(OutputKeys.INDENT, "yes");
@@ -280,10 +265,9 @@ public class VectorImage {
             StringWriter writer = new StringWriter();
             transformer.transform(new DOMSource(svgDocument), new StreamResult(writer));
 
-        try {
-            return writer.toString().getBytes("UTF-8");
-        } catch (UnsupportedEncodingException e) {
-            throw new RuntimeException(e);
+            return writer.toString().getBytes(StandardCharsets.UTF_8);
+        } catch (TransformerException ex) {
+            throw new IllegalStateException("VectorImage.toBytes: " + ex.getMessage(), ex);
         }
     }
     
@@ -291,11 +275,10 @@ public class VectorImage {
      * Get the SVG as a string.
      * 
      * @return SVG XML as string
-     * @throws InterpreterError if serialization fails
+     * @throws IllegalStateException if serialization fails
      */
-    public String toSvgString() throws InterpreterError {
-        ArrayFixedByte bytes = toBytes();
-        return new String(bytes.elements);
+    public String toSvgString() {
+        return new String(toBytes(), StandardCharsets.UTF_8);
     }
     
     // --- SVG Manipulation Methods ---
@@ -323,7 +306,7 @@ public class VectorImage {
             
             return new VectorImage(newDoc, imageName);
         } catch (Exception ex) {
-            throw new InterpreterError("VectorImage.scale: " + ex.getMessage());
+            throw new IllegalStateException("VectorImage.scale: " + ex.getMessage(), ex);
         }
     }
     
@@ -333,7 +316,7 @@ public class VectorImage {
      * @param color Color in hex format (e.g., "#ff0000" for red)
      * @return A new VectorImage with updated colors
      */
-    public VectorImage setFillColor(String color) throws InterpreterError {
+    public VectorImage setFillColor(String color) {
         try {
             // Clone the document
             SVGDocument newDoc = (SVGDocument) svgDocument.cloneNode(true);
@@ -344,7 +327,7 @@ public class VectorImage {
             
             return new VectorImage(newDoc, imageName);
         } catch (Exception ex) {
-            throw new InterpreterError("VectorImage.setFillColor: " + ex.getMessage());
+            throw new IllegalStateException("VectorImage.setFillColor: " + ex.getMessage(), ex);
         }
     }
     
@@ -354,7 +337,7 @@ public class VectorImage {
      * @param color Color in hex format (e.g., "#000000" for black)
      * @return A new VectorImage with updated stroke colors
      */
-    public VectorImage setStrokeColor(String color) throws InterpreterError {
+    public VectorImage setStrokeColor(String color) {
         try {
             // Clone the document
             SVGDocument newDoc = (SVGDocument) svgDocument.cloneNode(true);
@@ -365,7 +348,7 @@ public class VectorImage {
             
             return new VectorImage(newDoc, imageName);
         } catch (Exception ex) {
-            throw new InterpreterError("VectorImage.setStrokeColor: " + ex.getMessage());
+            throw new IllegalStateException("VectorImage.setStrokeColor: " + ex.getMessage(), ex);
         }
     }
     
@@ -375,7 +358,7 @@ public class VectorImage {
      * @param width Stroke width value
      * @return A new VectorImage with updated stroke width
      */
-    public VectorImage setStrokeWidth(double width) throws InterpreterError {
+    public VectorImage setStrokeWidth(double width) {
         try {
             // Clone the document
             SVGDocument newDoc = (SVGDocument) svgDocument.cloneNode(true);
@@ -386,7 +369,7 @@ public class VectorImage {
             
             return new VectorImage(newDoc, imageName);
         } catch (Exception ex) {
-            throw new InterpreterError("VectorImage.setStrokeWidth: " + ex.getMessage());
+            throw new IllegalStateException("VectorImage.setStrokeWidth: " + ex.getMessage(), ex);
         }
     }
     
@@ -396,7 +379,7 @@ public class VectorImage {
      * @param degrees Rotation angle in degrees
      * @return A new VectorImage with rotation applied
      */
-    public VectorImage rotate(double degrees) throws InterpreterError {
+    public VectorImage rotate(double degrees) {
         try {
             // Clone the document
             SVGDocument newDoc = (SVGDocument) svgDocument.cloneNode(true);
@@ -416,7 +399,7 @@ public class VectorImage {
             
             return new VectorImage(newDoc, imageName);
         } catch (Exception ex) {
-            throw new InterpreterError("VectorImage.rotate: " + ex.getMessage());
+            throw new IllegalStateException("VectorImage.rotate: " + ex.getMessage(), ex);
         }
     }
     
@@ -427,7 +410,7 @@ public class VectorImage {
      * @param height New height
      * @return A new VectorImage with updated dimensions
      */
-    public VectorImage setDimensions(double width, double height) throws InterpreterError {
+    public VectorImage setDimensions(double width, double height) {
         try {
             // Clone the document
             SVGDocument newDoc = (SVGDocument) svgDocument.cloneNode(true);
@@ -439,7 +422,7 @@ public class VectorImage {
             
             return new VectorImage(newDoc, imageName);
         } catch (Exception ex) {
-            throw new InterpreterError("VectorImage.setDimensions: " + ex.getMessage());
+            throw new IllegalStateException("VectorImage.setDimensions: " + ex.getMessage(), ex);
         }
     }
     
@@ -451,7 +434,7 @@ public class VectorImage {
      * @param radius Blur radius (stdDeviation)
      * @return A new VectorImage with blur filter applied
      */
-    public VectorImage applyBlur(double radius) throws InterpreterError {
+    public VectorImage applyBlur(double radius) {
         try {
             SVGDocument newDoc = (SVGDocument) svgDocument.cloneNode(true);
             Element root = newDoc.getDocumentElement();
@@ -476,7 +459,7 @@ public class VectorImage {
             
             return new VectorImage(newDoc, imageName);
         } catch (Exception ex) {
-            throw new InterpreterError("VectorImage.applyBlur: " + ex.getMessage());
+            throw new IllegalStateException("VectorImage.applyBlur: " + ex.getMessage(), ex);
         }
     }
     
@@ -489,7 +472,7 @@ public class VectorImage {
      * @param color Shadow color (hex format, e.g., "#000000")
      * @return A new VectorImage with drop shadow filter applied
      */
-    public VectorImage applyDropShadow(double dx, double dy, double blur, String color) throws InterpreterError {
+    public VectorImage applyDropShadow(double dx, double dy, double blur, String color) {
         try {
             SVGDocument newDoc = (SVGDocument) svgDocument.cloneNode(true);
             Element root = newDoc.getDocumentElement();
@@ -552,7 +535,7 @@ public class VectorImage {
             
             return new VectorImage(newDoc, imageName);
         } catch (Exception ex) {
-            throw new InterpreterError("VectorImage.applyDropShadow: " + ex.getMessage());
+            throw new IllegalStateException("VectorImage.applyDropShadow: " + ex.getMessage(), ex);
         }
     }
     
@@ -561,7 +544,7 @@ public class VectorImage {
      * 
      * @return A new VectorImage with grayscale filter applied
      */
-    public VectorImage applyGrayscale() throws InterpreterError {
+    public VectorImage applyGrayscale() {
         try {
             SVGDocument newDoc = (SVGDocument) svgDocument.cloneNode(true);
             Element root = newDoc.getDocumentElement();
@@ -592,7 +575,7 @@ public class VectorImage {
             
             return new VectorImage(newDoc, imageName);
         } catch (Exception ex) {
-            throw new InterpreterError("VectorImage.applyGrayscale: " + ex.getMessage());
+            throw new IllegalStateException("VectorImage.applyGrayscale: " + ex.getMessage(), ex);
         }
     }
     
@@ -601,7 +584,7 @@ public class VectorImage {
      * 
      * @return A new VectorImage with sepia filter applied
      */
-    public VectorImage applySepia() throws InterpreterError {
+    public VectorImage applySepia() {
         try {
             SVGDocument newDoc = (SVGDocument) svgDocument.cloneNode(true);
             Element root = newDoc.getDocumentElement();
@@ -632,7 +615,7 @@ public class VectorImage {
             
             return new VectorImage(newDoc, imageName);
         } catch (Exception ex) {
-            throw new InterpreterError("VectorImage.applySepia: " + ex.getMessage());
+            throw new IllegalStateException("VectorImage.applySepia: " + ex.getMessage(), ex);
         }
     }
     
@@ -642,7 +625,7 @@ public class VectorImage {
      * @param factor Brightness factor (1.0 = no change, >1.0 = brighter, <1.0 = darker)
      * @return A new VectorImage with brightness adjusted
      */
-    public VectorImage applyBrightness(double factor) throws InterpreterError {
+    public VectorImage applyBrightness(double factor) {
         try {
             SVGDocument newDoc = (SVGDocument) svgDocument.cloneNode(true);
             Element root = newDoc.getDocumentElement();
@@ -670,7 +653,7 @@ public class VectorImage {
             
             return new VectorImage(newDoc, imageName);
         } catch (Exception ex) {
-            throw new InterpreterError("VectorImage.applyBrightness: " + ex.getMessage());
+            throw new IllegalStateException("VectorImage.applyBrightness: " + ex.getMessage(), ex);
         }
     }
     
@@ -680,7 +663,7 @@ public class VectorImage {
      * @param degrees Hue rotation in degrees (0-360)
      * @return A new VectorImage with hue rotated
      */
-    public VectorImage applyHueRotate(double degrees) throws InterpreterError {
+    public VectorImage applyHueRotate(double degrees) {
         try {
             SVGDocument newDoc = (SVGDocument) svgDocument.cloneNode(true);
             Element root = newDoc.getDocumentElement();
@@ -706,7 +689,7 @@ public class VectorImage {
             
             return new VectorImage(newDoc, imageName);
         } catch (Exception ex) {
-            throw new InterpreterError("VectorImage.applyHueRotate: " + ex.getMessage());
+            throw new IllegalStateException("VectorImage.applyHueRotate: " + ex.getMessage(), ex);
         }
     }
     

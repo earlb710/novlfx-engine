@@ -14,10 +14,11 @@ java {
 
 javafx {
     version = '17.0.16'
-    modules = ['javafx.controls']
+    modules = ['javafx.controls', 'javafx.swing']
 }
 
 dependencies {
+    implementation 'org.apache.xmlgraphics:batik-all:1.18'
     testImplementation 'org.junit.jupiter:junit-jupiter:5.10.2'
     testImplementation 'org.junit.platform:junit-platform-launcher:1.10.2'
 }

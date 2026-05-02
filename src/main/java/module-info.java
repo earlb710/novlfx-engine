@@ -1,7 +1,9 @@
 module com.novlfx.engine {
     requires java.prefs;
     requires javafx.controls;
+    requires javafx.swing;
     requires java.desktop;
+    requires batik.all;
 
     exports com.eb.javafx.audio;
     exports com.eb.javafx.bootstrap;
