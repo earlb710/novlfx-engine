@@ -979,12 +979,20 @@ public final class TestScreenApplication {
             }
             candidates.add(Path.of(stripWrappedQuotes(entry)).resolve("bash.exe"));
         }
-        addWindowsBashCandidate(candidates, environment.get("ProgramFiles"), "Git", "bin", "bash.exe");
-        addWindowsBashCandidate(candidates, environment.get("ProgramFiles"), "Git", "usr", "bin", "bash.exe");
-        addWindowsBashCandidate(candidates, environment.get("ProgramFiles(x86)"), "Git", "bin", "bash.exe");
-        addWindowsBashCandidate(candidates, environment.get("ProgramFiles(x86)"), "Git", "usr", "bin", "bash.exe");
-        addWindowsBashCandidate(candidates, environment.get("LocalAppData"), "Programs", "Git", "bin", "bash.exe");
-        addWindowsBashCandidate(candidates, environment.get("LocalAppData"), "Programs", "Git", "usr", "bin", "bash.exe");
+        List<String[]> suffixes = List.of(
+                new String[]{"Git", "bin", "bash.exe"},
+                new String[]{"Git", "usr", "bin", "bash.exe"},
+                new String[]{"Programs", "Git", "bin", "bash.exe"},
+                new String[]{"Programs", "Git", "usr", "bin", "bash.exe"});
+        List<String> baseDirectories = new ArrayList<>();
+        baseDirectories.add(environment.get("ProgramFiles"));
+        baseDirectories.add(environment.get("ProgramFiles(x86)"));
+        baseDirectories.add(environment.get("LocalAppData"));
+        for (String baseDirectory : baseDirectories) {
+            for (String[] suffix : suffixes) {
+                addWindowsBashCandidate(candidates, baseDirectory, suffix);
+            }
+        }
         return candidates;
     }
 
