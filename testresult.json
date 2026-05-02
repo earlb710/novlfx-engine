@@ -1085,12 +1085,12 @@
       "source": "MethodSource [className = 'com.eb.javafx.testscreen.TestScreenApplicationTest', methodName = 'autoCategoryTestsExcludesManualTestsFromCategoryRuns', methodParameterTypes = '']",
       "auto": true,
       "new": false,
-      "lastRunAt": "2026-05-02T09:08:56.079860Z",
+      "lastRunAt": "2026-05-02T09:35:54.387190Z",
       "applicationVersion": "0.1.0",
       "success": true,
       "output": "STARTED: autoCategoryTestsExcludesManualTestsFromCategoryRuns()\nSUCCESSFUL: autoCategoryTestsExcludesManualTestsFromCategoryRuns()\n\nTests found: 1\nTests succeeded: 1\nTests failed: 0\nTests skipped: 0\nDuration: 2 ms\n",
       "failureOutput": "STARTED: autoCategoryTestsExcludesManualTestsFromCategoryRuns()\nSUCCESSFUL: autoCategoryTestsExcludesManualTestsFromCategoryRuns()\n\nTests found: 1\nTests succeeded: 1\nTests failed: 0\nTests skipped: 0\nDuration: 2 ms\n",
-      "sourceSignature": "c1cff4cc"
+      "sourceSignature": "fb23d734"
     },
     {
       "id": "[engine:junit-jupiter]/[class:com.eb.javafx.testscreen.TestScreenApplicationTest]/[method:categoryForSourceUsesFirstPackageSegmentBelowJavafxRoot()]",
@@ -1098,12 +1098,12 @@
       "source": "MethodSource [className = 'com.eb.javafx.testscreen.TestScreenApplicationTest', methodName = 'categoryForSourceUsesFirstPackageSegmentBelowJavafxRoot', methodParameterTypes = '']",
       "auto": true,
       "new": false,
-      "lastRunAt": "2026-05-02T09:08:56.092859200Z",
+      "lastRunAt": "2026-05-02T09:35:54.387190Z",
       "applicationVersion": "0.1.0",
       "success": true,
       "output": "STARTED: categoryForSourceUsesFirstPackageSegmentBelowJavafxRoot()\nSUCCESSFUL: categoryForSourceUsesFirstPackageSegmentBelowJavafxRoot()\n\nTests found: 1\nTests succeeded: 1\nTests failed: 0\nTests skipped: 0\nDuration: 2 ms\n",
       "failureOutput": "STARTED: categoryForSourceUsesFirstPackageSegmentBelowJavafxRoot()\nSUCCESSFUL: categoryForSourceUsesFirstPackageSegmentBelowJavafxRoot()\n\nTests found: 1\nTests succeeded: 1\nTests failed: 0\nTests skipped: 0\nDuration: 2 ms\n",
-      "sourceSignature": "c1cff4cc"
+      "sourceSignature": "fb23d734"
     },
     {
       "id": "[engine:junit-jupiter]/[class:com.eb.javafx.testscreen.TestScreenApplicationTest]/[method:commandForStandaloneExampleUsesShellOrJavaSourceMode()]",
@@ -1111,12 +1111,12 @@
       "source": "MethodSource [className = 'com.eb.javafx.testscreen.TestScreenApplicationTest', methodName = 'commandForStandaloneExampleUsesShellOrJavaSourceMode', methodParameterTypes = '']",
       "auto": true,
       "new": false,
-      "lastRunAt": "2026-05-02T09:08:56.106998400Z",
+      "lastRunAt": "2026-05-02T09:35:54.387190Z",
       "applicationVersion": "0.1.0",
       "success": true,
       "output": "STARTED: commandForStandaloneExampleUsesShellOrJavaSourceMode()\nSUCCESSFUL: commandForStandaloneExampleUsesShellOrJavaSourceMode()\n\nTests found: 1\nTests succeeded: 1\nTests failed: 0\nTests skipped: 0\nDuration: 2 ms\n",
       "failureOutput": "STARTED: commandForStandaloneExampleUsesShellOrJavaSourceMode()\nSUCCESSFUL: commandForStandaloneExampleUsesShellOrJavaSourceMode()\n\nTests found: 1\nTests succeeded: 1\nTests failed: 0\nTests skipped: 0\nDuration: 2 ms\n",
-      "sourceSignature": "c1cff4cc"
+      "sourceSignature": "fb23d734"
     },
     {
       "id": "[engine:junit-jupiter]/[class:com.eb.javafx.testscreen.TestScreenApplicationTest]/[method:computeSourceSignatureFindsExistingTestSource()]",
@@ -1124,12 +1124,12 @@
       "source": "MethodSource [className = 'com.eb.javafx.testscreen.TestScreenApplicationTest', methodName = 'computeSourceSignatureFindsExistingTestSource', methodParameterTypes = '']",
       "auto": true,
       "new": false,
-      "lastRunAt": "2026-05-02T09:08:56.119998500Z",
+      "lastRunAt": "2026-05-02T09:35:54.387190Z",
       "applicationVersion": "0.1.0",
       "success": true,
       "output": "STARTED: computeSourceSignatureFindsExistingTestSource()\nSUCCESSFUL: computeSourceSignatureFindsExistingTestSource()\n\nTests found: 1\nTests succeeded: 1\nTests failed: 0\nTests skipped: 0\nDuration: 2 ms\n",
       "failureOutput": "STARTED: computeSourceSignatureFindsExistingTestSource()\nSUCCESSFUL: computeSourceSignatureFindsExistingTestSource()\n\nTests found: 1\nTests succeeded: 1\nTests failed: 0\nTests skipped: 0\nDuration: 2 ms\n",
-      "sourceSignature": "c1cff4cc"
+      "sourceSignature": "fb23d734"
     },
     {
       "id": "[engine:junit-jupiter]/[class:com.eb.javafx.testscreen.TestScreenApplicationTest]/[method:currentBuildSuccessReconcilesLoadedFailureAndClearsNewFlag()]",
@@ -1137,12 +1137,12 @@
       "source": "MethodSource [className = 'com.eb.javafx.testscreen.TestScreenApplicationTest', methodName = 'currentBuildSuccessReconcilesLoadedFailureAndClearsNewFlag', methodParameterTypes = '']",
       "auto": true,
       "new": false,
-      "lastRunAt": "2026-05-02T09:08:56.132998800Z",
+      "lastRunAt": "2026-05-02T09:35:54.387190Z",
       "applicationVersion": "0.1.0",
       "success": true,
       "output": "STARTED: currentBuildSuccessReconcilesLoadedFailureAndClearsNewFlag()\nSUCCESSFUL: currentBuildSuccessReconcilesLoadedFailureAndClearsNewFlag()\n\nTests found: 1\nTests succeeded: 1\nTests failed: 0\nTests skipped: 0\nDuration: 2 ms\n",
       "failureOutput": "STARTED: currentBuildSuccessReconcilesLoadedFailureAndClearsNewFlag()\nSUCCESSFUL: currentBuildSuccessReconcilesLoadedFailureAndClearsNewFlag()\n\nTests found: 1\nTests succeeded: 1\nTests failed: 0\nTests skipped: 0\nDuration: 2 ms\n",
-      "sourceSignature": "c1cff4cc"
+      "sourceSignature": "fb23d734"
     },
     {
       "id": "[engine:junit-jupiter]/[class:com.eb.javafx.testscreen.TestScreenApplicationTest]/[method:descriptionsExplainWhatSelectedTestsAndExamplesShow()]",
@@ -1150,12 +1150,12 @@
       "source": "MethodSource [className = 'com.eb.javafx.testscreen.TestScreenApplicationTest', methodName = 'descriptionsExplainWhatSelectedTestsAndExamplesShow', methodParameterTypes = '']",
       "auto": true,
       "new": false,
-      "lastRunAt": "2026-05-02T09:08:56.148503200Z",
+      "lastRunAt": "2026-05-02T09:35:54.387190Z",
       "applicationVersion": "0.1.0",
       "success": true,
       "output": "STARTED: descriptionsExplainWhatSelectedTestsAndExamplesShow()\nSUCCESSFUL: descriptionsExplainWhatSelectedTestsAndExamplesShow()\n\nTests found: 1\nTests succeeded: 1\nTests failed: 0\nTests skipped: 0\nDuration: 3 ms\n",
       "failureOutput": "STARTED: descriptionsExplainWhatSelectedTestsAndExamplesShow()\nSUCCESSFUL: descriptionsExplainWhatSelectedTestsAndExamplesShow()\n\nTests found: 1\nTests succeeded: 1\nTests failed: 0\nTests skipped: 0\nDuration: 3 ms\n",
-      "sourceSignature": "c1cff4cc"
+      "sourceSignature": "fb23d734"
     },
     {
       "id": "[engine:junit-jupiter]/[class:com.eb.javafx.testscreen.TestScreenApplicationTest]/[method:extractRecordBodiesLoadsEveryPersistedTestFromTestsArray()]",
@@ -1163,12 +1163,12 @@
       "source": "MethodSource [className = 'com.eb.javafx.testscreen.TestScreenApplicationTest', methodName = 'extractRecordBodiesLoadsEveryPersistedTestFromTestsArray', methodParameterTypes = '']",
       "auto": true,
       "new": false,
-      "lastRunAt": "2026-05-02T09:08:56.162998800Z",
+      "lastRunAt": "2026-05-02T09:35:54.387190Z",
       "applicationVersion": "0.1.0",
       "success": true,
       "output": "STARTED: extractRecordBodiesLoadsEveryPersistedTestFromTestsArray()\nSUCCESSFUL: extractRecordBodiesLoadsEveryPersistedTestFromTestsArray()\n\nTests found: 1\nTests succeeded: 1\nTests failed: 0\nTests skipped: 0\nDuration: 2 ms\n",
       "failureOutput": "STARTED: extractRecordBodiesLoadsEveryPersistedTestFromTestsArray()\nSUCCESSFUL: extractRecordBodiesLoadsEveryPersistedTestFromTestsArray()\n\nTests found: 1\nTests succeeded: 1\nTests failed: 0\nTests skipped: 0\nDuration: 2 ms\n",
-      "sourceSignature": "c1cff4cc"
+      "sourceSignature": "fb23d734"
     },
     {
       "id": "[engine:junit-jupiter]/[class:com.eb.javafx.testscreen.TestScreenApplicationTest]/[method:frameTitleIncludesTotalSuccessAndErrorCounts()]",
@@ -1176,12 +1176,12 @@
       "source": "MethodSource [className = 'com.eb.javafx.testscreen.TestScreenApplicationTest', methodName = 'frameTitleIncludesTotalSuccessAndErrorCounts', methodParameterTypes = '']",
       "auto": true,
       "new": false,
-      "lastRunAt": "2026-05-02T09:08:56.176499200Z",
+      "lastRunAt": "2026-05-02T09:35:54.387190Z",
       "applicationVersion": "0.1.0",
       "success": true,
       "output": "STARTED: frameTitleIncludesTotalSuccessAndErrorCounts()\nSUCCESSFUL: frameTitleIncludesTotalSuccessAndErrorCounts()\n\nTests found: 1\nTests succeeded: 1\nTests failed: 0\nTests skipped: 0\nDuration: 2 ms\n",
       "failureOutput": "STARTED: frameTitleIncludesTotalSuccessAndErrorCounts()\nSUCCESSFUL: frameTitleIncludesTotalSuccessAndErrorCounts()\n\nTests found: 1\nTests succeeded: 1\nTests failed: 0\nTests skipped: 0\nDuration: 2 ms\n",
-      "sourceSignature": "c1cff4cc"
+      "sourceSignature": "fb23d734"
     },
     {
       "id": "[engine:junit-jupiter]/[class:com.eb.javafx.testscreen.TestScreenApplicationTest]/[method:isNewTestRequiresMatchingSignatureAndRecordedResult()]",
@@ -1189,12 +1189,12 @@
       "source": "MethodSource [className = 'com.eb.javafx.testscreen.TestScreenApplicationTest', methodName = 'isNewTestRequiresMatchingSignatureAndRecordedResult', methodParameterTypes = '']",
       "auto": true,
       "new": false,
-      "lastRunAt": "2026-05-02T09:08:56.190499500Z",
+      "lastRunAt": "2026-05-02T09:35:54.387190Z",
       "applicationVersion": "0.1.0",
       "success": true,
       "output": "STARTED: isNewTestRequiresMatchingSignatureAndRecordedResult()\nSUCCESSFUL: isNewTestRequiresMatchingSignatureAndRecordedResult()\n\nTests found: 1\nTests succeeded: 1\nTests failed: 0\nTests skipped: 0\nDuration: 3 ms\n",
       "failureOutput": "STARTED: isNewTestRequiresMatchingSignatureAndRecordedResult()\nSUCCESSFUL: isNewTestRequiresMatchingSignatureAndRecordedResult()\n\nTests found: 1\nTests succeeded: 1\nTests failed: 0\nTests skipped: 0\nDuration: 3 ms\n",
-      "sourceSignature": "c1cff4cc"
+      "sourceSignature": "fb23d734"
     },
     {
       "id": "[engine:junit-jupiter]/[class:com.eb.javafx.testscreen.TestScreenApplicationTest]/[method:manualTestAnnotationDefaultsAutoOffForNewRecords()]",
@@ -1202,12 +1202,12 @@
       "source": "MethodSource [className = 'com.eb.javafx.testscreen.TestScreenApplicationTest', methodName = 'manualTestAnnotationDefaultsAutoOffForNewRecords', methodParameterTypes = '']",
       "auto": true,
       "new": false,
-      "lastRunAt": "2026-05-02T09:08:56.204500300Z",
+      "lastRunAt": "2026-05-02T09:35:54.387190Z",
       "applicationVersion": "0.1.0",
       "success": true,
       "output": "STARTED: manualTestAnnotationDefaultsAutoOffForNewRecords()\nSUCCESSFUL: manualTestAnnotationDefaultsAutoOffForNewRecords()\n\nTests found: 1\nTests succeeded: 1\nTests failed: 0\nTests skipped: 0\nDuration: 2 ms\n",
       "failureOutput": "STARTED: manualTestAnnotationDefaultsAutoOffForNewRecords()\nSUCCESSFUL: manualTestAnnotationDefaultsAutoOffForNewRecords()\n\nTests found: 1\nTests succeeded: 1\nTests failed: 0\nTests skipped: 0\nDuration: 2 ms\n",
-      "sourceSignature": "c1cff4cc"
+      "sourceSignature": "fb23d734"
     },
     {
       "id": "[engine:junit-jupiter]/[class:com.eb.javafx.testscreen.TestScreenApplicationTest]/[method:normalizeMethodNameMatchesDiscoveryAndXmlFormats()]",
@@ -1215,12 +1215,12 @@
       "source": "MethodSource [className = 'com.eb.javafx.testscreen.TestScreenApplicationTest', methodName = 'normalizeMethodNameMatchesDiscoveryAndXmlFormats', methodParameterTypes = '']",
       "auto": true,
       "new": false,
-      "lastRunAt": "2026-05-02T09:08:56.217500300Z",
+      "lastRunAt": "2026-05-02T09:35:54.387190Z",
       "applicationVersion": "0.1.0",
       "success": true,
       "output": "STARTED: normalizeMethodNameMatchesDiscoveryAndXmlFormats()\nSUCCESSFUL: normalizeMethodNameMatchesDiscoveryAndXmlFormats()\n\nTests found: 1\nTests succeeded: 1\nTests failed: 0\nTests skipped: 0\nDuration: 2 ms\n",
       "failureOutput": "STARTED: normalizeMethodNameMatchesDiscoveryAndXmlFormats()\nSUCCESSFUL: normalizeMethodNameMatchesDiscoveryAndXmlFormats()\n\nTests found: 1\nTests succeeded: 1\nTests failed: 0\nTests skipped: 0\nDuration: 2 ms\n",
-      "sourceSignature": "c1cff4cc"
+      "sourceSignature": "fb23d734"
     },
     {
       "id": "[engine:junit-jupiter]/[class:com.eb.javafx.testscreen.TestScreenApplicationTest]/[method:parseMethodSourceExtractsClassAndMethodName()]",
@@ -1228,12 +1228,12 @@
       "source": "MethodSource [className = 'com.eb.javafx.testscreen.TestScreenApplicationTest', methodName = 'parseMethodSourceExtractsClassAndMethodName', methodParameterTypes = '']",
       "auto": true,
       "new": false,
-      "lastRunAt": "2026-05-02T09:08:56.230498500Z",
+      "lastRunAt": "2026-05-02T09:35:54.387190Z",
       "applicationVersion": "0.1.0",
       "success": true,
       "output": "STARTED: parseMethodSourceExtractsClassAndMethodName()\nSUCCESSFUL: parseMethodSourceExtractsClassAndMethodName()\n\nTests found: 1\nTests succeeded: 1\nTests failed: 0\nTests skipped: 0\nDuration: 2 ms\n",
       "failureOutput": "STARTED: parseMethodSourceExtractsClassAndMethodName()\nSUCCESSFUL: parseMethodSourceExtractsClassAndMethodName()\n\nTests found: 1\nTests succeeded: 1\nTests failed: 0\nTests skipped: 0\nDuration: 2 ms\n",
-      "sourceSignature": "c1cff4cc"
+      "sourceSignature": "fb23d734"
     },
     {
       "id": "[engine:junit-jupiter]/[class:com.eb.javafx.testscreen.TestScreenApplicationTest]/[method:persistedOutputPrefersOutputFieldAndFallsBackToLegacyFailureOutput()]",
@@ -1241,12 +1241,12 @@
       "source": "MethodSource [className = 'com.eb.javafx.testscreen.TestScreenApplicationTest', methodName = 'persistedOutputPrefersOutputFieldAndFallsBackToLegacyFailureOutput', methodParameterTypes = '']",
       "auto": true,
       "new": false,
-      "lastRunAt": "2026-05-02T09:08:56.244498800Z",
+      "lastRunAt": "2026-05-02T09:35:54.387190Z",
       "applicationVersion": "0.1.0",
       "success": true,
       "output": "STARTED: persistedOutputPrefersOutputFieldAndFallsBackToLegacyFailureOutput()\nSUCCESSFUL: persistedOutputPrefersOutputFieldAndFallsBackToLegacyFailureOutput()\n\nTests found: 1\nTests succeeded: 1\nTests failed: 0\nTests skipped: 0\nDuration: 3 ms\n",
       "failureOutput": "STARTED: persistedOutputPrefersOutputFieldAndFallsBackToLegacyFailureOutput()\nSUCCESSFUL: persistedOutputPrefersOutputFieldAndFallsBackToLegacyFailureOutput()\n\nTests found: 1\nTests succeeded: 1\nTests failed: 0\nTests skipped: 0\nDuration: 3 ms\n",
-      "sourceSignature": "c1cff4cc"
+      "sourceSignature": "fb23d734"
     },
     {
       "id": "[engine:junit-jupiter]/[class:com.eb.javafx.testscreen.TestScreenApplicationTest]/[method:readProcessOutputTruncatesLargeExternalOutput()]",
@@ -1254,12 +1254,12 @@
       "source": "MethodSource [className = 'com.eb.javafx.testscreen.TestScreenApplicationTest', methodName = 'readProcessOutputTruncatesLargeExternalOutput', methodParameterTypes = '']",
       "auto": true,
       "new": false,
-      "lastRunAt": "2026-05-02T09:08:56.260998300Z",
+      "lastRunAt": "2026-05-02T09:35:54.387190Z",
       "applicationVersion": "0.1.0",
       "success": true,
       "output": "STARTED: readProcessOutputTruncatesLargeExternalOutput()\nSUCCESSFUL: readProcessOutputTruncatesLargeExternalOutput()\n\nTests found: 1\nTests succeeded: 1\nTests failed: 0\nTests skipped: 0\nDuration: 5 ms\n",
       "failureOutput": "STARTED: readProcessOutputTruncatesLargeExternalOutput()\nSUCCESSFUL: readProcessOutputTruncatesLargeExternalOutput()\n\nTests found: 1\nTests succeeded: 1\nTests failed: 0\nTests skipped: 0\nDuration: 5 ms\n",
-      "sourceSignature": "c1cff4cc"
+      "sourceSignature": "fb23d734"
     },
     {
       "id": "[engine:junit-jupiter]/[class:com.eb.javafx.testscreen.TestScreenApplicationTest]/[method:shellCommandResolutionReturnsEmptyOnWindowsWithoutBash()]",
@@ -1267,12 +1267,12 @@
       "source": "MethodSource [className = 'com.eb.javafx.testscreen.TestScreenApplicationTest', methodName = 'shellCommandResolutionReturnsEmptyOnWindowsWithoutBash', methodParameterTypes = '']",
       "auto": true,
       "new": false,
-      "lastRunAt": "2026-05-02T09:08:56.274500500Z",
+      "lastRunAt": "2026-05-02T09:35:54.387190Z",
       "applicationVersion": "0.1.0",
       "success": true,
       "output": "STARTED: shellCommandResolutionReturnsEmptyOnWindowsWithoutBash()\nSUCCESSFUL: shellCommandResolutionReturnsEmptyOnWindowsWithoutBash()\n\nTests found: 1\nTests succeeded: 1\nTests failed: 0\nTests skipped: 0\nDuration: 3 ms\n",
       "failureOutput": "STARTED: shellCommandResolutionReturnsEmptyOnWindowsWithoutBash()\nSUCCESSFUL: shellCommandResolutionReturnsEmptyOnWindowsWithoutBash()\n\nTests found: 1\nTests succeeded: 1\nTests failed: 0\nTests skipped: 0\nDuration: 3 ms\n",
-      "sourceSignature": "c1cff4cc"
+      "sourceSignature": "fb23d734"
     },
     {
       "id": "[engine:junit-jupiter]/[class:com.eb.javafx.testscreen.TestScreenApplicationTest]/[method:shellCommandResolutionUsesWindowsBashWhenAvailableOnPath()]",
@@ -1280,12 +1280,12 @@
       "source": "MethodSource [className = 'com.eb.javafx.testscreen.TestScreenApplicationTest', methodName = 'shellCommandResolutionUsesWindowsBashWhenAvailableOnPath', methodParameterTypes = '']",
       "auto": true,
       "new": false,
-      "lastRunAt": "2026-05-02T09:08:56.289000700Z",
+      "lastRunAt": "2026-05-02T09:35:54.387190Z",
       "applicationVersion": "0.1.0",
       "success": true,
       "output": "STARTED: shellCommandResolutionUsesWindowsBashWhenAvailableOnPath()\nSUCCESSFUL: shellCommandResolutionUsesWindowsBashWhenAvailableOnPath()\n\nTests found: 1\nTests succeeded: 1\nTests failed: 0\nTests skipped: 0\nDuration: 4 ms\n",
       "failureOutput": "STARTED: shellCommandResolutionUsesWindowsBashWhenAvailableOnPath()\nSUCCESSFUL: shellCommandResolutionUsesWindowsBashWhenAvailableOnPath()\n\nTests found: 1\nTests succeeded: 1\nTests failed: 0\nTests skipped: 0\nDuration: 4 ms\n",
-      "sourceSignature": "c1cff4cc"
+      "sourceSignature": "fb23d734"
     },
     {
       "id": "[engine:junit-jupiter]/[class:com.eb.javafx.testscreen.TestScreenApplicationTest]/[method:sourceFilePathFindsExistingTestSource()]",
@@ -1293,12 +1293,12 @@
       "source": "MethodSource [className = 'com.eb.javafx.testscreen.TestScreenApplicationTest', methodName = 'sourceFilePathFindsExistingTestSource', methodParameterTypes = '']",
       "auto": true,
       "new": false,
-      "lastRunAt": "2026-05-02T09:23:04.843689Z",
+      "lastRunAt": "2026-05-02T09:35:54.387190Z",
       "applicationVersion": "0.1.0",
       "success": true,
       "output": "STARTED: sourceFilePathFindsExistingTestSource()\nSUCCESSFUL: sourceFilePathFindsExistingTestSource()\n\nTests found: 1\nTests succeeded: 1\nTests failed: 0\nTests skipped: 0\nDuration: 2 ms\n",
       "failureOutput": "STARTED: sourceFilePathFindsExistingTestSource()\nSUCCESSFUL: sourceFilePathFindsExistingTestSource()\n\nTests found: 1\nTests succeeded: 1\nTests failed: 0\nTests skipped: 0\nDuration: 2 ms\n",
-      "sourceSignature": "a2c83ffa"
+      "sourceSignature": "fb23d734"
     },
     {
       "id": "[engine:junit-jupiter]/[class:com.eb.javafx.testscreen.TestScreenApplicationTest]/[method:sourceFilePathReturnsEmptyForMalformedSource()]",
@@ -1306,12 +1306,12 @@
       "source": "MethodSource [className = 'com.eb.javafx.testscreen.TestScreenApplicationTest', methodName = 'sourceFilePathReturnsEmptyForMalformedSource', methodParameterTypes = '']",
       "auto": true,
       "new": false,
-      "lastRunAt": "2026-05-02T09:08:56.315999Z",
+      "lastRunAt": "2026-05-02T09:35:54.387190Z",
       "applicationVersion": "0.1.0",
       "success": true,
       "output": "STARTED: sourceFilePathReturnsEmptyForMalformedSource()\nSUCCESSFUL: sourceFilePathReturnsEmptyForMalformedSource()\n\nTests found: 1\nTests succeeded: 1\nTests failed: 0\nTests skipped: 0\nDuration: 2 ms\n",
       "failureOutput": "STARTED: sourceFilePathReturnsEmptyForMalformedSource()\nSUCCESSFUL: sourceFilePathReturnsEmptyForMalformedSource()\n\nTests found: 1\nTests succeeded: 1\nTests failed: 0\nTests skipped: 0\nDuration: 2 ms\n",
-      "sourceSignature": "c1cff4cc"
+      "sourceSignature": "fb23d734"
     },
     {
       "id": "[engine:junit-jupiter]/[class:com.eb.javafx.testscreen.TestScreenApplicationTest]/[method:staleBuildResultDoesNotOverwriteLoadedJsonRecord()]",
@@ -1319,12 +1319,12 @@
       "source": "MethodSource [className = 'com.eb.javafx.testscreen.TestScreenApplicationTest', methodName = 'staleBuildResultDoesNotOverwriteLoadedJsonRecord', methodParameterTypes = '']",
       "auto": true,
       "new": false,
-      "lastRunAt": "2026-05-02T09:08:56.330000400Z",
+      "lastRunAt": "2026-05-02T09:35:54.387190Z",
       "applicationVersion": "0.1.0",
       "success": true,
       "output": "STARTED: staleBuildResultDoesNotOverwriteLoadedJsonRecord()\nSUCCESSFUL: staleBuildResultDoesNotOverwriteLoadedJsonRecord()\n\nTests found: 1\nTests succeeded: 1\nTests failed: 0\nTests skipped: 0\nDuration: 4 ms\n",
       "failureOutput": "STARTED: staleBuildResultDoesNotOverwriteLoadedJsonRecord()\nSUCCESSFUL: staleBuildResultDoesNotOverwriteLoadedJsonRecord()\n\nTests found: 1\nTests succeeded: 1\nTests failed: 0\nTests skipped: 0\nDuration: 4 ms\n",
-      "sourceSignature": "c1cff4cc"
+      "sourceSignature": "fb23d734"
     },
     {
       "id": "[engine:junit-jupiter]/[class:com.eb.javafx.testscreen.TestScreenApplicationTest]/[method:standaloneExampleDisplayNameUsesParentDirectoryAndFileName()]",
@@ -1332,12 +1332,12 @@
       "source": "MethodSource [className = 'com.eb.javafx.testscreen.TestScreenApplicationTest', methodName = 'standaloneExampleDisplayNameUsesParentDirectoryAndFileName', methodParameterTypes = '']",
       "auto": true,
       "new": false,
-      "lastRunAt": "2026-05-02T09:08:56.344499200Z",
+      "lastRunAt": "2026-05-02T09:35:54.387190Z",
       "applicationVersion": "0.1.0",
       "success": true,
       "output": "STARTED: standaloneExampleDisplayNameUsesParentDirectoryAndFileName()\nSUCCESSFUL: standaloneExampleDisplayNameUsesParentDirectoryAndFileName()\n\nTests found: 1\nTests succeeded: 1\nTests failed: 0\nTests skipped: 0\nDuration: 3 ms\n",
       "failureOutput": "STARTED: standaloneExampleDisplayNameUsesParentDirectoryAndFileName()\nSUCCESSFUL: standaloneExampleDisplayNameUsesParentDirectoryAndFileName()\n\nTests found: 1\nTests succeeded: 1\nTests failed: 0\nTests skipped: 0\nDuration: 3 ms\n",
-      "sourceSignature": "c1cff4cc"
+      "sourceSignature": "fb23d734"
     },
     {
       "id": "[engine:junit-jupiter]/[class:com.eb.javafx.testscreen.TestScreenApplicationTest]/[method:standaloneExampleFilesIncludesRunnableExamplesAndExcludesDataFiles()]",
@@ -1345,12 +1345,12 @@
       "source": "MethodSource [className = 'com.eb.javafx.testscreen.TestScreenApplicationTest', methodName = 'standaloneExampleFilesIncludesRunnableExamplesAndExcludesDataFiles', methodParameterTypes = '']",
       "auto": true,
       "new": false,
-      "lastRunAt": "2026-05-02T09:23:04.843689Z",
+      "lastRunAt": "2026-05-02T09:35:54.387190Z",
       "applicationVersion": "0.1.0",
       "success": true,
       "output": "STARTED: standaloneExampleFilesIncludesRunnableExamplesAndExcludesDataFiles()\nSUCCESSFUL: standaloneExampleFilesIncludesRunnableExamplesAndExcludesDataFiles()\n\nTests found: 1\nTests succeeded: 1\nTests failed: 0\nTests skipped: 0\nDuration: 34 ms\n",
       "failureOutput": "STARTED: standaloneExampleFilesIncludesRunnableExamplesAndExcludesDataFiles()\nSUCCESSFUL: standaloneExampleFilesIncludesRunnableExamplesAndExcludesDataFiles()\n\nTests found: 1\nTests succeeded: 1\nTests failed: 0\nTests skipped: 0\nDuration: 34 ms\n",
-      "sourceSignature": "a2c83ffa"
+      "sourceSignature": "fb23d734"
     },
     {
       "id": "[engine:junit-jupiter]/[class:com.eb.javafx.testscreen.TestScreenApplicationTest]/[method:standaloneExampleUniqueIdIsStableAndNormalized()]",
@@ -1358,12 +1358,12 @@
       "source": "MethodSource [className = 'com.eb.javafx.testscreen.TestScreenApplicationTest', methodName = 'standaloneExampleUniqueIdIsStableAndNormalized', methodParameterTypes = '']",
       "auto": true,
       "new": false,
-      "lastRunAt": "2026-05-02T09:08:56.377499900Z",
+      "lastRunAt": "2026-05-02T09:35:54.387190Z",
       "applicationVersion": "0.1.0",
       "success": true,
       "output": "STARTED: standaloneExampleUniqueIdIsStableAndNormalized()\nSUCCESSFUL: standaloneExampleUniqueIdIsStableAndNormalized()\n\nTests found: 1\nTests succeeded: 1\nTests failed: 0\nTests skipped: 0\nDuration: 2 ms\n",
       "failureOutput": "STARTED: standaloneExampleUniqueIdIsStableAndNormalized()\nSUCCESSFUL: standaloneExampleUniqueIdIsStableAndNormalized()\n\nTests found: 1\nTests succeeded: 1\nTests failed: 0\nTests skipped: 0\nDuration: 2 ms\n",
-      "sourceSignature": "c1cff4cc"
+      "sourceSignature": "fb23d734"
     },
     {
       "id": "[engine:junit-jupiter]/[class:com.eb.javafx.testscreen.TestScreenApplicationTest]/[method:testScreenActivePropertyIsAvailableToManualTests()]",
@@ -1371,12 +1371,12 @@
       "source": "MethodSource [className = 'com.eb.javafx.testscreen.TestScreenApplicationTest', methodName = 'testScreenActivePropertyIsAvailableToManualTests', methodParameterTypes = '']",
       "auto": true,
       "new": false,
-      "lastRunAt": "2026-05-02T09:08:56.390499400Z",
+      "lastRunAt": "2026-05-02T09:35:54.387190Z",
       "applicationVersion": "0.1.0",
       "success": true,
       "output": "STARTED: testScreenActivePropertyIsAvailableToManualTests()\nSUCCESSFUL: testScreenActivePropertyIsAvailableToManualTests()\n\nTests found: 1\nTests succeeded: 1\nTests failed: 0\nTests skipped: 0\nDuration: 2 ms\n",
       "failureOutput": "STARTED: testScreenActivePropertyIsAvailableToManualTests()\nSUCCESSFUL: testScreenActivePropertyIsAvailableToManualTests()\n\nTests found: 1\nTests succeeded: 1\nTests failed: 0\nTests skipped: 0\nDuration: 2 ms\n",
-      "sourceSignature": "c1cff4cc"
+      "sourceSignature": "fb23d734"
     },
     {
       "id": "[engine:junit-jupiter]/[class:com.eb.javafx.testscreen.TestScreenApplicationTest]/[method:unsupportedStandaloneExampleMessageExplainsWindowsShellRequirement()]",
@@ -1384,12 +1384,12 @@
       "source": "MethodSource [className = 'com.eb.javafx.testscreen.TestScreenApplicationTest', methodName = 'unsupportedStandaloneExampleMessageExplainsWindowsShellRequirement', methodParameterTypes = '']",
       "auto": true,
       "new": false,
-      "lastRunAt": "2026-05-02T09:08:56.402498600Z",
+      "lastRunAt": "2026-05-02T09:35:54.387190Z",
       "applicationVersion": "0.1.0",
       "success": true,
       "output": "STARTED: unsupportedStandaloneExampleMessageExplainsWindowsShellRequirement()\nSUCCESSFUL: unsupportedStandaloneExampleMessageExplainsWindowsShellRequirement()\n\nTests found: 1\nTests succeeded: 1\nTests failed: 0\nTests skipped: 0\nDuration: 2 ms\n",
       "failureOutput": "STARTED: unsupportedStandaloneExampleMessageExplainsWindowsShellRequirement()\nSUCCESSFUL: unsupportedStandaloneExampleMessageExplainsWindowsShellRequirement()\n\nTests found: 1\nTests succeeded: 1\nTests failed: 0\nTests skipped: 0\nDuration: 2 ms\n",
-      "sourceSignature": "c1cff4cc"
+      "sourceSignature": "fb23d734"
     },
     {
       "id": "[engine:junit-jupiter]/[class:com.eb.javafx.text.TextTagParserTest]/[method:parsesStyledTextPausesParagraphsAndEffects()]",

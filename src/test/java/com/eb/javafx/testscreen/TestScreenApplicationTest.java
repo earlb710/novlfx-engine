@@ -7,7 +7,6 @@ import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -20,8 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 final class TestScreenApplicationTest {
-    private static final Path REPO_ROOT =
-            Paths.get("").toAbsolutePath().normalize();
+    private static final Path REPO_ROOT = TestScreenApplication.repositoryRoot();
 
     @TempDir
     Path tempDir;

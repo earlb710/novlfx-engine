@@ -43,6 +43,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
@@ -75,10 +76,10 @@ public final class TestScreenApplication {
     private static final String RESULT_FILE = "testresult.json";
     public static final String TEST_SCREEN_ACTIVE_PROPERTY = "eb.testScreen.active";
     private static final Object TEST_SCREEN_ACTIVE_LOCK = new Object();
-    private static final Path REPO_ROOT = Paths.get("").toAbsolutePath().normalize();
-    private static final Path TEST_SOURCE_ROOT = Paths.get("src", "test", "java");
-    private static final Path EXAMPLES_ROOT = Paths.get("examples", "user-manual");
-    private static final Path BUILD_RESULTS_ROOT = Paths.get("build", "test-results", "test");
+    private static final Path REPO_ROOT = findRepositoryRoot();
+    private static final Path TEST_SOURCE_ROOT = REPO_ROOT.resolve(Paths.get("src", "test", "java"));
+    private static final Path EXAMPLES_ROOT = REPO_ROOT.resolve(Paths.get("examples", "user-manual"));
+    private static final Path BUILD_RESULTS_ROOT = REPO_ROOT.resolve(Paths.get("build", "test-results", "test"));
     private static final Pattern METHOD_SOURCE_PATTERN = Pattern.compile(
             "className = '([^']+)', methodName = '([^']+)'");
     private static final Pattern STANDALONE_JAVA_MAIN_PATTERN = Pattern.compile("\\bpublic\\s+static\\s+void\\s+main\\s*\\(");
@@ -110,12 +111,53 @@ public final class TestScreenApplication {
         outputArea = new JTextArea();
         runButton = new JButton("Run");
         runAllButton = new JButton("Run All in Category");
-        resultPath = Paths.get(RESULT_FILE);
+        resultPath = REPO_ROOT.resolve(RESULT_FILE);
         applicationVersion = System.getProperty("eb.application.version", "unknown");
     }
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> new TestScreenApplication().show());
+    }
+
+    static Path repositoryRoot() {
+        return REPO_ROOT;
+    }
+
+    private static Path findRepositoryRoot() {
+        Path currentDirectory = Paths.get("").toAbsolutePath().normalize();
+        Optional<Path> currentRoot = findRepositoryRootFrom(currentDirectory);
+        if (currentRoot.isPresent()) {
+            return currentRoot.orElseThrow();
+        }
+
+        try {
+            Path classLocation = Path.of(TestScreenApplication.class
+                    .getProtectionDomain()
+                    .getCodeSource()
+                    .getLocation()
+                    .toURI()).toAbsolutePath().normalize();
+            Optional<Path> classRoot = findRepositoryRootFrom(classLocation);
+            if (classRoot.isPresent()) {
+                return classRoot.orElseThrow();
+            }
+        } catch (NullPointerException | IllegalArgumentException | SecurityException | URISyntaxException ignored) {
+            // Fall back to the launch directory when runtime class location is unavailable.
+        }
+
+        return currentDirectory;
+    }
+
+    private static Optional<Path> findRepositoryRootFrom(Path start) {
+        Path candidate = Files.isRegularFile(start) ? start.getParent() : start;
+        while (candidate != null) {
+            if (Files.isRegularFile(candidate.resolve("build.gradle"))
+                    && Files.isDirectory(candidate.resolve(Paths.get("examples", "user-manual")))
+                    && Files.isDirectory(candidate.resolve(Paths.get("src", "test", "java")))) {
+                return Optional.of(candidate.toAbsolutePath().normalize());
+            }
+            candidate = candidate.getParent();
+        }
+        return Optional.empty();
     }
 
     private void show() {
