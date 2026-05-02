@@ -226,13 +226,13 @@ final class TestScreenApplicationTest {
 
     @Test
     void shellCommandResolutionReturnsEmptyOnWindowsEvenWhenBashExists() throws Exception {
-        Path gitBin = Files.createDirectory(tempDir.resolve("git-bin"));
-        Files.createFile(gitBin.resolve("bash.exe"));
+        Path mockBashDir = Files.createDirectory(tempDir.resolve("mock-bash-dir"));
+        Files.createFile(mockBashDir.resolve("bash.exe"));
 
         Optional<List<String>> shellCommand = TestScreenApplication.commandForStandaloneExample(
                 REPO_ROOT.resolve("examples/user-manual/02-project-setup-and-validation/demo.sh"),
                 "Windows 11",
-                Map.of("PATH", gitBin.toString()));
+                Map.of("PATH", mockBashDir.toString()));
 
         assertTrue(shellCommand.isEmpty());
     }

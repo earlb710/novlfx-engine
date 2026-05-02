@@ -1001,13 +1001,6 @@ public final class TestScreenApplication {
         return Optional.of(List.of("bash", normalizedPath.toString()));
     }
 
-    private static String stripWrappedQuotes(String value) {
-        if (value.length() >= 2 && value.startsWith("\"") && value.endsWith("\"")) {
-            return value.substring(1, value.length() - 1);
-        }
-        return value;
-    }
-
     private static boolean isWindows(String osName) {
         return osName != null && osName.toLowerCase(Locale.ROOT).contains("win");
     }
