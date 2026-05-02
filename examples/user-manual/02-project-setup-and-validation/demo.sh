@@ -16,4 +16,5 @@ fi
 cd "$repo_root"
 
 ./gradlew --no-daemon build
-./gradlew --no-daemon runTestScreen
+echo "Build succeeded. To inspect tests interactively on a desktop machine, run:"
+echo "./gradlew --no-daemon runTestScreen"

@@ -44,9 +44,14 @@ public final class SceneExecutionAndJsonDemo {
         SceneExecutionResult intro = executor.advanceUntilPause(actionContext, executor.start("chapter-start"));
         SceneViewModel introView = presenter.present(actionContext, intro);
         System.out.println("Intro status: " + introView.status());
-        System.out.println("Intro choices: " + introView.choices().stream().map(choice -> choice.id()).toList());
+        System.out.println("Intro text step: " + introView.stepId());
 
-        SceneExecutionResult afterChoice = executor.selectChoice(actionContext, intro.state(), "ask-guide");
+        SceneExecutionResult choicePause = executor.continueFromText(actionContext, intro.state());
+        SceneViewModel choiceView = presenter.present(actionContext, choicePause);
+        System.out.println("Choice status: " + choiceView.status());
+        System.out.println("Available choices: " + choiceView.choices().stream().map(choice -> choice.id()).toList());
+
+        SceneExecutionResult afterChoice = executor.selectChoice(actionContext, choicePause.state(), "ask-guide");
         SceneViewModel afterChoiceView = presenter.present(actionContext, afterChoice);
         System.out.println("Active scene after CALL transition: " + afterChoiceView.sceneId());
         System.out.println("Display reference from JSON: " + afterChoiceView.displayReference());

@@ -62,7 +62,7 @@ public final class SceneFlowDemo {
                     SceneStep.narration("intro", "scene.chapter.intro"),
                     SceneStep.choice("platform-choice", List.of(
                             SceneChoice.of("wait", "scene.chapter.choice.wait", SceneTransition.complete()),
-                            SceneChoice.of("board", "scene.chapter.choice.board", SceneTransition.complete())))));
+                            SceneChoice.of("board", "scene.chapter.choice.board", SceneTransition.complete()))))));
         }
     }
 

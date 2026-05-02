@@ -1,6 +1,7 @@
 package com.eb.javafx.testscreen;
 
 import com.eb.javafx.util.JsonStrings;
+import com.eb.javafx.util.PathUtils;
 import org.junit.platform.engine.TestExecutionResult;
 import org.junit.platform.engine.discovery.DiscoverySelectors;
 import org.junit.platform.launcher.Launcher;
@@ -291,6 +292,8 @@ public final class TestScreenApplication {
                 + "\nCategory: " + selectedTest.category()
                 + "\nType: " + selectedTest.executionLabel()
                 + "\nSource: " + selectedTest.source().orElse("Unknown")
+                + "\n\nWhat it tests/shows:\n" + selectedTest.subjectDescription()
+                + "\n\nWhat to expect:\n" + selectedTest.expectationDescription()
                 + "\nUnique ID: " + selectedTest.uniqueId()
                 + "\nNew test: " + selectedTest.newTest()
                 + "\nAuto: " + selectedTest.auto()
@@ -432,6 +435,12 @@ public final class TestScreenApplication {
         StringBuilder output = new StringBuilder()
                 .append("File: ").append(testCase.filePath().map(Path::toString).orElse("Unknown")).append('\n')
                 .append("Working directory: ").append(REPO_ROOT).append("\n\n");
+        if (testCase.unsupportedOnCurrentOperatingSystem()) {
+            String resultOutput = output.append(testCase.unsupportedOperatingSystemMessage()).append('\n').toString();
+            testCase.recordResult(Instant.now().toString(), applicationVersion, true, resultOutput);
+            saveResultRecords();
+            return new RunResult(true, resultOutput);
+        }
         try {
             List<String> command = testCase.command();
             output.append("Command: ").append(String.join(" ", command)).append("\n\n");
@@ -1081,6 +1090,55 @@ public final class TestScreenApplication {
         return writer.toString();
     }
 
+    static String junitSubjectDescription(String displayName, Optional<String> source) {
+        String subject = humanizeIdentifier(displayName);
+        String location = source.flatMap(TestScreenApplication::parseMethodSource)
+                .map(key -> " in " + key.className())
+                .orElse("");
+        return "Runs the " + subject + " JUnit test" + location + ".";
+    }
+
+    static String junitExpectationDescription(String displayName) {
+        return "Expect " + humanizeIdentifier(displayName)
+                + " to finish with a Success result. If it fails, the output shows the assertion error or stack trace.";
+    }
+
+    static String standaloneExampleSubjectDescription(Path path) {
+        String normalized = PathUtils.normalizeSeparators(REPO_ROOT.relativize(path.toAbsolutePath().normalize()).toString());
+        return switch (normalized) {
+            case "examples/user-manual/02-project-setup-and-validation/demo.sh" ->
+                    "Shows the project validation commands from the setup section, including the Gradle build.";
+            case "examples/user-manual/04-startup-and-service-wiring/ApplicationResourceConfigDemo.java" ->
+                    "Shows how an application resource config resolves category tables, image roots, and named authored resources.";
+            case "examples/user-manual/05-content-routing-and-scenes/SceneFlowDemo.java" ->
+                    "Shows registering content, scene definitions, and application routes for a simple chapter start flow.";
+            case "examples/user-manual/05-content-routing-and-scenes/SceneExecutionAndJsonDemo.java" ->
+                    "Shows loading scene JSON, presenting text and choices, selecting a branch, and round-tripping scene state.";
+            default -> "Shows the user-manual example in " + normalized + ".";
+        };
+    }
+
+    static String standaloneExampleExpectationDescription(Path path, ExecutionMode executionMode) {
+        if (executionMode == ExecutionMode.SHELL) {
+            return "Expect the script to run on macOS or Linux. On Windows, run it manually from a bash-compatible shell.";
+        }
+        return "Expect the example to print a short demonstration transcript and exit with code 0.";
+    }
+
+    static String humanizeIdentifier(String identifier) {
+        String withoutParameters = identifier == null ? "" : identifier.replaceFirst("\\(.*\\)$", "");
+        String spaced = withoutParameters
+                .replace('_', ' ')
+                .replace('-', ' ')
+                .replaceAll("(?<=[a-z0-9])(?=[A-Z])", " ")
+                .replaceAll("\\s+", " ")
+                .trim();
+        if (spaced.isEmpty()) {
+            return "selected";
+        }
+        return spaced.toLowerCase(Locale.ROOT);
+    }
+
     private static final class RunResult {
         private final boolean success;
         private final String output;
@@ -1318,6 +1376,28 @@ public final class TestScreenApplication {
 
         String resultLabel() {
             return success.map(result -> result ? "Success" : "Failure").orElse("Not run");
+        }
+
+        String subjectDescription() {
+            if (external()) {
+                return standaloneExampleSubjectDescription(filePath);
+            }
+            return junitSubjectDescription(displayName, source);
+        }
+
+        String expectationDescription() {
+            if (external()) {
+                return standaloneExampleExpectationDescription(filePath, executionMode);
+            }
+            return junitExpectationDescription(displayName);
+        }
+
+        boolean unsupportedOnCurrentOperatingSystem() {
+            return executionMode == ExecutionMode.SHELL && isWindows(System.getProperty("os.name", ""));
+        }
+
+        String unsupportedOperatingSystemMessage() {
+            return unsupportedStandaloneExampleMessage(filePath, System.getProperty("os.name", ""));
         }
 
         boolean external() {

@@ -23,7 +23,7 @@ public final class BootstrapDemo {
         Path configPath = Path.of("examples/user-manual/04-startup-and-service-wiring/config.demo.json")
                 .toAbsolutePath()
                 .normalize();
-        Path appRoot = configPath.getParent();
+        Path appRoot = Path.of("").toAbsolutePath().normalize();
         ApplicationResourceConfig resourceConfig = ApplicationResourceConfig.load(configPath);
         Path displayDefinitions = resourceConfig.resolveResource(appRoot, "displayDefinitions").orElseThrow();
 

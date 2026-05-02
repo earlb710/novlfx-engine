@@ -70,9 +70,10 @@ final class TestScreenApplicationTest {
 
     @Test
     void sourceFilePathReturnsEmptyForMalformedSource() {
-        Optional<Path> path = TestScreenApplication.sourceFilePath("not a method source");
-
-        assertTrue(path.isEmpty());
+        assertTrue(TestScreenApplication.sourceFilePath("not a method source").isEmpty());
+        assertTrue(TestScreenApplication.sourceFilePath(
+                "MethodSource [className = '', methodName = '', methodParameterTypes = '']").isEmpty());
+        assertTrue(TestScreenApplication.sourceFilePath("ClassSource [className = 'example.Missing']").isEmpty());
     }
 
     @Test
@@ -271,6 +272,23 @@ final class TestScreenApplicationTest {
                 "failureOutput", "legacy failure")));
         assertEquals("legacy failure", TestScreenApplication.persistedOutput(Map.of(
                 "failureOutput", "legacy failure")));
+    }
+
+    @Test
+    void descriptionsExplainWhatSelectedTestsAndExamplesShow() {
+        String testDescription = TestScreenApplication.junitSubjectDescription(
+                "sourceFilePathFindsExistingTestSource()",
+                Optional.of("MethodSource [className = 'com.eb.javafx.testscreen.TestScreenApplicationTest', "
+                        + "methodName = 'sourceFilePathFindsExistingTestSource', methodParameterTypes = '']"));
+        String exampleDescription = TestScreenApplication.standaloneExampleSubjectDescription(
+                REPO_ROOT.resolve("examples/user-manual/05-content-routing-and-scenes/SceneExecutionAndJsonDemo.java"));
+
+        assertTrue(testDescription.contains("source file path finds existing test source"));
+        assertTrue(testDescription.contains("TestScreenApplicationTest"));
+        assertTrue(TestScreenApplication.junitExpectationDescription("sourceFilePathFindsExistingTestSource()")
+                .contains("Success result"));
+        assertTrue(exampleDescription.contains("loading scene JSON"));
+        assertTrue(exampleDescription.contains("round-tripping scene state"));
     }
 
     @Test
