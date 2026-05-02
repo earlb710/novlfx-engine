@@ -1,4 +1,5 @@
 {
+  "_comment": "Paths in this demo config are resolved relative to the repository root.",
   "categoryCodeTablesPath": "examples/user-manual/09-game-support-state-save-prefs-random/category-code-tables.demo.json",
   "imageAssetRoot": "examples/user-manual/07-display-support/assets",
   "resources": {
