@@ -7,10 +7,10 @@ These examples mirror the sections in `docs/USER_MANUAL.md`. Each entry below sa
 | `02-project-setup-and-validation/demo.sh` | Project validation commands, including the Gradle wrapper build. | Prints the validation commands and exits successfully on macOS/Linux, or on Windows when `bash.exe` is available on `PATH`. |
 | `03-module-and-package-layout/ModuleUsageExample.java` | How application modules can register engine services. | Prints the registered module/package summary and exits with code 0. |
 | `04-startup-and-service-wiring/BootstrapDemo.java` | Bootstrapping core services and startup routing. | Prints a successful bootstrap report and validated route information. |
-| `04-startup-and-service-wiring/ApplicationResourceConfigDemo.java` | Resolving authored resource paths from `config.demo.json`. | Prints resolved category table, image root, scene/display definitions, and exported config paths. |
+| `04-startup-and-service-wiring/ApplicationResourceConfigDemo.java` | Resolving authored resource paths from `config.demo.json`. | Prints resolved category table, image root, scene and display definitions, and exported config paths. |
 | `04-startup-and-service-wiring/config.demo.json` | Sample resource configuration consumed by the startup demos. | Loaded by `ApplicationResourceConfigDemo.java`; it is not run directly. |
 | `05-content-routing-and-scenes/SceneFlowDemo.java` | Registering content, scenes, choices, and routes. | Prints the registered scene and route IDs. |
-| `05-content-routing-and-scenes/SceneExecutionAndJsonDemo.java` | Resolving and loading scene JSON, pausing on text/choice steps, selecting a choice, and restoring state. | Prints the scene execution transcript and JSON round-trip length. |
+| `05-content-routing-and-scenes/SceneExecutionAndJsonDemo.java` | Resolving scene JSON path and loading definitions, pausing on text/choice steps, selecting a choice, and restoring state. | Prints the scene execution transcript and JSON round-trip length. |
 | `05-content-routing-and-scenes/scene-definitions.demo.json` | Sample scene definitions consumed by the scene execution demo. | Loaded by `SceneExecutionAndJsonDemo.java`; it is not run directly. |
 | `06-ui-screens-and-themes/UiScreenDemo.java` | Creating UI screen view models and theme references. | Prints screen model details and expected theme metadata. |
 | `06-ui-screens-and-themes/UiScreenCatalogDemo.java` | Registering and listing screen catalog entries. | Prints registered screen IDs and catalog metadata. |
