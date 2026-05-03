@@ -1302,8 +1302,8 @@ public class VectorImage {
     }
 
     private void removeExternalReferences(Element element) {
-        removeExternalAttribute(element, "href");
-        removeExternalAttribute(element, "src");
+        removeAttributeIfExternal(element, "href");
+        removeAttributeIfExternal(element, "src");
         String xlinkHref = element.getAttributeNS(XLINK_NS, "href");
         if (isExternalReference(xlinkHref)) {
             element.removeAttributeNS(XLINK_NS, "href");
@@ -1326,7 +1326,7 @@ public class VectorImage {
         }
     }
 
-    private void removeExternalAttribute(Element element, String attribute) {
+    private void removeAttributeIfExternal(Element element, String attribute) {
         if (isExternalReference(element.getAttribute(attribute))) {
             element.removeAttribute(attribute);
         }
@@ -1337,6 +1337,13 @@ public class VectorImage {
             return false;
         }
         String normalized = value.trim().toLowerCase(Locale.ROOT);
+        if (normalized.startsWith("#")) {
+            return false;
+        }
+        if (normalized.startsWith("data:image/")
+                && !normalized.startsWith("data:image/svg+xml")) {
+            return false;
+        }
         return normalized.startsWith("http:")
                 || normalized.startsWith("https:")
                 || normalized.startsWith("ftp:")
@@ -1345,7 +1352,9 @@ public class VectorImage {
                 || normalized.startsWith("/")
                 || normalized.startsWith("data:image/svg+xml")
                 || normalized.startsWith("data:text/html")
-                || normalized.startsWith("data:application/xhtml+xml");
+                || normalized.startsWith("data:application/xhtml+xml")
+                || normalized.matches("^[a-z][a-z0-9+.-]*:.*")
+                || !normalized.isBlank();
     }
 
     private boolean styleHasExternalUrl(String style) {
