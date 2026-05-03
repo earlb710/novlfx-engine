@@ -296,6 +296,7 @@ Use utility classes for common engine behavior:
 - `TimeFormatting` for reusable time display formatting.
 - `JsonStrings` for JSON string escaping.
 - `InitializationGuard` for fail-fast service initialization checks.
+- `UtilJavaFx.run(Runnable)` for executing work immediately on the JavaFX application thread or scheduling it with `Platform.runLater(...)` from a background thread.
 - `VectorImage` for reusable SVG loading, metadata, sizing, styling, transform, export, and sanitization helpers.
 
 Prefer these helpers over duplicating validation and formatting logic in application code.
