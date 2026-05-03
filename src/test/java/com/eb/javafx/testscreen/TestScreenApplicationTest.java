@@ -217,6 +217,14 @@ final class TestScreenApplicationTest {
     }
 
     @Test
+    void contrastRatioHandlesExtremeAndMatchingColors() {
+        assertEquals(21.0, TestScreenApplication.contrastRatio(Color.BLACK, Color.WHITE), 0.01);
+        assertEquals(21.0, TestScreenApplication.contrastRatio(Color.WHITE, Color.BLACK), 0.01);
+        assertEquals(1.0, TestScreenApplication.contrastRatio(Color.BLACK, Color.BLACK), 0.01);
+        assertEquals(1.0, TestScreenApplication.contrastRatio(Color.WHITE, Color.WHITE), 0.01);
+    }
+
+    @Test
     void categoryForSourceUsesFirstPackageSegmentBelowJavafxRoot() {
         assertEquals("ui", TestScreenApplication.categoryForSource(Optional.of(
                 "MethodSource [className = 'com.eb.javafx.ui.CaptureTestScreenTest', "
