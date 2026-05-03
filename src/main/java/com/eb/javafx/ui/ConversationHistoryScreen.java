@@ -11,6 +11,9 @@ import com.eb.javafx.text.DialogSpeaker;
 import com.eb.javafx.text.TextToken;
 import com.eb.javafx.text.TextTokenType;
 import javafx.scene.Scene;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.layout.VBox;
 
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -28,47 +31,98 @@ public final class ConversationHistoryScreen {
     }
 
     public static Scene createScene(RouteContext context) {
-        return ViewModelScreen.createScene(context, viewModel(context));
+        ConversationHistoryViewModel viewModel = viewModel(context);
+        return context.themedScene(ScreenShell.titled(viewModel.title(), createContent(context, viewModel)));
     }
 
-    public static ScreenViewModel viewModel(RouteContext context) {
+    public static ConversationHistoryViewModel viewModel(RouteContext context) {
         return viewModel(
                 context.contentRegistry().definition("ui.conversationHistory.title"),
                 context.gameState());
     }
 
-    public static ScreenViewModel viewModel(String title, GameState gameState) {
-        List<String> lines;
+    public static ConversationHistoryViewModel viewModel(String title, GameState gameState) {
+        List<String> messages;
+        List<ConversationHistoryEntryViewModel> entries;
         if (gameState == null) {
-            lines = List.of("Conversation history is unavailable.");
+            messages = List.of("Conversation history is unavailable.");
+            entries = List.of();
         } else {
-            lines = linesFor(gameState.conversationHistory());
+            messages = messagesFor(gameState.conversationHistory());
+            entries = entriesFor(gameState.conversationHistory());
         }
-        return new ScreenViewModel(
+        return new ConversationHistoryViewModel(
                 title,
-                lines,
+                messages,
+                entries,
                 List.of(new ScreenActionViewModel("Back to main menu", SceneRouter.MAIN_MENU_ROUTE, true)));
     }
 
-    private static List<String> linesFor(DialogHistory history) {
-        List<DialogHistoryEntry> entries = history.entries();
-        if (entries.isEmpty()) {
-            return List.of("No conversations have been recorded yet.");
+    private static VBox createContent(RouteContext context, ConversationHistoryViewModel viewModel) {
+        VBox content = new VBox(ScreenShell.BODY_SPACING);
+        for (String message : viewModel.messages()) {
+            content.getChildren().add(new Label(message));
         }
-        return entries.stream()
-                .flatMap(entry -> linesFor(entry).stream())
+        for (ConversationHistoryEntryViewModel entry : viewModel.entries()) {
+            content.getChildren().add(entryPanel(entry));
+        }
+        for (ScreenActionViewModel action : viewModel.actions()) {
+            Button button = ScreenNavigation.button(context, action.label(), action.routeId());
+            button.setDisable(!action.enabled());
+            content.getChildren().add(button);
+        }
+        return content;
+    }
+
+    private static VBox entryPanel(ConversationHistoryEntryViewModel entry) {
+        VBox panel = ScreenShell.styledPanel(null);
+        panel.getChildren().add(new Label(
+                entry.dialogId() + " started " + entry.startedAt() + " with " + entry.participants() + " (" + entry.status() + ")"));
+        for (ConversationHistoryRowViewModel row : entry.rows()) {
+            panel.getChildren().add(new Label("  " + rowText(row)));
+        }
+        return panel;
+    }
+
+    private static String rowText(ConversationHistoryRowViewModel row) {
+        if (row.speakerLabel() != null && !row.speakerLabel().isBlank()) {
+            return row.speakerLabel() + ": " + row.text();
+        }
+        return row.columns().stream()
+                .map(column -> column.id() + ": " + column.text())
+                .collect(java.util.stream.Collectors.joining(" | "));
+    }
+
+    private static List<String> messagesFor(DialogHistory history) {
+        return history.entries().isEmpty()
+                ? List.of("No conversations have been recorded yet.")
+                : List.of();
+    }
+
+    private static List<ConversationHistoryEntryViewModel> entriesFor(DialogHistory history) {
+        return history.entries().stream()
+                .map(ConversationHistoryScreen::entryViewModel)
                 .toList();
     }
 
-    private static List<String> linesFor(DialogHistoryEntry entry) {
-        List<String> lines = new java.util.ArrayList<>();
-        String participants = participants(entry);
-        String status = entry.isOpen() ? "open" : "ended " + entry.endedAt();
-        lines.add(entry.dialogId() + " started " + entry.startedAt() + " with " + participants + " (" + status + ")");
-        for (DialogMessage message : entry.messages()) {
-            lines.add("  " + messageLine(message));
-        }
-        return List.copyOf(lines);
+    private static ConversationHistoryEntryViewModel entryViewModel(DialogHistoryEntry entry) {
+        return new ConversationHistoryEntryViewModel(
+                entry.dialogId(),
+                entry.startedAt().toString(),
+                entry.isOpen() ? "open" : "ended " + entry.endedAt(),
+                participants(entry),
+                entry.messages().stream()
+                        .map(ConversationHistoryScreen::rowViewModel)
+                        .toList());
+    }
+
+    private static ConversationHistoryRowViewModel rowViewModel(DialogMessage message) {
+        return new ConversationHistoryRowViewModel(
+                message.hasSpeaker() ? message.speaker().label() : null,
+                messageText(message),
+                message.columns().stream()
+                        .map(column -> new ConversationHistoryColumnViewModel(column.id(), tokensText(column.tokens())))
+                        .toList());
     }
 
     private static String participants(DialogHistoryEntry entry) {
@@ -82,9 +136,9 @@ public final class ConversationHistoryScreen {
         return names.isEmpty() ? "unknown participants" : String.join(", ", names);
     }
 
-    private static String messageLine(DialogMessage message) {
+    private static String messageText(DialogMessage message) {
         if (message.hasSpeaker()) {
-            return message.speaker().label() + ": " + columnText(message, DialogColumn.MESSAGE_COLUMN);
+            return columnText(message, DialogColumn.MESSAGE_COLUMN);
         }
         return message.columns().stream()
                 .map(column -> column.id() + ": " + tokensText(column.tokens()))
