@@ -16,6 +16,7 @@ Example/demo index: [`examples/user-manual/README.md`](../examples/user-manual/R
 - **Game support services**: use reusable action, requirement, effect, game-clock, state, save/load, preference, and random utilities.
 - **Text and utility helpers**: parse simple styled text tags and use common validation, collection, path, JSON, and time helpers.
 - **Extension boundaries**: keep authored game content, application launchers, concrete assets, and domain-specific rules in the application repository.
+- **Application shell integration**: create the first app-owned JavaFX launcher, bootstrap flow, and media adapter on top of the reusable engine.
 
 ## 2. Project setup and validation
 
@@ -332,3 +333,23 @@ This repository is intended to stay reusable. Keep the following in application 
 When adding new reusable behavior, preserve deterministic validation, initialize services explicitly, and add focused tests for the reusable behavior.
 
 Example/demo code: [`examples/user-manual/11-extension-boundaries/ApplicationRouteModuleDemo.java`](../examples/user-manual/11-extension-boundaries/ApplicationRouteModuleDemo.java)
+
+## 12. Application shell integration
+
+Once the reusable engine layer is in place, the next step is to build an application repository that depends on `novlfx-engine`. The engine already owns the reusable JavaFX foundation; the application should own the launcher, authored content, concrete assets, and project-specific screens.
+
+Build the application shell in this order:
+
+1. Add an application-owned `GameApplication` class that extends `javafx.application.Application`.
+2. In `start(Stage primaryStage)`, load authored resource paths with `BootstrapOptions.fromConfig(...)`, then add application static content modules, scene modules, and route modules before calling `new BootstrapService(options).boot(primaryStage)`.
+3. Resolve application-owned JSON and asset roots through `ApplicationResourceConfig` so authored scene definitions, display definitions, category tables, and image/audio assets stay outside the engine repository.
+4. Implement a concrete `AudioPlaybackAdapter` that turns validated `AudioPlaybackCommand` objects into real `MediaPlayer` or `AudioClip` playback.
+5. Start with reusable engine screens where they fit, then replace individual routes with application-specific JavaFX screens as the game UI becomes concrete.
+
+Keep this repository focused on reusable behavior. The launcher class, authored resources, and concrete media binding should remain application-owned even when they directly use engine APIs.
+
+If a later cleanup goal is a stricter pure-JavaFX stack, treat removal of the remaining Swing/AWT image bridge utilities as a follow-up task after the application shell is running.
+
+Example/demo code:
+- [`examples/user-manual/12-application-shell/GameApplicationDemo.java`](../examples/user-manual/12-application-shell/GameApplicationDemo.java)
+- [`examples/user-manual/12-application-shell/JavaFxAudioPlaybackAdapterDemo.java`](../examples/user-manual/12-application-shell/JavaFxAudioPlaybackAdapterDemo.java)

@@ -22,5 +22,7 @@ These examples mirror the sections in `docs/USER_MANUAL.md`. Each entry below sa
 | `09-game-support-state-save-prefs-random/category-code-tables.demo.json` | Sample category code tables consumed by support demos. | Loaded by category/support demos; it is not run directly. |
 | `10-text-and-utility-helpers/TextAndUtilityDemo.java` | Text interpolation, validation, and path helper utilities. | Prints rendered text and utility helper results. |
 | `11-extension-boundaries/ApplicationRouteModuleDemo.java` | Application extension boundaries for custom routes. | Prints registered route descriptors and extension metadata. |
+| `12-application-shell/GameApplicationDemo.java` | The first application-owned JavaFX launcher built on `BootstrapOptions` and `BootstrapService`. | Boots app-owned modules, opens an application route, and reports the configured media adapter class. |
+| `12-application-shell/JavaFxAudioPlaybackAdapterDemo.java` | A concrete application-side `AudioPlaybackAdapter` using JavaFX media APIs. | Shows how validated playback commands map to `MediaPlayer`/`AudioClip` instances per channel. |
 
 These files are reference snippets for application authors. They live outside `src/main` and `src/test`, so they are not compiled by the Gradle build.
