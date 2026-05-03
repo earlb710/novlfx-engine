@@ -6,7 +6,7 @@ The library publishes reusable packages in the `com.eb.javafx.*` namespace throu
 
 ## User manual
 
-See [docs/USER_MANUAL.md](docs/USER_MANUAL.md) for setup, package responsibilities, service usage, and extension boundaries.
+See [docs/USER_MANUAL.md](docs/USER_MANUAL.md) for setup, package responsibilities, service usage, packaged font resources, and extension boundaries.
 
 ## Included
 
@@ -27,6 +27,7 @@ See [docs/USER_MANUAL.md](docs/USER_MANUAL.md) for setup, package responsibiliti
   - `ui`
   - `util`
 - `src/main/resources/com/eb/javafx/ui/eb.css`
+- `src/main/resources/com/eb/javafx/fonts`
 - Matching JUnit tests for the reusable packages
 - Test-only `testscreen` support used by the copied UI tests
 

@@ -14,7 +14,7 @@ Example/demo index: [`examples/user-manual/README.md`](../examples/user-manual/R
 - **Display support**: define image assets, layers, transforms, layered characters, JSON-backed display definitions, interpolation, and animations.
 - **Audio support**: validate channel-based sound requests and produce playback commands for application media adapters.
 - **Game support services**: use reusable action, requirement, effect, game-clock, state, save/load, preference, and random utilities.
-- **Text and utility helpers**: parse simple styled text tags and use common validation, collection, path, JSON, and time helpers.
+- **Text and utility helpers**: parse simple styled text tags and use common validation, collection, path, packaged font, JSON, and time helpers.
 - **Extension boundaries**: keep authored game content, application launchers, concrete assets, and domain-specific rules in the application repository.
 
 ## 2. Project setup and validation
@@ -57,7 +57,7 @@ The engine publishes the Java module `com.novlfx.engine`. It exports reusable pa
 - `state`: basic mutable game-state creation and snapshots.
 - `text`: text tag parsing, text tokens, token types, and text style metadata.
 - `ui`: reusable JavaFX screens, navigation shells, theme loading, and startup failure reporting.
-- `util`: validation, immutable collection, result, path, time, JSON string, and initialization helpers.
+- `util`: validation, immutable collection, result, path, packaged font resource, time, JSON string, and initialization helpers.
 
 Use these packages from an application project instead of copying source-engine-specific global code into the engine.
 
@@ -293,6 +293,7 @@ Use utility classes for common engine behavior:
 - `ImmutableCollections` for defensive immutable collection handling.
 - `Result` for success/failure-style return values.
 - `PathUtils` for repository-relative and asset-path helpers.
+- `FontResources` for packaged engine fonts under `/com/eb/javafx/fonts`, including font filename discovery, validated resource paths, resource URLs/streams, and JavaFX `Font` loading.
 - `TimeFormatting` for reusable time display formatting.
 - `JsonStrings` for JSON string escaping.
 - `InitializationGuard` for fail-fast service initialization checks.
@@ -300,6 +301,8 @@ Use utility classes for common engine behavior:
 - `VectorImage` for reusable SVG loading, metadata, sizing, styling, transform, export, and sanitization helpers.
 
 Prefer these helpers over duplicating validation and formatting logic in application code.
+
+When application code needs one of the engine-bundled fonts, prefer `FontResources` over hard-coded classpath strings. It validates known font filenames and centralizes lookups for resources now packaged in `src/main/resources/com/eb/javafx/fonts`.
 
 Example/demo code: [`examples/user-manual/10-text-and-utility-helpers/TextAndUtilityDemo.java`](../examples/user-manual/10-text-and-utility-helpers/TextAndUtilityDemo.java)
 
