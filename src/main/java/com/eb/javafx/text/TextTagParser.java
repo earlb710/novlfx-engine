@@ -17,9 +17,9 @@ public final class TextTagParser {
     /**
      * Parses text into styled text, pause, and paragraph tokens.
      *
-     * <p>Supported tags include bold, italic, color, wait, paragraph, gradient,
-     * kinetic, and glitch markers. Unknown tags are emitted as literal text, while
-     * malformed wait durations throw an {@link IllegalArgumentException}.</p>
+     * <p>Supported tags include bold, italic, color, font, wait, paragraph,
+     * gradient, kinetic, and glitch markers. Unknown tags are emitted as literal
+     * text, while malformed wait durations throw an {@link IllegalArgumentException}.</p>
      */
     public List<TextToken> parse(String source) {
         if (source == null || source.isEmpty()) {
@@ -76,6 +76,11 @@ public final class TextTagParser {
                 state.color = null;
                 return true;
             }
+            case "/font" -> {
+                flushText(tokens, text, state);
+                state.fontFamily = null;
+                return true;
+            }
             case "/gradient", "/kinetic", "/glitch" -> {
                 flushText(tokens, text, state);
                 state.effects.remove(tag.substring(1));
@@ -90,6 +95,11 @@ public final class TextTagParser {
                 if (tag.startsWith("color=")) {
                     flushText(tokens, text, state);
                     state.color = tag.substring("color=".length());
+                    return true;
+                }
+                if (tag.startsWith("font=")) {
+                    flushText(tokens, text, state);
+                    state.fontFamily = tag.substring("font=".length());
                     return true;
                 }
                 if (tag.startsWith("w=")) {
@@ -127,10 +137,11 @@ public final class TextTagParser {
         private boolean bold;
         private boolean italic;
         private String color;
+        private String fontFamily;
         private final Map<String, String> effects = new LinkedHashMap<>();
 
         private TextStyle toStyle() {
-            return new TextStyle(bold, italic, color, effects);
+            return new TextStyle(bold, italic, color, fontFamily, effects);
         }
     }
 }

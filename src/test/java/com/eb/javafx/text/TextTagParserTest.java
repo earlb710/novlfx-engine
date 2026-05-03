@@ -15,7 +15,7 @@ final class TextTagParserTest {
     void parsesStyledTextPausesParagraphsAndEffects() {
         TextTagParser parser = new TextTagParser();
 
-        List<TextToken> tokens = parser.parse("A {b}bold{/b}{w=0.5}{p}{color=#fff}{glitch=light}B{/glitch}{/color}");
+        List<TextToken> tokens = parser.parse("A {b}bold{/b}{w=0.5}{p}{color=#fff}{font=Serif}{glitch=light}B{/glitch}{/font}{/color}");
 
         assertEquals(5, tokens.size());
         assertEquals("A ", tokens.get(0).text());
@@ -26,6 +26,7 @@ final class TextTagParserTest {
         assertEquals(TextTokenType.PARAGRAPH, tokens.get(3).type());
         assertEquals("B", tokens.get(4).text());
         assertEquals("#fff", tokens.get(4).style().color());
+        assertEquals("Serif", tokens.get(4).style().fontFamily());
         assertEquals("light", tokens.get(4).style().effects().get("glitch"));
     }
 

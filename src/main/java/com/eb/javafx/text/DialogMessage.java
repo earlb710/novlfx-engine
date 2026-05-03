@@ -26,6 +26,7 @@ public final class DialogMessage {
 
     public static DialogMessage speakerMessage(DialogSpeaker speaker, String message) {
         Validation.requireNonNull(speaker, "Dialog speaker is required.");
+        Validation.requireNonBlank(message, "Dialog column text is required.");
         return new DialogMessage(speaker, List.of(DialogColumn.speaker(speaker), DialogColumn.message(message)), Map.of());
     }
 

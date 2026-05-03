@@ -42,7 +42,7 @@ public final class DialogColumn {
         if (speaker.hasIcon()) {
             effects.put("icon", speaker.iconId());
         }
-        TextStyle style = new TextStyle(false, false, speaker.textColor(), effects);
+        TextStyle style = new TextStyle(false, false, speaker.textColor(), speaker.textFont(), effects);
         return new DialogColumn(SPEAKER_COLUMN, List.of(TextToken.text(speaker.label(), style)));
     }
 

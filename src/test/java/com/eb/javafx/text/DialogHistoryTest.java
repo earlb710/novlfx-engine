@@ -17,7 +17,7 @@ final class DialogHistoryTest {
         DialogHistory history = new DialogHistory();
         GameDateTime startedAt = new GameDateTime(2, "morning");
         GameDateTime endedAt = new GameDateTime(2, "afternoon");
-        DialogSpeaker speaker = DialogSpeaker.iconText("narrator", "Narrator", "icons/narrator", "#66c1e0");
+        DialogSpeaker speaker = DialogSpeaker.iconText("narrator", "Narrator", "icons/narrator", "#66c1e0", "Serif");
 
         history.beginDialog("intro", startedAt);
         DialogHistoryEntry withMessage = history.addMessage(speaker, "Hello {b}traveler{/b}.");
@@ -38,6 +38,7 @@ final class DialogHistoryTest {
         assertEquals(DialogColumn.SPEAKER_COLUMN, message.columns().get(0).id());
         assertEquals("Narrator", message.columns().get(0).tokens().get(0).text());
         assertEquals("#66c1e0", message.columns().get(0).tokens().get(0).style().color());
+        assertEquals("Serif", message.columns().get(0).tokens().get(0).style().fontFamily());
         assertEquals("icons/narrator", message.columns().get(0).tokens().get(0).style().effects().get("icon"));
         assertEquals(DialogColumn.MESSAGE_COLUMN, message.columns().get(1).id());
         assertEquals("traveler", message.columns().get(1).tokens().get(1).text());
@@ -50,13 +51,14 @@ final class DialogHistoryTest {
 
         history.beginDialog("columns", new GameDateTime(1, "default"));
         history.addMessage(DialogMessage.columns(List.of(
-                DialogColumn.parsed("left", "{color=#fff}Left{/color}"),
+                DialogColumn.parsed("left", "{color=#fff}{font=Monospace}Left{/font}{/color}"),
                 DialogColumn.parsed("right", "{i}Right{/i}"))));
         DialogHistoryEntry ended = history.endDialog(new GameDateTime(1, "default"));
 
         assertFalse(ended.messages().get(0).hasSpeaker());
         assertEquals("left", ended.messages().get(0).columns().get(0).id());
         assertEquals("#fff", ended.messages().get(0).columns().get(0).tokens().get(0).style().color());
+        assertEquals("Monospace", ended.messages().get(0).columns().get(0).tokens().get(0).style().fontFamily());
         assertTrue(ended.messages().get(0).columns().get(1).tokens().get(0).style().italic());
     }
 
