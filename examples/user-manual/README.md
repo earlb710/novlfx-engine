@@ -20,7 +20,7 @@ These examples mirror the sections in `docs/USER_MANUAL.md`. Each entry below sa
 | `09-game-support-state-save-prefs-random/SupportServicesDemo.java` | Game state, save/load, preferences, random, and clock support. | Prints the saved state, preference, random, and clock demonstration values. |
 | `09-game-support-state-save-prefs-random/CategoryCodeTableDefinitionDemo.java` | Resolving and loading localized category code table definitions. | Prints language, category, and code lookup information. |
 | `09-game-support-state-save-prefs-random/category-code-tables.demo.json` | Sample category code tables consumed by support demos. | Loaded by category/support demos; it is not run directly. |
-| `10-text-and-utility-helpers/TextAndUtilityDemo.java` | Text interpolation, validation, and path helper utilities. | Prints rendered text and utility helper results. |
+| `10-text-and-utility-helpers/TextAndUtilityDemo.java` | Text interpolation plus validation, path, and related utility helpers. | Prints rendered text and utility helper results. |
 | `11-extension-boundaries/ApplicationRouteModuleDemo.java` | Application extension boundaries for custom routes. | Prints registered route descriptors and extension metadata. |
 
 These files are reference snippets for application authors. They live outside `src/main` and `src/test`, so they are not compiled by the Gradle build.
