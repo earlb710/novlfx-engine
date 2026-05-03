@@ -345,6 +345,52 @@ public class VectorImage {
     }
     
     // --- Conversion Methods ---
+
+    /**
+     * Rasterize SVG XML text into a JavaFX image using the SVG's intrinsic dimensions.
+     */
+    public static javafx.scene.image.WritableImage rasterize(String svg) {
+        return fromString(svg).toRasterImage();
+    }
+
+    /**
+     * Rasterize SVG XML text into a JavaFX image with specific dimensions.
+     */
+    public static javafx.scene.image.WritableImage rasterize(String svg, int width, int height) {
+        return fromString(svg).toRasterImage(width, height);
+    }
+
+    /**
+     * Rasterize SVG bytes into a JavaFX image using the SVG's intrinsic dimensions.
+     */
+    public static javafx.scene.image.WritableImage rasterize(byte[] svgBytes) {
+        return new VectorImage(svgBytes).toRasterImage();
+    }
+
+    /**
+     * Rasterize SVG bytes into a JavaFX image with specific dimensions.
+     */
+    public static javafx.scene.image.WritableImage rasterize(byte[] svgBytes, int width, int height) {
+        return new VectorImage(svgBytes).toRasterImage(width, height);
+    }
+
+    /**
+     * Rasterize an SVG file into a JavaFX image using the SVG's intrinsic dimensions.
+     *
+     * @throws IOException if the file cannot be read
+     */
+    public static javafx.scene.image.WritableImage rasterize(Path path) throws IOException {
+        return fromPath(path).toRasterImage();
+    }
+
+    /**
+     * Rasterize an SVG file into a JavaFX image with specific dimensions.
+     *
+     * @throws IOException if the file cannot be read
+     */
+    public static javafx.scene.image.WritableImage rasterize(Path path, int width, int height) throws IOException {
+        return fromPath(path).toRasterImage(width, height);
+    }
     
     /**
      * Convert this vector image to a rasterized JavaFX image.
@@ -421,6 +467,16 @@ public class VectorImage {
         } catch (IOException ex) {
             throw new IllegalStateException("VectorImage.toPngBytes: " + ex.getMessage(), ex);
         }
+    }
+
+    /**
+     * Save this vector image as a PNG file at the requested dimensions.
+     *
+     * @throws IOException if the PNG file cannot be written
+     */
+    public void savePng(Path path, int width, int height) throws IOException {
+        Validation.requireNonNull(path, "PNG path is required.");
+        Files.write(path, toPngBytes(width, height));
     }
 
     /**

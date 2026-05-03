@@ -5,6 +5,7 @@ import org.junit.jupiter.api.io.TempDir;
 import org.w3c.dom.Element;
 
 import java.awt.image.BufferedImage;
+import java.nio.file.Files;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 
@@ -37,6 +38,9 @@ final class VectorImageTest {
         BufferedImage bufferedImage = image.toBufferedImage(20, 10);
         assertEquals(20, bufferedImage.getWidth());
         assertEquals(10, bufferedImage.getHeight());
+        javafx.scene.image.WritableImage rasterImage = image.toRasterImage(20, 10);
+        assertEquals(20, rasterImage.getWidth());
+        assertEquals(10, rasterImage.getHeight());
         assertTrue(image.toPngBytes(20, 10).length > 0);
         assertTrue(image.toDataUri().startsWith("data:image/svg+xml;base64,"));
 
@@ -47,6 +51,32 @@ final class VectorImageTest {
         assertEquals(image.getWidth(), loaded.getWidth());
         assertEquals(image.getHeight(), loaded.getHeight());
         assertEquals(saved.toString(), loaded.getImageName());
+    }
+
+    @Test
+    void rasterizeHelpersConvertSvgInputsToRasterImages(@TempDir Path tempDir) throws Exception {
+        byte[] svgBytes = SVG.getBytes(StandardCharsets.UTF_8);
+        Path source = tempDir.resolve("source.svg");
+        Files.write(source, svgBytes);
+
+        javafx.scene.image.WritableImage fromString = VectorImage.rasterize(SVG, 16, 8);
+        javafx.scene.image.WritableImage fromBytes = VectorImage.rasterize(svgBytes, 12, 6);
+        javafx.scene.image.WritableImage fromPath = VectorImage.rasterize(source, 10, 5);
+
+        assertEquals(16, fromString.getWidth());
+        assertEquals(8, fromString.getHeight());
+        assertEquals(12, fromBytes.getWidth());
+        assertEquals(6, fromBytes.getHeight());
+        assertEquals(10, fromPath.getWidth());
+        assertEquals(5, fromPath.getHeight());
+
+        Path png = tempDir.resolve("raster.png");
+        VectorImage.fromString(SVG).savePng(png, 20, 10);
+        byte[] pngBytes = Files.readAllBytes(png);
+        assertEquals((byte) 0x89, pngBytes[0]);
+        assertEquals('P', pngBytes[1]);
+        assertEquals('N', pngBytes[2]);
+        assertEquals('G', pngBytes[3]);
     }
 
     @Test
