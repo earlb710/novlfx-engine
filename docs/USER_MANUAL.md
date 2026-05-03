@@ -85,7 +85,7 @@ The main result is a `BootContext`. Use it to access initialized services such a
 - `SceneRegistry`
 - `ImageDisplayRegistry`
 
-Inspect the `BootstrapReport` when startup diagnostics matter. It records completed phases and phase messages so an application can display useful failure or progress information.
+Inspect the `BootstrapReport` when startup diagnostics matter. It records completed phases and phase messages so an application can display useful failure or progress information. Use `BootstrapDiagnostics.requireComplete(...)` when an application launcher should fail fast on incomplete startup, or use `BootstrapDiagnostics.viewModel(...)` / `phaseLines(...)` to render content-neutral startup summaries in an app-owned startup or error screen.
 
 Do not use guarded services before initialization. Several services use initialization guards and will fail fast if called before bootstrap or explicit initialization.
 
