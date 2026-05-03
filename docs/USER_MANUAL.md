@@ -159,6 +159,16 @@ Use `SceneRegistry` to register `SceneModule` implementations. A scene is descri
 
 Use `SceneExecutor` to execute scene flow and return a `SceneExecutionResult`. Use `ScenePresenter` and view-model classes when JavaFX UI code needs a UI-neutral representation of the current scene and choices.
 
+### Scene presentation view models
+
+Scene view models are deliberately UI-neutral. They are useful when the engine needs to expose scene execution state to JavaFX screens, tests, debug panels, or application-owned renderers without passing mutable executor objects or JavaFX controls across package boundaries. Use `ScenePresenter` to convert a `SceneExecutionResult` into these models after each scene execution step or choice selection.
+
+- `SceneViewModel` is the top-level scene presentation state. It carries the current execution status, scene id, step id, speaker id, text definition id, display reference, choices, selected choice history, message, dialogue rows, status rows, and effect previews. Use it as the single object handed to a scene renderer such as `SceneFlowView` so the renderer can display scene progress without knowing how scene execution works.
+- `SceneChoiceViewModel` represents one rendered choice after availability has already been evaluated. It includes the choice id, choice text definition id, whether the choice is available, an optional disabled reason, whether it was selected earlier, string metadata, and effect previews. Use it to build choice buttons or test choice state without re-running requirement checks in the UI layer.
+- `SceneDialogueRowViewModel` represents one dialogue or narration row. It includes the step type, optional speaker id, text definition id, and optional display reference. Use it when a renderer needs a normalized row for dialogue panels instead of inspecting raw `SceneStep` objects.
+- `SceneStatusRowViewModel` represents one label/value diagnostic row such as status, active scene, active step, selected choices, pending interruption, or message. Use it for HUD, debug, and manual-test surfaces where scene execution state should be visible in a consistent format.
+- `SceneEffectPreviewViewModel` represents preview-only metadata for a scene step or choice. It contains a label and value derived from `preview.*` metadata or a fallback reference. Use it when a prototype UI wants to show what display, effect, or authored metadata would be applied before an application supplies custom rendering.
+
 Use `SceneDefinitionJson` for simple JSON-authored scenes that do not require executable Java `ActionRequirement` or `ActionEffect` instances. JSON scenes can include dialogue/narration text definition IDs, choices, transitions, display references, and string metadata. Register more complex requirements/effects through Java scene modules. In an application, keep the scene JSON path in `ApplicationResourceConfig.resources()` and resolve it with `resolveResource(applicationRoot, "sceneDefinitions")` before loading.
 
 Use `SceneFlowStateJson` to serialize and restore `SceneFlowState` snapshots containing the active scene, step index, call stack, selected choice IDs, and pending UI interruption marker. For future save/load payloads, `SceneFlowStateJson.toSnapshotSection(...)` wraps that JSON as a versioned `SaveSnapshotSection` named `sceneFlowState`, and `fromSnapshotSection(...)` validates the section id and version before loading it.
@@ -167,7 +177,9 @@ Use `SceneFlowStateJson` to serialize and restore `SceneFlowState` snapshots con
 
 The `ui` package provides reusable JavaFX surfaces and helpers:
 
-- `ScreenViewModel` and `ScreenActionViewModel` describe reusable screen text and route-backed actions without JavaFX control state.
+- `ScreenViewModel` describes reusable route screen content without JavaFX control state. It contains the screen title, informational body lines, and route actions. Use it for menu, summary, diagnostics, and placeholder screens when the content is mostly text plus navigation and should be easy to test before JavaFX controls are created.
+- `ScreenActionViewModel` describes one route-backed action for a `ScreenViewModel`. It contains the button label, destination route id, and enabled state. Use it when reusable screens need navigation buttons that can be enabled or disabled without coupling the screen model to JavaFX `Button` setup.
+- `SnapshotSectionPreviewViewModel` describes one preview row for a `SaveSnapshotSection`. It contains the section id, schema version, and a shortened JSON payload summary. Use it when save/load diagnostics or future save browsers need to show the contents of composed save snapshots without exposing the full payload or requiring custom parsing in the UI.
 - `ViewModelScreen` renders a `ScreenViewModel` with generic labels and navigation buttons.
 - `ScreenShell` wraps screen content in a consistent shell.
 - `ScreenNavigation` centralizes navigation callbacks.
