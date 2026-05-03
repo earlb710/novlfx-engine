@@ -22,6 +22,17 @@ import javafx.scene.layout.VBox;
  * {@code screen-root}, {@code screen-title}, and {@code screen-panel} classes.</p>
  */
 public final class ScreenShell {
+    public static final String SCREEN_ROOT_STYLE_CLASS = "screen-root";
+    public static final String SCREEN_TITLE_STYLE_CLASS = "screen-title";
+    public static final String SCREEN_PANEL_STYLE_CLASS = "screen-panel";
+    public static final String SCENE_STATUS_PANEL_STYLE_CLASS = "scene-status-panel";
+    public static final String SCENE_DIALOGUE_PANEL_STYLE_CLASS = "scene-dialogue-panel";
+    public static final String SCENE_CHOICES_PANEL_STYLE_CLASS = "scene-choices-panel";
+    public static final String SCENE_EFFECTS_PANEL_STYLE_CLASS = "scene-effects-panel";
+    public static final double BODY_SPACING = 12;
+    public static final Insets OUTER_INSETS = new Insets(16);
+    public static final Insets PANEL_INSETS = new Insets(16);
+
     private ScreenShell() {
     }
 
@@ -33,19 +44,27 @@ public final class ScreenShell {
      */
     public static BorderPane titled(String title, Node content) {
         Label header = new Label(title);
-        header.getStyleClass().add("screen-title");
+        header.getStyleClass().add(SCREEN_TITLE_STYLE_CLASS);
 
-        VBox body = new VBox(12, content);
-        body.getStyleClass().add("screen-panel");
-        body.setPadding(new Insets(16));
+        VBox body = styledPanel(null, content);
 
         BorderPane root = new BorderPane();
-        root.getStyleClass().add("screen-root");
+        root.getStyleClass().add(SCREEN_ROOT_STYLE_CLASS);
         root.setTop(header);
         root.setCenter(body);
-        BorderPane.setMargin(header, new Insets(16, 16, 0, 16));
-        BorderPane.setMargin(body, new Insets(16));
+        BorderPane.setMargin(header, new Insets(OUTER_INSETS.getTop(), OUTER_INSETS.getRight(), 0, OUTER_INSETS.getLeft()));
+        BorderPane.setMargin(body, OUTER_INSETS);
         return root;
+    }
+
+    public static VBox styledPanel(String styleClass, Node... children) {
+        VBox body = new VBox(BODY_SPACING, children);
+        body.getStyleClass().add(SCREEN_PANEL_STYLE_CLASS);
+        if (styleClass != null && !styleClass.isBlank()) {
+            body.getStyleClass().add(styleClass);
+        }
+        body.setPadding(PANEL_INSETS);
+        return body;
     }
 
     /**

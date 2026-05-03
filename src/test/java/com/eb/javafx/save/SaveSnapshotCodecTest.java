@@ -60,4 +60,38 @@ final class SaveSnapshotCodecTest {
         assertThrows(IllegalArgumentException.class, () -> codec.fromSection(
                 new SaveSnapshotSection("testSection", 3, "{}")));
     }
+
+    @Test
+    void registryComposesMigratesAndRoundTripsSnapshotSections() {
+        SaveSnapshotRegistry registry = new SaveSnapshotRegistry();
+        registry.registerRequired("scene", 2, section ->
+                new SaveSnapshotSection(section.sectionId(), 2, section.payloadJson() + "-migrated"));
+        registry.registerOptional("prefs", 1);
+
+        SaveSnapshotDocument document = registry.compose(java.util.List.of(
+                new SaveSnapshotSection("scene", 1, "{\"scene\":\"intro\"}"),
+                new SaveSnapshotSection("prefs", 1, "{\"font\":\"Serif\"}")));
+
+        assertEquals(2, document.sections().size());
+        assertEquals(2, document.section("scene").orElseThrow().schemaVersion());
+        assertEquals("{\"scene\":\"intro\"}-migrated", document.section("scene").orElseThrow().payloadJson());
+
+        SaveSnapshotDocument reparsed = SaveSnapshotDocument.fromJson(document.toJson(), "snapshot");
+        assertEquals(document.sections().size(), reparsed.sections().size());
+        assertEquals(document.section("prefs").orElseThrow().payloadJson(), reparsed.section("prefs").orElseThrow().payloadJson());
+        assertEquals(2, registry.decompose(reparsed).size());
+    }
+
+    @Test
+    void registryRejectsMissingRequiredDuplicateAndUnsupportedSections() {
+        SaveSnapshotRegistry registry = new SaveSnapshotRegistry();
+        registry.registerRequired("scene", 2);
+
+        assertThrows(IllegalArgumentException.class, () -> registry.compose(java.util.List.of()));
+        assertThrows(IllegalArgumentException.class, () -> registry.compose(java.util.List.of(
+                new SaveSnapshotSection("scene", 2, "{}"),
+                new SaveSnapshotSection("scene", 2, "{\"other\":true}"))));
+        assertThrows(IllegalArgumentException.class, () -> registry.compose(java.util.List.of(
+                new SaveSnapshotSection("scene", 1, "{}"))));
+    }
 }

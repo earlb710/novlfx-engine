@@ -7,6 +7,7 @@ import javafx.scene.layout.BackgroundPosition;
 import javafx.scene.layout.BackgroundRepeat;
 import javafx.scene.layout.BackgroundSize;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.VBox;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -74,5 +75,15 @@ final class ScreenShellTest {
                 ScreenShell.backgroundImage(image, null));
         assertThrows(IllegalArgumentException.class, () ->
                 ScreenShell.setBackgroundImage(null, image, ScreenBackgroundFit.STRETCH));
+    }
+
+    @Test
+    void styledPanelAppliesSharedAndSceneSpecificHooks() {
+        VBox panel = ScreenShell.styledPanel(ScreenShell.SCENE_DIALOGUE_PANEL_STYLE_CLASS, new BorderPane());
+
+        assertTrue(panel.getStyleClass().contains(ScreenShell.SCREEN_PANEL_STYLE_CLASS));
+        assertTrue(panel.getStyleClass().contains(ScreenShell.SCENE_DIALOGUE_PANEL_STYLE_CLASS));
+        assertEquals(ScreenShell.BODY_SPACING, panel.getSpacing());
+        assertEquals(ScreenShell.PANEL_INSETS, panel.getPadding());
     }
 }

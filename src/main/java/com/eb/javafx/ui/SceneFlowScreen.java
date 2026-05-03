@@ -10,8 +10,9 @@ import com.eb.javafx.scene.SceneFlowState;
 import com.eb.javafx.scene.ScenePresenter;
 import com.eb.javafx.scene.SceneViewModel;
 import javafx.scene.Scene;
+import javafx.scene.control.Button;
+import javafx.scene.layout.VBox;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -40,19 +41,9 @@ public final class SceneFlowScreen {
         SceneExecutor executor = context.sceneExecutor();
         SceneExecutionResult result = executor.advanceUntilPause(actionContext, SceneFlowState.start(sceneId));
         SceneViewModel viewModel = new ScenePresenter().present(actionContext, result);
-
-        List<String> lines = new ArrayList<>(List.of(
-                "Scene: " + viewModel.sceneId(),
-                "Status: " + viewModel.status(),
-                "Step: " + viewModel.stepId(),
-                "Speaker: " + (viewModel.speakerId() == null ? "narrator" : viewModel.speakerId()),
-                "Text key: " + viewModel.textDefinition(),
-                "Choices: " + viewModel.choices().size()));
-        viewModel.choices().forEach(choice -> lines.add(
-                choice.id() + " -> " + choice.textDefinition() + " [available=" + choice.available() + "]"));
-        return ViewModelScreen.createScene(context, new ScreenViewModel(
-                context.contentRegistry().definition(titleDefinition),
-                lines,
-                List.of(new ScreenActionViewModel("Back to main menu", SceneRouter.MAIN_MENU_ROUTE, true))));
+        VBox content = SceneFlowView.createContent(viewModel, null);
+        Button back = ScreenNavigation.button(context, "Back to main menu", SceneRouter.MAIN_MENU_ROUTE);
+        content.getChildren().add(back);
+        return context.themedScene(ScreenShell.titled(context.contentRegistry().definition(titleDefinition), content));
     }
 }
