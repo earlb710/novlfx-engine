@@ -1,6 +1,7 @@
 package com.eb.javafx.routing;
 
 import com.eb.javafx.ui.CaptureTestScreen;
+import com.eb.javafx.ui.ConversationHistoryScreen;
 import com.eb.javafx.ui.DisplayBindingsScreen;
 import com.eb.javafx.ui.HudSummaryScreen;
 import com.eb.javafx.ui.InformationalScreenModels;
@@ -74,6 +75,13 @@ public final class DefaultRouteModule implements RouteModule {
                 context -> ViewModelScreen.createScene(context, InformationalScreenModels.backToMainMenu(
                         context.contentRegistry().definition("ui.tooltip.title"),
                         "Reusable tooltip panels for domain data, actions, requirements, and generic help render here.")));
+        router.registerRoute(new RouteDescriptor(
+                        SceneRouter.CONVERSATION_HISTORY_ROUTE,
+                        "ui.conversationHistory.title",
+                        RouteCategory.DIALOGUE,
+                        true,
+                        "Reusable helper route for reviewing recorded conversation history."),
+                ConversationHistoryScreen::createScene);
         router.registerRoute(new RouteDescriptor(
                         SceneRouter.DISPLAY_BINDINGS_ROUTE,
                         "ui.displayBindings.title",

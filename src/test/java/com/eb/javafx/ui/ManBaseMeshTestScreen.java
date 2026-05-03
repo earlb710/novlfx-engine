@@ -22,18 +22,13 @@ import javafx.scene.paint.Color;
 import javafx.scene.paint.PhongMaterial;
 import javafx.scene.shape.CullFace;
 import javafx.scene.shape.MeshView;
-import javafx.scene.shape.TriangleMesh;
-import javafx.scene.shape.VertexFormat;
 import javafx.scene.transform.Rotate;
 import javafx.util.Duration;
+import org.fxyz3d.importers.Importer3D;
+import org.fxyz3d.importers.Model3D;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
+import java.net.URL;
 
 final class ManBaseMeshTestScreen {
     static final String MESH_RESOURCE = "/com/eb/javafx/ui/ManBaseMesh.obj";
@@ -42,12 +37,9 @@ final class ManBaseMeshTestScreen {
     }
 
     static Scene createScene(Runnable closeAction) throws IOException {
-        TriangleMesh mesh = loadMeshResource();
-        MeshView meshView = new MeshView(mesh);
-        meshView.setCullFace(CullFace.NONE);
-        meshView.setMaterial(new PhongMaterial(Color.web("#c8d3e6")));
-
-        Group centeredMesh = centerAndScale(meshView);
+        Node model = loadModelResource();
+        configureModel(model);
+        Group centeredMesh = centerAndScale(model);
         Rotate rotateX = new Rotate(-10, Rotate.X_AXIS);
         Rotate rotateY = new Rotate(0, Rotate.Y_AXIS);
         centeredMesh.getTransforms().addAll(rotateX, rotateY);
@@ -109,92 +101,49 @@ final class ManBaseMeshTestScreen {
         return new Scene(root, 900, 700);
     }
 
-    static TriangleMesh loadMeshResource() throws IOException {
-        try (InputStream inputStream = ManBaseMeshTestScreen.class.getResourceAsStream(MESH_RESOURCE)) {
-            if (inputStream == null) {
-                throw new IOException("Missing mesh resource: " + MESH_RESOURCE);
+    static Node loadModelResource() throws IOException {
+        return loadModelResource(MESH_RESOURCE);
+    }
+
+    static Node loadModelResource(String resourcePath) throws IOException {
+        URL resource = ManBaseMeshTestScreen.class.getResource(resourcePath);
+        if (resource == null) {
+            throw new IOException("Missing mesh resource: " + resourcePath);
+        }
+        return loadModel(resource);
+    }
+
+    static Node loadModel(URL resourceUrl) throws IOException {
+        Model3D model = Importer3D.load(resourceUrl);
+        Node root = model.getRoot();
+        if (!(root instanceof Group group) || group.getChildren().isEmpty()) {
+            throw new IOException("Model resource did not contain any mesh nodes: " + resourceUrl);
+        }
+        return root;
+    }
+
+    private static void configureModel(Node node) {
+        if (node instanceof MeshView meshView) {
+            meshView.setCullFace(CullFace.NONE);
+            if (meshView.getMaterial() == null) {
+                meshView.setMaterial(new PhongMaterial(Color.web("#c8d3e6")));
             }
-            return loadMesh(inputStream);
+            return;
+        }
+        if (node instanceof Group group) {
+            group.getChildren().forEach(ManBaseMeshTestScreen::configureModel);
         }
     }
 
-    static TriangleMesh loadMesh(InputStream inputStream) throws IOException {
-        List<Float> points = new ArrayList<>();
-        List<Integer> faces = new ArrayList<>();
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                String trimmed = line.strip();
-                if (trimmed.startsWith("v ")) {
-                    addPoint(points, trimmed);
-                } else if (trimmed.startsWith("f ")) {
-                    addFace(faces, trimmed, points.size() / 3);
-                }
-            }
-        }
-        if (points.isEmpty() || faces.isEmpty()) {
-            throw new IOException("OBJ mesh must contain vertices and faces.");
-        }
-
-        TriangleMesh mesh = new TriangleMesh(VertexFormat.POINT_TEXCOORD);
-        mesh.getPoints().addAll(toFloatArray(points));
-        mesh.getTexCoords().addAll(0, 0);
-        mesh.getFaces().addAll(toIntArray(faces));
-        return mesh;
-    }
-
-    private static void addPoint(List<Float> points, String line) throws IOException {
-        String[] parts = line.split("\\s+");
-        if (parts.length < 4) {
-            throw new IOException("Invalid OBJ vertex: " + line);
-        }
-        points.add(Float.parseFloat(parts[1]));
-        points.add(Float.parseFloat(parts[2]));
-        points.add(Float.parseFloat(parts[3]));
-    }
-
-    private static void addFace(List<Integer> faces, String line, int vertexCount) throws IOException {
-        String[] parts = line.split("\\s+");
-        if (parts.length < 4) {
-            throw new IOException("Invalid OBJ face: " + line);
-        }
-        int[] vertices = new int[parts.length - 1];
-        for (int index = 1; index < parts.length; index++) {
-            vertices[index - 1] = parsePointIndex(parts[index], vertexCount);
-        }
-        for (int index = 1; index < vertices.length - 1; index++) {
-            addTriangle(faces, vertices[0], vertices[index], vertices[index + 1]);
-        }
-    }
-
-    private static int parsePointIndex(String faceToken, int vertexCount) throws IOException {
-        String pointIndexText = faceToken.split("/", -1)[0];
-        int objIndex = Integer.parseInt(pointIndexText);
-        int pointIndex = objIndex < 0 ? vertexCount + objIndex : objIndex - 1;
-        if (pointIndex < 0 || pointIndex >= vertexCount) {
-            throw new IOException("OBJ face references missing vertex: " + faceToken);
-        }
-        return pointIndex;
-    }
-
-    private static void addTriangle(List<Integer> faces, int first, int second, int third) {
-        faces.add(first);
-        faces.add(0);
-        faces.add(second);
-        faces.add(0);
-        faces.add(third);
-        faces.add(0);
-    }
-
-    private static Group centerAndScale(MeshView meshView) {
-        javafx.geometry.Bounds bounds = meshView.getBoundsInLocal();
-        meshView.setTranslateX(-(bounds.getMinX() + bounds.getWidth() / 2));
-        meshView.setTranslateY(-(bounds.getMinY() + bounds.getHeight() / 2));
-        meshView.setTranslateZ(-(bounds.getMinZ() + bounds.getDepth() / 2));
+    private static Group centerAndScale(Node model) {
+        javafx.geometry.Bounds bounds = model.getBoundsInLocal();
+        model.setTranslateX(-(bounds.getMinX() + bounds.getWidth() / 2));
+        model.setTranslateY(-(bounds.getMinY() + bounds.getHeight() / 2));
+        model.setTranslateZ(-(bounds.getMinZ() + bounds.getDepth() / 2));
 
         double maxDimension = Math.max(bounds.getWidth(), Math.max(bounds.getHeight(), bounds.getDepth()));
         double scale = maxDimension == 0 ? 1 : 380 / maxDimension;
-        Group group = new Group(meshView);
+        Group group = new Group(model);
         group.setScaleX(scale);
         group.setScaleY(-scale);
         group.setScaleZ(scale);
@@ -231,21 +180,5 @@ final class ManBaseMeshTestScreen {
             rotateYSlider.setValue(anchor[3] + event.getSceneX() - anchor[0]);
             rotateXSlider.setValue(anchor[2] - event.getSceneY() + anchor[1]);
         });
-    }
-
-    private static float[] toFloatArray(List<Float> values) {
-        float[] array = new float[values.size()];
-        for (int index = 0; index < values.size(); index++) {
-            array[index] = values.get(index);
-        }
-        return array;
-    }
-
-    private static int[] toIntArray(List<Integer> values) {
-        int[] array = new int[values.size()];
-        for (int index = 0; index < values.size(); index++) {
-            array[index] = values.get(index);
-        }
-        return array;
     }
 }

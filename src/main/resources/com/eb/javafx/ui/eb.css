@@ -20,6 +20,22 @@
     -fx-background-radius: 6px;
 }
 
+.scene-status-panel,
+.scene-dialogue-panel,
+.scene-choices-panel,
+.scene-effects-panel {
+    -fx-border-color: #143869;
+}
+
+.scene-choice-button {
+    -fx-alignment: center-left;
+}
+
+.scene-choice-state,
+.scene-effect-preview {
+    -fx-text-fill: #cbd5e1;
+}
+
 .label {
     -fx-text-fill: #ffffff;
     -fx-font-size: 14px;

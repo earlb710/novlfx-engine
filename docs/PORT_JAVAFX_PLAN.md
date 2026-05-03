@@ -95,6 +95,13 @@ Bootstrap can be configured with `BootstrapOptions`, which groups an application
 
 The engine also provides generic JSON import/export boundaries for reusable display and scene definitions. `DisplayDefinitionJsonLoader` and `JsonDisplayContentModule` can register app-owned transform, image, and layered-display JSON into `ImageDisplayRegistry`; `SceneDefinitionJson` can import/export simple dialogue, choice, and transition scenes; and `SceneFlowStateJson` can serialize resumable scene-flow snapshots without making the engine own app save schemas.
 
+Recent reusable TODO extraction work has expanded the scene-flow and save seams further:
+
+- `ScenePresenter` now emits dialogue rows, status rows, selected-choice history, and effect-preview metadata through `SceneViewModel` and related scene view-model types.
+- `SceneFlowView` and new `ScreenShell` scene style hooks provide reusable JavaFX dialogue, choice, and effect-preview rendering without hard-coding game content into the engine.
+- `SaveSnapshotDocument`, `SaveSnapshotRegistry`, and `SaveSnapshotSectionMigration` provide ordered multi-section snapshot composition, required/optional section validation, and migration hooks while leaving application-owned outer save schemas outside the engine.
+- `SnapshotSectionPreviewViewModel` and `PreviewSummaryView` provide generic preview surfaces for snapshot and other diagnostic summaries.
+
 Validation for this repository should continue to use the checked-in Gradle wrapper:
 
 ```bash

@@ -113,6 +113,48 @@ final class SceneExecutorTest {
         assertEquals("No.", viewModel.choices().get(1).disabledReason());
     }
 
+    @Test
+    void presenterBuildsDialogueStatusSelectionAndEffectPreviewModels() {
+        SceneRegistry registry = new SceneRegistry();
+        registry.register(SceneDefinition.of("choice", List.of(
+                SceneStep.create(
+                        "line",
+                        SceneStepType.DIALOGUE,
+                        "ava",
+                        "dialogue.ava",
+                        "ava/happy",
+                        List.of(),
+                        List.of(),
+                        SceneTransition.next(),
+                        Map.of("preview.pose", "happy")),
+                SceneStep.choice("choice", List.of(
+                        new SceneChoice(
+                                "advance",
+                                "choice.advance",
+                                List.of(),
+                                List.of(),
+                                null,
+                                SceneTransition.complete(),
+                                Map.of("preview.effect", "advance-time")))))));
+        SceneExecutor executor = new SceneExecutor(registry);
+        ActionContext context = actionContext();
+
+        SceneViewModel textViewModel = new ScenePresenter().present(context, executor.advanceUntilPause(context, executor.start("choice")));
+        SceneExecutionResult waiting = executor.continueFromText(context, executor.start("choice"));
+        SceneViewModel choiceViewModel = new ScenePresenter().present(
+                context,
+                executor.selectChoice(context, waiting.state(), "advance"));
+
+        assertEquals(1, textViewModel.dialogueRows().size());
+        assertEquals("ava", textViewModel.dialogueRows().get(0).speakerId());
+        assertEquals("dialogue.ava", textViewModel.dialogueRows().get(0).textDefinition());
+        assertEquals("happy", textViewModel.effectPreviews().get(0).value());
+        assertEquals("DISPLAYING_TEXT", textViewModel.statusRows().get(0).value());
+        assertEquals(List.of("advance"), choiceViewModel.selectedChoiceIds());
+        assertTrue(choiceViewModel.statusRows().stream().anyMatch(row ->
+                row.label().equals("Selected choices") && row.value().equals("advance")));
+    }
+
     private ActionContext actionContext() {
         GameRandomService randomService = new GameRandomService();
         randomService.initialize();
