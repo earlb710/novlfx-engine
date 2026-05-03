@@ -1184,6 +1184,19 @@
       "sourceSignature": "adc2cf0d"
     },
     {
+      "id": "[engine:junit-jupiter]/[class:com.eb.javafx.testscreen.TestScreenApplicationTest]/[method:contrastRatioHandlesExtremeAndMatchingColors()]",
+      "name": "contrastRatioHandlesExtremeAndMatchingColors()",
+      "source": "MethodSource [className = 'com.eb.javafx.testscreen.TestScreenApplicationTest', methodName = 'contrastRatioHandlesExtremeAndMatchingColors', methodParameterTypes = '']",
+      "auto": true,
+      "new": true,
+      "lastRunAt": null,
+      "applicationVersion": null,
+      "success": null,
+      "output": "",
+      "failureOutput": "",
+      "sourceSignature": "fe977e3c"
+    },
+    {
       "id": "[engine:junit-jupiter]/[class:com.eb.javafx.testscreen.TestScreenApplicationTest]/[method:currentBuildSuccessReconcilesLoadedFailureAndClearsNewFlag()]",
       "name": "currentBuildSuccessReconcilesLoadedFailureAndClearsNewFlag()",
       "source": "MethodSource [className = 'com.eb.javafx.testscreen.TestScreenApplicationTest', methodName = 'currentBuildSuccessReconcilesLoadedFailureAndClearsNewFlag', methodParameterTypes = '']",
@@ -1522,6 +1535,32 @@
       "sourceSignature": "2e3f1bbe"
     },
     {
+      "id": "[engine:junit-jupiter]/[class:com.eb.javafx.ui.ManBaseMeshTestScreenTest]/[method:loadMeshTriangulatesObjFaces()]",
+      "name": "loadMeshTriangulatesObjFaces()",
+      "source": "MethodSource [className = 'com.eb.javafx.ui.ManBaseMeshTestScreenTest', methodName = 'loadMeshTriangulatesObjFaces', methodParameterTypes = '']",
+      "auto": true,
+      "new": false,
+      "lastRunAt": "2026-05-03T15:13:13.134308300Z",
+      "applicationVersion": "0.1.0",
+      "success": true,
+      "output": "STARTED: loadMeshTriangulatesObjFaces()\nSUCCESSFUL: loadMeshTriangulatesObjFaces()\n\nTests found: 1\nTests succeeded: 1\nTests failed: 0\nTests skipped: 0\nDuration: 430 ms\n",
+      "failureOutput": "STARTED: loadMeshTriangulatesObjFaces()\nSUCCESSFUL: loadMeshTriangulatesObjFaces()\n\nTests found: 1\nTests succeeded: 1\nTests failed: 0\nTests skipped: 0\nDuration: 430 ms\n",
+      "sourceSignature": "9e2cd00f"
+    },
+    {
+      "id": "[engine:junit-jupiter]/[class:com.eb.javafx.ui.ManBaseMeshTestScreenTest]/[method:manBaseMeshResourceLoadsAsTriangleMesh()]",
+      "name": "manBaseMeshResourceLoadsAsTriangleMesh()",
+      "source": "MethodSource [className = 'com.eb.javafx.ui.ManBaseMeshTestScreenTest', methodName = 'manBaseMeshResourceLoadsAsTriangleMesh', methodParameterTypes = '']",
+      "auto": true,
+      "new": false,
+      "lastRunAt": "2026-05-03T15:13:19.736199200Z",
+      "applicationVersion": "0.1.0",
+      "success": true,
+      "output": "STARTED: manBaseMeshResourceLoadsAsTriangleMesh()\nSUCCESSFUL: manBaseMeshResourceLoadsAsTriangleMesh()\n\nTests found: 1\nTests succeeded: 1\nTests failed: 0\nTests skipped: 0\nDuration: 187 ms\n",
+      "failureOutput": "STARTED: manBaseMeshResourceLoadsAsTriangleMesh()\nSUCCESSFUL: manBaseMeshResourceLoadsAsTriangleMesh()\n\nTests found: 1\nTests succeeded: 1\nTests failed: 0\nTests skipped: 0\nDuration: 187 ms\n",
+      "sourceSignature": "9e2cd00f"
+    },
+    {
       "id": "[engine:junit-jupiter]/[class:com.eb.javafx.ui.CaptureTestScreenTest]/[method:runCaptureTestScreenFromTestApp()]",
       "name": "runCaptureTestScreenFromTestApp()",
       "source": "MethodSource [className = 'com.eb.javafx.ui.CaptureTestScreenTest', methodName = 'runCaptureTestScreenFromTestApp', methodParameterTypes = '']",
@@ -1533,6 +1572,19 @@
       "output": "",
       "failureOutput": "",
       "sourceSignature": "2e3f1bbe"
+    },
+    {
+      "id": "[engine:junit-jupiter]/[class:com.eb.javafx.ui.ManBaseMeshTestScreenTest]/[method:runManBaseMeshTestScreenFromTestApp()]",
+      "name": "runManBaseMeshTestScreenFromTestApp()",
+      "source": "MethodSource [className = 'com.eb.javafx.ui.ManBaseMeshTestScreenTest', methodName = 'runManBaseMeshTestScreenFromTestApp', methodParameterTypes = '']",
+      "auto": false,
+      "new": false,
+      "lastRunAt": "2026-05-03T15:13:27.114809800Z",
+      "applicationVersion": "0.1.0",
+      "success": true,
+      "output": "STARTED: runManBaseMeshTestScreenFromTestApp()\nSUCCESSFUL: runManBaseMeshTestScreenFromTestApp()\n\nTests found: 1\nTests succeeded: 1\nTests failed: 0\nTests skipped: 0\nDuration: 871 ms\n",
+      "failureOutput": "STARTED: runManBaseMeshTestScreenFromTestApp()\nSUCCESSFUL: runManBaseMeshTestScreenFromTestApp()\n\nTests found: 1\nTests succeeded: 1\nTests failed: 0\nTests skipped: 0\nDuration: 871 ms\n",
+      "sourceSignature": "9e2cd00f"
     },
     {
       "id": "[engine:junit-jupiter]/[class:com.eb.javafx.ui.ScreenViewModelTest]/[method:copiesLinesAndActionsForReusableScreenContracts()]",
