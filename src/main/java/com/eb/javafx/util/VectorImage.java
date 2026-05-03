@@ -1340,21 +1340,21 @@ public class VectorImage {
         if (normalized.startsWith("#")) {
             return false;
         }
-        if (normalized.startsWith("data:image/")
-                && !normalized.startsWith("data:image/svg+xml")) {
-            return false;
-        }
         return normalized.startsWith("http:")
                 || normalized.startsWith("https:")
                 || normalized.startsWith("ftp:")
                 || normalized.startsWith("file:")
                 || normalized.startsWith("//")
                 || normalized.startsWith("/")
-                || normalized.startsWith("data:image/svg+xml")
-                || normalized.startsWith("data:text/html")
-                || normalized.startsWith("data:application/xhtml+xml")
+                || normalized.startsWith("data:")
                 || normalized.matches("^[a-z][a-z0-9+.-]*:.*")
-                || !normalized.isBlank();
+                || isRelativeResourceReference(normalized);
+    }
+
+    private boolean isRelativeResourceReference(String normalized) {
+        return normalized.startsWith("../")
+                || normalized.startsWith("./")
+                || normalized.matches(".*\\.(svg|png|jpg|jpeg|gif|webp)(\\?.*)?(#.*)?$");
     }
 
     private boolean styleHasExternalUrl(String style) {

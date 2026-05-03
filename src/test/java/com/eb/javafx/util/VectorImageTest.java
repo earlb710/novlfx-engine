@@ -157,7 +157,9 @@ final class VectorImageTest {
                   <script>alert('x')</script>
                   <image id="remote" href="https://example.com/image.png" width="10" height="10"/>
                   <image id="relative" href="../image.png" width="10" height="10"/>
-                  <image id="inline" href="data:image/png;base64,AA==" width="10" height="10"/>
+                  <image id="inlinePng" href="data:image/png;base64,AA==" width="10" height="10"/>
+                  <image id="inlineJpeg" href="data:image/jpeg;base64,AA==" width="10" height="10"/>
+                  <image id="inlineSvg" href="data:image/svg+xml;base64,AA==" width="10" height="10"/>
                   <rect id="styled" width="10" height="10" style="fill: #fff; background-image: url(https://example.com/bg.png)"/>
                   <rect id="safe" width="10" height="10" fill="url(#localGradient)"/>
                   <use id="localUse" href="#safe"/>
@@ -174,7 +176,9 @@ final class VectorImageTest {
         assertFalse(sanitized.containsExternalReferences());
         assertEquals("", sanitized.findElementById("remote").getAttribute("href"));
         assertEquals("", sanitized.findElementById("relative").getAttribute("href"));
-        assertEquals("data:image/png;base64,AA==", sanitized.findElementById("inline").getAttribute("href"));
+        assertEquals("", sanitized.findElementById("inlinePng").getAttribute("href"));
+        assertEquals("", sanitized.findElementById("inlineJpeg").getAttribute("href"));
+        assertEquals("", sanitized.findElementById("inlineSvg").getAttribute("href"));
         assertEquals("fill: #fff", sanitized.findElementById("styled").getAttribute("style"));
         assertEquals("#safe", sanitized.findElementById("localUse").getAttribute("href"));
         assertNotNull(sanitized.findElementById("safe"));
