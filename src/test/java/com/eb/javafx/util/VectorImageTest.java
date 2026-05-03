@@ -5,6 +5,7 @@ import org.junit.jupiter.api.io.TempDir;
 import org.w3c.dom.Element;
 
 import java.awt.image.BufferedImage;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
@@ -77,6 +78,9 @@ final class VectorImageTest {
         assertEquals('P', pngBytes[1]);
         assertEquals('N', pngBytes[2]);
         assertEquals('G', pngBytes[3]);
+
+        Path invalidPng = tempDir.resolve("missing").resolve("raster.png");
+        assertThrows(IOException.class, () -> VectorImage.fromString(SVG).savePng(invalidPng, 20, 10));
     }
 
     @Test

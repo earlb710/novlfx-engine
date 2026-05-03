@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.Locale;
+import java.util.regex.Pattern;
 
 import javax.imageio.ImageIO;
 import javax.xml.transform.OutputKeys;
@@ -48,6 +49,8 @@ import javafx.embed.swing.SwingFXUtils;
 public class VectorImage {
     private static final String SVG_NS = "http://www.w3.org/2000/svg";
     private static final String XLINK_NS = "http://www.w3.org/1999/xlink";
+    private static final Pattern URI_SCHEME_PATTERN = Pattern.compile("^[a-z][a-z0-9+.-]*:.*");
+    private static final Pattern RELATIVE_RESOURCE_PATTERN = Pattern.compile(".*\\.(svg|png|jpg|jpeg|gif|webp)(\\?.*)?(#.*)?$");
 
     /** The SVG DOM document */
     private SVGDocument svgDocument;
@@ -1347,14 +1350,14 @@ public class VectorImage {
                 || normalized.startsWith("//")
                 || normalized.startsWith("/")
                 || normalized.startsWith("data:")
-                || normalized.matches("^[a-z][a-z0-9+.-]*:.*")
+                || URI_SCHEME_PATTERN.matcher(normalized).matches()
                 || isRelativeResourceReference(normalized);
     }
 
     private boolean isRelativeResourceReference(String normalized) {
         return normalized.startsWith("../")
                 || normalized.startsWith("./")
-                || normalized.matches(".*\\.(svg|png|jpg|jpeg|gif|webp)(\\?.*)?(#.*)?$");
+                || RELATIVE_RESOURCE_PATTERN.matcher(normalized).matches();
     }
 
     private boolean styleHasExternalUrl(String style) {
