@@ -92,9 +92,11 @@ final class CaptureTestScreenTest {
                     started.countDown();
                 });
             } catch (IllegalStateException exception) {
+                Platform.setImplicitExit(false);
                 started.countDown();
             }
         } else {
+            Platform.setImplicitExit(false);
             started.countDown();
         }
         assertTrue(started.await(5, TimeUnit.SECONDS), "JavaFX toolkit did not start.");
