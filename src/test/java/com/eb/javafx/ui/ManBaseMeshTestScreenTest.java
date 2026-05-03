@@ -4,12 +4,13 @@ import com.eb.javafx.testscreen.ManualTest;
 import com.eb.javafx.testscreen.TestScreenApplication;
 import com.eb.javafx.util.UtilJavaFx;
 import javafx.application.Platform;
-import javafx.scene.shape.TriangleMesh;
+import javafx.scene.Group;
+import javafx.scene.Node;
 import javafx.stage.Stage;
 import org.junit.jupiter.api.Test;
 
-import java.io.ByteArrayInputStream;
-import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -24,27 +25,52 @@ final class ManBaseMeshTestScreenTest {
     private static final AtomicBoolean JAVAFX_STARTED = new AtomicBoolean();
 
     @Test
-    void loadMeshTriangulatesObjFaces() throws Exception {
-        TriangleMesh mesh = ManBaseMeshTestScreen.loadMesh(new ByteArrayInputStream("""
+    void loadModelLoadsObjFile() throws Exception {
+        Path objFile = Files.createTempFile("man-base-mesh-", ".obj");
+        Files.writeString(objFile, """
                 v 0 0 0
                 v 1 0 0
                 v 1 1 0
                 v 0 1 0
                 f 1//1 2//2 3//3 4//4
-                """.getBytes(StandardCharsets.UTF_8)));
+                """);
+        objFile.toFile().deleteOnExit();
 
-        assertEquals(12, mesh.getPoints().size());
-        assertEquals(6, mesh.getFaceElementSize());
-        assertEquals(12, mesh.getFaces().size());
+        Node model = ManBaseMeshTestScreen.loadModel(objFile.toUri().toURL());
+
+        assertTrue(model instanceof Group);
+        assertTrue(((Group) model).getChildren().size() > 0);
     }
 
     @Test
-    void manBaseMeshResourceLoadsAsTriangleMesh() throws Exception {
-        TriangleMesh mesh = ManBaseMeshTestScreen.loadMeshResource();
+    void loadModelLoadsMayaAsciiFile() throws Exception {
+        Path mayaFile = Files.createTempFile("man-base-mesh-", ".ma");
+        Files.writeString(mayaFile, """
+                //Maya ASCII 2020 scene
+                requires maya "2020";
+                createNode transform -n "triangle";
+                createNode mesh -n "triangleShape" -p "triangle";
+                setAttr ".vt[0:2]" -type "float3" 0 0 0 1 0 0 0 1 0;
+                setAttr ".ed[0:2]" -type "int3" 0 1 1 1 2 1 2 0 1;
+                setAttr ".uvst[0].uvsp[0:2]" -type "float2" 0 0 1 0 0 1;
+                setAttr ".cuvs" -type "string" "map1";
+                setAttr ".uvst[0].uvsn" -type "string" "map1";
+                setAttr ".fc[0]" -type "polyFaces" f 3 0 1 2 mu 0 3 0 1 2;
+                """);
+        mayaFile.toFile().deleteOnExit();
 
-        assertTrue(mesh.getPoints().size() > 0);
-        assertTrue(mesh.getFaces().size() > 0);
-        assertEquals(6, mesh.getFaceElementSize());
+        Node model = ManBaseMeshTestScreen.loadModel(mayaFile.toUri().toURL());
+
+        assertTrue(model instanceof Group);
+        assertTrue(((Group) model).getChildren().size() > 0);
+    }
+
+    @Test
+    void manBaseMeshResourceLoadsAsNodeHierarchy() throws Exception {
+        Node model = ManBaseMeshTestScreen.loadModelResource();
+
+        assertTrue(model instanceof Group);
+        assertTrue(((Group) model).getChildren().size() > 0);
     }
 
     @Test
