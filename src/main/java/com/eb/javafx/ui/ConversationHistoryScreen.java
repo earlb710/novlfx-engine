@@ -18,6 +18,7 @@ import javafx.scene.layout.VBox;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Reusable helper route for reviewing past conversations.
@@ -76,12 +77,15 @@ public final class ConversationHistoryScreen {
 
     private static VBox entryPanel(ConversationHistoryEntryViewModel entry) {
         VBox panel = ScreenShell.styledPanel(null);
-        panel.getChildren().add(new Label(
-                entry.dialogId() + " started " + entry.startedAt() + " with " + entry.participants() + " (" + entry.status() + ")"));
+        panel.getChildren().add(new Label(formatEntryHeader(entry)));
         for (ConversationHistoryRowViewModel row : entry.rows()) {
             panel.getChildren().add(new Label("  " + rowText(row)));
         }
         return panel;
+    }
+
+    private static String formatEntryHeader(ConversationHistoryEntryViewModel entry) {
+        return entry.dialogId() + " started " + entry.startedAt() + " with " + entry.participants() + " (" + entry.status() + ")";
     }
 
     private static String rowText(ConversationHistoryRowViewModel row) {
@@ -90,7 +94,7 @@ public final class ConversationHistoryScreen {
         }
         return row.columns().stream()
                 .map(column -> column.id() + ": " + column.text())
-                .collect(java.util.stream.Collectors.joining(" | "));
+                .collect(Collectors.joining(" | "));
     }
 
     private static List<String> messagesFor(DialogHistory history) {
@@ -142,7 +146,7 @@ public final class ConversationHistoryScreen {
         }
         return message.columns().stream()
                 .map(column -> column.id() + ": " + tokensText(column.tokens()))
-                .collect(java.util.stream.Collectors.joining(" | "));
+                .collect(Collectors.joining(" | "));
     }
 
     private static String columnText(DialogMessage message, String columnId) {
