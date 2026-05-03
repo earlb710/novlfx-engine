@@ -34,7 +34,7 @@ final class ManBaseMeshTestScreenTest {
                 """.getBytes(StandardCharsets.UTF_8)));
 
         assertEquals(12, mesh.getPoints().size());
-        assertEquals(2, mesh.getFaceElementSize());
+        assertEquals(6, mesh.getFaceElementSize());
         assertEquals(12, mesh.getFaces().size());
     }
 
@@ -44,7 +44,7 @@ final class ManBaseMeshTestScreenTest {
 
         assertTrue(mesh.getPoints().size() > 0);
         assertTrue(mesh.getFaces().size() > 0);
-        assertEquals(2, mesh.getFaceElementSize());
+        assertEquals(6, mesh.getFaceElementSize());
     }
 
     @Test
