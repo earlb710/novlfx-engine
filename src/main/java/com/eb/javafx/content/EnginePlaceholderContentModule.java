@@ -22,6 +22,7 @@ public final class EnginePlaceholderContentModule implements StaticContentModule
         definitions.put("ui.hud.title", "HUD");
         definitions.put("ui.notification.title", "Notification Overlay");
         definitions.put("ui.tooltip.title", "Tooltip");
+        definitions.put("ui.conversationHistory.title", "Conversation History");
         definitions.put("ui.displayBindings.title", "Display Bindings Preview");
         definitions.put("ui.captureTest.title", "Capture Test Screen");
         definitions.put("scene.demo.dialogue.line", "Reusable scene-flow demo line without authored game content.");
