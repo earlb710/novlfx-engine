@@ -4,6 +4,7 @@ This local plan tracks reusable `novlfx-engine` work that remains after the curr
 
 ## Still to do
 
+- [ ] Review [`earlb710/Lr2Alt`](https://github.com/earlb710/Lr2Alt.git) for content-agnostic JavaFX helpers that should be ported into this engine.
 - [ ] Expand JSON loading beyond simple display and scene definitions only when reusable schemas are stable.
 - [ ] Add application-side examples that resolve JSON paths through `ApplicationResourceConfig`.
 - [ ] Add richer scene validation for unreachable branches, scene graph summaries, and speaker/display reference checks supplied by app registries.

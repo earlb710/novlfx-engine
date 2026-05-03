@@ -32,7 +32,7 @@ final class BootstrapDiagnosticsTest {
         assertTrue(viewModel.phaseSummaries().get(0).completed());
         assertEquals("CORE_SERVICES: Core services initialized.", viewModel.phaseSummaries().get(0).line());
         assertEquals("Startup diagnostics: complete", viewModel.lines().get(0));
-        assertEquals("Elapsed startup time: 25ms", viewModel.lines().get(viewModel.lines().size() - 1));
+        assertEquals("Elapsed startup time: 25 ms", viewModel.lines().get(viewModel.lines().size() - 1));
     }
 
     @Test
