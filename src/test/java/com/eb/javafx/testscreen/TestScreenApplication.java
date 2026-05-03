@@ -256,7 +256,7 @@ public final class TestScreenApplication {
             tree.setBackground(FIELD_BACKGROUND);
             tree.setForeground(PRIMARY_TEXT);
         } else {
-            component.setBackground(PANEL_BACKGROUND);
+            component.setBackground(component.getParent() == null ? SCREEN_BACKGROUND : PANEL_BACKGROUND);
             component.setForeground(PRIMARY_TEXT);
         }
 
