@@ -49,5 +49,6 @@ final class FontResourcesTest {
         assertNotNull(font);
         assertEquals(14.0, font.getSize());
         assertThrows(IllegalArgumentException.class, () -> FontResources.load("Alien.ttf", 0.0));
+        assertThrows(IllegalArgumentException.class, () -> FontResources.load("Alien.ttf", -1.0));
     }
 }
