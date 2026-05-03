@@ -29,11 +29,16 @@ import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
 import javax.swing.JTree;
+import javax.swing.border.TitledBorder;
+import javax.swing.text.JTextComponent;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreePath;
 import javax.swing.tree.TreeSelectionModel;
 import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
@@ -89,6 +94,13 @@ public final class TestScreenApplication {
     private static final String SHELL_STANDALONE_RUNNER_SIGNATURE = "shell-windows-command-v2";
     private static final String JAVA_STANDALONE_RUNNER_SIGNATURE = "java-source-command-v1";
     private static final int MAX_EXTERNAL_OUTPUT_BYTES = 1024 * 1024;
+    static final Color SCREEN_BACKGROUND = new Color(0x10, 0x18, 0x28);
+    static final Color PANEL_BACKGROUND = new Color(0xF8, 0xFA, 0xFC);
+    static final Color FIELD_BACKGROUND = Color.WHITE;
+    static final Color PRIMARY_TEXT = new Color(0x0F, 0x17, 0x2A);
+    static final Color MUTED_TEXT = new Color(0x33, 0x41, 0x55);
+    static final Color BUTTON_BACKGROUND = new Color(0x14, 0x38, 0x69);
+    static final Color BUTTON_TEXT = Color.WHITE;
 
     private final Launcher launcher;
     private final DefaultMutableTreeNode testTreeRoot;
@@ -225,7 +237,61 @@ public final class TestScreenApplication {
 
         JPanel root = new JPanel(new BorderLayout());
         root.add(splitPane, BorderLayout.CENTER);
+        applyTestScreenTheme(root);
         return root;
+    }
+
+    static void applyTestScreenTheme(Component component) {
+        if (component instanceof JButton button) {
+            button.setBackground(BUTTON_BACKGROUND);
+            button.setForeground(BUTTON_TEXT);
+            button.setOpaque(true);
+        } else if (component instanceof JTextComponent textComponent) {
+            textComponent.setBackground(FIELD_BACKGROUND);
+            textComponent.setForeground(PRIMARY_TEXT);
+            textComponent.setCaretColor(PRIMARY_TEXT);
+            textComponent.setSelectedTextColor(BUTTON_TEXT);
+            textComponent.setSelectionColor(BUTTON_BACKGROUND);
+        } else if (component instanceof JTree tree) {
+            tree.setBackground(FIELD_BACKGROUND);
+            tree.setForeground(PRIMARY_TEXT);
+        } else {
+            component.setBackground(component.getParent() == null ? SCREEN_BACKGROUND : PANEL_BACKGROUND);
+            component.setForeground(PRIMARY_TEXT);
+        }
+
+        if (component instanceof javax.swing.JComponent jComponent
+                && jComponent.getBorder() instanceof TitledBorder titledBorder) {
+            titledBorder.setTitleColor(MUTED_TEXT);
+        }
+
+        if (component instanceof Container container) {
+            for (Component child : container.getComponents()) {
+                applyTestScreenTheme(child);
+            }
+        }
+    }
+
+    static double contrastRatio(Color foreground, Color background) {
+        double foregroundLuminance = relativeLuminance(foreground);
+        double backgroundLuminance = relativeLuminance(background);
+        double lighter = Math.max(foregroundLuminance, backgroundLuminance);
+        double darker = Math.min(foregroundLuminance, backgroundLuminance);
+        return (lighter + 0.05) / (darker + 0.05);
+    }
+
+    private static double relativeLuminance(Color color) {
+        return 0.2126 * linearRgb(color.getRed())
+                + 0.7152 * linearRgb(color.getGreen())
+                + 0.0722 * linearRgb(color.getBlue());
+    }
+
+    private static double linearRgb(int channel) {
+        double value = channel / 255.0;
+        if (value <= 0.03928) {
+            return value / 12.92;
+        }
+        return Math.pow((value + 0.055) / 1.055, 2.4);
     }
 
     private JTabbedPane buildDetailsTabs() {

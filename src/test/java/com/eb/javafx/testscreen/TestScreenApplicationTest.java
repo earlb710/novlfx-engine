@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.io.ByteArrayInputStream;
+import java.awt.Color;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -197,6 +198,30 @@ final class TestScreenApplicationTest {
     void frameTitleIncludesTotalSuccessAndErrorCounts() {
         assertEquals("eb Test Screen (12 tests, 8 success, 3 errors)",
                 TestScreenApplication.frameTitle(12, 8, 3));
+    }
+
+    @Test
+    void testScreenPaletteKeepsReadableTextContrast() {
+        assertTrue(TestScreenApplication.contrastRatio(
+                TestScreenApplication.PRIMARY_TEXT,
+                TestScreenApplication.PANEL_BACKGROUND) >= 4.5);
+        assertTrue(TestScreenApplication.contrastRatio(
+                TestScreenApplication.PRIMARY_TEXT,
+                TestScreenApplication.FIELD_BACKGROUND) >= 4.5);
+        assertTrue(TestScreenApplication.contrastRatio(
+                TestScreenApplication.BUTTON_TEXT,
+                TestScreenApplication.BUTTON_BACKGROUND) >= 4.5);
+        assertTrue(TestScreenApplication.contrastRatio(
+                Color.WHITE,
+                TestScreenApplication.SCREEN_BACKGROUND) >= 4.5);
+    }
+
+    @Test
+    void contrastRatioHandlesExtremeAndMatchingColors() {
+        assertEquals(21.0, TestScreenApplication.contrastRatio(Color.BLACK, Color.WHITE), 0.01);
+        assertEquals(21.0, TestScreenApplication.contrastRatio(Color.WHITE, Color.BLACK), 0.01);
+        assertEquals(1.0, TestScreenApplication.contrastRatio(Color.BLACK, Color.BLACK), 0.01);
+        assertEquals(1.0, TestScreenApplication.contrastRatio(Color.WHITE, Color.WHITE), 0.01);
     }
 
     @Test

@@ -1,70 +1,72 @@
 package com.eb.javafx.ui;
 
-import com.eb.javafx.prefs.PreferencesService;
 import com.eb.javafx.testscreen.ManualTest;
 import com.eb.javafx.testscreen.TestScreenApplication;
+import com.eb.javafx.util.UtilJavaFx;
 import javafx.application.Platform;
+import javafx.scene.shape.TriangleMesh;
 import javafx.stage.Stage;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
+import java.io.ByteArrayInputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
-final class CaptureTestScreenTest {
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
+
+final class ManBaseMeshTestScreenTest {
     private static final AtomicBoolean JAVAFX_STARTED = new AtomicBoolean();
 
     @Test
-    void captureFormModelCapturesTrimsAndClearsFields() {
-        CaptureTestScreen.CaptureFormModel model = new CaptureTestScreen.CaptureFormModel();
+    void loadMeshTriangulatesObjFaces() throws Exception {
+        TriangleMesh mesh = ManBaseMeshTestScreen.loadMesh(new ByteArrayInputStream("""
+                v 0 0 0
+                v 1 0 0
+                v 1 1 0
+                v 0 1 0
+                f 1//1 2//2 3//3 4//4
+                """.getBytes(StandardCharsets.UTF_8)));
 
-        assertEquals("No fields captured yet.", model.summary());
+        assertEquals(12, mesh.getPoints().size());
+        assertEquals(6, mesh.getFaceElementSize());
+        assertEquals(12, mesh.getFaces().size());
+    }
 
-        model.capture("  Lily  ", "  Downtown  ", "  Met at the lab.  ");
+    @Test
+    void manBaseMeshResourceLoadsAsTriangleMesh() throws Exception {
+        TriangleMesh mesh = ManBaseMeshTestScreen.loadMeshResource();
 
-        assertEquals("Captured character='Lily', location='Downtown', note='Met at the lab.'.", model.summary());
-
-        model.clear();
-
-        assertEquals("No fields captured yet.", model.summary());
+        assertTrue(mesh.getPoints().size() > 0);
+        assertTrue(mesh.getFaces().size() > 0);
+        assertEquals(6, mesh.getFaceElementSize());
     }
 
     @Test
     @ManualTest
-    void runCaptureTestScreenFromTestApp() throws Exception {
+    void runManBaseMeshTestScreenFromTestApp() throws Exception {
         assumeTrue(Boolean.getBoolean(TestScreenApplication.TEST_SCREEN_ACTIVE_PROPERTY),
-                "Manual JavaFX screen test runs only from TestScreenApplication.");
+                "Manual JavaFX mesh screen test runs only from TestScreenApplication.");
 
         runOnJavaFxThread(() -> {
-            PreferencesService preferencesService = new PreferencesService();
-            preferencesService.load();
-
-            UiTheme uiTheme = new UiTheme();
-            uiTheme.initialize(preferencesService);
-
             Stage stage = new Stage();
-            stage.setTitle("CaptureTestScreen manual test");
-            stage.setScene(CaptureTestScreen.createScene(
-                    "Capture Test",
-                    preferencesService,
-                    uiTheme,
-                    stage::close));
+            stage.setTitle("ManBaseMesh.obj manual test");
+            stage.setScene(ManBaseMeshTestScreen.createScene(stage::close));
             stage.show();
-            assertTrue(stage.isShowing() && stage.getScene() != null, "CaptureTestScreen window was not shown.");
+            assertTrue(stage.isShowing() && stage.getScene() != null, "ManBaseMesh test screen was not shown.");
         });
     }
 
-    private static void runOnJavaFxThread(Runnable action) throws Exception {
+    private static void runOnJavaFxThread(ThrowingRunnable action) throws Exception {
         startJavaFxToolkit();
         CountDownLatch completed = new CountDownLatch(1);
         AtomicReference<Throwable> failure = new AtomicReference<>();
-        Platform.runLater(() -> {
+        UtilJavaFx.run(() -> {
             try {
                 action.run();
             } catch (Throwable throwable) {
@@ -100,5 +102,10 @@ final class CaptureTestScreenTest {
             started.countDown();
         }
         assertTrue(started.await(5, TimeUnit.SECONDS), "JavaFX toolkit did not start.");
+    }
+
+    @FunctionalInterface
+    private interface ThrowingRunnable {
+        void run() throws Exception;
     }
 }

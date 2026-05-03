@@ -22,6 +22,7 @@ dependencies {
     api('org.apache.xmlgraphics:batik-all:1.18') {
         exclude group: 'xml-apis', module: 'xml-apis'
     }
+    api 'org.fxyz3d:fxyz3d:0.6.0'
     testImplementation 'org.junit.jupiter:junit-jupiter:5.10.2'
     testImplementation 'org.junit.platform:junit-platform-launcher:1.10.2'
 }

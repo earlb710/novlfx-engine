@@ -4,6 +4,7 @@ module com.novlfx.engine {
     requires javafx.swing;
     requires java.desktop;
     requires batik.all;
+    requires org.fxyz3d.core;
     requires xml.apis.ext;
 
     exports com.eb.javafx.audio;
