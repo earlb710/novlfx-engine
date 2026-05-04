@@ -101,6 +101,14 @@ Recent reusable TODO extraction work has expanded the scene-flow and save seams 
 - `SceneFlowView` and new `ScreenShell` scene style hooks provide reusable JavaFX dialogue, choice, and effect-preview rendering without hard-coding game content into the engine.
 - `SaveSnapshotDocument`, `SaveSnapshotRegistry`, and `SaveSnapshotSectionMigration` provide ordered multi-section snapshot composition, required/optional section validation, and migration hooks while leaving application-owned outer save schemas outside the engine.
 - `SnapshotSectionPreviewViewModel` and `PreviewSummaryView` provide generic preview surfaces for snapshot and other diagnostic summaries.
+- `SceneValidationReport`, `SceneGraphSummary`, `SceneValidationProblem`, and `SceneReferenceValidator` add reusable scene graph diagnostics for unreachable steps, dangling final `NEXT` transitions, and app-supplied speaker/display reference checks.
+- `SceneFlowSnapshotDocuments` composes and restores the reusable `sceneFlowState` snapshot section without making the engine own app save schemas.
+- `BootstrapCompletenessPolicy`, `BootstrapCompletenessReport`, `ApplicationShellOptions`, and `ApplicationShellSupport` let an application launcher enforce required phases/routes/content and open a startup route while preserving app-owned entry points.
+- `ScreenInventory*` models provide content-neutral migration inventory records for source scanners owned by application repositories.
+- `AudioAdapterPolicy`, `AudioAssetResolver`, `AudioFadeRequest`, `AudioCrossfadeRequest`, and `AudioPlaybackLifecycleEvent` define media-adapter expectations for asset discovery, fades, crossfades, preloading, and player pools without bundling concrete audio.
+- `TextEffect`, `StyledTextSpan`, `TextVariableResolver`, and `TextTemplateProcessor` provide rendering-neutral rich-text/effect metadata and variable replacement hooks.
+- `HudStatusContainerViewModel`, `HudStatusGroupViewModel`, and `HudStatusRowViewModel` provide reusable HUD/status overlay models while keeping game-specific status values app-owned.
+- Test-only `com.eb.javafx.testsupport` helpers cover record assertions, route descriptor assertions, and generic scene-flow fixtures for downstream application tests.
 
 Validation for this repository should continue to use the checked-in Gradle wrapper:
 

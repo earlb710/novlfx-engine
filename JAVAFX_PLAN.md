@@ -6,11 +6,11 @@ This local plan tracks reusable `novlfx-engine` work that remains after the curr
 
 - [ ] Review [`earlb710/Lr2Alt`](https://github.com/earlb710/Lr2Alt.git) for content-agnostic JavaFX helpers that should be ported into this engine.
 - [ ] Expand JSON loading beyond simple display and scene definitions only when reusable schemas are stable.
-- [ ] Add application-side examples that resolve JSON paths through `ApplicationResourceConfig`.
-- [ ] Add richer scene validation for unreachable branches, scene graph summaries, and speaker/display reference checks supplied by app registries.
-- [ ] Connect `SceneFlowStateJson` to future save/load snapshot contracts without making the engine own app save schemas.
+- [x] Add application-side examples that resolve JSON paths through `ApplicationResourceConfig`.
+- [x] Add richer scene validation for unreachable branches, scene graph summaries, and speaker/display reference checks supplied by app registries.
+- [x] Connect `SceneFlowStateJson` to future save/load snapshot contracts without making the engine own app save schemas.
 - [ ] Implement app-owned JavaFX media adapters against `AudioPlaybackAdapter`.
-- [ ] Define reusable audio adapter expectations for asset discovery, fades, crossfades, and channel-specific player pools while keeping concrete media files application-owned.
+- [x] Define reusable audio adapter expectations for asset discovery, fades, crossfades, and channel-specific player pools while keeping concrete media files application-owned.
 - [x] Replace placeholder screens with reusable view-model driven screens while keeping app-specific controls in app modules.
 - [ ] Add integration tests around options-based bootstrap loading JSON-backed content modules.
-- [ ] Keep `docs/PORT_JAVAFX_PLAN.md` updated whenever reusable package scope changes.
+- [x] Keep `docs/PORT_JAVAFX_PLAN.md` updated whenever reusable package scope changes.
