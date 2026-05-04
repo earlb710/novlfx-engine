@@ -1,6 +1,7 @@
 package com.eb.javafx.bootstrap;
 
 import com.eb.javafx.content.ContentRegistry;
+import com.eb.javafx.content.JsonDisplayContentModule;
 import com.eb.javafx.content.StaticContentModule;
 import com.eb.javafx.display.DisplayLayer;
 import com.eb.javafx.display.ImageAssetDefinition;
@@ -123,5 +124,56 @@ final class BootstrapServiceTest {
         assertTrue(context.sceneRouter().routeDescriptors().containsKey("custom-route"));
         assertEquals(tempDir.resolve("themes/app.css").normalize(),
                 context.resourceConfig().resolveResource(context.applicationRoot(), "theme").orElseThrow());
+    }
+
+    @Test
+    void optionsBootLoadsJsonBackedDisplayContentModuleFromConfiguredResource() throws Exception {
+        Path imageRoot = tempDir.resolve("assets/images");
+        Files.createDirectories(imageRoot.resolve("characters"));
+        Files.writeString(imageRoot.resolve("characters/hero.png"), "not-a-real-image");
+        Path displayDefinitions = tempDir.resolve("content/display-definitions.json");
+        Files.createDirectories(displayDefinitions.getParent());
+        Files.writeString(displayDefinitions, """
+                {
+                  "transforms": [
+                    {"id": "portrait", "fitWidth": 320, "fitHeight": 480, "opacity": 0.8}
+                  ],
+                  "images": [
+                    {"id": "hero.neutral", "sourcePath": "characters/hero.png", "transformId": "portrait", "layer": "CHARACTER"}
+                  ],
+                  "layeredCharacters": [
+                    {"id": "hero", "drawOrder": ["hero.neutral"], "defaultTransformId": "portrait", "metadata": {"source": "json"}}
+                  ]
+                }
+                """);
+        Path configPath = tempDir.resolve("bootstrap-config.json");
+        Files.writeString(configPath, """
+                {
+                  "categoryCodeTablesPath": "config/category-code-tables.en.json",
+                  "imageAssetRoot": "assets/images",
+                  "resources": {
+                    "displayDefinitions": "content/display-definitions.json"
+                  }
+                }
+                """);
+
+        BootstrapOptions baseOptions = BootstrapOptions.fromConfig(configPath);
+        Path resolvedDisplayDefinitions = baseOptions.resourceConfig()
+                .resolveResource(baseOptions.applicationRoot(), "displayDefinitions")
+                .orElseThrow();
+        BootstrapOptions options = baseOptions.withStaticContentModules(List.of(
+                new JsonDisplayContentModule(resolvedDisplayDefinitions)));
+
+        BootContext context = new BootstrapService(options).boot(null);
+
+        assertTrue(context.bootstrapReport().isComplete());
+        assertEquals(tempDir.toAbsolutePath().normalize(), context.applicationRoot());
+        assertEquals(displayDefinitions.normalize(), resolvedDisplayDefinitions);
+        assertEquals(320, context.imageDisplayRegistry().transform("portrait").fitWidth());
+        assertEquals(DisplayLayer.CHARACTER, context.imageDisplayRegistry().image("hero.neutral").layer());
+        assertEquals(List.of("hero.neutral"), context.imageDisplayRegistry().layeredCharacter("hero").drawOrder());
+        assertEquals("json", context.imageDisplayRegistry().layeredCharacter("hero").metadata().get("source"));
+        assertEquals(imageRoot.resolve("characters/hero.png").normalize(),
+                context.imageDisplayRegistry().resolveAssetPath("hero.neutral").orElseThrow());
     }
 }

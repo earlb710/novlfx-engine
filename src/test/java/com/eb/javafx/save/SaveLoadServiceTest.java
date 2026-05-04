@@ -58,4 +58,18 @@ final class SaveLoadServiceTest {
         assertEquals(1, service.listSlotSummaries().size());
         assertTrue(Files.exists(service.slotPath(1)));
     }
+
+    @Test
+    void listSlotSummariesSkipsUnreadableAndIncompatibleSlots() throws IOException {
+        Path saveDirectory = Files.createTempDirectory("eb-save-test");
+        SaveLoadService service = new SaveLoadService(saveDirectory);
+        service.initialize();
+        Instant savedAt = Instant.parse("2026-04-30T15:25:27Z");
+        service.writeSlotSummary(1, new com.eb.javafx.state.GameState("main-menu"), "Test save", savedAt);
+        Files.writeString(saveDirectory.resolve("slot-002.properties"), "schemaVersion=999\nsavedAt=bad-date\n");
+        Files.writeString(saveDirectory.resolve("slot-003.properties"), "not a properties save");
+
+        assertEquals(1, service.listSlotSummaries().size());
+        assertEquals(1, service.listSlotSummaries().get(0).slot());
+    }
 }

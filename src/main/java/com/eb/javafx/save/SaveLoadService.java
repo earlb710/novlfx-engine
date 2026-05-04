@@ -147,7 +147,11 @@ public final class SaveLoadService {
                     .forEach(path -> {
                         Matcher matcher = SLOT_FILE_PATTERN.matcher(path.getFileName().toString());
                         if (matcher.matches()) {
-                            summaries.add(readSlotSummary(Integer.parseInt(matcher.group(1))));
+                            try {
+                                summaries.add(readSlotSummary(Integer.parseInt(matcher.group(1))));
+                            } catch (IllegalArgumentException | IllegalStateException exception) {
+                                // Ignore unreadable or incompatible slot summaries so other saves remain listable.
+                            }
                         }
                     });
         } catch (IOException exception) {

@@ -1,6 +1,7 @@
 module com.novlfx.engine {
     requires java.prefs;
     requires javafx.controls;
+    requires javafx.media;
     requires javafx.swing;
     requires java.desktop;
     requires batik.all;

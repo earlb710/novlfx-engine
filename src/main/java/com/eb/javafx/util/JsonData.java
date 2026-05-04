@@ -81,8 +81,8 @@ public final class JsonData {
 
     public static int requiredInt(Map<String, Object> object, String key, String description) {
         Object value = object.get(key);
-        if (value instanceof Number number) {
-            return number.intValue();
+        if (value instanceof Integer integer) {
+            return integer;
         }
         throw new IllegalArgumentException("Expected JSON number for " + description + ".");
     }

@@ -87,6 +87,8 @@ The main result is a `BootContext`. Use it to access initialized services such a
 
 Inspect the `BootstrapReport` when startup diagnostics matter. It records completed phases and phase messages so an application can display useful failure or progress information. Use `BootstrapDiagnostics.requireComplete(...)` when an application launcher should fail fast on incomplete startup, or use `BootstrapDiagnostics.viewModel(...)` / `phaseLines(...)` to render content-neutral startup summaries in an app-owned startup or error screen.
 
+Use `BootstrapCompletenessPolicy` when an application has additional reusable startup requirements beyond all phases completing. A policy can require specific `BootstrapPhase` values, route IDs, and content definition IDs, then produce a `BootstrapCompletenessReport` for startup UI or throw through `requireComplete(...)`. `ApplicationShellSupport` combines that policy check with content-neutral startup-route opening and optional window-size preference persistence; the application still owns the JavaFX `Application` subclass and concrete route modules.
+
 Do not use guarded services before initialization. Several services use initialization guards and will fail fast if called before bootstrap or explicit initialization.
 
 Applications can also keep an external `config.json` and load it with `ApplicationResourceConfig.load(Path)` when authored resources need to live outside the engine defaults. The config stores a category code-table JSON path, an image asset root, and a generic `resources` map for other overrideable files such as themes or image groups:
@@ -160,6 +162,8 @@ Use `SceneRegistry` to register `SceneModule` implementations. A scene is descri
 
 Use `SceneExecutor` to execute scene flow and return a `SceneExecutionResult`. Use `ScenePresenter` and view-model classes when JavaFX UI code needs a UI-neutral representation of the current scene and choices.
 
+Use `SceneRegistry.validationReport(...)` when application startup needs diagnostics rather than fail-fast validation. The report contains `SceneGraphSummary` entries plus `SceneValidationProblem` diagnostics for duplicate IDs, missing jump/call targets, unreachable steps, and final-step `NEXT` warnings. Applications can pass `SceneReferenceValidator` instances such as `SceneReferenceValidators.knownSpeakers(...)` or `knownDisplayReferences(...)` to validate app-owned speaker/display IDs without moving those registries into the engine.
+
 ### Scene presentation view models
 
 Scene view models are deliberately UI-neutral. They are useful when the engine needs to expose scene execution state to JavaFX screens, tests, debug panels, or application-owned renderers without passing mutable executor objects or JavaFX controls across package boundaries. Use `ScenePresenter` to convert a `SceneExecutionResult` into these models after each scene execution step or choice selection.
@@ -174,6 +178,8 @@ Use `SceneDefinitionJson` for simple JSON-authored scenes that do not require ex
 
 Use `SceneFlowStateJson` to serialize and restore `SceneFlowState` snapshots containing the active scene, step index, call stack, selected choice IDs, and pending UI interruption marker. For future save/load payloads, `SceneFlowStateJson.toSnapshotSection(...)` wraps that JSON as a versioned `SaveSnapshotSection` named `sceneFlowState`, and `fromSnapshotSection(...)` validates the section id and version before loading it.
 
+Use `SceneFlowSnapshotDocuments` when an application save workflow wants the reusable scene-flow section composed into a `SaveSnapshotDocument` alongside app-owned sections. The helper registers the `sceneFlowState` section as required and restores the scene state while leaving the outer save schema under application control.
+
 ## 6. UI screens and themes
 
 The `ui` package provides reusable JavaFX surfaces and helpers:
@@ -183,7 +189,9 @@ The `ui` package provides reusable JavaFX surfaces and helpers:
 - `PreferencesSummaryViewModel` describes the reusable preferences summary screen with typed rows instead of raw strings. Each `PreferencesSummaryRowViewModel` contains a label/value pair such as window size, HUD alpha, input mode, or master volume, which keeps preference summaries easy to extend and test before flattening them into generic screen lines.
 - `SaveLoadSummaryViewModel` describes the reusable save/load summary screen with explicit schema metadata fields. It keeps the schema version, save directory, informational note, and actions as named data so save/load diagnostics can evolve without parsing or rebuilding display strings.
 - `HudSummaryViewModel` describes the reusable HUD summary screen with a small dedicated model. It currently carries the HUD layer description, opacity, and actions and gives the HUD summary room to grow beyond a couple of text lines without falling back to ad hoc strings.
+- `HudStatusContainerViewModel`, `HudStatusGroupViewModel`, and `HudStatusRowViewModel` describe reusable read-only HUD/status overlays with visibility, opacity, stack order, groups, and rows. Applications supply game-specific status values and visibility rules.
 - `SnapshotSectionPreviewViewModel` describes one preview row for a `SaveSnapshotSection`. It contains the section id, schema version, and a shortened JSON payload summary. Use it when save/load diagnostics or future save browsers need to show the contents of composed save snapshots without exposing the full payload or requiring custom parsing in the UI.
+- `ScreenInventory`, `ScreenInventoryItem`, `ScreenInventorySource`, `ScreenInventoryScanner`, and `ScreenInventoryAssignmentCategory` provide content-neutral inventory models for application-owned screen/style/control migration scanners. Use them to classify source artifacts as route-backed, reusable-control-backed, deferred, deprecated, excluded, or app-owned without hard-coding source-engine names in the engine.
 - `ViewModelScreen` renders a `ScreenViewModel` with generic labels and navigation buttons.
 - `ScreenShell` wraps screen content in a consistent shell.
 - `ScreenNavigation` centralizes navigation callbacks.
@@ -236,7 +244,9 @@ Audio support currently includes:
 - tracking the last playback command per channel
 - stop tracking for a channel
 
-Actual `MediaPlayer` or `AudioClip` playback, audio asset discovery, fades, crossfades, and channel-specific player pools are not part of the current implementation. Applications should provide concrete `AudioPlaybackAdapter` implementations if they need real sound output today.
+`AudioAdapterPolicy`, `AudioAssetResolver`, `AudioFadeRequest`, `AudioCrossfadeRequest`, and `AudioPlaybackLifecycleEvent` document reusable expectations for concrete adapters: app-owned asset lookup, channel lifecycle events, fades, crossfades, optional preloading, and channel-specific player pool sizing. `JavaFxAudioPlaybackAdapter` is the opt-in JavaFX media bridge: applications provide the resolver that maps authored paths to concrete media URIs, and the adapter creates `MediaPlayer` instances for looping commands plus pooled `AudioClip` instances for non-looping commands.
+
+Concrete media files and path resolution remain application-owned. Applications can use `JavaFxAudioPlaybackAdapter` directly or provide their own `AudioPlaybackAdapter` when they need custom player lifecycle, platform handling, or richer fade/crossfade behavior.
 
 Example/demo code: [`examples/user-manual/08-audio-support/AudioServiceDemo.java`](../examples/user-manual/08-audio-support/AudioServiceDemo.java)
 
@@ -303,6 +313,8 @@ Additional example/demo code:
 
 Use `TextTagParser` to tokenize visual-novel-style text with simple styling metadata. Parsed output is represented through `TextToken`, `TextTokenType`, and `TextStyle`.
 
+Use `TextEffect` and `StyledTextSpan` to carry rendering-neutral rich-text metadata such as gradient, kinetic, or glitch parameters before a JavaFX renderer exists. Use `TextTemplateProcessor` with a `TextVariableResolver` for simple app-supplied `{variable}` replacement while preserving unknown markers.
+
 Use utility classes for common engine behavior:
 
 - `Validation` for null, blank, positive, and unit-interval checks.
@@ -346,7 +358,7 @@ Build the application shell in this order:
 1. Add an application-owned `GameApplication` class that extends `javafx.application.Application`.
 2. In `start(Stage primaryStage)`, load authored resource paths with `BootstrapOptions.fromConfig(...)`, then add application static content modules, scene modules, and route modules before calling `new BootstrapService(options).boot(primaryStage)`.
 3. Resolve application-owned JSON and asset roots through `ApplicationResourceConfig` so authored scene definitions, display definitions, category tables, and image/audio assets stay outside the engine repository.
-4. Implement a concrete `AudioPlaybackAdapter` that turns validated `AudioPlaybackCommand` objects into real `MediaPlayer` or `AudioClip` playback.
+4. Implement a concrete `AudioPlaybackAdapter` that turns validated `AudioPlaybackCommand` objects into real `MediaPlayer` or `AudioClip` playback, using `AudioAdapterPolicy` to document asset lookup, fade/crossfade, preload, and pool behavior.
 5. Start with reusable engine screens where they fit, then replace individual routes with application-specific JavaFX screens as the game UI becomes concrete.
 
 Keep this repository focused on reusable behavior. The launcher class, authored resources, and concrete media binding should remain application-owned even when they directly use engine APIs.
