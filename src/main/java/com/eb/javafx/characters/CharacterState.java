@@ -55,6 +55,10 @@ public final class CharacterState {
         return updated;
     }
 
+    public void setRelationship(String relationshipId, int value) {
+        relationships.put(Validation.requireNonBlank(relationshipId, "Relationship id is required."), value);
+    }
+
     public void addFlag(String flag) {
         flags.add(Validation.requireNonBlank(flag, "Character flag is required."));
     }

@@ -1,0 +1,66 @@
+{
+  "id": "main.menu",
+  "title": "Main Menu",
+  "layoutType": "MENU_ACTION_LIST",
+  "metadata": {"description": "Menu-focused sample screen design"},
+  "blocks": [
+    {
+      "id": "status",
+      "title": "Session",
+      "styleClass": null,
+      "metadata": {}
+    },
+    {
+      "id": "actions",
+      "title": "Actions",
+      "styleClass": null,
+      "metadata": {}
+    }
+  ],
+  "items": [
+    {
+      "id": "status.summary",
+      "blockId": "status",
+      "type": "TEXT",
+      "label": "Summary",
+      "text": "Continue from Chapter 3: Rooftop Garden",
+      "value": null,
+      "defaultValue": null,
+      "styleClass": null,
+      "metadata": {}
+    },
+    {
+      "id": "actions.new-game",
+      "blockId": "actions",
+      "type": "BUTTON",
+      "label": "New Game",
+      "text": null,
+      "value": null,
+      "defaultValue": null,
+      "styleClass": null,
+      "metadata": {}
+    },
+    {
+      "id": "actions.load-save",
+      "blockId": "actions",
+      "type": "BUTTON",
+      "label": "Load Save",
+      "text": null,
+      "value": null,
+      "defaultValue": null,
+      "styleClass": null,
+      "metadata": {}
+    },
+    {
+      "id": "actions.settings",
+      "blockId": "actions",
+      "type": "BUTTON",
+      "label": "Settings",
+      "text": null,
+      "value": null,
+      "defaultValue": null,
+      "styleClass": null,
+      "metadata": {}
+    }
+  ]
+}

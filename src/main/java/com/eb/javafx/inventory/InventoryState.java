@@ -33,6 +33,12 @@ public final class InventoryState {
         }
     }
 
+    public void restoreQuantity(String itemId, int quantity) {
+        quantities.put(
+                Validation.requireNonBlank(itemId, "Inventory item id is required."),
+                Validation.requirePositive(quantity, "Inventory quantity must be positive."));
+    }
+
     public Map<String, Integer> quantities() {
         return Collections.unmodifiableMap(quantities);
     }

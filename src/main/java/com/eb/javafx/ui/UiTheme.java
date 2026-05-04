@@ -76,7 +76,7 @@ public final class UiTheme {
      * @throws StartupFailureException when the CSS resource is missing
      */
     public String stylesheet() {
-        URL stylesheet = UiTheme.class.getResource("/com/eb/javafx/ui/eb.css");
+        URL stylesheet = UiTheme.class.getResource("/com/eb/javafx/ui/default.css");
         if (stylesheet == null) {
             throw new StartupFailureException(StartupFailureCategory.MISSING_ASSET, "Missing JavaFX stylesheet.");
         }

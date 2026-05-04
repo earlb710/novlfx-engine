@@ -38,6 +38,14 @@ Launch the manual test screen with:
 
 The test screen is supplied from the test source set and is useful for manually checking reusable UI surfaces without adding an application-specific entry point to the engine. Its window title reports the total discovered tests plus recorded success and error counts. Shell script examples run directly on macOS/Linux and on Windows when `bash.exe` is available on `PATH`.
 
+Launch the manual screen designer with:
+
+```bash
+./gradlew --no-daemon runScreenDesigner
+```
+
+The screen designer edits JSON-backed `ScreenDesignModel` documents with stable editable screen, block, and item ids. Saved items are written to JSON, while temporary preview/test items can be added to a block by id for validation without being included in normal save output.
+
 Example/demo code: [`examples/user-manual/02-project-setup-and-validation/demo.sh`](../examples/user-manual/02-project-setup-and-validation/demo.sh)
 
 ## 3. Module and package layout
@@ -117,7 +125,7 @@ Applications can also keep an external `config.json` and load it with `Applicati
   "resources": {
     "sceneDefinitions": "content/scene-definitions.json",
     "displayDefinitions": "content/display-definitions.json",
-    "uiTheme": "src/main/resources/com/eb/javafx/ui/eb.css",
+    "uiTheme": "src/main/resources/com/eb/javafx/ui/default.css",
     "backgrounds": "assets/backgrounds"
   }
 }
@@ -214,17 +222,21 @@ The `ui` package provides reusable JavaFX surfaces and helpers:
 - `MainMenuEntry` is the content-neutral contract for one main-menu route/action entry, and `InformationalScreenModels.backToMainMenu(...)` builds simple placeholder or error screen models with a standard main-menu action.
 - `DisplayPreviewBinding` carries image id, source path, layer, and asset-resolution state for display diagnostics and app-owned previews.
 - `ScreenBackgroundFit` names reusable background sizing modes: stretch or center-crop.
+- `ScreenLayoutType`, `ScreenLayoutModel`, and `ScreenLayoutSection` define reusable screen layout intent without JavaFX control state. Use them when a screen needs a stable general structure such as a titled panel, two-column layout, sidebar/content layout, HUD/status overlay, dialogue surface, menu/action list, form, or preview/card grid.
+- `ScreenDesignModel`, `ScreenDesignBlock`, and `ScreenDesignItem` define editable JSON-backed screen designs with stable screen, block, and item ids. Use `ScreenDesignService.addItemToBlock(...)` or `addTemporaryItemToBlock(...)` when code needs to target a block id directly; temporary items render in preview/test mode but `ScreenDesignJson.save(...)` excludes them from persisted JSON. `ScreenDesignJson` saves/loads documents with top-level `id`, `title`, `layoutType`, `metadata`, ordered `blocks`, and ordered saved `items`. Each block carries `id`, optional `title`, optional `styleClass`, and `metadata`; each item carries `id`, `blockId`, `type`, optional `label`, `text`, `value`, `defaultValue`, `styleClass`, and `metadata`.
+- `ScreenLayoutContract` loads the machine-readable layout contract from `src/main/resources/com/eb/javafx/ui/layout-contract.json`, which lists engine-provided layout types, the default stylesheet, and stable CSS style hooks applications can target.
 - `ScreenInventory`, `ScreenInventoryItem`, `ScreenInventorySource`, `ScreenInventoryScanner`, and `ScreenInventoryAssignmentCategory` provide content-neutral inventory models for application-owned screen/style/control migration scanners. Use them to classify source artifacts as route-backed, reusable-control-backed, deferred, deprecated, excluded, or app-owned without hard-coding source-engine names in the engine.
 - `ViewModelScreen` renders a `ScreenViewModel` with generic labels and navigation buttons.
+- `ScreenLayoutRenderer` renders a `ScreenLayoutModel` into JavaFX nodes. It keeps route screens thin by letting them gather data, build a UI-neutral model, and delegate JavaFX node creation plus style-class assignment to the shared renderer.
 - `ScreenShell` wraps screen content in a consistent shell.
 - `ScreenNavigation` centralizes navigation callbacks.
 - `PreviewSummaryView` creates simple titled preview panels for display, scene, and snapshot summaries.
 - `MainMenuScreen`, `SceneFlowScreen`, `DisplayBindingsScreen`, `HudSummaryScreen`, `SaveLoadSummaryScreen`, `PreferencesSummaryScreen`, and `ConversationHistoryScreen` provide generic reusable screens or screen models.
 - `CaptureTestScreen` supports test/manual capture workflows; its `CaptureFormModel` stores validated capture form values.
-- `UiTheme` loads the reusable stylesheet from `src/main/resources/com/eb/javafx/ui/eb.css`.
+- `UiTheme` loads the reusable stylesheet from `src/main/resources/com/eb/javafx/ui/default.css`.
 - `StartupErrorReporter`, `StartupFailureException`, and `StartupFailureCategory` provide structured startup diagnostics.
 
-Applications can use these screens directly for prototypes or replace route factories with application-specific screens while keeping the same routing and bootstrap contracts. App-specific JavaFX controls should live in application route modules; reusable engine screens should consume view models or generic display contracts.
+Reusable layout styling is split from layout intent. Engine renderers attach stable semantic style classes such as `layout-content`, `layout-sidebar`, `layout-main-content`, `layout-action-row`, `layout-primary-action`, `layout-secondary-action`, `layout-card`, `layout-form`, `layout-section-title`, and `layout-section-row`; `src/main/resources/com/eb/javafx/ui/default.css` provides the default colors, spacing, borders, and hover behavior. The layout contract can also be read as JSON from `src/main/resources/com/eb/javafx/ui/layout-contract.json` when tools or applications need a data-driven list of supported layout types and stable style hooks. Applications can use these screens directly for prototypes, add an application stylesheet after the engine stylesheet to override those hooks, or replace route factories with application-specific screens while keeping the same routing and bootstrap contracts. App-specific JavaFX controls, authored art, and game-specific visual rules should live in application route modules; reusable engine screens should consume view models or generic display contracts.
 
 Example/demo code: [`examples/user-manual/06-ui-screens-and-themes/UiScreenDemo.java`](../examples/user-manual/06-ui-screens-and-themes/UiScreenDemo.java)
 
@@ -327,11 +339,11 @@ Use the generic support packages when an application needs reusable game systems
 - `InputMap` stores context-scoped `InputAction` values and `InputBinding` trigger bindings. Triggers combine an `InputDevice` and `InputTrigger` value so menu, dialogue, gameplay, and debug controls can be rebindable without hard-coding UI controls.
 - `GameEventBus` publishes lightweight runtime events and keeps a deterministic history for diagnostics, tests, or save-related inspection. Use `GameEventQueue` for FIFO deferred event processing, `GameEventListener` for listener adapters, and `GameCommandDispatcher` with `GameCommandHandler` for type-keyed command dispatch that can emit events back to the bus.
 - `ProgressTracker`, `ProgressSupport`, and `ProgressSnapshotCodec` model reusable flags, counters, milestones, unlocks, action requirements/effects, and save snapshot sections.
-- `InventoryCatalog` and `InventoryState` provide generic `InventoryItemDefinition` metadata and stack quantities while authored item data remains application-owned. Use `WearableSlotDefinition`, `WearableDefinition`, `WardrobeCatalog`, `OutfitState`, and `WardrobeState` for generic wearable slots, equipped item maps, unlocked wearables, and named outfit snapshots.
-- `CharacterRegistry` and `RelationshipState` provide reusable `CharacterProfile` metadata and numeric relationship state. Use `CharacterTemplate`, `CharacterTemplateRegistry`, `CharacterStatBlock`, and `CharacterState` for template-level base stats plus per-save mutable stats, relationship values, flags, and metadata.
+- `InventoryCatalog` and `InventoryState` provide generic `InventoryItemDefinition` metadata and stack quantities while authored item data remains application-owned. Use `WearableSlotDefinition`, `WearableDefinition`, `WardrobeCatalog`, `OutfitState`, and `WardrobeState` for generic wearable slots, equipped item maps, unlocked wearables, and named outfit snapshots. `InventorySnapshotCodec` and `WardrobeSnapshotCodec` serialize those reusable state slices into application-owned save documents.
+- `CharacterRegistry` and `RelationshipState` provide reusable `CharacterProfile` metadata and numeric relationship state. Use `CharacterTemplate`, `CharacterTemplateRegistry`, `CharacterStatBlock`, and `CharacterState` for template-level base stats plus per-save mutable stats, relationship values, flags, and metadata. `CharacterStatesSnapshotCodec` serializes per-save character state without owning application rules.
 - `NotificationState`, `Notification`, `MessageThreadState`, and `MessageEntry` model read/unread notifications and generic message threads without owning app-specific sender semantics or UI layout.
 - `OrganizationDescriptor`, `ResourceLedger`, `ProductionOrder`, and `ProductionQueue` provide reusable organization metadata, non-negative resource balances, and tick-based production primitives.
-- `JournalState` provides generic unlocked/read state for `JournalEntryDefinition` entries, with `JournalEntryStatus` recording whether each journal, quest, task, or log entry is unlocked and read.
+- `JournalState` provides generic unlocked/read state for `JournalEntryDefinition` entries, with `JournalEntryStatus` recording whether each journal, quest, task, or log entry is unlocked and read. `JournalSnapshotCodec` serializes generic journal or quest read/unlocked state.
 - `DiagnosticRegistry` combines `DiagnosticCheck` callbacks into `DiagnosticReport` values containing `DiagnosticProblem` rows and `DiagnosticSeverity` levels for startup or debug screens. `DiagnosticDescriptor`, `DebugPanelDescriptor`, and `ContentPackDescriptor` describe app-owned diagnostics, debug panels, and content packs using reusable metadata shapes.
 - `SettingsStore` carries `SettingDefinition` entries, `SettingType` metadata, and runtime values above raw preferences. `AccessibilityProfile` carries accessibility choices such as font scale, contrast, motion, captions, and screen-reader labels.
 - `TimelineSequence`, `TimelineStep`, and `TimelinePlayer` provide deterministic timing primitives with `TimelineStatus` state that can drive UI, display, text, or audio adapters.
@@ -351,6 +363,8 @@ Use `GameStateFactory` to create base `GameState` instances. `GameState` current
 ### Save/load
 
 Use `SaveLoadService` for reusable save-slot workflows. It supports slot summaries and JSON persistence behavior suitable for engine-level tests and extension by application code. `SaveLoadSummaryScreen` and `SaveLoadSummaryViewModel` expose the current save schema version and configured save directory as reusable diagnostic UI data. Use `SaveSnapshotCodec` and `SaveSnapshotSection` when an application wants to compose engine-owned state slices, such as scene-flow progress, into its own save document; the application still owns the outer save schema and any project-specific state fields.
+
+Use `ReusableGameplaySnapshot` and `ReusableGameplaySnapshotDocuments` for the reusable vertical-slice save contract: scene-flow state, game time, generic progress, inventory, wardrobe, character state, journal/quest state, and location occupancy. The helper validates those required engine-owned sections while preserving additional application-owned sections for LR2Alt or other ports. Snapshot values such as `InventorySnapshot`, `WardrobeSnapshot`, `CharacterStatesSnapshot`, `JournalSnapshot`, and `LocationOccupancySnapshot` expose hydration helpers that rebuild the matching mutable engine state after an application validates its outer save document.
 
 `SaveLoadService.SaveSchema` reports the current save schema version and directory, while `SaveLoadService.SaveSlotSummary` summarizes one slot number and whether it currently has data. Use `SaveSnapshotRegistry` to register required or optional snapshot sections and validate composed `SaveSnapshotDocument` objects. If an application needs to load older section payloads, register a `SaveSnapshotSectionMigration` so the registry can migrate sections to the current version during compose/decompose.
 

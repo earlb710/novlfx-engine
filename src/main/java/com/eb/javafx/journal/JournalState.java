@@ -24,4 +24,12 @@ public final class JournalState {
         String checkedEntryId = Validation.requireNonBlank(entryId, "Journal entry id is required.");
         return new JournalEntryStatus(checkedEntryId, unlocked.contains(checkedEntryId), read.contains(checkedEntryId));
     }
+
+    public Set<String> unlockedEntryIds() {
+        return Set.copyOf(unlocked);
+    }
+
+    public Set<String> readEntryIds() {
+        return Set.copyOf(read);
+    }
 }

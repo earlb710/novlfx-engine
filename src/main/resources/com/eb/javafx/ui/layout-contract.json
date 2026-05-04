@@ -1,0 +1,40 @@
+{
+  "stylesheet": "com/eb/javafx/ui/default.css",
+  "layoutTypes": [
+    "titled-panel",
+    "two-column",
+    "sidebar-content",
+    "hud-status-overlay",
+    "dialogue",
+    "menu-action-list",
+    "form",
+    "preview-grid"
+  ],
+  "stableStyleClasses": [
+    "screen-root",
+    "screen-title",
+    "screen-panel",
+    "layout-content",
+    "layout-subtitle",
+    "layout-footer",
+    "layout-titled-panel",
+    "layout-two-column",
+    "layout-column",
+    "layout-sidebar-content",
+    "layout-sidebar",
+    "layout-sidebar-entry",
+    "layout-main-content",
+    "layout-hud-overlay",
+    "layout-dialogue",
+    "layout-menu",
+    "layout-form",
+    "layout-preview-grid",
+    "layout-card",
+    "layout-section",
+    "layout-section-title",
+    "layout-section-row",
+    "layout-action-row",
+    "layout-primary-action",
+    "layout-secondary-action"
+  ]
+}

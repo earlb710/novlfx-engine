@@ -376,7 +376,10 @@ public final class TestScreenApplication {
         Map<String, List<TestCase>> testsByCategory = tests.stream()
                 .collect(Collectors.groupingBy(TestCase::category, LinkedHashMap::new, Collectors.toList()));
         testsByCategory.forEach((category, categoryTests) -> {
-            DefaultMutableTreeNode categoryNode = new DefaultMutableTreeNode(new TestCategory(category, categoryTests.size()));
+            DefaultMutableTreeNode categoryNode = new DefaultMutableTreeNode(new TestCategory(
+                    category,
+                    passedTestCount(categoryTests),
+                    categoryTests.size()));
             categoryTests.forEach(testCase -> categoryNode.add(new DefaultMutableTreeNode(testCase)));
             testTreeRoot.add(categoryNode);
         });
@@ -424,6 +427,10 @@ public final class TestScreenApplication {
                 + errorCount + " errors)";
     }
 
+    static String categoryLabel(String name, long passedTests, int totalTests) {
+        return name + " (" + passedTests + "/" + totalTests + ")";
+    }
+
     private void updateSelectedTest() {
         TestCase selectedTest = selectedTest();
         runButton.setEnabled(selectedTest != null);
@@ -437,7 +444,7 @@ public final class TestScreenApplication {
             } else {
                 int autoTestCount = selectedAutoCategoryTests().size();
                 descriptionArea.setText("Category: " + selectedCategory.name()
-                        + "\nTests: " + selectedCategory.testCount()
+                        + "\nPassed tests: " + selectedCategory.passedTestCount() + "/" + selectedCategory.testCount()
                         + "\nAuto tests: " + autoTestCount
                         + "\nPress Run All in Category to run every auto test in this category."
                         + "\nManual tests must be run individually.");
@@ -491,6 +498,7 @@ public final class TestScreenApplication {
                     outputArea.setText(stackTrace(exception));
                 } finally {
                     setRunning(false);
+                    refreshCategorySummaries();
                     testTree.repaint();
                     updateFrameTitle();
                     updateSelectedTest();
@@ -530,6 +538,7 @@ public final class TestScreenApplication {
                     outputArea.setText(stackTrace(exception));
                 } finally {
                     setRunning(false);
+                    refreshCategorySummaries();
                     testTree.repaint();
                     updateFrameTitle();
                     updateSelectedTest();
@@ -935,6 +944,40 @@ public final class TestScreenApplication {
         return tests;
     }
 
+    private void refreshCategorySummaries() {
+        Enumeration<?> categories = testTreeRoot.children();
+        while (categories.hasMoreElements()) {
+            DefaultMutableTreeNode categoryNode = (DefaultMutableTreeNode) categories.nextElement();
+            if (categoryNode.getUserObject() instanceof TestCategory category) {
+                List<TestCase> categoryTests = childTestCases(categoryNode);
+                categoryNode.setUserObject(new TestCategory(
+                        category.name(),
+                        passedTestCount(categoryTests),
+                        categoryTests.size()));
+                testTreeModel.nodeChanged(categoryNode);
+            }
+        }
+    }
+
+    private static long passedTestCount(List<TestCase> tests) {
+        return tests.stream()
+                .filter(testCase -> testCase.success().orElse(false))
+                .count();
+    }
+
+    private static List<TestCase> childTestCases(DefaultMutableTreeNode categoryNode) {
+        List<TestCase> categoryTests = new ArrayList<>();
+        Enumeration<?> testNodes = categoryNode.children();
+        while (testNodes.hasMoreElements()) {
+            DefaultMutableTreeNode testNode = (DefaultMutableTreeNode) testNodes.nextElement();
+            Object userObject = testNode.getUserObject();
+            if (userObject instanceof TestCase testCase) {
+                categoryTests.add(testCase);
+            }
+        }
+        return categoryTests;
+    }
+
     private TestCase selectedTest() {
         Object userObject = selectedUserObject();
         return userObject instanceof TestCase testCase ? testCase : null;
@@ -985,16 +1028,7 @@ public final class TestScreenApplication {
         if (categoryNode == null || !(categoryNode.getUserObject() instanceof TestCategory)) {
             return List.of();
         }
-        List<TestCase> categoryTests = new ArrayList<>();
-        Enumeration<?> testNodes = categoryNode.children();
-        while (testNodes.hasMoreElements()) {
-            DefaultMutableTreeNode testNode = (DefaultMutableTreeNode) testNodes.nextElement();
-            Object userObject = testNode.getUserObject();
-            if (userObject instanceof TestCase testCase) {
-                categoryTests.add(testCase);
-            }
-        }
-        return categoryTests;
+        return childTestCases(categoryNode);
     }
 
     private List<TestCase> selectedAutoCategoryTests() {
@@ -1718,15 +1752,21 @@ public final class TestScreenApplication {
 
     private static final class TestCategory {
         private final String name;
+        private final long passedTestCount;
         private final int testCount;
 
-        private TestCategory(String name, int testCount) {
+        private TestCategory(String name, long passedTestCount, int testCount) {
             this.name = name;
+            this.passedTestCount = passedTestCount;
             this.testCount = testCount;
         }
 
         String name() {
             return name;
+        }
+
+        long passedTestCount() {
+            return passedTestCount;
         }
 
         int testCount() {
@@ -1735,7 +1775,7 @@ public final class TestScreenApplication {
 
         @Override
         public String toString() {
-            return name + " (" + testCount + ")";
+            return categoryLabel(name, passedTestCount, testCount);
         }
     }
 

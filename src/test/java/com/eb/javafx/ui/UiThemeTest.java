@@ -39,6 +39,6 @@ final class UiThemeTest {
         assertEquals(1.5, theme.fontScale());
         assertTrue(theme.highContrast());
         assertTrue(theme.reducedMotion());
-        assertTrue(theme.stylesheet().endsWith("/com/eb/javafx/ui/eb.css"));
+        assertTrue(theme.stylesheet().endsWith("/com/eb/javafx/ui/default.css"));
     }
 }

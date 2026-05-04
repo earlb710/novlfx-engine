@@ -1,0 +1,61 @@
+{
+  "id": "gallery.preview",
+  "title": "Location Gallery",
+  "layoutType": "PREVIEW_GRID",
+  "metadata": {"description": "Preview-grid sample showing card-like sections"},
+  "blocks": [
+    {
+      "id": "harbor",
+      "title": "Harbor",
+      "styleClass": null,
+      "metadata": {}
+    },
+    {
+      "id": "market",
+      "title": "Night Market",
+      "styleClass": null,
+      "metadata": {}
+    },
+    {
+      "id": "observatory",
+      "title": "Observatory",
+      "styleClass": null,
+      "metadata": {}
+    }
+  ],
+  "items": [
+    {
+      "id": "harbor.summary",
+      "blockId": "harbor",
+      "type": "TEXT",
+      "label": "Summary",
+      "text": "Fog, cargo lights, and late ferries.",
+      "value": null,
+      "defaultValue": null,
+      "styleClass": null,
+      "metadata": {}
+    },
+    {
+      "id": "market.summary",
+      "blockId": "market",
+      "type": "TEXT",
+      "label": "Summary",
+      "text": "Lanterns, tea stalls, and rumor hunters.",
+      "value": null,
+      "defaultValue": null,
+      "styleClass": null,
+      "metadata": {}
+    },
+    {
+      "id": "observatory.summary",
+      "blockId": "observatory",
+      "type": "TEXT",
+      "label": "Summary",
+      "text": "Star charts, static, and a locked archive wing.",
+      "value": null,
+      "defaultValue": null,
+      "styleClass": null,
+      "metadata": {}
+    }
+  ]
+}

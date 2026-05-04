@@ -37,11 +37,29 @@ public final class LocationOccupancy {
         return Optional.ofNullable(characterLocations.get(characterId));
     }
 
+    public void restoreLocation(String characterId, String locationId) {
+        String checkedCharacterId = Validation.requireNonBlank(characterId, "Character ID must not be blank.");
+        String checkedLocationId = Validation.requireNonBlank(locationId, "Location ID must not be blank.");
+        String previousLocation = characterLocations.put(checkedCharacterId, checkedLocationId);
+        if (previousLocation != null) {
+            LinkedHashSet<String> previousOccupants = occupantsByLocation.get(previousLocation);
+            if (previousOccupants != null) {
+                previousOccupants.remove(checkedCharacterId);
+            }
+        }
+        occupantsByLocation.computeIfAbsent(checkedLocationId, ignored -> new LinkedHashSet<>())
+                .add(checkedCharacterId);
+    }
+
     public Set<String> charactersAt(String locationId) {
         LinkedHashSet<String> occupants = occupantsByLocation.get(locationId);
         if (occupants == null) {
             return Set.of();
         }
         return Collections.unmodifiableSet(occupants);
+    }
+
+    public Map<String, String> characterLocations() {
+        return Collections.unmodifiableMap(characterLocations);
     }
 }
