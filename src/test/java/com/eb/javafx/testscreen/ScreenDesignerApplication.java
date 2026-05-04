@@ -20,8 +20,8 @@ import javafx.scene.Scene;
 import javafx.stage.Stage;
 
 import javax.swing.JButton;
-import javax.swing.JComboBox;
 import javax.swing.BoxLayout;
+import javax.swing.JComboBox;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -226,7 +226,8 @@ public final class ScreenDesignerApplication {
         JTextField itemIdField = new JTextField(existing == null ? "" : existing.id());
         JTextField labelField = new JTextField(existing == null ? "" : nullToBlank(existing.label()));
         JTextField contentField = new JTextField(existing == null ? "" : itemContent(existing));
-        JPanel fields = new JPanel(new GridLayout(5, 2, 6, 6));
+        JTextField valueField = new JTextField(existing == null ? "" : nullToBlank(existing.value()));
+        JPanel fields = new JPanel(new GridLayout(6, 2, 6, 6));
         fields.add(new JLabel("Target block"));
         fields.add(blockBox);
         fields.add(new JLabel("Item id"));
@@ -237,6 +238,8 @@ public final class ScreenDesignerApplication {
         fields.add(labelField);
         fields.add(new JLabel("Text/default value"));
         fields.add(contentField);
+        fields.add(new JLabel("Current value"));
+        fields.add(valueField);
         int result = JOptionPane.showConfirmDialog(null, fields, title, JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
         String itemId = itemIdField.getText();
         String blockId = (String) blockBox.getSelectedItem();
@@ -246,13 +249,14 @@ public final class ScreenDesignerApplication {
         ScreenDesignItemType type = (ScreenDesignItemType) typeBox.getSelectedItem();
         String label = blankToNull(labelField.getText());
         String content = blankToNull(contentField.getText());
+        String value = blankToNull(valueField.getText());
         return Optional.of(new ScreenDesignItem(
                 temporary && !itemId.startsWith("temp.") ? "temp." + itemId : itemId,
                 blockId,
                 type == null ? ScreenDesignItemType.TEXT : type,
                 label == null ? itemId : label,
                 type == ScreenDesignItemType.TEXT ? content : null,
-                existing == null ? null : existing.value(),
+                value,
                 type == ScreenDesignItemType.FIELD || type == ScreenDesignItemType.TEXT_AREA ? content : null,
                 existing == null ? null : existing.styleClass(),
                 existing == null ? Map.of() : existing.metadata()));
