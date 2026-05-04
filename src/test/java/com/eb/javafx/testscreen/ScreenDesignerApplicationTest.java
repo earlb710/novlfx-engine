@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -18,6 +19,7 @@ import javax.swing.tree.DefaultMutableTreeNode;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 final class ScreenDesignerApplicationTest {
@@ -86,5 +88,38 @@ final class ScreenDesignerApplicationTest {
         assertEquals("block: secondary", secondaryBlock.getUserObject().toString());
         assertEquals(1, secondaryBlock.getChildCount());
         assertEquals("item: subtitle.text", ((DefaultMutableTreeNode) secondaryBlock.getChildAt(0)).getUserObject().toString());
+    }
+
+    @Test
+    void blockIdForNodeUsesSelectedTreeNodeType() {
+        ScreenDesignModel design = new ScreenDesignModel(
+                "sample.screen",
+                "Sample Screen",
+                com.eb.javafx.ui.ScreenLayoutType.FORM,
+                Map.of(),
+                List.of(new ScreenDesignBlock("main", "Main")),
+                List.of(new ScreenDesignItem("title.text", "main", ScreenDesignItemType.TEXT,
+                        "Title", "Saved", null, null, null, Map.of())),
+                List.of());
+
+        DefaultMutableTreeNode root = ScreenDesignerApplication.buildNavigationTree(design);
+        DefaultMutableTreeNode blockNode = (DefaultMutableTreeNode) root.getChildAt(0);
+        DefaultMutableTreeNode itemNode = (DefaultMutableTreeNode) blockNode.getChildAt(0);
+
+        assertTrue(ScreenDesignerApplication.blockIdForNode(root).isEmpty());
+        assertEquals("main", ScreenDesignerApplication.blockIdForNode(blockNode).orElseThrow());
+        assertEquals("main", ScreenDesignerApplication.blockIdForNode(itemNode).orElseThrow());
+    }
+
+    @Test
+    void navigationTreeRejectsItemsThatReferenceMissingBlocks() {
+        IllegalStateException exception = assertThrows(IllegalStateException.class,
+                () -> ScreenDesignerApplication.addItemNodes(
+                        new LinkedHashMap<>(),
+                        List.of(new ScreenDesignItem("orphan.text", "missing", ScreenDesignItemType.TEXT,
+                                "Orphan", "Saved", null, null, null, Map.of())),
+                        false));
+
+        assertEquals("Unknown block for screen design item: orphan.text -> missing", exception.getMessage());
     }
 }

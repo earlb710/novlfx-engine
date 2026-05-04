@@ -314,18 +314,7 @@ public final class ScreenDesignerApplication {
 
     private Optional<String> selectedBlockId() {
         TreePath path = objectTree.getSelectionPath();
-        if (path == null) {
-            return Optional.empty();
-        }
-        Object node = path.getLastPathComponent();
-        if (!(node instanceof DefaultMutableTreeNode treeNode)) {
-            return Optional.empty();
-        }
-        Object userObject = treeNode.getUserObject();
-        if (!(userObject instanceof NavigationNode navigationNode)) {
-            return Optional.empty();
-        }
-        return Optional.ofNullable(navigationNode.blockId());
+        return path == null ? Optional.empty() : blockIdForNode(path.getLastPathComponent());
     }
 
     static DefaultMutableTreeNode buildNavigationTree(ScreenDesignModel design) {
@@ -341,7 +330,7 @@ public final class ScreenDesignerApplication {
         return root;
     }
 
-    private static void addItemNodes(
+    static void addItemNodes(
             Map<String, DefaultMutableTreeNode> blockNodes,
             List<ScreenDesignItem> items,
             boolean temporary) {
@@ -355,6 +344,17 @@ public final class ScreenDesignerApplication {
             }
             blockNode.add(itemNode);
         }
+    }
+
+    static Optional<String> blockIdForNode(Object node) {
+        if (!(node instanceof DefaultMutableTreeNode treeNode)) {
+            return Optional.empty();
+        }
+        Object userObject = treeNode.getUserObject();
+        if (!(userObject instanceof NavigationNode navigationNode)) {
+            return Optional.empty();
+        }
+        return Optional.ofNullable(navigationNode.blockId());
     }
 
     private static String previewText(ScreenLayoutModel model) {
