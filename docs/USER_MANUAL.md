@@ -364,6 +364,8 @@ Use `GameStateFactory` to create base `GameState` instances. `GameState` current
 
 Use `SaveLoadService` for reusable save-slot workflows. It supports slot summaries and JSON persistence behavior suitable for engine-level tests and extension by application code. `SaveLoadSummaryScreen` and `SaveLoadSummaryViewModel` expose the current save schema version and configured save directory as reusable diagnostic UI data. Use `SaveSnapshotCodec` and `SaveSnapshotSection` when an application wants to compose engine-owned state slices, such as scene-flow progress, into its own save document; the application still owns the outer save schema and any project-specific state fields.
 
+Use `ReusableGameplaySnapshot` and `ReusableGameplaySnapshotDocuments` for the first reusable vertical-slice save contract: scene-flow state, game time, and generic progress. The helper validates those required engine-owned sections while preserving additional application-owned sections for LR2Alt or other ports.
+
 `SaveLoadService.SaveSchema` reports the current save schema version and directory, while `SaveLoadService.SaveSlotSummary` summarizes one slot number and whether it currently has data. Use `SaveSnapshotRegistry` to register required or optional snapshot sections and validate composed `SaveSnapshotDocument` objects. If an application needs to load older section payloads, register a `SaveSnapshotSectionMigration` so the registry can migrate sections to the current version during compose/decompose.
 
 ### Preferences
