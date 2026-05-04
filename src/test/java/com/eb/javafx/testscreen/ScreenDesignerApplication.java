@@ -1,5 +1,6 @@
 package com.eb.javafx.testscreen;
 
+import com.eb.javafx.prefs.PreferencesService;
 import com.eb.javafx.ui.ScreenDesignBlock;
 import com.eb.javafx.ui.ScreenDesignItem;
 import com.eb.javafx.ui.ScreenDesignItemType;
@@ -10,8 +11,13 @@ import com.eb.javafx.ui.ScreenDesignService;
 import com.eb.javafx.ui.ScreenDesignValidationProblem;
 import com.eb.javafx.ui.ScreenDesignValidator;
 import com.eb.javafx.ui.ScreenLayoutModel;
+import com.eb.javafx.ui.ScreenLayoutRenderer;
 import com.eb.javafx.ui.ScreenLayoutSection;
 import com.eb.javafx.ui.ScreenLayoutType;
+import com.eb.javafx.ui.UiTheme;
+import javafx.application.Platform;
+import javafx.scene.Scene;
+import javafx.stage.Stage;
 
 import javax.swing.JButton;
 import javax.swing.JComboBox;
@@ -29,12 +35,17 @@ import javax.swing.SwingUtilities;
 import javax.swing.DefaultListModel;
 import java.awt.BorderLayout;
 import java.awt.GridLayout;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /** Manual Swing screen designer for editing JSON-backed reusable screen designs. */
 public final class ScreenDesignerApplication {
+    private static final AtomicBoolean JAVAFX_STARTED = new AtomicBoolean();
     private ScreenDesignModel design = sampleDesign();
     private final DefaultListModel<String> objectListModel = new DefaultListModel<>();
     private final JList<String> objectList = new JList<>(objectListModel);
@@ -44,6 +55,7 @@ public final class ScreenDesignerApplication {
     private final JTextArea previewArea = new JTextArea();
     private final JTextArea jsonArea = new JTextArea();
     private Path currentPath;
+    private volatile Stage previewStage;
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> new ScreenDesignerApplication().show());
@@ -73,6 +85,7 @@ public final class ScreenDesignerApplication {
         JButton load = new JButton("Load JSON");
         JButton save = new JButton("Save JSON");
         JButton validate = new JButton("Validate");
+        JButton preview = new JButton("Open Preview");
         JButton addBlock = new JButton("Add Block");
         JButton addItem = new JButton("Add Item");
         JButton addTemp = new JButton("Add Temporary Field");
@@ -80,6 +93,7 @@ public final class ScreenDesignerApplication {
         load.addActionListener(event -> loadJson());
         save.addActionListener(event -> saveJson());
         validate.addActionListener(event -> showValidation());
+        preview.addActionListener(event -> openPreview());
         addBlock.addActionListener(event -> addBlock());
         addItem.addActionListener(event -> addItem(false));
         addTemp.addActionListener(event -> addItem(true));
@@ -87,6 +101,7 @@ public final class ScreenDesignerApplication {
         panel.add(load);
         panel.add(save);
         panel.add(validate);
+        panel.add(preview);
         panel.add(addBlock);
         panel.add(addItem);
         panel.add(addTemp);
@@ -164,7 +179,7 @@ public final class ScreenDesignerApplication {
     }
 
     private void loadJson() {
-        JFileChooser chooser = new JFileChooser();
+        JFileChooser chooser = jsonChooser();
         if (chooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
             currentPath = chooser.getSelectedFile().toPath();
             design = ScreenDesignJson.load(currentPath);
@@ -174,7 +189,7 @@ public final class ScreenDesignerApplication {
 
     private void saveJson() {
         if (currentPath == null) {
-            JFileChooser chooser = new JFileChooser();
+            JFileChooser chooser = jsonChooser();
             if (chooser.showSaveDialog(null) != JFileChooser.APPROVE_OPTION) {
                 return;
             }
@@ -189,6 +204,22 @@ public final class ScreenDesignerApplication {
         JOptionPane.showMessageDialog(null, problems.isEmpty()
                 ? "Screen design is valid."
                 : problems.stream().map(problem -> problem.path() + ": " + problem.message()).reduce("", (a, b) -> a + b + "\n"));
+    }
+
+    private void openPreview() {
+        List<ScreenDesignValidationProblem> problems = ScreenDesignValidator.validate(design);
+        if (!problems.isEmpty()) {
+            JOptionPane.showMessageDialog(null,
+                    "Fix validation issues before previewing:\n" + problems.stream()
+                            .map(problem -> problem.path() + ": " + problem.message())
+                            .reduce("", (a, b) -> a + b + "\n"),
+                    "Preview unavailable",
+                    JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        ensureJavaFxStarted();
+        ScreenDesignModel designSnapshot = design;
+        Platform.runLater(() -> showPreviewStage(designSnapshot));
     }
 
     private void refreshAll() {
@@ -213,6 +244,87 @@ public final class ScreenDesignerApplication {
             }
         }
         return text.toString();
+    }
+
+    static Path screenDesignExamplesDirectory() {
+        Path current = Path.of("").toAbsolutePath().normalize();
+        Path search = current;
+        while (search != null) {
+            if (Files.isRegularFile(search.resolve("build.gradle"))) {
+                return search.resolve("examples").resolve("screen-designs").normalize();
+            }
+            search = search.getParent();
+        }
+        return current;
+    }
+
+    private JFileChooser jsonChooser() {
+        Path initialDirectory = currentPath != null && currentPath.getParent() != null
+                ? currentPath.getParent()
+                : screenDesignExamplesDirectory();
+        JFileChooser chooser = new JFileChooser(initialDirectory.toFile());
+        chooser.setCurrentDirectory(initialDirectory.toFile());
+        if (currentPath != null) {
+            chooser.setSelectedFile(currentPath.toFile());
+        }
+        return chooser;
+    }
+
+    private static void ensureJavaFxStarted() {
+        CountDownLatch started = new CountDownLatch(1);
+        if (JAVAFX_STARTED.compareAndSet(false, true)) {
+            try {
+                Platform.startup(() -> {
+                    Platform.setImplicitExit(false);
+                    started.countDown();
+                });
+            } catch (IllegalStateException exception) {
+                Platform.setImplicitExit(false);
+                started.countDown();
+            }
+        } else {
+            Platform.setImplicitExit(false);
+            started.countDown();
+        }
+        try {
+            if (!started.await(5, TimeUnit.SECONDS)) {
+                throw new IllegalStateException("JavaFX preview toolkit did not start.");
+            }
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("Interrupted while starting JavaFX preview toolkit.", exception);
+        }
+    }
+
+    private void showPreviewStage(ScreenDesignModel designSnapshot) {
+        try {
+            PreferencesService preferencesService = new PreferencesService();
+            preferencesService.load();
+
+            UiTheme uiTheme = new UiTheme();
+            uiTheme.initialize(preferencesService);
+
+            ScreenLayoutModel previewModel = ScreenDesignLayoutAdapter.toLayoutModel(designSnapshot, true);
+            Scene scene = new Scene(
+                    ScreenLayoutRenderer.createRoot(previewModel),
+                    preferencesService.windowWidth(),
+                    preferencesService.windowHeight());
+            scene.getStylesheets().add(uiTheme.stylesheet());
+
+            if (previewStage == null) {
+                previewStage = new Stage();
+                previewStage.setOnHidden(event -> previewStage = null);
+            }
+            previewStage.setTitle("Preview: " + designSnapshot.title());
+            previewStage.setScene(scene);
+            previewStage.show();
+            previewStage.toFront();
+        } catch (RuntimeException exception) {
+            SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(null,
+                    exception.getMessage(),
+                    "Preview Error",
+                    JOptionPane.ERROR_MESSAGE));
+        }
     }
 
     private static ScreenDesignModel sampleDesign() {

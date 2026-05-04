@@ -70,6 +70,8 @@ See [docs/USER_MANUAL.md](docs/USER_MANUAL.md) for setup, package responsibiliti
 ./gradlew --no-daemon runScreenDesigner
 ```
 
+The screen designer starts in `examples/screen-designs`, which now includes several sample JSON screen designs and a JavaFX preview button for the current design.
+
 ## Android Studio
 
 - Open the repository root as a Gradle project in Android Studio.

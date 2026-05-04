@@ -1,0 +1,66 @@
+{
+  "id": "journal.quests",
+  "title": "Quest Log",
+  "layoutType": "TWO_COLUMN",
+  "metadata": {"description": "Two-column quest tracker sample"},
+  "blocks": [
+    {
+      "id": "active-quests",
+      "title": "Active Quests",
+      "styleClass": null,
+      "metadata": {}
+    },
+    {
+      "id": "details",
+      "title": "Selected Quest",
+      "styleClass": null,
+      "metadata": {}
+    }
+  ],
+  "items": [
+    {
+      "id": "active-quests.find-ava",
+      "blockId": "active-quests",
+      "type": "TEXT",
+      "label": "Find Ava",
+      "text": "Find Ava at the tram station",
+      "value": null,
+      "defaultValue": null,
+      "styleClass": null,
+      "metadata": {}
+    },
+    {
+      "id": "active-quests.repair-radio",
+      "blockId": "active-quests",
+      "type": "TEXT",
+      "label": "Repair Radio",
+      "text": "Collect 2 spare coils",
+      "value": null,
+      "defaultValue": null,
+      "styleClass": null,
+      "metadata": {}
+    },
+    {
+      "id": "details.priority",
+      "blockId": "details",
+      "type": "FIELD",
+      "label": "Priority",
+      "text": null,
+      "value": null,
+      "defaultValue": "High",
+      "styleClass": null,
+      "metadata": {}
+    },
+    {
+      "id": "details.notes",
+      "blockId": "details",
+      "type": "TEXT_AREA",
+      "label": "Notes",
+      "text": null,
+      "value": null,
+      "defaultValue": "Ava was last seen near the east platform after curfew.",
+      "styleClass": null,
+      "metadata": {}
+    }
+  ]
+}

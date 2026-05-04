@@ -52,4 +52,5 @@ tasks.register('runScreenDesigner', JavaExec) {
     description = 'Launches the manual screen designer UI from the test source set.'
     classpath = sourceSets.test.runtimeClasspath
     mainClass = 'com.eb.javafx.testscreen.ScreenDesignerApplication'
+    workingDir = file("$projectDir/examples/screen-designs")
 }
