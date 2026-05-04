@@ -108,6 +108,7 @@ public final class ScreenLayoutRenderer {
 
     private static VBox sectionNode(ScreenLayoutSection section, String styleClass) {
         VBox sectionNode = new VBox(SECTION_SPACING);
+        sectionNode.setId(section.id());
         sectionNode.getStyleClass().add(ScreenShell.LAYOUT_SECTION_STYLE_CLASS);
         if (styleClass != null && !styleClass.isBlank()) {
             sectionNode.getStyleClass().add(styleClass);
@@ -116,8 +117,12 @@ public final class ScreenLayoutRenderer {
             sectionNode.getStyleClass().add(section.styleClass());
         }
         addOptionalText(sectionNode, section.title(), ScreenShell.LAYOUT_SECTION_TITLE_STYLE_CLASS);
-        for (String line : section.lines()) {
+        for (int index = 0; index < section.lines().size(); index++) {
+            String line = section.lines().get(index);
             Label label = new Label(line);
+            if (!section.lineIds().isEmpty()) {
+                label.setId(section.lineIds().get(index));
+            }
             label.getStyleClass().add(ScreenShell.LAYOUT_SECTION_ROW_STYLE_CLASS);
             sectionNode.getChildren().add(label);
         }

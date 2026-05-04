@@ -64,6 +64,12 @@ See [docs/USER_MANUAL.md](docs/USER_MANUAL.md) for setup, package responsibiliti
 ./gradlew --no-daemon runTestScreen
 ```
 
+## Launch the screen designer
+
+```bash
+./gradlew --no-daemon runScreenDesigner
+```
+
 ## Android Studio
 
 - Open the repository root as a Gradle project in Android Studio.
