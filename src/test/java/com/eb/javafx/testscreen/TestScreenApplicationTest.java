@@ -198,6 +198,8 @@ final class TestScreenApplicationTest {
     void frameTitleIncludesTotalSuccessAndErrorCounts() {
         assertEquals("eb Test Screen (12 tests, 8 success, 3 errors)",
                 TestScreenApplication.frameTitle(12, 8, 3));
+        assertEquals("Custom Tests (2 tests, 1 success, 1 errors)",
+                TestScreenApplication.frameTitle("Custom Tests", 2, 1, 1));
     }
 
     @Test
@@ -233,6 +235,54 @@ final class TestScreenApplicationTest {
                 "MethodSource [className = 'com.eb.javafx.testscreen.TestScreenApplicationTest', "
                         + "methodName = 'categoryForSourceUsesFirstPackageSegmentBelowJavafxRoot', methodParameterTypes = '']")));
         assertEquals("unknown", TestScreenApplication.categoryForSource(Optional.empty()));
+        assertEquals("feature", TestScreenApplication.categoryForSource(Optional.of(
+                "MethodSource [className = 'demo.tests.feature.SampleTest', "
+                        + "methodName = 'runs', methodParameterTypes = '']"), "demo.tests"));
+    }
+
+    @Test
+    void configurableSourceFileLookupUsesSuppliedRoot() throws Exception {
+        Path sourceRoot = tempDir.resolve("src");
+        Path source = sourceRoot.resolve("demo/tests/SampleTest.java");
+        Files.createDirectories(source.getParent());
+        Files.writeString(source, "class SampleTest {}", StandardCharsets.UTF_8);
+
+        Optional<Path> resolved = TestScreenApplication.sourceFilePath(
+                "MethodSource [className = 'demo.tests.SampleTest', methodName = 'runs', methodParameterTypes = '']",
+                sourceRoot);
+
+        assertTrue(resolved.isPresent());
+        assertEquals(source.toAbsolutePath().normalize(), resolved.orElseThrow());
+    }
+
+    @Test
+    void configurableStandaloneExampleIdsUseSuppliedRoot() throws Exception {
+        Path repo = tempDir.resolve("repo");
+        Path example = repo.resolve("examples/user-manual/demo.sh");
+        Files.createDirectories(example.getParent());
+        Files.writeString(example, "echo demo", StandardCharsets.UTF_8);
+
+        assertEquals("example:examples/user-manual/demo.sh",
+                TestScreenApplication.standaloneExampleUniqueId(example, repo));
+        assertEquals("user-manual/demo.sh",
+                TestScreenApplication.standaloneExampleDisplayName(example, repo));
+    }
+
+    @Test
+    void testScreenConfigurationNormalizesCustomDefaults() {
+        TestScreenApplication.TestScreenConfiguration configuration = new TestScreenApplication.TestScreenConfiguration(
+                "demo.tests",
+                tempDir,
+                tempDir.resolve("test-src"),
+                List.of(tempDir.resolve("examples")),
+                tempDir.resolve("build-results"),
+                tempDir.resolve("results.json"),
+                "Demo Tests",
+                "demo.version");
+
+        assertEquals("demo.tests", configuration.testPackage());
+        assertEquals(tempDir.toAbsolutePath().normalize(), configuration.repositoryRoot());
+        assertEquals("Demo Tests", configuration.titlePrefix());
     }
 
     @Test

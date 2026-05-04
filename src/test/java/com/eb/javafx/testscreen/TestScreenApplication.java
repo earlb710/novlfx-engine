@@ -112,11 +112,17 @@ public final class TestScreenApplication {
     private final JTextArea outputArea;
     private final JButton runButton;
     private final JButton runAllButton;
+    private final TestScreenConfiguration configuration;
     private final Path resultPath;
     private final String applicationVersion;
     private JFrame frame;
 
     private TestScreenApplication() {
+        this(TestScreenConfiguration.defaults());
+    }
+
+    TestScreenApplication(TestScreenConfiguration configuration) {
+        this.configuration = Objects.requireNonNull(configuration, "configuration");
         launcher = LauncherFactory.create();
         testTreeRoot = new DefaultMutableTreeNode("Tests");
         testTreeModel = new DefaultTreeModel(testTreeRoot);
@@ -127,8 +133,8 @@ public final class TestScreenApplication {
         outputArea = new JTextArea();
         runButton = new JButton("Run");
         runAllButton = new JButton("Run All in Category");
-        resultPath = REPO_ROOT.resolve(RESULT_FILE);
-        applicationVersion = System.getProperty("eb.application.version", "unknown");
+        resultPath = configuration.resultPath();
+        applicationVersion = System.getProperty(configuration.applicationVersionProperty(), "unknown");
     }
 
     public static void main(String[] args) {
@@ -339,7 +345,7 @@ public final class TestScreenApplication {
         Map<String, TestResultRecord> existingRecords = loadResultRecords();
         Map<TestMethodKey, BuildResultRecord> buildResultRecords = loadBuildResultRecords();
         LauncherDiscoveryRequest request = LauncherDiscoveryRequestBuilder.request()
-                .selectors(DiscoverySelectors.selectPackage(TEST_PACKAGE))
+                .selectors(DiscoverySelectors.selectPackage(configuration.testPackage()))
                 .build();
         TestPlan testPlan = launcher.discover(request);
         List<TestCase> tests = testPlan.getRoots().stream()
@@ -404,12 +410,16 @@ public final class TestScreenApplication {
             long errorCount = tests.stream()
                     .filter(testCase -> testCase.success().map(success -> !success).orElse(false))
                     .count();
-            frame.setTitle(frameTitle(tests.size(), successCount, errorCount));
+            frame.setTitle(frameTitle(configuration.titlePrefix(), tests.size(), successCount, errorCount));
         }
     }
 
     static String frameTitle(int totalTests, long successCount, long errorCount) {
-        return "eb Test Screen (" + totalTests + " tests, "
+        return frameTitle("eb Test Screen", totalTests, successCount, errorCount);
+    }
+
+    static String frameTitle(String titlePrefix, int totalTests, long successCount, long errorCount) {
+        return titlePrefix + " (" + totalTests + " tests, "
                 + successCount + " success, "
                 + errorCount + " errors)";
     }
@@ -587,7 +597,7 @@ public final class TestScreenApplication {
     private RunResult executeExternalTestAndRecord(TestCase testCase) {
         StringBuilder output = new StringBuilder()
                 .append("File: ").append(testCase.filePath().map(Path::toString).orElse("Unknown")).append('\n')
-                .append("Working directory: ").append(REPO_ROOT).append("\n\n");
+                .append("Working directory: ").append(configuration.repositoryRoot()).append("\n\n");
         if (testCase.unsupportedOnCurrentOperatingSystem()) {
             String resultOutput = output.append(testCase.unsupportedOperatingSystemMessage()).append('\n').toString();
             testCase.recordResult(Instant.now().toString(), applicationVersion, true, resultOutput);
@@ -598,7 +608,7 @@ public final class TestScreenApplication {
             List<String> command = testCase.command();
             output.append("Command: ").append(String.join(" ", command)).append("\n\n");
             Process process = new ProcessBuilder(command)
-                    .directory(REPO_ROOT.toFile())
+                    .directory(configuration.repositoryRoot().toFile())
                     .redirectErrorStream(true)
                     .start();
             String processOutput;
@@ -702,11 +712,11 @@ public final class TestScreenApplication {
 
     private Map<TestMethodKey, BuildResultRecord> loadBuildResultRecords() {
         Map<TestMethodKey, BuildResultRecord> records = new LinkedHashMap<>();
-        if (!Files.isDirectory(BUILD_RESULTS_ROOT)) {
+        if (!Files.isDirectory(configuration.buildResultsRoot())) {
             return records;
         }
 
-        try (Stream<Path> files = Files.list(BUILD_RESULTS_ROOT)) {
+        try (Stream<Path> files = Files.list(configuration.buildResultsRoot())) {
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
             factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
             factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
@@ -743,7 +753,7 @@ public final class TestScreenApplication {
                 }
             }
         } catch (Exception exception) {
-            outputArea.setText("Unable to read Gradle test results from " + BUILD_RESULTS_ROOT.toAbsolutePath() + ":\n"
+            outputArea.setText("Unable to read Gradle test results from " + configuration.buildResultsRoot().toAbsolutePath() + ":\n"
                     + stackTrace(exception));
         }
         return records;
@@ -992,7 +1002,8 @@ public final class TestScreenApplication {
     }
 
     private List<TestCase> discoverStandaloneExamples(Map<String, TestResultRecord> existingRecords) {
-        return standaloneExampleFiles(EXAMPLES_ROOT).stream()
+        return configuration.examplesRoots().stream()
+                .flatMap(root -> standaloneExampleFiles(root).stream())
                 .map(path -> TestCase.standaloneExample(path, existingRecords.get(standaloneExampleUniqueId(path))))
                 .collect(Collectors.toList());
     }
@@ -1037,10 +1048,14 @@ public final class TestScreenApplication {
      * Extracts the test category from the class package segment immediately after the configured test package.
      */
     static String categoryForSource(Optional<String> source) {
+        return categoryForSource(source, TEST_PACKAGE);
+    }
+
+    static String categoryForSource(Optional<String> source, String testPackage) {
         return source.flatMap(TestScreenApplication::parseMethodSource)
                 .map(TestMethodKey::className)
                 .map(className -> {
-                    String prefix = TEST_PACKAGE + ".";
+                    String prefix = testPackage + ".";
                     if (!className.startsWith(prefix)) {
                         return "other";
                     }
@@ -1064,9 +1079,13 @@ public final class TestScreenApplication {
     }
 
     static Optional<Path> sourceFilePath(String source) {
+        return sourceFilePath(source, TEST_SOURCE_ROOT);
+    }
+
+    static Optional<Path> sourceFilePath(String source, Path testSourceRoot) {
         return parseMethodSource(source)
                 .map(TestMethodKey::className)
-                .map(className -> TEST_SOURCE_ROOT.resolve(className.replace('.', '/') + ".java"))
+                .map(className -> testSourceRoot.resolve(className.replace('.', '/') + ".java"))
                 .map(path -> path.toAbsolutePath().normalize())
                 .filter(Files::isRegularFile);
     }
@@ -1134,12 +1153,20 @@ public final class TestScreenApplication {
     }
 
     static String standaloneExampleUniqueId(Path path) {
-        Path relativePath = REPO_ROOT.relativize(path.toAbsolutePath().normalize());
+        return standaloneExampleUniqueId(path, REPO_ROOT);
+    }
+
+    static String standaloneExampleUniqueId(Path path, Path repositoryRoot) {
+        Path relativePath = repositoryRoot.toAbsolutePath().normalize().relativize(path.toAbsolutePath().normalize());
         return STANDALONE_EXAMPLE_PREFIX + PathUtils.normalizeSeparators(relativePath.toString());
     }
 
     static String standaloneExampleDisplayName(Path path) {
-        Path relativePath = REPO_ROOT.relativize(path.toAbsolutePath().normalize());
+        return standaloneExampleDisplayName(path, REPO_ROOT);
+    }
+
+    static String standaloneExampleDisplayName(Path path, Path repositoryRoot) {
+        Path relativePath = repositoryRoot.toAbsolutePath().normalize().relativize(path.toAbsolutePath().normalize());
         Path fileName = relativePath.getFileName();
         if (fileName == null) {
             return PathUtils.normalizeSeparators(relativePath.toString());
@@ -1223,6 +1250,50 @@ public final class TestScreenApplication {
 
     private static boolean isWindows(String osName) {
         return osName != null && osName.toLowerCase(Locale.ROOT).contains("win");
+    }
+
+    record TestScreenConfiguration(
+            String testPackage,
+            Path repositoryRoot,
+            Path testSourceRoot,
+            List<Path> examplesRoots,
+            Path buildResultsRoot,
+            Path resultPath,
+            String titlePrefix,
+            String applicationVersionProperty) {
+        TestScreenConfiguration {
+            Objects.requireNonNull(testPackage, "testPackage");
+            if (testPackage.isBlank()) {
+                throw new IllegalArgumentException("Test package must not be blank.");
+            }
+            repositoryRoot = Objects.requireNonNull(repositoryRoot, "repositoryRoot").toAbsolutePath().normalize();
+            testSourceRoot = Objects.requireNonNull(testSourceRoot, "testSourceRoot").toAbsolutePath().normalize();
+            examplesRoots = List.copyOf(Objects.requireNonNull(examplesRoots, "examplesRoots").stream()
+                    .map(path -> path.toAbsolutePath().normalize())
+                    .toList());
+            buildResultsRoot = Objects.requireNonNull(buildResultsRoot, "buildResultsRoot").toAbsolutePath().normalize();
+            resultPath = Objects.requireNonNull(resultPath, "resultPath").toAbsolutePath().normalize();
+            Objects.requireNonNull(titlePrefix, "titlePrefix");
+            if (titlePrefix.isBlank()) {
+                throw new IllegalArgumentException("Title prefix must not be blank.");
+            }
+            Objects.requireNonNull(applicationVersionProperty, "applicationVersionProperty");
+            if (applicationVersionProperty.isBlank()) {
+                throw new IllegalArgumentException("Application version property must not be blank.");
+            }
+        }
+
+        static TestScreenConfiguration defaults() {
+            return new TestScreenConfiguration(
+                    TEST_PACKAGE,
+                    REPO_ROOT,
+                    TEST_SOURCE_ROOT,
+                    List.of(EXAMPLES_ROOT),
+                    BUILD_RESULTS_ROOT,
+                    REPO_ROOT.resolve(RESULT_FILE),
+                    "eb Test Screen",
+                    "eb.application.version");
+        }
     }
 
     static boolean isNewTest(TestResultRecord record, Optional<String> currentSourceSignature) {
