@@ -1895,7 +1895,7 @@ public class UtilString extends UtilUnicode {
     public static String[] splitUnscoped(char[] pSource, char[] pFind, boolean pTrim) {
         String[] ret = new String[0];
         if (pSource != null && pFind != null) {
-            List<String> retList = new ArrayList();
+            List<String> retList = new ArrayList<>();
             int sidx = 0;
             int idx = 0;
             while (idx < pSource.length) {
@@ -1935,7 +1935,7 @@ public class UtilString extends UtilUnicode {
     public static String[] splitUnscoped(char[] pSource, char[] pFindStart, char[] pFindEnd, boolean pTrim) {
         String[] ret = new String[0];
         if (pSource != null && pFindStart != null && pFindEnd != null) {
-            List<String> retList = new ArrayList();
+            List<String> retList = new ArrayList<>();
             int sidx = 0;
             int idx = 0;
             String s;
@@ -1996,7 +1996,7 @@ public class UtilString extends UtilUnicode {
     public static String[] splitWhitespaceUnscoped(char[] pSource) {
         String[] ret = new String[0];
         if (pSource != null) {
-            List<String> retList = new ArrayList();
+            List<String> retList = new ArrayList<>();
             int sidx = 0;
             int idx = 0;
             while (idx < pSource.length) {
@@ -2031,7 +2031,7 @@ public class UtilString extends UtilUnicode {
     public static char[][] splitWhitespaceUnscopedChar(char[] pSource) {
         char[][] ret = new char[0][0];
         if (pSource != null) {
-            List<char[]> retList = new ArrayList();
+            List<char[]> retList = new ArrayList<>();
             int sidx = 0;
             int idx = 0;
             while (idx < pSource.length) {
@@ -2073,7 +2073,7 @@ public class UtilString extends UtilUnicode {
     public static String[] splitOperandUnscoped(char[] pSource) {
         String[] ret = new String[0];
         if (pSource != null) {
-            List<String> retList = new ArrayList();
+            List<String> retList = new ArrayList<>();
             int sidx = 0;
             int idx = 0;
             while (idx < pSource.length) {
@@ -2110,7 +2110,7 @@ public class UtilString extends UtilUnicode {
     }
 
     public static String[] splitFromTo(String pSource, String pStartFind, String pEndFind, boolean pTrim) {
-        List<String> ret = new ArrayList();
+        List<String> ret = new ArrayList<>();
         char[] ca = pSource.toCharArray();
         char[] cstart = pStartFind.toCharArray();
         char[] cend = pEndFind.toCharArray();
