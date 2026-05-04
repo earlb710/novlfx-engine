@@ -203,6 +203,12 @@ final class TestScreenApplicationTest {
     }
 
     @Test
+    void categoryLabelShowsPassedTestsOverTotalTests() {
+        assertEquals("ui (8/12)", TestScreenApplication.categoryLabel("ui", 8, 12));
+        assertEquals("audio (0/3)", TestScreenApplication.categoryLabel("audio", 0, 3));
+    }
+
+    @Test
     void testScreenPaletteKeepsReadableTextContrast() {
         assertTrue(TestScreenApplication.contrastRatio(
                 TestScreenApplication.PRIMARY_TEXT,
