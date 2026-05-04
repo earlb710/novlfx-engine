@@ -14,10 +14,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 final class ConversationHistoryScreenTest {
     @Test
     void showsEmptyConversationHistory() {
-        ScreenViewModel viewModel = ConversationHistoryScreen.viewModel("Conversation History", new GameState("main-menu"));
+        ConversationHistoryViewModel viewModel = ConversationHistoryScreen.viewModel("Conversation History", new GameState("main-menu"));
 
         assertEquals("Conversation History", viewModel.title());
-        assertEquals(List.of("No conversations have been recorded yet."), viewModel.lines());
+        assertEquals(List.of("No conversations have been recorded yet."), viewModel.messages());
+        assertEquals(List.of(), viewModel.entries());
         assertEquals("Back to main menu", viewModel.actions().get(0).label());
     }
 
@@ -34,13 +35,29 @@ final class ConversationHistoryScreenTest {
                 DialogColumn.parsed("note", "{i}A folded map changes hands.{/i}"))));
         gameState.conversationHistory().endDialog(new GameDateTime(3, "night"));
 
-        ScreenViewModel viewModel = ConversationHistoryScreen.viewModel("Conversation History", gameState);
+        ConversationHistoryViewModel viewModel = ConversationHistoryScreen.viewModel("Conversation History", gameState);
 
-        assertEquals(List.of(
-                "dock-talk started day 3 evening with Ava, MC (ended day 3 night)",
-                "  Ava: Meet me by the docks.",
-                "  MC: I'll be there.",
-                "  note: A folded map changes hands."), viewModel.lines());
+        assertEquals(List.of(), viewModel.messages());
+        assertEquals(1, viewModel.entries().size());
+
+        ConversationHistoryEntryViewModel entry = viewModel.entries().get(0);
+        assertEquals("dock-talk", entry.dialogId());
+        assertEquals("day 3 evening", entry.startedAt());
+        assertEquals("ended day 3 night", entry.status());
+        assertEquals("Ava, MC", entry.participants());
+        assertEquals(3, entry.rows().size());
+
+        assertEquals("Ava", entry.rows().get(0).speakerLabel());
+        assertEquals("Meet me by the docks.", entry.rows().get(0).text());
+        assertEquals("message", entry.rows().get(0).columns().get(1).id());
+        assertEquals("Meet me by the docks.", entry.rows().get(0).columns().get(1).text());
+
+        assertEquals("MC", entry.rows().get(1).speakerLabel());
+        assertEquals("I'll be there.", entry.rows().get(1).text());
+
+        assertEquals(null, entry.rows().get(2).speakerLabel());
+        assertEquals("note: A folded map changes hands.", entry.rows().get(2).text());
+        assertEquals(List.of(new ConversationHistoryColumnViewModel("note", "A folded map changes hands.")), entry.rows().get(2).columns());
     }
 
     @Test
@@ -48,8 +65,13 @@ final class ConversationHistoryScreenTest {
         GameState gameState = new GameState("main-menu");
         gameState.conversationHistory().beginDialog("current", new GameDateTime(1, "default"));
 
-        ScreenViewModel viewModel = ConversationHistoryScreen.viewModel("Conversation History", gameState);
+        ConversationHistoryViewModel viewModel = ConversationHistoryScreen.viewModel("Conversation History", gameState);
 
-        assertEquals(List.of("current started day 1 default with unknown participants (open)"), viewModel.lines());
+        assertEquals(List.of(), viewModel.messages());
+        assertEquals(1, viewModel.entries().size());
+        assertEquals("current", viewModel.entries().get(0).dialogId());
+        assertEquals("day 1 default", viewModel.entries().get(0).startedAt());
+        assertEquals("unknown participants", viewModel.entries().get(0).participants());
+        assertEquals("open", viewModel.entries().get(0).status());
     }
 }

@@ -36,7 +36,9 @@ public final class BootstrapReport {
             Map<BootstrapPhase, String> phaseMessages) {
         this.startedAt = startedAt;
         this.completedAt = completedAt;
-        this.completedPhases = EnumSet.copyOf(completedPhases);
+        this.completedPhases = completedPhases == null || completedPhases.isEmpty()
+                ? EnumSet.noneOf(BootstrapPhase.class)
+                : EnumSet.copyOf(completedPhases);
         this.phaseMessages = ImmutableCollections.copyEnumMap(BootstrapPhase.class, phaseMessages);
     }
 

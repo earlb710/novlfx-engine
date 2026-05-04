@@ -16,6 +16,7 @@ Example/demo index: [`examples/user-manual/README.md`](../examples/user-manual/R
 - **Game support services**: use reusable action, requirement, effect, game-clock, state, save/load, preference, and random utilities.
 - **Text and utility helpers**: parse simple styled text tags and use common validation, collection, path, packaged font, JSON, and time helpers.
 - **Extension boundaries**: keep authored game content, application launchers, concrete assets, and domain-specific rules in the application repository.
+- **Application shell integration**: create the first app-owned JavaFX launcher, bootstrap flow, and media adapter on top of the reusable engine.
 
 ## 2. Project setup and validation
 
@@ -84,7 +85,7 @@ The main result is a `BootContext`. Use it to access initialized services such a
 - `SceneRegistry`
 - `ImageDisplayRegistry`
 
-Inspect the `BootstrapReport` when startup diagnostics matter. It records completed phases and phase messages so an application can display useful failure or progress information.
+Inspect the `BootstrapReport` when startup diagnostics matter. It records completed phases and phase messages so an application can display useful failure or progress information. Use `BootstrapDiagnostics.requireComplete(...)` when an application launcher should fail fast on incomplete startup, or use `BootstrapDiagnostics.viewModel(...)` / `phaseLines(...)` to render content-neutral startup summaries in an app-owned startup or error screen.
 
 Do not use guarded services before initialization. Several services use initialization guards and will fail fast if called before bootstrap or explicit initialization.
 
@@ -159,6 +160,16 @@ Use `SceneRegistry` to register `SceneModule` implementations. A scene is descri
 
 Use `SceneExecutor` to execute scene flow and return a `SceneExecutionResult`. Use `ScenePresenter` and view-model classes when JavaFX UI code needs a UI-neutral representation of the current scene and choices.
 
+### Scene presentation view models
+
+Scene view models are deliberately UI-neutral. They are useful when the engine needs to expose scene execution state to JavaFX screens, tests, debug panels, or application-owned renderers without passing mutable executor objects or JavaFX controls across package boundaries. Use `ScenePresenter` to convert a `SceneExecutionResult` into these models after each scene execution step or choice selection.
+
+- `SceneViewModel` is the top-level scene presentation state. It carries the current execution status, scene id, step id, speaker id, text definition id, display reference, choices, selected choice history, message, dialogue rows, status rows, and effect previews. Use it as the single object handed to a scene renderer such as `SceneFlowView` so the renderer can display scene progress without knowing how scene execution works.
+- `SceneChoiceViewModel` represents one rendered choice after availability has already been evaluated. It includes the choice id, choice text definition id, whether the choice is available, an optional disabled reason, whether it was selected earlier, string metadata, and effect previews. Use it to build choice buttons or test choice state without re-running requirement checks in the UI layer.
+- `SceneDialogueRowViewModel` represents one dialogue or narration row. It includes the step type, optional speaker id, text definition id, and optional display reference. Use it when a renderer needs a normalized row for dialogue panels instead of inspecting raw `SceneStep` objects.
+- `SceneStatusRowViewModel` represents one label/value diagnostic row such as status, active scene, active step, selected choices, pending interruption, or message. Use it for HUD, debug, and manual-test surfaces where scene execution state should be visible in a consistent format.
+- `SceneEffectPreviewViewModel` represents preview-only metadata for a scene step or choice. It contains a label and value derived from `preview.*` metadata or a fallback reference. Use it when a prototype UI wants to show what display, effect, or authored metadata would be applied before an application supplies custom rendering.
+
 Use `SceneDefinitionJson` for simple JSON-authored scenes that do not require executable Java `ActionRequirement` or `ActionEffect` instances. JSON scenes can include dialogue/narration text definition IDs, choices, transitions, display references, and string metadata. Register more complex requirements/effects through Java scene modules. In an application, keep the scene JSON path in `ApplicationResourceConfig.resources()` and resolve it with `resolveResource(applicationRoot, "sceneDefinitions")` before loading.
 
 Use `SceneFlowStateJson` to serialize and restore `SceneFlowState` snapshots containing the active scene, step index, call stack, selected choice IDs, and pending UI interruption marker. For future save/load payloads, `SceneFlowStateJson.toSnapshotSection(...)` wraps that JSON as a versioned `SaveSnapshotSection` named `sceneFlowState`, and `fromSnapshotSection(...)` validates the section id and version before loading it.
@@ -167,7 +178,12 @@ Use `SceneFlowStateJson` to serialize and restore `SceneFlowState` snapshots con
 
 The `ui` package provides reusable JavaFX surfaces and helpers:
 
-- `ScreenViewModel` and `ScreenActionViewModel` describe reusable screen text and route-backed actions without JavaFX control state.
+- `ScreenViewModel` describes reusable route screen content without JavaFX control state. It contains the screen title, informational body lines, and route actions. Use it for menu, summary, diagnostics, and placeholder screens when the content is mostly text plus navigation and should be easy to test before JavaFX controls are created.
+- `ScreenActionViewModel` describes one route-backed action for a `ScreenViewModel`. It contains the button label, destination route id, and enabled state. Use it when reusable screens need navigation buttons that can be enabled or disabled without coupling the screen model to JavaFX `Button` setup.
+- `PreferencesSummaryViewModel` describes the reusable preferences summary screen with typed rows instead of raw strings. Each `PreferencesSummaryRowViewModel` contains a label/value pair such as window size, HUD alpha, input mode, or master volume, which keeps preference summaries easy to extend and test before flattening them into generic screen lines.
+- `SaveLoadSummaryViewModel` describes the reusable save/load summary screen with explicit schema metadata fields. It keeps the schema version, save directory, informational note, and actions as named data so save/load diagnostics can evolve without parsing or rebuilding display strings.
+- `HudSummaryViewModel` describes the reusable HUD summary screen with a small dedicated model. It currently carries the HUD layer description, opacity, and actions and gives the HUD summary room to grow beyond a couple of text lines without falling back to ad hoc strings.
+- `SnapshotSectionPreviewViewModel` describes one preview row for a `SaveSnapshotSection`. It contains the section id, schema version, and a shortened JSON payload summary. Use it when save/load diagnostics or future save browsers need to show the contents of composed save snapshots without exposing the full payload or requiring custom parsing in the UI.
 - `ViewModelScreen` renders a `ScreenViewModel` with generic labels and navigation buttons.
 - `ScreenShell` wraps screen content in a consistent shell.
 - `ScreenNavigation` centralizes navigation callbacks.
@@ -267,11 +283,11 @@ Use `GameStateFactory` to create base `GameState` instances. Keep project-specif
 
 ### Save/load
 
-Use `SaveLoadService` for reusable save-slot workflows. It supports slot summaries and JSON persistence behavior suitable for engine-level tests and extension by application code. Use `SaveSnapshotCodec` and `SaveSnapshotSection` when an application wants to compose engine-owned state slices, such as scene-flow progress, into its own save document; the application still owns the outer save schema and any project-specific state fields.
+Use `SaveLoadService` for reusable save-slot workflows. It supports slot summaries and JSON persistence behavior suitable for engine-level tests and extension by application code. `SaveLoadSummaryScreen` and `SaveLoadSummaryViewModel` expose the current save schema version and configured save directory as reusable diagnostic UI data. Use `SaveSnapshotCodec` and `SaveSnapshotSection` when an application wants to compose engine-owned state slices, such as scene-flow progress, into its own save document; the application still owns the outer save schema and any project-specific state fields.
 
 ### Preferences
 
-Use `PreferencesService` for user preferences such as window size, fullscreen state, and master volume. Load preferences before services that depend on them, especially UI theme/window behavior and audio master volume.
+Use `PreferencesService` for user preferences such as window size, fullscreen state, and master volume. Load preferences before services that depend on them, especially UI theme/window behavior and audio master volume. `PreferencesSummaryScreen` builds a `PreferencesSummaryViewModel` with `PreferencesSummaryRowViewModel` entries so reusable diagnostics can present startup preference state as labeled values instead of raw strings.
 
 ### Random
 
@@ -320,3 +336,23 @@ This repository is intended to stay reusable. Keep the following in application 
 When adding new reusable behavior, preserve deterministic validation, initialize services explicitly, and add focused tests for the reusable behavior.
 
 Example/demo code: [`examples/user-manual/11-extension-boundaries/ApplicationRouteModuleDemo.java`](../examples/user-manual/11-extension-boundaries/ApplicationRouteModuleDemo.java)
+
+## 12. Application shell integration
+
+Once the reusable engine layer is in place, the next step is to build an application repository that depends on `novlfx-engine`. The engine already owns the reusable JavaFX foundation; the application should own the launcher, authored content, concrete assets, and project-specific screens.
+
+Build the application shell in this order:
+
+1. Add an application-owned `GameApplication` class that extends `javafx.application.Application`.
+2. In `start(Stage primaryStage)`, load authored resource paths with `BootstrapOptions.fromConfig(...)`, then add application static content modules, scene modules, and route modules before calling `new BootstrapService(options).boot(primaryStage)`.
+3. Resolve application-owned JSON and asset roots through `ApplicationResourceConfig` so authored scene definitions, display definitions, category tables, and image/audio assets stay outside the engine repository.
+4. Implement a concrete `AudioPlaybackAdapter` that turns validated `AudioPlaybackCommand` objects into real `MediaPlayer` or `AudioClip` playback.
+5. Start with reusable engine screens where they fit, then replace individual routes with application-specific JavaFX screens as the game UI becomes concrete.
+
+Keep this repository focused on reusable behavior. The launcher class, authored resources, and concrete media binding should remain application-owned even when they directly use engine APIs.
+
+If a later cleanup goal is a stricter pure-JavaFX stack, treat removal of the remaining Swing/AWT image bridge utilities as a follow-up task after the application shell is running.
+
+Example/demo code:
+- [`examples/user-manual/12-application-shell/GameApplicationDemo.java`](../examples/user-manual/12-application-shell/GameApplicationDemo.java)
+- [`examples/user-manual/12-application-shell/JavaFxAudioPlaybackAdapterDemo.java`](../examples/user-manual/12-application-shell/JavaFxAudioPlaybackAdapterDemo.java)
