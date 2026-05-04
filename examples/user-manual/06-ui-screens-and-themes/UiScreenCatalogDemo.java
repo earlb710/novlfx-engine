@@ -17,8 +17,8 @@ import com.eb.javafx.ui.StartupErrorReporter;
 import com.eb.javafx.ui.StartupFailureCategory;
 import com.eb.javafx.ui.StartupFailureException;
 import com.eb.javafx.ui.UiTheme;
+import com.eb.javafx.util.PathUtils;
 
-import java.nio.file.Path;
 import java.time.Instant;
 
 /**
@@ -50,7 +50,7 @@ public final class UiScreenCatalogDemo {
         ImageDisplayRegistry imageDisplayRegistry = new ImageDisplayRegistry();
         imageDisplayRegistry.registerBaseDisplayContent();
 
-        SaveLoadService saveLoadService = new SaveLoadService(Path.of("/tmp/novlfx-engine-ui-demo-saves"));
+        SaveLoadService saveLoadService = new SaveLoadService(PathUtils.temporaryPath("novlfx-engine-ui-demo-saves"));
         saveLoadService.initialize();
         saveLoadService.writeSlotSummary(1, new GameState(SceneRouter.MAIN_MENU_ROUTE), "UI demo slot", Instant.now());
 
@@ -75,9 +75,9 @@ public final class UiScreenCatalogDemo {
                 sceneRouter);
 
         ScreenViewModel mainMenu = MainMenuScreen.viewModel(routeContext);
-        ScreenViewModel preferences = PreferencesSummaryScreen.viewModel(routeContext);
-        ScreenViewModel saves = SaveLoadSummaryScreen.viewModel(routeContext);
-        ScreenViewModel hud = HudSummaryScreen.viewModel(routeContext);
+        ScreenViewModel preferences = PreferencesSummaryScreen.viewModel(routeContext).screenViewModel();
+        ScreenViewModel saves = SaveLoadSummaryScreen.viewModel(routeContext).screenViewModel();
+        ScreenViewModel hud = HudSummaryScreen.viewModel(routeContext).screenViewModel();
         ScreenViewModel info = InformationalScreenModels.backToMainMenu("Startup Summary", "Boot completed successfully.");
 
         StartupFailureException failure = new StartupFailureException(

@@ -1,5 +1,6 @@
 import com.eb.javafx.audio.AudioPlaybackAdapter;
 import com.eb.javafx.audio.JavaFxAudioPlaybackAdapter;
+import com.eb.javafx.util.PathUtils;
 
 import java.net.URI;
 import java.nio.file.Path;
@@ -15,7 +16,7 @@ public final class JavaFxAudioPlaybackAdapterDemo {
     private final AudioPlaybackAdapter adapter;
 
     public JavaFxAudioPlaybackAdapterDemo(Path applicationRoot) {
-        Path root = applicationRoot.toAbsolutePath().normalize();
+        Path root = PathUtils.absoluteNormalized(applicationRoot);
         this.adapter = new JavaFxAudioPlaybackAdapter(sourcePath ->
                 Optional.of(root.resolve(sourcePath).normalize().toUri()).filter(URI::isAbsolute));
     }

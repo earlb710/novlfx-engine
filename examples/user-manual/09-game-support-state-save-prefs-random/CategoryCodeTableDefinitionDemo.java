@@ -2,6 +2,7 @@ import com.eb.javafx.bootstrap.ApplicationResourceConfig;
 import com.eb.javafx.gamesupport.CategoryCodeTableDefinition;
 import com.eb.javafx.gamesupport.CodeDefinition;
 import com.eb.javafx.gamesupport.CodeTableDefinition;
+import com.eb.javafx.util.PathUtils;
 
 import java.nio.file.Path;
 import java.util.List;
@@ -16,10 +17,9 @@ public final class CategoryCodeTableDefinitionDemo {
     }
 
     public static void main(String[] args) {
-        Path appRoot = Path.of("").toAbsolutePath().normalize();
-        Path configPath = Path.of("examples/user-manual/04-startup-and-service-wiring/config.demo.json")
-                .toAbsolutePath()
-                .normalize();
+        Path appRoot = PathUtils.currentDirectory();
+        Path configPath = PathUtils.currentDirectory(
+                "examples/user-manual/04-startup-and-service-wiring/config.demo.json");
         Path jsonPath = ApplicationResourceConfig.load(configPath).resolveCategoryCodeTables(appRoot);
         CategoryCodeTableDefinition tables = CategoryCodeTableDefinition.load(jsonPath);
 
@@ -36,7 +36,7 @@ public final class CategoryCodeTableDefinitionDemo {
                 List.of(new CodeDefinition("onboard", "Onboard", 10, List.of("work")))));
         CategoryCodeTableDefinition finalTables = previewTables.removeTable("goals");
 
-        Path exportedPath = Path.of("/tmp/category-code-tables.demo.out.json");
+        Path exportedPath = PathUtils.temporaryPath("category-code-tables.demo.out.json");
         finalTables.save(exportedPath);
 
         System.out.println("Language: " + finalTables.language());

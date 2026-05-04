@@ -4,6 +4,7 @@ import com.eb.javafx.content.StaticContentModule;
 import com.eb.javafx.gamesupport.CategoryCodeTableDefinition;
 import com.eb.javafx.scene.SceneDefinition;
 import com.eb.javafx.scene.SceneDefinitionJson;
+import com.eb.javafx.util.PathUtils;
 
 import java.nio.file.Path;
 import java.util.List;
@@ -18,10 +19,9 @@ public final class ApplicationResourceConfigDemo {
     }
 
     public static void main(String[] args) {
-        Path configPath = Path.of("examples/user-manual/04-startup-and-service-wiring/config.demo.json")
-                .toAbsolutePath()
-                .normalize();
-        Path appRoot = Path.of("").toAbsolutePath().normalize();
+        Path configPath = PathUtils.currentDirectory(
+                "examples/user-manual/04-startup-and-service-wiring/config.demo.json");
+        Path appRoot = PathUtils.currentDirectory();
 
         ApplicationResourceConfig resourceConfig = ApplicationResourceConfig.load(configPath);
         Path categoryTablesPath = resourceConfig.resolveCategoryCodeTables(appRoot);
@@ -33,7 +33,7 @@ public final class ApplicationResourceConfigDemo {
         List<SceneDefinition> scenes = SceneDefinitionJson.load(sceneDefinitionsPath);
         StaticContentModule displayModule = new JsonDisplayContentModule(displayDefinitionsPath);
 
-        Path exportedConfig = Path.of("/tmp/novlfx-engine-config-demo.json");
+        Path exportedConfig = PathUtils.temporaryPath("novlfx-engine-config-demo.json");
         resourceConfig.putResource("captures", "captures").save(exportedConfig);
 
         System.out.println("Category table language: " + categoryTables.language());

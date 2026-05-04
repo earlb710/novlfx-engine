@@ -7,6 +7,7 @@ import com.eb.javafx.display.DisplayAnimationStep;
 import com.eb.javafx.display.DisplayInterpolation;
 import com.eb.javafx.display.GameAssetLocator;
 import com.eb.javafx.display.ImageDisplayRegistry;
+import com.eb.javafx.util.PathUtils;
 
 import javafx.animation.Animation;
 
@@ -23,10 +24,9 @@ public final class DisplaySupportDemo {
     }
 
     public static void main(String[] args) {
-        Path repoRoot = Path.of("").toAbsolutePath().normalize();
-        Path configPath = Path.of("examples/user-manual/04-startup-and-service-wiring/config.demo.json")
-                .toAbsolutePath()
-                .normalize();
+        Path repoRoot = PathUtils.currentDirectory();
+        Path configPath = PathUtils.currentDirectory(
+                "examples/user-manual/04-startup-and-service-wiring/config.demo.json");
         ApplicationResourceConfig resourceConfig = ApplicationResourceConfig.load(configPath);
         Path definitionsPath = resourceConfig.resolveResource(repoRoot, "displayDefinitions").orElseThrow();
         Path imageAssetRoot = resourceConfig.resolveImageAssetRoot(repoRoot);
