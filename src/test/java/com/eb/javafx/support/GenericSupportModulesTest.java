@@ -30,6 +30,7 @@ import com.eb.javafx.progress.ProgressSnapshot;
 import com.eb.javafx.progress.ProgressSnapshotCodec;
 import com.eb.javafx.progress.ProgressSupport;
 import com.eb.javafx.progress.ProgressTracker;
+import com.eb.javafx.save.SaveSnapshotSection;
 import com.eb.javafx.settings.SettingDefinition;
 import com.eb.javafx.settings.SettingType;
 import com.eb.javafx.settings.SettingsStore;
@@ -124,10 +125,15 @@ final class GenericSupportModulesTest {
 
         assertTrue(ProgressSupport.requireFlag(tracker, "ending-a").evaluate(null).isAllowed());
         ProgressSnapshotCodec codec = new ProgressSnapshotCodec();
-        ProgressSnapshot restored = codec.fromSection(codec.toSection(tracker.snapshot()));
+        SaveSnapshotSection section = codec.toSection(tracker.snapshot());
+        ProgressSnapshot restored = codec.fromSection(section);
         assertEquals(2, restored.counters().get("visits"));
         assertTrue(restored.milestones().contains("intro-complete"));
         assertTrue(restored.unlocks().contains("gallery-1"));
+        assertThrows(IllegalArgumentException.class, () ->
+                codec.fromSection(new SaveSnapshotSection("other", ProgressSnapshotCodec.SCHEMA_VERSION, section.payloadJson())));
+        assertThrows(IllegalArgumentException.class, () ->
+                codec.fromSection(new SaveSnapshotSection(ProgressSnapshotCodec.SECTION_ID, 99, section.payloadJson())));
     }
 
     @Test

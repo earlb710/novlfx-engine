@@ -2,6 +2,8 @@ package com.eb.javafx.assets;
 
 import com.eb.javafx.util.Validation;
 
+import java.io.IOException;
+import java.nio.file.LinkOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -36,16 +38,41 @@ public final class AssetCatalog {
     }
 
     public AssetValidationReport validateExisting(Path assetRoot) {
-        Path root = Validation.requireNonNull(assetRoot, "Asset root is required.");
+        Path root = canonicalRoot(Validation.requireNonNull(assetRoot, "Asset root is required."));
         List<AssetValidationProblem> problems = new ArrayList<>();
         for (AssetDefinition asset : assets.values()) {
             Path resolved = root.resolve(asset.relativePath()).normalize();
-            if (!resolved.startsWith(root.normalize())) {
+            if (!resolved.startsWith(root)) {
                 problems.add(new AssetValidationProblem(asset.id(), asset.relativePath(), "Asset path escapes asset root."));
-            } else if (!Files.exists(resolved)) {
+                continue;
+            }
+            if (!Files.exists(resolved, LinkOption.NOFOLLOW_LINKS)) {
                 problems.add(new AssetValidationProblem(asset.id(), asset.relativePath(), "Asset file is missing."));
+                continue;
+            }
+            try {
+                Path realPath = resolved.toRealPath(LinkOption.NOFOLLOW_LINKS);
+                if (!realPath.startsWith(root)) {
+                    problems.add(new AssetValidationProblem(
+                            asset.id(),
+                            asset.relativePath(),
+                            "Asset path escapes asset root."));
+                }
+            } catch (IOException exception) {
+                problems.add(new AssetValidationProblem(
+                        asset.id(),
+                        asset.relativePath(),
+                        "Asset file could not be validated."));
             }
         }
         return new AssetValidationReport(problems);
+    }
+
+    private static Path canonicalRoot(Path assetRoot) {
+        try {
+            return assetRoot.toRealPath(LinkOption.NOFOLLOW_LINKS);
+        } catch (IOException exception) {
+            return assetRoot.toAbsolutePath().normalize();
+        }
     }
 }
