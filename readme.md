@@ -6,7 +6,7 @@ The library publishes reusable packages in the `com.eb.javafx.*` namespace throu
 
 ## User manual
 
-See [docs/USER_MANUAL.md](docs/USER_MANUAL.md) for setup, package responsibilities, service usage, packaged font resources, and extension boundaries.
+See [docs/USER_MANUAL.md](docs/USER_MANUAL.md) for setup, package responsibilities, service usage, packaged font resources, and extension boundaries. The manual links to runnable/reference snippets in [examples/user-manual/README.md](examples/user-manual/README.md).
 
 ## Included
 

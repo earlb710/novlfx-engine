@@ -319,6 +319,10 @@ Use the generic support packages when an application needs reusable game systems
 
 These modules intentionally store IDs, metadata, and reusable state only. Concrete content, progression rules, screen design, and save-file schemas should stay in application repositories.
 
+Example/demo code:
+- [`examples/user-manual/09-game-support-state-save-prefs-random/GenericSupportModulesDemo.java`](../examples/user-manual/09-game-support-state-save-prefs-random/GenericSupportModulesDemo.java)
+- [`examples/user-manual/09-game-support-state-save-prefs-random/GenericStateSystemsDemo.java`](../examples/user-manual/09-game-support-state-save-prefs-random/GenericStateSystemsDemo.java)
+
 ### State
 
 Use `GameStateFactory` to create base `GameState` instances. Keep project-specific state fields and schemas in the application repository unless they are represented by reusable engine abstractions.
@@ -339,6 +343,8 @@ Example/demo code: [`examples/user-manual/09-game-support-state-save-prefs-rando
 
 Additional example/demo code:
 - [`examples/user-manual/09-game-support-state-save-prefs-random/CategoryCodeTableDefinitionDemo.java`](../examples/user-manual/09-game-support-state-save-prefs-random/CategoryCodeTableDefinitionDemo.java)
+- [`examples/user-manual/09-game-support-state-save-prefs-random/GenericSupportModulesDemo.java`](../examples/user-manual/09-game-support-state-save-prefs-random/GenericSupportModulesDemo.java)
+- [`examples/user-manual/09-game-support-state-save-prefs-random/GenericStateSystemsDemo.java`](../examples/user-manual/09-game-support-state-save-prefs-random/GenericStateSystemsDemo.java)
 - [`examples/user-manual/09-game-support-state-save-prefs-random/category-code-tables.demo.json`](../examples/user-manual/09-game-support-state-save-prefs-random/category-code-tables.demo.json)
 
 ## 10. Text and utility helpers
