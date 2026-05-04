@@ -25,6 +25,10 @@ public final class WardrobeState {
         return unlockedWearableIds.contains(itemId);
     }
 
+    public void restoreUnlockedWearableId(String itemId) {
+        unlockedWearableIds.add(Validation.requireNonBlank(itemId, "Wearable item id is required."));
+    }
+
     public void saveOutfit(String outfitId, OutfitState outfit) {
         outfits.put(
                 Validation.requireNonBlank(outfitId, "Outfit id is required."),
@@ -37,5 +41,9 @@ public final class WardrobeState {
 
     public Set<String> unlockedWearableIds() {
         return Set.copyOf(unlockedWearableIds);
+    }
+
+    public Map<String, OutfitState> outfits() {
+        return Map.copyOf(outfits);
     }
 }

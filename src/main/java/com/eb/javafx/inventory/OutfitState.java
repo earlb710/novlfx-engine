@@ -34,6 +34,12 @@ public final class OutfitState {
         equippedItemBySlot.remove(Validation.requireNonBlank(slotId, "Wearable slot id is required."));
     }
 
+    public void restoreEquippedItem(String slotId, String itemId) {
+        equippedItemBySlot.put(
+                Validation.requireNonBlank(slotId, "Wearable slot id is required."),
+                Validation.requireNonBlank(itemId, "Wearable item id is required."));
+    }
+
     public Map<String, String> equippedItems() {
         return ImmutableCollections.copyMap(equippedItemBySlot);
     }

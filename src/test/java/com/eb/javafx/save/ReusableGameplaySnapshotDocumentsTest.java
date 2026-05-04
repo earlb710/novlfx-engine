@@ -22,13 +22,29 @@ final class ReusableGameplaySnapshotDocumentsTest {
         ReusableGameplaySnapshot snapshot = new ReusableGameplaySnapshot(
                 new SceneFlowState("intro", 2, List.of(new SceneReturnPoint("caller", 1)), List.of("choice.accept"), null),
                 new GameDateTime(3, "evening"),
-                new ProgressSnapshot(Set.of("met.character"), Map.of("trust", 2), Set.of("intro.done"), Set.of("route.office")));
+                new ProgressSnapshot(Set.of("met.character"), Map.of("trust", 2), Set.of("intro.done"), Set.of("route.office")),
+                new InventorySnapshot(Map.of("keycard", 1)),
+                new WardrobeSnapshot(Set.of("jacket"), Map.of("travel", Map.of("body", "jacket"))),
+                new CharacterStatesSnapshot(List.of(new CharacterSnapshot(
+                        "alex",
+                        "template.alex",
+                        Map.of("energy", 7),
+                        Map.of("player", 3),
+                        Set.of("available"),
+                        Map.of("display", "alex.default")))),
+                new JournalSnapshot(Set.of("quest.intro"), Set.of("quest.intro")),
+                new LocationOccupancySnapshot(Map.of("alex", "office")));
 
         SaveSnapshotDocument document = ReusableGameplaySnapshotDocuments.compose(snapshot, List.of(
                 new SaveSnapshotSection("appState", 1, "{\"domain\":\"owned-by-app\"}")));
 
         assertTrue(document.section(SceneFlowStateJson.SNAPSHOT_SECTION_ID).isPresent());
         assertTrue(document.section(ProgressSnapshotCodec.SECTION_ID).isPresent());
+        assertTrue(document.section(InventorySnapshotCodec.SECTION_ID).isPresent());
+        assertTrue(document.section(WardrobeSnapshotCodec.SECTION_ID).isPresent());
+        assertTrue(document.section(CharacterStatesSnapshotCodec.SECTION_ID).isPresent());
+        assertTrue(document.section(JournalSnapshotCodec.SECTION_ID).isPresent());
+        assertTrue(document.section(LocationOccupancySnapshotCodec.SECTION_ID).isPresent());
         assertTrue(document.section("appState").isPresent());
 
         ReusableGameplaySnapshot restored = ReusableGameplaySnapshotDocuments.restore(document);
@@ -40,6 +56,35 @@ final class ReusableGameplaySnapshotDocumentsTest {
         assertEquals(2, restored.progress().counters().get("trust"));
         assertTrue(restored.progress().milestones().contains("intro.done"));
         assertTrue(restored.progress().unlocks().contains("route.office"));
+        assertEquals(1, restored.inventory().quantities().get("keycard"));
+        assertTrue(restored.wardrobe().unlockedWearableIds().contains("jacket"));
+        assertEquals("jacket", restored.wardrobe().outfits().get("travel").get("body"));
+        assertEquals("alex", restored.characters().characters().get(0).characterId());
+        assertEquals(7, restored.characters().characters().get(0).stats().get("energy"));
+        assertTrue(restored.journal().readEntryIds().contains("quest.intro"));
+        assertEquals("office", restored.locationOccupancy().characterLocations().get("alex"));
+        assertEquals(1, restored.inventory().toState().quantity("keycard"));
+        assertTrue(restored.wardrobe().toState().isUnlocked("jacket"));
+        assertEquals(3, restored.characters().toStates().get(0).relationship("player"));
+        assertTrue(restored.journal().toState().status("quest.intro").read());
+        assertEquals("office", restored.locationOccupancy().toState().locationOf("alex").orElseThrow());
+    }
+
+    @Test
+    void threeArgumentSnapshotConstructorDefaultsExtendedSectionsToEmptySnapshots() {
+        ReusableGameplaySnapshot snapshot = new ReusableGameplaySnapshot(
+                new SceneFlowState("intro", 0, List.of(), List.of(), null),
+                new GameDateTime(1, "morning"),
+                new ProgressSnapshot(Set.of(), Map.of(), Set.of(), Set.of()));
+
+        SaveSnapshotDocument document = ReusableGameplaySnapshotDocuments.compose(snapshot, List.of());
+        ReusableGameplaySnapshot restored = ReusableGameplaySnapshotDocuments.restore(document);
+
+        assertTrue(restored.inventory().quantities().isEmpty());
+        assertTrue(restored.wardrobe().unlockedWearableIds().isEmpty());
+        assertTrue(restored.characters().characters().isEmpty());
+        assertTrue(restored.journal().unlockedEntryIds().isEmpty());
+        assertTrue(restored.locationOccupancy().characterLocations().isEmpty());
     }
 
     @Test

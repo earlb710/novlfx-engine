@@ -14,10 +14,35 @@ import com.eb.javafx.util.Validation;
 public record ReusableGameplaySnapshot(
         SceneFlowState sceneFlowState,
         GameDateTime gameTime,
-        ProgressSnapshot progress) {
+        ProgressSnapshot progress,
+        InventorySnapshot inventory,
+        WardrobeSnapshot wardrobe,
+        CharacterStatesSnapshot characters,
+        JournalSnapshot journal,
+        LocationOccupancySnapshot locationOccupancy) {
+    public ReusableGameplaySnapshot(
+            SceneFlowState sceneFlowState,
+            GameDateTime gameTime,
+            ProgressSnapshot progress) {
+        this(
+                sceneFlowState,
+                gameTime,
+                progress,
+                InventorySnapshot.empty(),
+                WardrobeSnapshot.empty(),
+                CharacterStatesSnapshot.empty(),
+                JournalSnapshot.empty(),
+                LocationOccupancySnapshot.empty());
+    }
+
     public ReusableGameplaySnapshot {
         sceneFlowState = Validation.requireNonNull(sceneFlowState, "Scene flow state is required.");
         gameTime = Validation.requireNonNull(gameTime, "Game time is required.");
         progress = Validation.requireNonNull(progress, "Progress snapshot is required.");
+        inventory = Validation.requireNonNull(inventory, "Inventory snapshot is required.");
+        wardrobe = Validation.requireNonNull(wardrobe, "Wardrobe snapshot is required.");
+        characters = Validation.requireNonNull(characters, "Character states snapshot is required.");
+        journal = Validation.requireNonNull(journal, "Journal snapshot is required.");
+        locationOccupancy = Validation.requireNonNull(locationOccupancy, "Location occupancy snapshot is required.");
     }
 }
