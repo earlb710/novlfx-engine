@@ -125,14 +125,14 @@ public final class ScreenLayoutRenderer {
     }
 
     private static void addActions(VBox parent, RouteContext context, Iterable<ScreenActionViewModel> actions, String actionStyleClass) {
-        VBox actionRow = new VBox(SECTION_SPACING);
-        actionRow.getStyleClass().add(ScreenShell.LAYOUT_ACTION_ROW_STYLE_CLASS);
-        actionRow.getStyleClass().add(actionStyleClass);
+        VBox actionContainer = new VBox(SECTION_SPACING);
+        actionContainer.getStyleClass().add(ScreenShell.LAYOUT_ACTION_ROW_STYLE_CLASS);
+        actionContainer.getStyleClass().add(actionStyleClass);
         for (ScreenActionViewModel action : actions) {
-            actionRow.getChildren().add(actionButton(context, action, actionStyleClass));
+            actionContainer.getChildren().add(actionButton(context, action, actionStyleClass));
         }
-        if (!actionRow.getChildren().isEmpty()) {
-            parent.getChildren().add(actionRow);
+        if (!actionContainer.getChildren().isEmpty()) {
+            parent.getChildren().add(actionContainer);
         }
     }
 

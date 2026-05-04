@@ -33,6 +33,7 @@ final class ScreenLayoutRendererTest {
                 null);
 
         assertThrows(IllegalArgumentException.class, () -> ScreenLayoutRenderer.createRoot(null));
+        assertThrows(IllegalArgumentException.class, () -> ScreenLayoutRenderer.createRoot(null, null));
         assertThrows(IllegalArgumentException.class, () -> ScreenLayoutRenderer.createScene(null, model));
     }
 }
