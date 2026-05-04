@@ -214,8 +214,10 @@ The `ui` package provides reusable JavaFX surfaces and helpers:
 - `MainMenuEntry` is the content-neutral contract for one main-menu route/action entry, and `InformationalScreenModels.backToMainMenu(...)` builds simple placeholder or error screen models with a standard main-menu action.
 - `DisplayPreviewBinding` carries image id, source path, layer, and asset-resolution state for display diagnostics and app-owned previews.
 - `ScreenBackgroundFit` names reusable background sizing modes: stretch or center-crop.
+- `ScreenLayoutType`, `ScreenLayoutModel`, and `ScreenLayoutSection` define reusable screen layout intent without JavaFX control state. Use them when a screen needs a stable general structure such as a titled panel, two-column layout, sidebar/content layout, HUD/status overlay, dialogue surface, menu/action list, form, or preview/card grid.
 - `ScreenInventory`, `ScreenInventoryItem`, `ScreenInventorySource`, `ScreenInventoryScanner`, and `ScreenInventoryAssignmentCategory` provide content-neutral inventory models for application-owned screen/style/control migration scanners. Use them to classify source artifacts as route-backed, reusable-control-backed, deferred, deprecated, excluded, or app-owned without hard-coding source-engine names in the engine.
 - `ViewModelScreen` renders a `ScreenViewModel` with generic labels and navigation buttons.
+- `ScreenLayoutRenderer` renders a `ScreenLayoutModel` into JavaFX nodes. It keeps route screens thin by letting them gather data, build a UI-neutral model, and delegate JavaFX node creation plus style-class assignment to the shared renderer.
 - `ScreenShell` wraps screen content in a consistent shell.
 - `ScreenNavigation` centralizes navigation callbacks.
 - `PreviewSummaryView` creates simple titled preview panels for display, scene, and snapshot summaries.
@@ -224,7 +226,7 @@ The `ui` package provides reusable JavaFX surfaces and helpers:
 - `UiTheme` loads the reusable stylesheet from `src/main/resources/com/eb/javafx/ui/eb.css`.
 - `StartupErrorReporter`, `StartupFailureException`, and `StartupFailureCategory` provide structured startup diagnostics.
 
-Applications can use these screens directly for prototypes or replace route factories with application-specific screens while keeping the same routing and bootstrap contracts. App-specific JavaFX controls should live in application route modules; reusable engine screens should consume view models or generic display contracts.
+Reusable layout styling is split from layout intent. Engine renderers attach stable semantic style classes such as `layout-content`, `layout-sidebar`, `layout-main-content`, `layout-action-row`, `layout-primary-action`, `layout-secondary-action`, `layout-card`, `layout-form`, `layout-section-title`, and `layout-section-row`; `src/main/resources/com/eb/javafx/ui/eb.css` provides the default colors, spacing, borders, and hover behavior. Applications can use these screens directly for prototypes, add an application stylesheet after the engine stylesheet to override those hooks, or replace route factories with application-specific screens while keeping the same routing and bootstrap contracts. App-specific JavaFX controls, authored art, and game-specific visual rules should live in application route modules; reusable engine screens should consume view models or generic display contracts.
 
 Example/demo code: [`examples/user-manual/06-ui-screens-and-themes/UiScreenDemo.java`](../examples/user-manual/06-ui-screens-and-themes/UiScreenDemo.java)
 

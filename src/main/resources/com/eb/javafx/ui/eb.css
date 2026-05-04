@@ -36,6 +36,63 @@
     -fx-text-fill: #cbd5e1;
 }
 
+.layout-content,
+.layout-titled-panel,
+.layout-main-content,
+.layout-hud-overlay,
+.layout-dialogue,
+.layout-menu,
+.layout-form {
+    -fx-spacing: 12px;
+}
+
+.layout-subtitle,
+.layout-footer,
+.layout-section-row {
+    -fx-text-fill: #cbd5e1;
+}
+
+.layout-section-title {
+    -fx-font-weight: bold;
+    -fx-text-fill: #66c1e0;
+}
+
+.layout-two-column,
+.layout-sidebar-content {
+    -fx-spacing: 12px;
+}
+
+.layout-column,
+.layout-sidebar,
+.layout-card,
+.layout-section {
+    -fx-spacing: 8px;
+}
+
+.layout-sidebar,
+.layout-card,
+.layout-hud-overlay,
+.layout-dialogue {
+    -fx-background-color: rgba(10, 20, 38, 0.65);
+    -fx-border-color: #143869;
+    -fx-border-radius: 6px;
+    -fx-background-radius: 6px;
+    -fx-padding: 12px;
+}
+
+.layout-action-row {
+    -fx-spacing: 8px;
+}
+
+.layout-primary-action {
+    -fx-border-color: #0099cc;
+}
+
+.layout-secondary-action,
+.layout-sidebar-entry {
+    -fx-border-color: #143869;
+}
+
 .label {
     -fx-text-fill: #ffffff;
     -fx-font-size: 14px;
