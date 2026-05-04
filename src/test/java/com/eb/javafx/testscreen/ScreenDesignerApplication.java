@@ -50,7 +50,7 @@ public final class ScreenDesignerApplication {
     }
 
     private void show() {
-        JFrame frame = new JFrame("novlfx Screen Designer");
+        JFrame frame = new JFrame("NovlFX Screen Designer");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setContentPane(content());
         frame.setSize(1100, 700);
