@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 final class DisplayDefinitionJsonLoaderTest {
     @Test
@@ -32,5 +33,18 @@ final class DisplayDefinitionJsonLoaderTest {
         assertEquals(DisplayLayer.CHARACTER, registry.image("speaker.neutral").layer());
         assertEquals(List.of("speaker.neutral"), registry.layeredCharacter("speaker").drawOrder());
         assertEquals("demo", registry.layeredCharacter("speaker").metadata().get("kind"));
+    }
+
+    @Test
+    void rejectsFractionalIntegerFields() {
+        ImageDisplayRegistry registry = new ImageDisplayRegistry();
+
+        assertThrows(IllegalArgumentException.class, () -> DisplayDefinitionJsonLoader.loadInto("""
+                {
+                  "transforms": [
+                    {"id": "portrait", "fitWidth": 320.5, "fitHeight": 480}
+                  ]
+                }
+                """, "test-display.json", registry));
     }
 }
