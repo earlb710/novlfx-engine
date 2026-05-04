@@ -22,7 +22,7 @@ public record ScreenDesignModel(
         blocks = List.copyOf(Validation.requireNonNull(blocks, "Screen design blocks are required."));
         items = List.copyOf(Validation.requireNonNull(items, "Screen design items are required."));
         temporaryItems = List.copyOf(Validation.requireNonNull(temporaryItems, "Screen design temporary items are required."));
-        ScreenDesignValidator.requireValid(this);
+        ScreenDesignValidator.requireValidRaw(blocks, items, temporaryItems);
     }
 
     public List<ScreenDesignItem> allItemsForPreview() {
