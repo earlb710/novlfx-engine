@@ -54,6 +54,7 @@ public final class ScreenDesignerApplication {
     private final JComboBox<ScreenLayoutType> layoutTypeBox = new JComboBox<>(ScreenLayoutType.values());
     private final JTextArea previewArea = new JTextArea();
     private final JTextArea jsonArea = new JTextArea();
+    private final JLabel statusLabel = new JLabel();
     private Path currentPath;
     private volatile Stage previewStage;
 
@@ -77,29 +78,36 @@ public final class ScreenDesignerApplication {
         JSplitPane split = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, navigation(), editor());
         split.setDividerLocation(300);
         root.add(split, BorderLayout.CENTER);
+        root.add(statusLabel, BorderLayout.SOUTH);
         return root;
     }
 
     private JPanel toolbar() {
         JPanel panel = new JPanel();
+        JButton newScreen = new JButton("New");
         JButton load = new JButton("Load JSON");
         JButton save = new JButton("Save JSON");
+        JButton saveAs = new JButton("Save As");
         JButton validate = new JButton("Validate");
         JButton preview = new JButton("Open Preview");
         JButton addBlock = new JButton("Add Block");
         JButton addItem = new JButton("Add Item");
         JButton addTemp = new JButton("Add Temporary Field");
         JButton promote = new JButton("Promote Temporary");
-        load.addActionListener(event -> loadJson());
-        save.addActionListener(event -> saveJson());
-        validate.addActionListener(event -> showValidation());
-        preview.addActionListener(event -> openPreview());
-        addBlock.addActionListener(event -> addBlock());
-        addItem.addActionListener(event -> addItem(false));
-        addTemp.addActionListener(event -> addItem(true));
-        promote.addActionListener(event -> promoteTemporary());
+        newScreen.addActionListener(event -> runSafely("New Screen", this::newScreen));
+        load.addActionListener(event -> runSafely("Load JSON", this::loadJson));
+        save.addActionListener(event -> runSafely("Save JSON", this::saveJson));
+        saveAs.addActionListener(event -> runSafely("Save As", this::saveJsonAs));
+        validate.addActionListener(event -> runSafely("Validate", this::showValidation));
+        preview.addActionListener(event -> runSafely("Open Preview", this::openPreview));
+        addBlock.addActionListener(event -> runSafely("Add Block", this::addBlock));
+        addItem.addActionListener(event -> runSafely("Add Item", () -> addItem(false)));
+        addTemp.addActionListener(event -> runSafely("Add Temporary Field", () -> addItem(true)));
+        promote.addActionListener(event -> runSafely("Promote Temporary", this::promoteTemporary));
+        panel.add(newScreen);
         panel.add(load);
         panel.add(save);
+        panel.add(saveAs);
         panel.add(validate);
         panel.add(preview);
         panel.add(addBlock);
@@ -117,7 +125,7 @@ public final class ScreenDesignerApplication {
         JPanel panel = new JPanel(new BorderLayout(8, 8));
         JPanel fields = new JPanel(new GridLayout(3, 2, 6, 6));
         JButton apply = new JButton("Apply Screen Properties");
-        apply.addActionListener(event -> applyScreenProperties());
+        apply.addActionListener(event -> runSafely("Apply Screen Properties", this::applyScreenProperties));
         fields.add(new JLabel("Screen id"));
         fields.add(screenIdField);
         fields.add(new JLabel("Title"));
@@ -140,6 +148,12 @@ public final class ScreenDesignerApplication {
         refreshAll();
     }
 
+    private void newScreen() {
+        currentPath = null;
+        design = sampleDesign();
+        refreshAll();
+    }
+
     private void addBlock() {
         String blockId = JOptionPane.showInputDialog("Block id");
         if (blockId != null && !blockId.isBlank()) {
@@ -149,19 +163,47 @@ public final class ScreenDesignerApplication {
     }
 
     private void addItem(boolean temporary) {
-        String blockId = JOptionPane.showInputDialog("Target block id");
-        String itemId = JOptionPane.showInputDialog("Item id");
-        if (blockId == null || itemId == null || blockId.isBlank() || itemId.isBlank()) {
+        if (design.blocks().isEmpty()) {
+            JOptionPane.showMessageDialog(null, "Add a block before adding items.");
             return;
         }
+        JComboBox<String> blockBox = new JComboBox<>(design.blocks().stream().map(ScreenDesignBlock::id).toArray(String[]::new));
+        JComboBox<ScreenDesignItemType> typeBox = new JComboBox<>(ScreenDesignItemType.values());
+        typeBox.setSelectedItem(temporary ? ScreenDesignItemType.FIELD : ScreenDesignItemType.TEXT);
+        JTextField itemIdField = new JTextField();
+        JTextField labelField = new JTextField();
+        JTextField contentField = new JTextField();
+        JPanel fields = new JPanel(new GridLayout(5, 2, 6, 6));
+        fields.add(new JLabel("Target block"));
+        fields.add(blockBox);
+        fields.add(new JLabel("Item id"));
+        fields.add(itemIdField);
+        fields.add(new JLabel("Type"));
+        fields.add(typeBox);
+        fields.add(new JLabel("Label"));
+        fields.add(labelField);
+        fields.add(new JLabel("Text/default value"));
+        fields.add(contentField);
+        int result = JOptionPane.showConfirmDialog(null, fields,
+                temporary ? "Add Temporary Field" : "Add Item",
+                JOptionPane.OK_CANCEL_OPTION,
+                JOptionPane.PLAIN_MESSAGE);
+        String itemId = itemIdField.getText();
+        String blockId = (String) blockBox.getSelectedItem();
+        if (result != JOptionPane.OK_OPTION || blockId == null || itemId == null || itemId.isBlank()) {
+            return;
+        }
+        ScreenDesignItemType type = (ScreenDesignItemType) typeBox.getSelectedItem();
+        String label = blankToNull(labelField.getText());
+        String content = blankToNull(contentField.getText());
         ScreenDesignItem item = new ScreenDesignItem(
                 temporary && !itemId.startsWith("temp.") ? "temp." + itemId : itemId,
                 blockId,
-                temporary ? ScreenDesignItemType.FIELD : ScreenDesignItemType.TEXT,
-                itemId,
-                temporary ? null : itemId,
+                type == null ? ScreenDesignItemType.TEXT : type,
+                label == null ? itemId : label,
+                type == ScreenDesignItemType.TEXT ? content : null,
                 null,
-                temporary ? "test value" : null,
+                type == ScreenDesignItemType.FIELD || type == ScreenDesignItemType.TEXT_AREA ? content : null,
                 null,
                 Map.of());
         design = temporary
@@ -189,21 +231,36 @@ public final class ScreenDesignerApplication {
 
     private void saveJson() {
         if (currentPath == null) {
-            JFileChooser chooser = jsonChooser();
-            if (chooser.showSaveDialog(null) != JFileChooser.APPROVE_OPTION) {
+            if (!chooseSavePath()) {
                 return;
             }
-            currentPath = chooser.getSelectedFile().toPath();
         }
         ScreenDesignJson.save(currentPath, design);
         refreshAll();
     }
 
+    private void saveJsonAs() {
+        Path previousPath = currentPath;
+        if (!chooseSavePath()) {
+            currentPath = previousPath;
+            return;
+        }
+        ScreenDesignJson.save(currentPath, design);
+        refreshAll();
+    }
+
+    private boolean chooseSavePath() {
+        JFileChooser chooser = jsonChooser();
+        if (chooser.showSaveDialog(null) == JFileChooser.APPROVE_OPTION) {
+            currentPath = chooser.getSelectedFile().toPath();
+            return true;
+        }
+        return false;
+    }
+
     private void showValidation() {
         List<ScreenDesignValidationProblem> problems = ScreenDesignValidator.validate(design);
-        JOptionPane.showMessageDialog(null, problems.isEmpty()
-                ? "Screen design is valid."
-                : problems.stream().map(problem -> problem.path() + ": " + problem.message()).reduce("", (a, b) -> a + b + "\n"));
+        JOptionPane.showMessageDialog(null, validationSummary(problems));
     }
 
     private void openPreview() {
@@ -233,6 +290,7 @@ public final class ScreenDesignerApplication {
         design.temporaryItems().forEach(item -> objectListModel.addElement("temporary: " + item.id() + " -> " + item.blockId()));
         previewArea.setText(previewText(ScreenDesignLayoutAdapter.toLayoutModel(design, true)));
         jsonArea.setText(ScreenDesignJson.toJson(design));
+        statusLabel.setText(statusText(currentPath, ScreenDesignValidator.validate(design)));
     }
 
     private static String previewText(ScreenLayoutModel model) {
@@ -256,6 +314,36 @@ public final class ScreenDesignerApplication {
             search = search.getParent();
         }
         return current;
+    }
+
+    static String statusText(Path currentPath, List<ScreenDesignValidationProblem> problems) {
+        String file = currentPath == null ? "Unsaved screen design" : currentPath.getFileName().toString();
+        return file + " | " + validationSummary(problems);
+    }
+
+    static String validationSummary(List<ScreenDesignValidationProblem> problems) {
+        if (problems.isEmpty()) {
+            return "Screen design is valid.";
+        }
+        return problems.stream()
+                .map(problem -> problem.path() + ": " + problem.message())
+                .reduce("Validation issues:\n", (a, b) -> a + b + "\n");
+    }
+
+    private void runSafely(String actionName, Runnable action) {
+        try {
+            action.run();
+        } catch (RuntimeException exception) {
+            statusLabel.setText(actionName + " failed: " + exception.getMessage());
+            JOptionPane.showMessageDialog(null,
+                    exception.getMessage(),
+                    actionName + " Error",
+                    JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private static String blankToNull(String value) {
+        return value == null || value.isBlank() ? null : value;
     }
 
     private JFileChooser jsonChooser() {

@@ -10,6 +10,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -36,5 +37,13 @@ final class ScreenDesignerApplicationTest {
                 assertFalse(ScreenDesignValidator.validate(design).size() > 0, () -> "Invalid example: " + jsonFile);
             }
         }
+    }
+
+    @Test
+    void statusTextNamesSavedOrUnsavedDesignsAndValidationState() {
+        assertEquals("Unsaved screen design | Screen design is valid.",
+                ScreenDesignerApplication.statusText(null, List.of()));
+        assertEquals("sample-screen-design.json | Screen design is valid.",
+                ScreenDesignerApplication.statusText(Path.of("sample-screen-design.json"), List.of()));
     }
 }
