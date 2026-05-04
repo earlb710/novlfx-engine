@@ -336,14 +336,13 @@ public final class ScreenDesignerApplication {
             blockNodes.put(block.id(), blockNode);
             root.add(blockNode);
         }
-        addItemNodes(blockNodes, root, design.items(), false);
-        addItemNodes(blockNodes, root, design.temporaryItems(), true);
+        addItemNodes(blockNodes, design.items(), false);
+        addItemNodes(blockNodes, design.temporaryItems(), true);
         return root;
     }
 
     private static void addItemNodes(
             Map<String, DefaultMutableTreeNode> blockNodes,
-            DefaultMutableTreeNode root,
             List<ScreenDesignItem> items,
             boolean temporary) {
         for (ScreenDesignItem item : items) {
@@ -352,8 +351,7 @@ public final class ScreenDesignerApplication {
                     item.blockId()));
             DefaultMutableTreeNode blockNode = blockNodes.get(item.blockId());
             if (blockNode == null) {
-                root.add(itemNode);
-                continue;
+                throw new IllegalStateException("Unknown block for screen design item: " + item.id() + " -> " + item.blockId());
             }
             blockNode.add(itemNode);
         }
