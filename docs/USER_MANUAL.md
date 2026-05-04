@@ -367,7 +367,11 @@ Additional example/demo code:
 
 Use `TextTagParser` to tokenize visual-novel-style text with simple styling metadata. Parsed output is represented through `TextToken`, `TextTokenType`, and `TextStyle`.
 
-Use `TextEffect` and `StyledTextSpan` to carry rendering-neutral rich-text metadata such as gradient, kinetic, or glitch parameters before a JavaFX renderer exists. Use `TextTemplateProcessor` with a `TextVariableResolver` for simple app-supplied `{variable}` replacement while preserving unknown markers.
+Use `JavaFxRichTextRenderer` when parsed tokens should be displayed directly in JavaFX. It renders text and paragraph tokens into a `TextFlow`, skips pause tokens for timeline/typewriter code to consume separately, and applies parsed `{gradient=...}`, `{kinetic=...}`, and `{glitch=...}` metadata to JavaFX `Text` nodes. Kinetic animations are attached to node properties by default so callers can start them when the JavaFX toolkit is active; use the autoplay constructor in live UI code when immediate playback is desired.
+
+Use `TextEffect` and `StyledTextSpan` to carry rendering-neutral rich-text metadata such as gradient, kinetic, or glitch parameters in non-JavaFX adapters. Use `TextTemplateProcessor` with a `TextVariableResolver` for simple app-supplied `{variable}` replacement while preserving unknown markers.
+
+Use `LocalizationTextExtractor` to collect scene dialogue, narration, and choice text definition IDs before checking `LocalizationService.missingTextIds(...)`, to create a skeleton `LocalizedTextBundle` where every ID maps to itself, or to turn parsed dialog messages back into plain source strings for application-owned translation export.
 
 Use `DialogHistory` when a save needs reusable conversation review data. Start a dated `DialogHistoryEntry` with a `GameDateTime` or `GameClock`, append `DialogMessage` rows, and end it with a closing timestamp. Speaker messages use `DialogSpeaker` plus the standard message column, while multi-column dialog can store explicit `DialogColumn` values for app-owned renderers.
 

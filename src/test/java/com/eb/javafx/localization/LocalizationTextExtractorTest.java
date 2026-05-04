@@ -34,7 +34,7 @@ final class LocalizationTextExtractorTest {
     void extractsPlainDialogSourceText() {
         LocalizationTextExtractor extractor = new LocalizationTextExtractor();
         DialogMessage message = DialogMessage.speakerMessage(
-                DialogSpeaker.text("guide", "Guide", "#ffffff"),
+                DialogSpeaker.text("guide", "Guide"),
                 "{b}Hello{/b}{p}world{w=0.4}");
 
         LocalizedTextBundle bundle = extractor.dialogSourceBundle("en", Map.of("intro.guide", message));
