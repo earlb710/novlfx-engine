@@ -39,7 +39,7 @@ See [docs/USER_MANUAL.md](docs/USER_MANUAL.md) for setup, package responsibiliti
   - `timeline`
   - `ui`
   - `util`
-- `src/main/resources/com/eb/javafx/ui/eb.css`
+- `src/main/resources/com/eb/javafx/ui/default.css`
 - `src/main/resources/com/eb/javafx/fonts`
 - Matching JUnit tests for the reusable packages
 - Test-only `testscreen` support used by the copied UI tests
