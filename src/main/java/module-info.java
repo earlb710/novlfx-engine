@@ -23,6 +23,8 @@ module com.novlfx.engine {
     exports com.eb.javafx.inventory;
     exports com.eb.javafx.journal;
     exports com.eb.javafx.localization;
+    exports com.eb.javafx.messages;
+    exports com.eb.javafx.organizations;
     exports com.eb.javafx.prefs;
     exports com.eb.javafx.progress;
     exports com.eb.javafx.random;
