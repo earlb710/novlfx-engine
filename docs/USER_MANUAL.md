@@ -48,18 +48,20 @@ The engine publishes the Java module `com.novlfx.engine`. It exports reusable pa
 - `audio`: channel definitions, sound requests, and validated playback commands.
 - `assets`: application-owned asset catalogs, preload hints, and existence/path validation reports.
 - `bootstrap`: startup phases, bootstrap reporting, and boot context assembly.
-- `characters`: generic character profiles, tags, metadata, and relationship values.
-- `content`: reusable static content module and registry contracts, including JSON-backed display content modules.
-- `debug`: reusable debug snapshot and inspector models for app-owned developer tools.
-- `diagnostics`: structured health-check problems, reports, and check registries.
+- `characters`: generic character profiles, templates, stat blocks, mutable character state, tags, metadata, and relationship values.
+- `content`: reusable static content module and registry contracts, content-pack descriptors, and JSON-backed display content modules.
+- `debug`: reusable debug snapshot, panel descriptor, and inspector models for app-owned developer tools.
+- `diagnostics`: structured health-check problems, reports, check descriptors, and check registries.
 - `display`: image assets, display layers, transforms, layered characters, JSON definition loading, interpolation, and animation playback.
-- `events`: lightweight runtime event bus and event history models.
-- `gamesupport`: generic action, requirement, effect, clock, date/time, location, and game-support registry behavior.
+- `events`: lightweight runtime event bus, event queues, listeners, command dispatch, and event history models.
+- `gamesupport`: generic action, requirement, effect, descriptor registry, clock, date/time, time scheduling, location, movement, and game-support registry behavior.
 - `globalApi`: adapters for global-style navigation, screen visibility, randomness, and sound requests.
 - `input`: action definitions, device triggers, bindings, and context-aware input maps.
-- `inventory`: generic item definitions, catalogs, and quantity state.
+- `inventory`: generic item definitions, catalogs, quantity state, wearable slots, outfits, and wardrobe state.
 - `journal`: generic journal/quest/log definitions and read/unread state.
 - `localization`: language-specific text bundles, language selection, lookup, and missing-text diagnostics.
+- `messages`: generic notification and message-thread state models.
+- `organizations`: generic organization descriptors, resource ledgers, and production queues.
 - `prefs`: persisted user preferences such as window size, fullscreen state, and master volume.
 - `progress`: reusable flags, counters, milestones, unlocks, game-support bridges, and save snapshot codec.
 - `random`: deterministic and non-deterministic random helpers.
@@ -71,7 +73,7 @@ The engine publishes the Java module `com.novlfx.engine`. It exports reusable pa
 - `text`: text tag parsing, text tokens, token types, text style metadata, template interpolation, rendering-neutral text effects/spans, and dialog history models.
 - `timeline`: generic sequence, timed-step, and playback primitives for UI/display/text/audio timing.
 - `ui`: reusable JavaFX screens, navigation shells, screen/background presentation models, preview helpers, theme loading, and startup failure reporting.
-- `util`: validation, immutable collection, result, path, packaged font resource, time, JSON string/parsing, image/SVG, conversion, Unicode/string, and initialization helpers.
+- `util`: validation, immutable collection, import validation, result, path, packaged font resource, time, JSON string/parsing, image/SVG, conversion, Unicode/string, and initialization helpers.
 
 Use these packages from an application project instead of copying source-engine-specific global code into the engine.
 
@@ -281,9 +283,11 @@ Additional example/demo code:
 
 Use `GameSupportService` and `ActionRegistry` to register reusable `GameAction` objects. Actions can use `ActionRequirement` checks, `ActionEffect` outcomes, `ActionContext`, `RequirementResult`, and `ActionResult` to keep generic game-rule plumbing separate from authored domain rules.
 
-Use `DefinitionRegistry` and the `IdentifiedDefinition` contract when an application needs a deterministic reusable registry with duplicate-ID checks. Use `CodeTableDefinition` and `CodeDefinition` to define project-supplied code lists such as time slots, roles, goals, postures, positions, duties, or listener types. `GameClock` and `GameDateTime` use a time-slot code table so reusable time progression does not embed a specific game calendar or schedule.
+Use `DefinitionRegistry` and the `IdentifiedDefinition` contract when an application needs a deterministic reusable registry with duplicate-ID checks. Use `GenericDescriptor` and `GenericDescriptorRegistry` for content-neutral descriptors that only need an id, kind, title, tags, and metadata before a dedicated domain type exists. Use `CodeTableDefinition` and `CodeDefinition` to define project-supplied code lists such as time slots, roles, goals, postures, positions, duties, or listener types. `GameClock` and `GameDateTime` use a time-slot code table so reusable time progression does not embed a specific game calendar or schedule.
 
-Use `LocationRegistry`, `LocationDescriptor`, and `LocationOccupancy` for reusable location metadata and per-save character placement. Location descriptors store stable location IDs, display/localization titles, route IDs, optional parent locations, tags, and generic action IDs. `LocationRegistry.validateReferences(...)` checks parent-location and action references after static modules register definitions, while `LocationOccupancy` tracks where generic character IDs are currently placed without owning authored movement rules.
+Use `TimeScheduler`, `TimeScheduledCommand`, `TimeAdvanceHook`, and `TimeAdvanceService` when game time needs reusable advancement hooks and scheduled data-only commands. `TimeSaveSnapshots` serializes `GameDateTime` as a versioned `SaveSnapshotSection` named `gameTime`, leaving the outer save-file schema application-owned.
+
+Use `LocationRegistry`, `LocationDescriptor`, and `LocationOccupancy` for reusable location metadata and per-save character placement. Location descriptors store stable location IDs, display/localization titles, route IDs, optional parent locations, tags, and generic action IDs. `LocationRegistry.validateReferences(...)` checks parent-location and action references after static modules register definitions, while `LocationOccupancy` tracks where generic character IDs are currently placed without owning authored movement rules. Use `MovementValidator`, `MovementValidationResult`, and `LocationMovementService` to layer application-supplied movement checks over reusable occupancy changes.
 
 Use `CategoryCodeTableDefinition.load(Path)` when category data should come from authored JSON, typically with the path returned by `ApplicationResourceConfig.resolveCategoryCodeTables(applicationRoot)`. The root object contains a `language` field and a `tables` array; titles in that file are interpreted as text for that language so applications can provide parallel files for later translation:
 
@@ -321,15 +325,18 @@ Use the generic support packages when an application needs reusable game systems
 - `LocalizationService` and `LocalizedTextBundle` select a language, resolve stable text IDs, and report missing translations.
 - `AssetCatalog` stores app-owned `AssetDefinition` entries with `AssetType`, preload hints, and deterministic `AssetValidationReport` / `AssetValidationProblem` diagnostics for missing files or paths that escape the configured asset root.
 - `InputMap` stores context-scoped `InputAction` values and `InputBinding` trigger bindings. Triggers combine an `InputDevice` and `InputTrigger` value so menu, dialogue, gameplay, and debug controls can be rebindable without hard-coding UI controls.
-- `GameEventBus` publishes lightweight runtime events and keeps a deterministic history for diagnostics, tests, or save-related inspection.
+- `GameEventBus` publishes lightweight runtime events and keeps a deterministic history for diagnostics, tests, or save-related inspection. Use `GameEventQueue` for FIFO deferred event processing, `GameEventListener` for listener adapters, and `GameCommandDispatcher` with `GameCommandHandler` for type-keyed command dispatch that can emit events back to the bus.
 - `ProgressTracker`, `ProgressSupport`, and `ProgressSnapshotCodec` model reusable flags, counters, milestones, unlocks, action requirements/effects, and save snapshot sections.
-- `InventoryCatalog` and `InventoryState` provide generic `InventoryItemDefinition` metadata and stack quantities while authored item data remains application-owned.
-- `CharacterRegistry` and `RelationshipState` provide reusable `CharacterProfile` metadata and numeric relationship state.
+- `InventoryCatalog` and `InventoryState` provide generic `InventoryItemDefinition` metadata and stack quantities while authored item data remains application-owned. Use `WearableSlotDefinition`, `WearableDefinition`, `WardrobeCatalog`, `OutfitState`, and `WardrobeState` for generic wearable slots, equipped item maps, unlocked wearables, and named outfit snapshots.
+- `CharacterRegistry` and `RelationshipState` provide reusable `CharacterProfile` metadata and numeric relationship state. Use `CharacterTemplate`, `CharacterTemplateRegistry`, `CharacterStatBlock`, and `CharacterState` for template-level base stats plus per-save mutable stats, relationship values, flags, and metadata.
+- `NotificationState`, `Notification`, `MessageThreadState`, and `MessageEntry` model read/unread notifications and generic message threads without owning app-specific sender semantics or UI layout.
+- `OrganizationDescriptor`, `ResourceLedger`, `ProductionOrder`, and `ProductionQueue` provide reusable organization metadata, non-negative resource balances, and tick-based production primitives.
 - `JournalState` provides generic unlocked/read state for `JournalEntryDefinition` entries, with `JournalEntryStatus` recording whether each journal, quest, task, or log entry is unlocked and read.
-- `DiagnosticRegistry` combines `DiagnosticCheck` callbacks into `DiagnosticReport` values containing `DiagnosticProblem` rows and `DiagnosticSeverity` levels for startup or debug screens.
+- `DiagnosticRegistry` combines `DiagnosticCheck` callbacks into `DiagnosticReport` values containing `DiagnosticProblem` rows and `DiagnosticSeverity` levels for startup or debug screens. `DiagnosticDescriptor`, `DebugPanelDescriptor`, and `ContentPackDescriptor` describe app-owned diagnostics, debug panels, and content packs using reusable metadata shapes.
 - `SettingsStore` carries `SettingDefinition` entries, `SettingType` metadata, and runtime values above raw preferences. `AccessibilityProfile` carries accessibility choices such as font scale, contrast, motion, captions, and screen-reader labels.
 - `TimelineSequence`, `TimelineStep`, and `TimelinePlayer` provide deterministic timing primitives with `TimelineStatus` state that can drive UI, display, text, or audio adapters.
 - `DebugRegistry` collects `DebugSnapshot` values from `DebugInspector` callbacks for application-owned developer menus or test screens.
+- `ImportValidationReport`, `ImportValidationIssue`, `ImportIssueSeverity`, and `GenericValidation` provide shared helper types for import summaries, missing-reference diagnostics, and known-ID validation.
 
 These modules intentionally store IDs, metadata, and reusable state only. Concrete content, progression rules, screen design, and save-file schemas should stay in application repositories.
 
@@ -367,7 +374,11 @@ Additional example/demo code:
 
 Use `TextTagParser` to tokenize visual-novel-style text with simple styling metadata. Parsed output is represented through `TextToken`, `TextTokenType`, and `TextStyle`.
 
-Use `TextEffect` and `StyledTextSpan` to carry rendering-neutral rich-text metadata such as gradient, kinetic, or glitch parameters before a JavaFX renderer exists. Use `TextTemplateProcessor` with a `TextVariableResolver` for simple app-supplied `{variable}` replacement while preserving unknown markers.
+Use `JavaFxRichTextRenderer` when parsed tokens should be displayed directly in JavaFX. It renders text and paragraph tokens into a `TextFlow`, skips pause tokens for timeline/typewriter code to consume separately, and applies parsed `{gradient=...}`, `{kinetic=...}`, and `{glitch=...}` metadata to JavaFX `Text` nodes. Kinetic animations are attached to node properties by default so callers can start them when the JavaFX toolkit is active; use the autoplay constructor in live UI code when immediate playback is desired.
+
+Use `TextEffect` and `StyledTextSpan` to carry rendering-neutral rich-text metadata such as gradient, kinetic, or glitch parameters in non-JavaFX adapters. Use `TextTemplateProcessor` with a `TextVariableResolver` for simple app-supplied `{variable}` replacement while preserving unknown markers.
+
+Use `LocalizationTextExtractor` to collect scene dialogue, narration, and choice text definition IDs before checking `LocalizationService.missingTextIds(...)`, to create a skeleton `LocalizedTextBundle` where every ID maps to itself, or to turn parsed dialog messages back into plain source strings for application-owned translation export.
 
 Use `DialogHistory` when a save needs reusable conversation review data. Start a dated `DialogHistoryEntry` with a `GameDateTime` or `GameClock`, append `DialogMessage` rows, and end it with a closing timestamp. Speaker messages use `DialogSpeaker` plus the standard message column, while multi-column dialog can store explicit `DialogColumn` values for app-owned renderers.
 

@@ -21,6 +21,11 @@ public final class GameEventBus {
         return () -> listeners.getOrDefault(checkedType, List.of()).remove(checkedListener);
     }
 
+    public Runnable subscribeListener(String eventType, GameEventListener listener) {
+        GameEventListener checkedListener = Validation.requireNonNull(listener, "Game event listener is required.");
+        return subscribe(eventType, checkedListener::onEvent);
+    }
+
     public void publish(GameEvent event) {
         GameEvent checkedEvent = Validation.requireNonNull(event, "Game event is required.");
         history.add(checkedEvent);
