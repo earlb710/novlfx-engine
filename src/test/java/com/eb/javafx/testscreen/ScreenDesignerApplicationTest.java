@@ -19,6 +19,7 @@ import javax.swing.tree.DefaultMutableTreeNode;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -109,6 +110,111 @@ final class ScreenDesignerApplicationTest {
         assertTrue(ScreenDesignerApplication.blockIdForNode(root).isEmpty());
         assertEquals("main", ScreenDesignerApplication.blockIdForNode(blockNode).orElseThrow());
         assertEquals("main", ScreenDesignerApplication.blockIdForNode(itemNode).orElseThrow());
+    }
+
+    @Test
+    void navigationNodeForReportsNodeKindsAndIds() {
+        ScreenDesignModel design = new ScreenDesignModel(
+                "sample.screen",
+                "Sample Screen",
+                com.eb.javafx.ui.ScreenLayoutType.FORM,
+                Map.of(),
+                List.of(new ScreenDesignBlock("main", "Main")),
+                List.of(),
+                List.of(new ScreenDesignItem("temp.field", "main", ScreenDesignItemType.FIELD,
+                        "Temp", null, null, "value", null, Map.of())));
+
+        DefaultMutableTreeNode root = ScreenDesignerApplication.buildNavigationTree(design);
+        DefaultMutableTreeNode blockNode = (DefaultMutableTreeNode) root.getChildAt(0);
+        DefaultMutableTreeNode tempNode = (DefaultMutableTreeNode) blockNode.getChildAt(0);
+
+        ScreenDesignerApplication.NavigationNode rootNavigationNode =
+                assertInstanceOf(ScreenDesignerApplication.NavigationNode.class,
+                        ScreenDesignerApplication.navigationNodeFor(root).orElseThrow());
+        ScreenDesignerApplication.NavigationNode tempNavigationNode =
+                assertInstanceOf(ScreenDesignerApplication.NavigationNode.class,
+                        ScreenDesignerApplication.navigationNodeFor(tempNode).orElseThrow());
+
+        assertEquals("sample.screen", rootNavigationNode.id());
+        assertEquals("screen: sample.screen", rootNavigationNode.toString());
+        assertEquals("temp.field", tempNavigationNode.id());
+        assertEquals("main", tempNavigationNode.blockId());
+        assertEquals("temporary: temp.field", tempNavigationNode.toString());
+    }
+
+    @Test
+    void contextActionLabelsMatchNavigationNodeType() {
+        assertEquals(List.of("Add Block"),
+                ScreenDesignerApplication.contextActionLabelsFor(
+                        ScreenDesignerApplication.NavigationNode.screen("sample.screen"),
+                        false));
+        assertEquals(List.of("Add Block", "Add Item"),
+                ScreenDesignerApplication.contextActionLabelsFor(
+                        ScreenDesignerApplication.NavigationNode.screen("sample.screen"),
+                        true));
+        assertEquals(List.of("Add Item", "Edit Block", "Remove Block"),
+                ScreenDesignerApplication.contextActionLabelsFor(
+                        ScreenDesignerApplication.NavigationNode.block("main"),
+                        true));
+        assertEquals(List.of("Add Item", "Edit Item", "Remove Item"),
+                ScreenDesignerApplication.contextActionLabelsFor(
+                        ScreenDesignerApplication.NavigationNode.item("title.text", "main", false),
+                        true));
+    }
+
+    @Test
+    void replaceBlockRenamesBlockAndMovesItsItems() {
+        ScreenDesignModel design = new ScreenDesignModel(
+                "sample.screen",
+                "Sample Screen",
+                com.eb.javafx.ui.ScreenLayoutType.FORM,
+                Map.of(),
+                List.of(new ScreenDesignBlock("main", "Main")),
+                List.of(new ScreenDesignItem("title.text", "main", ScreenDesignItemType.TEXT,
+                        "Title", "Saved", null, null, null, Map.of())),
+                List.of(new ScreenDesignItem("temp.field", "main", ScreenDesignItemType.FIELD,
+                        "Temp", null, null, "value", null, Map.of())));
+
+        ScreenDesignModel updated = ScreenDesignerApplication.replaceBlock(
+                design,
+                "main",
+                new ScreenDesignBlock("content", "Content"));
+
+        assertEquals("content", updated.blocks().get(0).id());
+        assertEquals("content", updated.items().get(0).blockId());
+        assertEquals("content", updated.temporaryItems().get(0).blockId());
+    }
+
+    @Test
+    void replaceItemUpdatesSavedAndTemporaryCollectionsSeparately() {
+        ScreenDesignModel design = new ScreenDesignModel(
+                "sample.screen",
+                "Sample Screen",
+                com.eb.javafx.ui.ScreenLayoutType.FORM,
+                Map.of(),
+                List.of(new ScreenDesignBlock("main", "Main")),
+                List.of(new ScreenDesignItem("title.text", "main", ScreenDesignItemType.TEXT,
+                        "Title", "Saved", null, null, null, Map.of())),
+                List.of(new ScreenDesignItem("temp.field", "main", ScreenDesignItemType.FIELD,
+                        "Temp", null, null, "value", null, Map.of())));
+
+        ScreenDesignModel updatedSaved = ScreenDesignerApplication.replaceItem(
+                design,
+                "title.text",
+                new ScreenDesignItem("heading.text", "main", ScreenDesignItemType.TEXT,
+                        "Heading", "Updated", null, null, null, Map.of()),
+                false);
+        ScreenDesignModel updatedTemporary = ScreenDesignerApplication.replaceItem(
+                design,
+                "temp.field",
+                new ScreenDesignItem("temp.edited", "main", ScreenDesignItemType.FIELD,
+                        "Temp", null, null, "updated", null, Map.of()),
+                true);
+
+        assertEquals("heading.text", updatedSaved.items().get(0).id());
+        assertEquals("temp.field", updatedSaved.temporaryItems().get(0).id());
+        assertEquals("title.text", updatedTemporary.items().get(0).id());
+        assertEquals("temp.edited", updatedTemporary.temporaryItems().get(0).id());
     }
 
     @Test

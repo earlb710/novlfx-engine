@@ -25,8 +25,10 @@ import javax.swing.BoxLayout;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
 import javax.swing.JTextArea;
@@ -34,8 +36,11 @@ import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 import java.awt.BorderLayout;
 import java.awt.GridLayout;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -120,6 +125,7 @@ public final class ScreenDesignerApplication {
     private JPanel navigation() {
         objectTree.getSelectionModel().setSelectionMode(TreeSelectionModel.SINGLE_TREE_SELECTION);
         objectTree.setRootVisible(true);
+        installTreeContextMenu();
         JPanel panel = new JPanel(new BorderLayout(8, 8));
         panel.add(new JScrollPane(objectTree), BorderLayout.CENTER);
         panel.add(navigationActions(), BorderLayout.SOUTH);
@@ -186,13 +192,40 @@ public final class ScreenDesignerApplication {
             JOptionPane.showMessageDialog(null, "Add a block before adding items.");
             return;
         }
+        Optional<ScreenDesignItem> created = showItemDialog(
+                temporary ? "Add Temporary Field" : "Add Item",
+                null,
+                temporary,
+                selectedBlockId().orElse(null));
+        if (created.isEmpty()) {
+            return;
+        }
+        ScreenDesignItem item = created.orElseThrow();
+        String blockId = item.blockId();
+        design = temporary
+                ? ScreenDesignService.addTemporaryItemToBlock(design, blockId, item)
+                : ScreenDesignService.addItemToBlock(design, blockId, item);
+        refreshAll();
+    }
+
+    private Optional<ScreenDesignItem> showItemDialog(
+            String title,
+            ScreenDesignItem existing,
+            boolean temporary,
+            String selectedBlockId) {
         JComboBox<String> blockBox = new JComboBox<>(design.blocks().stream().map(ScreenDesignBlock::id).toArray(String[]::new));
-        selectedBlockId().ifPresent(blockBox::setSelectedItem);
+        if (selectedBlockId != null) {
+            blockBox.setSelectedItem(selectedBlockId);
+        } else if (existing != null) {
+            blockBox.setSelectedItem(existing.blockId());
+        }
         JComboBox<ScreenDesignItemType> typeBox = new JComboBox<>(ScreenDesignItemType.values());
-        typeBox.setSelectedItem(temporary ? ScreenDesignItemType.FIELD : ScreenDesignItemType.TEXT);
-        JTextField itemIdField = new JTextField();
-        JTextField labelField = new JTextField();
-        JTextField contentField = new JTextField();
+        typeBox.setSelectedItem(existing == null
+                ? (temporary ? ScreenDesignItemType.FIELD : ScreenDesignItemType.TEXT)
+                : existing.type());
+        JTextField itemIdField = new JTextField(existing == null ? "" : existing.id());
+        JTextField labelField = new JTextField(existing == null ? "" : nullToBlank(existing.label()));
+        JTextField contentField = new JTextField(existing == null ? "" : itemContent(existing));
         JPanel fields = new JPanel(new GridLayout(5, 2, 6, 6));
         fields.add(new JLabel("Target block"));
         fields.add(blockBox);
@@ -204,31 +237,78 @@ public final class ScreenDesignerApplication {
         fields.add(labelField);
         fields.add(new JLabel("Text/default value"));
         fields.add(contentField);
-        int result = JOptionPane.showConfirmDialog(null, fields,
-                temporary ? "Add Temporary Field" : "Add Item",
-                JOptionPane.OK_CANCEL_OPTION,
-                JOptionPane.PLAIN_MESSAGE);
+        int result = JOptionPane.showConfirmDialog(null, fields, title, JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
         String itemId = itemIdField.getText();
         String blockId = (String) blockBox.getSelectedItem();
         if (result != JOptionPane.OK_OPTION || blockId == null || itemId == null || itemId.isBlank()) {
-            return;
+            return Optional.empty();
         }
         ScreenDesignItemType type = (ScreenDesignItemType) typeBox.getSelectedItem();
         String label = blankToNull(labelField.getText());
         String content = blankToNull(contentField.getText());
-        ScreenDesignItem item = new ScreenDesignItem(
+        return Optional.of(new ScreenDesignItem(
                 temporary && !itemId.startsWith("temp.") ? "temp." + itemId : itemId,
                 blockId,
                 type == null ? ScreenDesignItemType.TEXT : type,
                 label == null ? itemId : label,
                 type == ScreenDesignItemType.TEXT ? content : null,
-                null,
+                existing == null ? null : existing.value(),
                 type == ScreenDesignItemType.FIELD || type == ScreenDesignItemType.TEXT_AREA ? content : null,
-                null,
-                Map.of());
-        design = temporary
-                ? ScreenDesignService.addTemporaryItemToBlock(design, blockId, item)
-                : ScreenDesignService.addItemToBlock(design, blockId, item);
+                existing == null ? null : existing.styleClass(),
+                existing == null ? Map.of() : existing.metadata()));
+    }
+
+    private void editBlock(String blockId) {
+        ScreenDesignBlock block = findBlock(blockId);
+        JTextField blockIdField = new JTextField(block.id());
+        JTextField titleField = new JTextField(block.title() == null ? block.id() : block.title());
+        JPanel fields = new JPanel(new GridLayout(2, 2, 6, 6));
+        fields.add(new JLabel("Block id"));
+        fields.add(blockIdField);
+        fields.add(new JLabel("Title"));
+        fields.add(titleField);
+        int result = JOptionPane.showConfirmDialog(null, fields, "Edit Block", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+        String newBlockId = blockIdField.getText();
+        if (result != JOptionPane.OK_OPTION || newBlockId == null || newBlockId.isBlank()) {
+            return;
+        }
+        String title = blankToNull(titleField.getText());
+        design = replaceBlock(design, blockId,
+                new ScreenDesignBlock(newBlockId, title == null ? newBlockId : title, block.styleClass(), block.metadata()));
+        refreshAll();
+    }
+
+    private void editItem(String itemId, boolean temporary) {
+        ScreenDesignItem existing = findItem(itemId, temporary);
+        Optional<ScreenDesignItem> updated = showItemDialog("Edit Item", existing, temporary, existing.blockId());
+        if (updated.isEmpty()) {
+            return;
+        }
+        design = replaceItem(design, itemId, updated.orElseThrow(), temporary);
+        refreshAll();
+    }
+
+    private void removeBlock(String blockId) {
+        if (JOptionPane.showConfirmDialog(null,
+                "Remove block '" + blockId + "' and all of its items?",
+                "Remove Block",
+                JOptionPane.OK_CANCEL_OPTION,
+                JOptionPane.WARNING_MESSAGE) != JOptionPane.OK_OPTION) {
+            return;
+        }
+        design = ScreenDesignService.removeBlock(design, blockId);
+        refreshAll();
+    }
+
+    private void removeItem(String itemId) {
+        if (JOptionPane.showConfirmDialog(null,
+                "Remove item '" + itemId + "'?",
+                "Remove Item",
+                JOptionPane.OK_CANCEL_OPTION,
+                JOptionPane.WARNING_MESSAGE) != JOptionPane.OK_OPTION) {
+            return;
+        }
+        design = ScreenDesignService.removeItem(design, itemId);
         refreshAll();
     }
 
@@ -313,15 +393,14 @@ public final class ScreenDesignerApplication {
     }
 
     private Optional<String> selectedBlockId() {
-        TreePath path = objectTree.getSelectionPath();
-        return path == null ? Optional.empty() : blockIdForNode(path.getLastPathComponent());
+        return selectedNavigationNode().flatMap(NavigationNode::optionalBlockId);
     }
 
     static DefaultMutableTreeNode buildNavigationTree(ScreenDesignModel design) {
-        DefaultMutableTreeNode root = new DefaultMutableTreeNode(new NavigationNode("screen: " + design.id(), null));
+        DefaultMutableTreeNode root = new DefaultMutableTreeNode(NavigationNode.screen(design.id()));
         Map<String, DefaultMutableTreeNode> blockNodes = new LinkedHashMap<>();
         for (ScreenDesignBlock block : design.blocks()) {
-            DefaultMutableTreeNode blockNode = new DefaultMutableTreeNode(new NavigationNode("block: " + block.id(), block.id()));
+            DefaultMutableTreeNode blockNode = new DefaultMutableTreeNode(NavigationNode.block(block.id()));
             blockNodes.put(block.id(), blockNode);
             root.add(blockNode);
         }
@@ -335,9 +414,7 @@ public final class ScreenDesignerApplication {
             List<ScreenDesignItem> items,
             boolean temporary) {
         for (ScreenDesignItem item : items) {
-            DefaultMutableTreeNode itemNode = new DefaultMutableTreeNode(new NavigationNode(
-                    (temporary ? "temporary: " : "item: ") + item.id(),
-                    item.blockId()));
+            DefaultMutableTreeNode itemNode = new DefaultMutableTreeNode(NavigationNode.item(item.id(), item.blockId(), temporary));
             DefaultMutableTreeNode blockNode = blockNodes.get(item.blockId());
             if (blockNode == null) {
                 throw new IllegalStateException("Unknown block for screen design item: " + item.id() + " -> " + item.blockId());
@@ -346,7 +423,7 @@ public final class ScreenDesignerApplication {
         }
     }
 
-    static Optional<String> blockIdForNode(Object node) {
+    static Optional<NavigationNode> navigationNodeFor(Object node) {
         if (!(node instanceof DefaultMutableTreeNode treeNode)) {
             return Optional.empty();
         }
@@ -354,7 +431,34 @@ public final class ScreenDesignerApplication {
         if (!(userObject instanceof NavigationNode navigationNode)) {
             return Optional.empty();
         }
-        return Optional.ofNullable(navigationNode.blockId());
+        return Optional.of(navigationNode);
+    }
+
+    static Optional<String> blockIdForNode(Object node) {
+        return navigationNodeFor(node).flatMap(NavigationNode::optionalBlockId);
+    }
+
+    static List<String> contextActionLabelsFor(NavigationNode navigationNode, boolean hasBlocks) {
+        ArrayList<String> labels = new ArrayList<>();
+        switch (navigationNode.type()) {
+            case SCREEN -> {
+                labels.add("Add Block");
+                if (hasBlocks) {
+                    labels.add("Add Item");
+                }
+            }
+            case BLOCK -> {
+                labels.add("Add Item");
+                labels.add("Edit Block");
+                labels.add("Remove Block");
+            }
+            case ITEM, TEMPORARY_ITEM -> {
+                labels.add("Add Item");
+                labels.add("Edit Item");
+                labels.add("Remove Item");
+            }
+        }
+        return List.copyOf(labels);
     }
 
     private static String previewText(ScreenLayoutModel model) {
@@ -408,6 +512,14 @@ public final class ScreenDesignerApplication {
 
     private static String blankToNull(String value) {
         return value == null || value.isBlank() ? null : value;
+    }
+
+    private static String nullToBlank(String value) {
+        return value == null ? "" : value;
+    }
+
+    private static String itemContent(ScreenDesignItem item) {
+        return nullToBlank(item.type() == ScreenDesignItemType.TEXT ? item.text() : item.defaultValue());
     }
 
     private JFileChooser jsonChooser() {
@@ -487,7 +599,139 @@ public final class ScreenDesignerApplication {
                 List.of());
     }
 
-    private record NavigationNode(String label, String blockId) {
+    private void installTreeContextMenu() {
+        objectTree.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent event) {
+                maybeShowContextMenu(event);
+            }
+
+            @Override
+            public void mouseReleased(MouseEvent event) {
+                maybeShowContextMenu(event);
+            }
+        });
+    }
+
+    private void maybeShowContextMenu(MouseEvent event) {
+        if (!event.isPopupTrigger()) {
+            return;
+        }
+        int row = objectTree.getRowForLocation(event.getX(), event.getY());
+        if (row < 0) {
+            return;
+        }
+        objectTree.setSelectionRow(row);
+        selectedNavigationNode().ifPresent(node -> createContextMenu(node).show(event.getComponent(), event.getX(), event.getY()));
+    }
+
+    private Optional<NavigationNode> selectedNavigationNode() {
+        TreePath path = objectTree.getSelectionPath();
+        return path == null ? Optional.empty() : navigationNodeFor(path.getLastPathComponent());
+    }
+
+    private JPopupMenu createContextMenu(NavigationNode navigationNode) {
+        JPopupMenu menu = new JPopupMenu();
+        for (String label : contextActionLabelsFor(navigationNode, !design.blocks().isEmpty())) {
+            menu.add(menuItem(label, navigationNode));
+        }
+        return menu;
+    }
+
+    private JMenuItem menuItem(String label, NavigationNode navigationNode) {
+        JMenuItem item = new JMenuItem(label);
+        item.addActionListener(event -> runSafely(label, () -> performContextAction(label, navigationNode)));
+        return item;
+    }
+
+    private void performContextAction(String label, NavigationNode navigationNode) {
+        switch (label) {
+            case "Add Block" -> addBlock();
+            case "Add Item" -> addItem(false);
+            case "Edit Block" -> editBlock(navigationNode.id());
+            case "Remove Block" -> removeBlock(navigationNode.id());
+            case "Edit Item" -> editItem(navigationNode.id(), navigationNode.type() == NodeType.TEMPORARY_ITEM);
+            case "Remove Item" -> removeItem(navigationNode.id());
+            default -> throw new IllegalArgumentException("Unknown context action: " + label);
+        }
+    }
+
+    private ScreenDesignBlock findBlock(String blockId) {
+        return design.blocks().stream()
+                .filter(block -> blockId.equals(block.id()))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Unknown screen design block id: " + blockId));
+    }
+
+    private ScreenDesignItem findItem(String itemId, boolean temporary) {
+        List<ScreenDesignItem> items = temporary ? design.temporaryItems() : design.items();
+        return items.stream()
+                .filter(item -> itemId.equals(item.id()))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Unknown screen design item id: " + itemId));
+    }
+
+    static ScreenDesignModel replaceBlock(ScreenDesignModel design, String oldBlockId, ScreenDesignBlock updatedBlock) {
+        boolean found = design.blocks().stream().anyMatch(block -> oldBlockId.equals(block.id()));
+        if (!found) {
+            throw new IllegalArgumentException("Unknown screen design block id: " + oldBlockId);
+        }
+        List<ScreenDesignBlock> blocks = design.blocks().stream()
+                .map(block -> oldBlockId.equals(block.id()) ? updatedBlock : block)
+                .toList();
+        List<ScreenDesignItem> items = remapItems(design.items(), oldBlockId, updatedBlock.id());
+        List<ScreenDesignItem> temporaryItems = remapItems(design.temporaryItems(), oldBlockId, updatedBlock.id());
+        return new ScreenDesignModel(design.id(), design.title(), design.layoutType(), design.metadata(), blocks, items, temporaryItems);
+    }
+
+    static ScreenDesignModel replaceItem(ScreenDesignModel design, String oldItemId, ScreenDesignItem updatedItem, boolean temporary) {
+        boolean found = (temporary ? design.temporaryItems() : design.items()).stream().anyMatch(item -> oldItemId.equals(item.id()));
+        if (!found) {
+            throw new IllegalArgumentException("Unknown screen design item id: " + oldItemId);
+        }
+        List<ScreenDesignItem> items = temporary
+                ? design.items()
+                : design.items().stream().map(item -> oldItemId.equals(item.id()) ? updatedItem : item).toList();
+        List<ScreenDesignItem> temporaryItems = temporary
+                ? design.temporaryItems().stream().map(item -> oldItemId.equals(item.id()) ? updatedItem : item).toList()
+                : design.temporaryItems();
+        return new ScreenDesignModel(design.id(), design.title(), design.layoutType(), design.metadata(), design.blocks(), items, temporaryItems);
+    }
+
+    private static List<ScreenDesignItem> remapItems(List<ScreenDesignItem> items, String oldBlockId, String newBlockId) {
+        return items.stream()
+                .map(item -> oldBlockId.equals(item.blockId()) ? item.inBlock(newBlockId) : item)
+                .toList();
+    }
+
+    private enum NodeType {
+        SCREEN,
+        BLOCK,
+        ITEM,
+        TEMPORARY_ITEM
+    }
+
+    static record NavigationNode(NodeType type, String label, String id, String blockId) {
+        static NavigationNode screen(String screenId) {
+            return new NavigationNode(NodeType.SCREEN, "screen: " + screenId, screenId, null);
+        }
+
+        static NavigationNode block(String blockId) {
+            return new NavigationNode(NodeType.BLOCK, "block: " + blockId, blockId, blockId);
+        }
+
+        static NavigationNode item(String itemId, String blockId, boolean temporary) {
+            return new NavigationNode(
+                    temporary ? NodeType.TEMPORARY_ITEM : NodeType.ITEM,
+                    (temporary ? "temporary: " : "item: ") + itemId,
+                    itemId,
+                    blockId);
+        }
+
+        Optional<String> optionalBlockId() {
+            return Optional.ofNullable(blockId);
+        }
+
         @Override
         public String toString() {
             return label;
