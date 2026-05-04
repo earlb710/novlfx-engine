@@ -12,5 +12,5 @@ This local plan tracks reusable `novlfx-engine` work that remains after the curr
 - [x] Implement app-owned JavaFX media adapters against `AudioPlaybackAdapter`.
 - [x] Define reusable audio adapter expectations for asset discovery, fades, crossfades, and channel-specific player pools while keeping concrete media files application-owned.
 - [x] Replace placeholder screens with reusable view-model driven screens while keeping app-specific controls in app modules.
-- [ ] Add integration tests around options-based bootstrap loading JSON-backed content modules.
+- [x] Add integration tests around options-based bootstrap loading JSON-backed content modules.
 - [x] Keep `docs/PORT_JAVAFX_PLAN.md` updated whenever reusable package scope changes.
