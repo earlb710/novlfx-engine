@@ -111,13 +111,16 @@ public final class ScreenDesignerApplication {
     }
 
     private JMenuItem fileMenuItem(String label) {
-        return switch (label) {
-            case "New" -> menuItem(label, "New Screen", this::newScreen);
-            case "Open JSON" -> menuItem(label, "Open JSON", this::loadJson);
-            case "Save" -> menuItem(label, "Save JSON", this::saveJson);
-            case "Save As" -> menuItem(label, "Save As", this::saveJsonAs);
+        Runnable action = switch (label) {
+            case "New" -> this::newScreen;
+            case "Open JSON" -> this::loadJson;
+            case "Save" -> this::saveJson;
+            case "Save As" -> this::saveJsonAs;
             default -> throw new IllegalArgumentException("Unknown file menu item: " + label);
         };
+        JMenuItem item = new JMenuItem(label);
+        item.addActionListener(event -> runSafely(label, action));
+        return item;
     }
 
     private JPanel actionToolbar() {
@@ -656,20 +659,14 @@ public final class ScreenDesignerApplication {
     private JPopupMenu createContextMenu(NavigationNode navigationNode) {
         JPopupMenu menu = new JPopupMenu();
         for (String label : contextActionLabelsFor(navigationNode, !design.blocks().isEmpty())) {
-            menu.add(menuItem(label, navigationNode));
+            menu.add(contextMenuItem(label, navigationNode));
         }
         return menu;
     }
 
-    private JMenuItem menuItem(String label, NavigationNode navigationNode) {
+    private JMenuItem contextMenuItem(String label, NavigationNode navigationNode) {
         JMenuItem item = new JMenuItem(label);
         item.addActionListener(event -> runSafely(label, () -> performContextAction(label, navigationNode)));
-        return item;
-    }
-
-    private JMenuItem menuItem(String label, String actionName, Runnable action) {
-        JMenuItem item = new JMenuItem(label);
-        item.addActionListener(event -> runSafely(actionName, action));
         return item;
     }
 
