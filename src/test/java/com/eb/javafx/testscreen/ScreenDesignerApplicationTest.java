@@ -163,6 +163,12 @@ final class ScreenDesignerApplicationTest {
     }
 
     @Test
+    void fileMenuLabelsContainFileActionsMovedFromToolbar() {
+        assertEquals(List.of("New", "Open JSON", "Save", "Save As"),
+                ScreenDesignerApplication.fileMenuActionLabels());
+    }
+
+    @Test
     void replaceBlockRenamesBlockAndMovesItsItems() {
         ScreenDesignModel design = new ScreenDesignModel(
                 "sample.screen",

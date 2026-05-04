@@ -25,6 +25,8 @@ import javax.swing.JComboBox;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JMenu;
+import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -76,6 +78,7 @@ public final class ScreenDesignerApplication {
     private void show() {
         JFrame frame = new JFrame("NovlFX Screen Designer");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setJMenuBar(menuBar());
         frame.setContentPane(content());
         frame.setSize(1100, 700);
         frame.setLocationByPlatform(true);
@@ -85,7 +88,7 @@ public final class ScreenDesignerApplication {
 
     private JPanel content() {
         JPanel root = new JPanel(new BorderLayout(8, 8));
-        root.add(toolbar(), BorderLayout.NORTH);
+        root.add(actionToolbar(), BorderLayout.NORTH);
         JSplitPane split = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, navigation(), editor());
         split.setDividerLocation(300);
         root.add(split, BorderLayout.CENTER);
@@ -93,28 +96,40 @@ public final class ScreenDesignerApplication {
         return root;
     }
 
-    private JPanel toolbar() {
+    private JMenuBar menuBar() {
+        JMenuBar menuBar = new JMenuBar();
+        menuBar.add(fileMenu());
+        return menuBar;
+    }
+
+    private JMenu fileMenu() {
+        JMenu file = new JMenu("File");
+        for (String label : fileMenuActionLabels()) {
+            file.add(fileMenuItem(label));
+        }
+        return file;
+    }
+
+    private JMenuItem fileMenuItem(String label) {
+        return switch (label) {
+            case "New" -> menuItem(label, "New Screen", this::newScreen);
+            case "Open JSON" -> menuItem(label, "Open JSON", this::loadJson);
+            case "Save" -> menuItem(label, "Save JSON", this::saveJson);
+            case "Save As" -> menuItem(label, "Save As", this::saveJsonAs);
+            default -> throw new IllegalArgumentException("Unknown file menu item: " + label);
+        };
+    }
+
+    private JPanel actionToolbar() {
         JPanel panel = new JPanel();
-        JButton newScreen = new JButton("New");
-        JButton load = new JButton("Load JSON");
-        JButton save = new JButton("Save JSON");
-        JButton saveAs = new JButton("Save As");
         JButton validate = new JButton("Validate");
         JButton preview = new JButton("Open Preview");
         JButton addTemp = new JButton("Add Temporary Field");
         JButton promote = new JButton("Promote Temporary");
-        newScreen.addActionListener(event -> runSafely("New Screen", this::newScreen));
-        load.addActionListener(event -> runSafely("Load JSON", this::loadJson));
-        save.addActionListener(event -> runSafely("Save JSON", this::saveJson));
-        saveAs.addActionListener(event -> runSafely("Save As", this::saveJsonAs));
         validate.addActionListener(event -> runSafely("Validate", this::showValidation));
         preview.addActionListener(event -> runSafely("Open Preview", this::openPreview));
         addTemp.addActionListener(event -> runSafely("Add Temporary Field", () -> addItem(true)));
         promote.addActionListener(event -> runSafely("Promote Temporary", this::promoteTemporary));
-        panel.add(newScreen);
-        panel.add(load);
-        panel.add(save);
-        panel.add(saveAs);
         panel.add(validate);
         panel.add(preview);
         panel.add(addTemp);
@@ -465,6 +480,10 @@ public final class ScreenDesignerApplication {
         return List.copyOf(labels);
     }
 
+    static List<String> fileMenuActionLabels() {
+        return List.of("New", "Open JSON", "Save", "Save As");
+    }
+
     private static String previewText(ScreenLayoutModel model) {
         StringBuilder text = new StringBuilder(model.title()).append('\n');
         for (ScreenLayoutSection section : model.contentSections()) {
@@ -645,6 +664,12 @@ public final class ScreenDesignerApplication {
     private JMenuItem menuItem(String label, NavigationNode navigationNode) {
         JMenuItem item = new JMenuItem(label);
         item.addActionListener(event -> runSafely(label, () -> performContextAction(label, navigationNode)));
+        return item;
+    }
+
+    private JMenuItem menuItem(String label, String actionName, Runnable action) {
+        JMenuItem item = new JMenuItem(label);
+        item.addActionListener(event -> runSafely(actionName, action));
         return item;
     }
 
