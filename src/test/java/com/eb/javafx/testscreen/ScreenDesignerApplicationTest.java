@@ -1,6 +1,9 @@
 package com.eb.javafx.testscreen;
 
 import com.eb.javafx.ui.ScreenDesignJson;
+import com.eb.javafx.ui.ScreenDesignBlock;
+import com.eb.javafx.ui.ScreenDesignItem;
+import com.eb.javafx.ui.ScreenDesignItemType;
 import com.eb.javafx.ui.ScreenDesignModel;
 import com.eb.javafx.ui.ScreenDesignValidator;
 import org.junit.jupiter.api.Test;
@@ -9,6 +12,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
+
+import javax.swing.tree.DefaultMutableTreeNode;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -45,5 +51,40 @@ final class ScreenDesignerApplicationTest {
                 ScreenDesignerApplication.statusText(null, List.of()));
         assertEquals("sample-screen-design.json | Screen design is valid.",
                 ScreenDesignerApplication.statusText(Path.of("sample-screen-design.json"), List.of()));
+    }
+
+    @Test
+    void navigationTreeNestsItemsUnderTheirBlocks() {
+        ScreenDesignModel design = new ScreenDesignModel(
+                "sample.screen",
+                "Sample Screen",
+                com.eb.javafx.ui.ScreenLayoutType.FORM,
+                Map.of(),
+                List.of(
+                        new ScreenDesignBlock("main", "Main"),
+                        new ScreenDesignBlock("secondary", "Secondary")),
+                List.of(
+                        new ScreenDesignItem("title.text", "main", ScreenDesignItemType.TEXT,
+                                "Title", "Saved", null, null, null, Map.of()),
+                        new ScreenDesignItem("subtitle.text", "secondary", ScreenDesignItemType.TEXT,
+                                "Subtitle", "Saved", null, null, null, Map.of())),
+                List.of(new ScreenDesignItem("temp.field", "main", ScreenDesignItemType.FIELD,
+                        "Temp", null, null, "value", null, Map.of())));
+
+        DefaultMutableTreeNode root = ScreenDesignerApplication.buildNavigationTree(design);
+
+        assertEquals("screen: sample.screen", root.getUserObject().toString());
+        assertEquals(2, root.getChildCount());
+
+        DefaultMutableTreeNode mainBlock = (DefaultMutableTreeNode) root.getChildAt(0);
+        assertEquals("block: main", mainBlock.getUserObject().toString());
+        assertEquals(2, mainBlock.getChildCount());
+        assertEquals("item: title.text", ((DefaultMutableTreeNode) mainBlock.getChildAt(0)).getUserObject().toString());
+        assertEquals("temporary: temp.field", ((DefaultMutableTreeNode) mainBlock.getChildAt(1)).getUserObject().toString());
+
+        DefaultMutableTreeNode secondaryBlock = (DefaultMutableTreeNode) root.getChildAt(1);
+        assertEquals("block: secondary", secondaryBlock.getUserObject().toString());
+        assertEquals(1, secondaryBlock.getChildCount());
+        assertEquals("item: subtitle.text", ((DefaultMutableTreeNode) secondaryBlock.getChildAt(0)).getUserObject().toString());
     }
 }

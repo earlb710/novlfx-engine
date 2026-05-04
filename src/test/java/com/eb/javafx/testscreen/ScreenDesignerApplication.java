@@ -21,10 +21,10 @@ import javafx.stage.Stage;
 
 import javax.swing.JButton;
 import javax.swing.JComboBox;
+import javax.swing.BoxLayout;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
-import javax.swing.JList;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
@@ -32,23 +32,29 @@ import javax.swing.JSplitPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
-import javax.swing.DefaultListModel;
 import java.awt.BorderLayout;
 import java.awt.GridLayout;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import javax.swing.JTree;
+import javax.swing.tree.DefaultMutableTreeNode;
+import javax.swing.tree.DefaultTreeModel;
+import javax.swing.tree.TreePath;
+import javax.swing.tree.TreeSelectionModel;
 
 /** Manual Swing screen designer for editing JSON-backed reusable screen designs. */
 public final class ScreenDesignerApplication {
     private static final AtomicBoolean JAVAFX_STARTED = new AtomicBoolean();
     private ScreenDesignModel design = sampleDesign();
-    private final DefaultListModel<String> objectListModel = new DefaultListModel<>();
-    private final JList<String> objectList = new JList<>(objectListModel);
+    private final DefaultTreeModel objectTreeModel = new DefaultTreeModel(new DefaultMutableTreeNode());
+    private final JTree objectTree = new JTree(objectTreeModel);
     private final JTextField screenIdField = new JTextField();
     private final JTextField titleField = new JTextField();
     private final JComboBox<ScreenLayoutType> layoutTypeBox = new JComboBox<>(ScreenLayoutType.values());
@@ -90,8 +96,6 @@ public final class ScreenDesignerApplication {
         JButton saveAs = new JButton("Save As");
         JButton validate = new JButton("Validate");
         JButton preview = new JButton("Open Preview");
-        JButton addBlock = new JButton("Add Block");
-        JButton addItem = new JButton("Add Item");
         JButton addTemp = new JButton("Add Temporary Field");
         JButton promote = new JButton("Promote Temporary");
         newScreen.addActionListener(event -> runSafely("New Screen", this::newScreen));
@@ -100,8 +104,6 @@ public final class ScreenDesignerApplication {
         saveAs.addActionListener(event -> runSafely("Save As", this::saveJsonAs));
         validate.addActionListener(event -> runSafely("Validate", this::showValidation));
         preview.addActionListener(event -> runSafely("Open Preview", this::openPreview));
-        addBlock.addActionListener(event -> runSafely("Add Block", this::addBlock));
-        addItem.addActionListener(event -> runSafely("Add Item", () -> addItem(false)));
         addTemp.addActionListener(event -> runSafely("Add Temporary Field", () -> addItem(true)));
         promote.addActionListener(event -> runSafely("Promote Temporary", this::promoteTemporary));
         panel.add(newScreen);
@@ -110,15 +112,32 @@ public final class ScreenDesignerApplication {
         panel.add(saveAs);
         panel.add(validate);
         panel.add(preview);
-        panel.add(addBlock);
-        panel.add(addItem);
         panel.add(addTemp);
         panel.add(promote);
         return panel;
     }
 
-    private JScrollPane navigation() {
-        return new JScrollPane(objectList);
+    private JPanel navigation() {
+        objectTree.getSelectionModel().setSelectionMode(TreeSelectionModel.SINGLE_TREE_SELECTION);
+        objectTree.setRootVisible(true);
+        JPanel panel = new JPanel(new BorderLayout(8, 8));
+        panel.add(new JScrollPane(objectTree), BorderLayout.CENTER);
+        panel.add(navigationActions(), BorderLayout.SOUTH);
+        return panel;
+    }
+
+    private JPanel navigationActions() {
+        JPanel panel = new JPanel();
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        JButton addBlock = new JButton("Add Block");
+        JButton addItem = new JButton("Add Item");
+        addBlock.addActionListener(event -> runSafely("Add Block", this::addBlock));
+        addItem.addActionListener(event -> runSafely("Add Item", () -> addItem(false)));
+        addBlock.setAlignmentX(JButton.CENTER_ALIGNMENT);
+        addItem.setAlignmentX(JButton.CENTER_ALIGNMENT);
+        panel.add(addBlock);
+        panel.add(addItem);
+        return panel;
     }
 
     private JPanel editor() {
@@ -168,6 +187,7 @@ public final class ScreenDesignerApplication {
             return;
         }
         JComboBox<String> blockBox = new JComboBox<>(design.blocks().stream().map(ScreenDesignBlock::id).toArray(String[]::new));
+        selectedBlockId().ifPresent(blockBox::setSelectedItem);
         JComboBox<ScreenDesignItemType> typeBox = new JComboBox<>(ScreenDesignItemType.values());
         typeBox.setSelectedItem(temporary ? ScreenDesignItemType.FIELD : ScreenDesignItemType.TEXT);
         JTextField itemIdField = new JTextField();
@@ -283,14 +303,60 @@ public final class ScreenDesignerApplication {
         screenIdField.setText(design.id());
         titleField.setText(design.title());
         layoutTypeBox.setSelectedItem(design.layoutType());
-        objectListModel.clear();
-        objectListModel.addElement("screen: " + design.id());
-        design.blocks().forEach(block -> objectListModel.addElement("block: " + block.id()));
-        design.items().forEach(item -> objectListModel.addElement("item: " + item.id() + " -> " + item.blockId()));
-        design.temporaryItems().forEach(item -> objectListModel.addElement("temporary: " + item.id() + " -> " + item.blockId()));
+        objectTreeModel.setRoot(buildNavigationTree(design));
+        for (int row = 0; row < objectTree.getRowCount(); row++) {
+            objectTree.expandRow(row);
+        }
         previewArea.setText(previewText(ScreenDesignLayoutAdapter.toLayoutModel(design, true)));
         jsonArea.setText(ScreenDesignJson.toJson(design));
         statusLabel.setText(statusText(currentPath, ScreenDesignValidator.validate(design)));
+    }
+
+    private Optional<String> selectedBlockId() {
+        TreePath path = objectTree.getSelectionPath();
+        if (path == null) {
+            return Optional.empty();
+        }
+        Object node = path.getLastPathComponent();
+        if (!(node instanceof DefaultMutableTreeNode treeNode)) {
+            return Optional.empty();
+        }
+        Object userObject = treeNode.getUserObject();
+        if (!(userObject instanceof NavigationNode navigationNode)) {
+            return Optional.empty();
+        }
+        return Optional.ofNullable(navigationNode.blockId());
+    }
+
+    static DefaultMutableTreeNode buildNavigationTree(ScreenDesignModel design) {
+        DefaultMutableTreeNode root = new DefaultMutableTreeNode(new NavigationNode("screen: " + design.id(), null));
+        Map<String, DefaultMutableTreeNode> blockNodes = new LinkedHashMap<>();
+        for (ScreenDesignBlock block : design.blocks()) {
+            DefaultMutableTreeNode blockNode = new DefaultMutableTreeNode(new NavigationNode("block: " + block.id(), block.id()));
+            blockNodes.put(block.id(), blockNode);
+            root.add(blockNode);
+        }
+        addItemNodes(blockNodes, root, design.items(), false);
+        addItemNodes(blockNodes, root, design.temporaryItems(), true);
+        return root;
+    }
+
+    private static void addItemNodes(
+            Map<String, DefaultMutableTreeNode> blockNodes,
+            DefaultMutableTreeNode root,
+            List<ScreenDesignItem> items,
+            boolean temporary) {
+        for (ScreenDesignItem item : items) {
+            DefaultMutableTreeNode itemNode = new DefaultMutableTreeNode(new NavigationNode(
+                    (temporary ? "temporary: " : "item: ") + item.id(),
+                    item.blockId()));
+            DefaultMutableTreeNode blockNode = blockNodes.get(item.blockId());
+            if (blockNode == null) {
+                root.add(itemNode);
+                continue;
+            }
+            blockNode.add(itemNode);
+        }
     }
 
     private static String previewText(ScreenLayoutModel model) {
@@ -421,5 +487,12 @@ public final class ScreenDesignerApplication {
                 List.of(new ScreenDesignItem("title.text", "main", ScreenDesignItemType.TEXT,
                         "Title", "Saved item", null, null, null, Map.of())),
                 List.of());
+    }
+
+    private record NavigationNode(String label, String blockId) {
+        @Override
+        public String toString() {
+            return label;
+        }
     }
 }
