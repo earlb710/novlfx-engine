@@ -6,8 +6,8 @@ import java.util.Locale;
 /**
  * Path helpers for authored assets and repository-relative resources.
  *
- * <p>The helpers normalize separators, safely resolve child paths without allowing root escapes, and derive
- * normalized file names or extensions for asset lookup code.</p>
+ * <p>The helpers normalize separators, safely resolve child paths without allowing root escapes, derive
+ * normalized file names or extensions for asset lookup code, and centralize common absolute path handling.</p>
  */
 public final class PathUtils {
     private PathUtils() {
@@ -15,6 +15,30 @@ public final class PathUtils {
 
     public static String normalizeSeparators(String path) {
         return path == null ? null : path.replace('\\', '/');
+    }
+
+    public static Path absoluteNormalized(Path path) {
+        return Validation.requireNonNull(path, "Path is required.").toAbsolutePath().normalize();
+    }
+
+    public static Path currentDirectory() {
+        return absoluteNormalized(Path.of(""));
+    }
+
+    public static Path currentDirectory(String first, String... more) {
+        return absoluteNormalized(Path.of(
+                Validation.requireNonBlank(first, "Path is required."),
+                more == null ? new String[0] : more));
+    }
+
+    public static Path temporaryPath(String first, String... more) {
+        Path temporaryRoot = absoluteNormalized(Path.of(Validation.requireNonBlank(
+                System.getProperty("java.io.tmpdir"),
+                "Temporary directory property is required.")));
+        Path child = Path.of(
+                Validation.requireNonBlank(first, "Temporary path is required."),
+                more == null ? new String[0] : more);
+        return resolveChild(temporaryRoot, child.toString());
     }
 
     public static Path resolveChild(Path root, String childPath) {

@@ -13,6 +13,7 @@ import com.eb.javafx.scene.SceneModule;
 import com.eb.javafx.ui.ScreenActionViewModel;
 import com.eb.javafx.ui.ScreenViewModel;
 import com.eb.javafx.ui.ViewModelScreen;
+import com.eb.javafx.util.PathUtils;
 import javafx.application.Application;
 import javafx.stage.Stage;
 
@@ -28,7 +29,7 @@ import java.util.List;
 public final class GameApplicationDemo extends Application {
     @Override
     public void start(Stage primaryStage) {
-        Path configPath = Path.of("config.json").toAbsolutePath().normalize();
+        Path configPath = PathUtils.currentDirectory("config.json");
 
         BootstrapOptions baseOptions = BootstrapOptions.fromConfig(configPath);
         Path displayDefinitions = baseOptions.resourceConfig()

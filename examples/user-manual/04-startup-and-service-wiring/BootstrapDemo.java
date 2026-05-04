@@ -10,6 +10,7 @@ import com.eb.javafx.content.StaticContentModule;
 import com.eb.javafx.display.ImageDisplayRegistry;
 import com.eb.javafx.routing.RouteModule;
 import com.eb.javafx.scene.SceneModule;
+import com.eb.javafx.util.PathUtils;
 import javafx.stage.Stage;
 
 import java.nio.file.Path;
@@ -25,10 +26,9 @@ public final class BootstrapDemo {
     }
 
     public static BootContext bootDemo(Stage primaryStage) {
-        Path configPath = Path.of("examples/user-manual/04-startup-and-service-wiring/config.demo.json")
-                .toAbsolutePath()
-                .normalize();
-        Path appRoot = Path.of("").toAbsolutePath().normalize();
+        Path configPath = PathUtils.currentDirectory(
+                "examples/user-manual/04-startup-and-service-wiring/config.demo.json");
+        Path appRoot = PathUtils.currentDirectory();
         ApplicationResourceConfig resourceConfig = ApplicationResourceConfig.load(configPath);
         Path displayDefinitions = resourceConfig.resolveResource(appRoot, "displayDefinitions").orElseThrow();
 

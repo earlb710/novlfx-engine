@@ -12,8 +12,8 @@ import com.eb.javafx.random.GameRandomService;
 import com.eb.javafx.save.SaveLoadService;
 import com.eb.javafx.state.GameState;
 import com.eb.javafx.state.GameStateFactory;
+import com.eb.javafx.util.PathUtils;
 
-import java.nio.file.Path;
 import java.time.Instant;
 import java.util.List;
 
@@ -69,7 +69,7 @@ public final class SupportServicesDemo {
         ActionContext actionContext = new ActionContext(gameState, randomService, gameClock);
         System.out.println(restAction.execute(actionContext).message());
 
-        SaveLoadService saveLoadService = new SaveLoadService(Path.of("/tmp/novlfx-engine-demo-saves"));
+        SaveLoadService saveLoadService = new SaveLoadService(PathUtils.temporaryPath("novlfx-engine-demo-saves"));
         saveLoadService.initialize();
         saveLoadService.writeSlotSummary(1, gameState, "Before opening scene", Instant.now());
         SaveLoadService.SaveSlotSummary slotSummary = saveLoadService.readSlotSummary(1);

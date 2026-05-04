@@ -13,6 +13,7 @@ import com.eb.javafx.scene.ScenePresenter;
 import com.eb.javafx.scene.SceneRegistry;
 import com.eb.javafx.scene.SceneViewModel;
 import com.eb.javafx.state.GameState;
+import com.eb.javafx.util.PathUtils;
 
 import java.nio.file.Path;
 import java.util.List;
@@ -27,10 +28,9 @@ public final class SceneExecutionAndJsonDemo {
     }
 
     public static void main(String[] args) {
-        Path appRoot = Path.of("").toAbsolutePath().normalize();
-        Path configPath = Path.of("examples/user-manual/04-startup-and-service-wiring/config.demo.json")
-                .toAbsolutePath()
-                .normalize();
+        Path appRoot = PathUtils.currentDirectory();
+        Path configPath = PathUtils.currentDirectory(
+                "examples/user-manual/04-startup-and-service-wiring/config.demo.json");
         Path jsonPath = ApplicationResourceConfig.load(configPath)
                 .resolveResource(appRoot, "sceneDefinitions")
                 .orElseThrow();
