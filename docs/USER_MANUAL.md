@@ -13,8 +13,8 @@ Example/demo index: [`examples/user-manual/README.md`](../examples/user-manual/R
 - **UI screens and themes**: use reusable JavaFX screens, navigation helpers, startup error reporting, and CSS theme loading.
 - **Display support**: define image assets, layers, transforms, layered characters, JSON-backed display definitions, interpolation, and animations.
 - **Audio support**: validate channel-based sound requests and produce playback commands for application media adapters.
-- **Game support services**: use reusable action, requirement, effect, game-clock, localization, asset, input, event, progress, inventory, character, journal, diagnostics, settings, accessibility, timeline, debug, state, save/load, preference, and random utilities.
-- **Text and utility helpers**: parse simple styled text tags and use common validation, collection, path, packaged font, JSON, and time helpers.
+- **Game support services**: use reusable action, requirement, effect, game-clock, location, localization, asset, input, event, progress, inventory, character, journal, diagnostics, settings, accessibility, timeline, debug, state, save/load, preference, and random utilities.
+- **Text and utility helpers**: parse simple styled text tags, record conversation history, and use common validation, collection, path, packaged font, JSON, image, conversion, Unicode, and time helpers.
 - **Extension boundaries**: keep authored game content, application launchers, concrete assets, and domain-specific rules in the application repository.
 - **Application shell integration**: create the first app-owned JavaFX launcher, bootstrap flow, and media adapter on top of the reusable engine.
 
@@ -54,7 +54,7 @@ The engine publishes the Java module `com.novlfx.engine`. It exports reusable pa
 - `diagnostics`: structured health-check problems, reports, and check registries.
 - `display`: image assets, display layers, transforms, layered characters, JSON definition loading, interpolation, and animation playback.
 - `events`: lightweight runtime event bus and event history models.
-- `gamesupport`: generic action, requirement, effect, clock, date/time, and game-support registry behavior.
+- `gamesupport`: generic action, requirement, effect, clock, date/time, location, and game-support registry behavior.
 - `globalApi`: adapters for global-style navigation, screen visibility, randomness, and sound requests.
 - `input`: action definitions, device triggers, bindings, and context-aware input maps.
 - `inventory`: generic item definitions, catalogs, and quantity state.
@@ -67,11 +67,11 @@ The engine publishes the Java module `com.novlfx.engine`. It exports reusable pa
 - `save`: reusable save/load slot metadata and JSON persistence workflow.
 - `scene`: scene definitions, JSON import/export, steps, choices, transitions, execution results, flow-state JSON snapshots, and view models.
 - `settings`: higher-level game setting definitions and runtime value store above raw preferences.
-- `state`: basic mutable game-state creation and snapshots.
-- `text`: text tag parsing, text tokens, token types, and text style metadata.
+- `state`: basic mutable game-state creation, startup-route state, and conversation-history state.
+- `text`: text tag parsing, text tokens, token types, text style metadata, template interpolation, rendering-neutral text effects/spans, and dialog history models.
 - `timeline`: generic sequence, timed-step, and playback primitives for UI/display/text/audio timing.
-- `ui`: reusable JavaFX screens, navigation shells, theme loading, and startup failure reporting.
-- `util`: validation, immutable collection, result, path, packaged font resource, time, JSON string, and initialization helpers.
+- `ui`: reusable JavaFX screens, navigation shells, screen/background presentation models, preview helpers, theme loading, and startup failure reporting.
+- `util`: validation, immutable collection, result, path, packaged font resource, time, JSON string/parsing, image/SVG, conversion, Unicode/string, and initialization helpers.
 
 Use these packages from an application project instead of copying source-engine-specific global code into the engine.
 
@@ -98,9 +98,11 @@ The main result is a `BootContext`. Use it to access initialized services such a
 - `SceneRegistry`
 - `ImageDisplayRegistry`
 
+Use `GlobalApiAdapter` when legacy or app-owned code needs a narrow bridge for common global-style operations. It accepts `GlobalRouteRequest` / `GlobalRouteAction` navigation requests, delegates screen visibility to the router/stage layer, delegates sound requests to `AudioService`, and uses `GameRandomService` for reusable random decisions without reintroducing application globals.
+
 Inspect the `BootstrapReport` when startup diagnostics matter. It records completed phases and phase messages so an application can display useful failure or progress information. Use `BootstrapDiagnostics.requireComplete(...)` when an application launcher should fail fast on incomplete startup, or use `BootstrapDiagnostics.viewModel(...)` / `phaseLines(...)` to render content-neutral startup summaries in an app-owned startup or error screen.
 
-Use `BootstrapCompletenessPolicy` when an application has additional reusable startup requirements beyond all phases completing. A policy can require specific `BootstrapPhase` values, route IDs, and content definition IDs, then produce a `BootstrapCompletenessReport` for startup UI or throw through `requireComplete(...)`. `ApplicationShellSupport` combines that policy check with content-neutral startup-route opening and optional window-size preference persistence; the application still owns the JavaFX `Application` subclass and concrete route modules.
+Use `BootstrapCompletenessPolicy` when an application has additional reusable startup requirements beyond all phases completing. A policy can require specific `BootstrapPhase` values, route IDs, and content definition IDs, then produce a `BootstrapCompletenessReport` with `BootstrapCompletenessProblem` entries for startup UI or throw through `requireComplete(...)`. `BootstrapDiagnostics.viewModel(...)` returns a `BootstrapDiagnosticsViewModel` with `BootstrapPhaseSummaryViewModel` rows for rendering startup phase status. `ApplicationShellOptions` configures startup route and window-preference behavior, while `ApplicationShellSupport` combines that policy check with content-neutral startup-route opening and optional window-size preference persistence; the application still owns the JavaFX `Application` subclass and concrete route modules.
 
 Do not use guarded services before initialization. Several services use initialization guards and will fail fast if called before bootstrap or explicit initialization.
 
@@ -148,6 +150,7 @@ Example/demo code: [`examples/user-manual/05-content-routing-and-scenes/SceneFlo
 
 Additional example/demo code:
 - [`examples/user-manual/05-content-routing-and-scenes/SceneExecutionAndJsonDemo.java`](../examples/user-manual/05-content-routing-and-scenes/SceneExecutionAndJsonDemo.java)
+- [`examples/user-manual/05-content-routing-and-scenes/SceneValidationAndSaveDemo.java`](../examples/user-manual/05-content-routing-and-scenes/SceneValidationAndSaveDemo.java)
 - [`examples/user-manual/05-content-routing-and-scenes/scene-definitions.demo.json`](../examples/user-manual/05-content-routing-and-scenes/scene-definitions.demo.json)
 
 ### Static content
@@ -164,18 +167,18 @@ Routes are grouped by `RouteCategory`, which helps UI code distinguish menus, ga
 
 ### Scene definitions and execution
 
-Use `SceneRegistry` to register `SceneModule` implementations. A scene is described by `SceneDefinition` and consists of ordered `SceneStep` instances. Supported scene flow concepts include:
+Use `SceneRegistry` to register `SceneModule` implementations. A scene is described by `SceneDefinition` and consists of ordered `SceneStep` instances. `EnginePlaceholderSceneModule` supplies reusable placeholder definitions for engine tests and demos while application modules provide authored scenes. Supported scene flow concepts include:
 
-- dialogue and narration-style steps
+- dialogue and narration-style steps identified by `SceneStepType`
 - action steps
 - choices through `SceneChoice`
 - transitions through `SceneTransition`
-- transition types such as jump, call, return, complete, and route-style transitions
+- transition types such as jump, call, return, complete, and route-style transitions identified by `SceneTransitionType`
 - resumable state through `SceneFlowState` and `SceneReturnPoint`
 
-Use `SceneExecutor` to execute scene flow and return a `SceneExecutionResult`. Use `ScenePresenter` and view-model classes when JavaFX UI code needs a UI-neutral representation of the current scene and choices.
+Use `SceneExecutor` to execute scene flow and return a `SceneExecutionResult` with `SceneExecutionStatus`. Use `ScenePresenter` and view-model classes when JavaFX UI code needs a UI-neutral representation of the current scene and choices.
 
-Use `SceneRegistry.validationReport(...)` when application startup needs diagnostics rather than fail-fast validation. The report contains `SceneGraphSummary` entries plus `SceneValidationProblem` diagnostics for duplicate IDs, missing jump/call targets, unreachable steps, and final-step `NEXT` warnings. Applications can pass `SceneReferenceValidator` instances such as `SceneReferenceValidators.knownSpeakers(...)` or `knownDisplayReferences(...)` to validate app-owned speaker/display IDs without moving those registries into the engine.
+Use `SceneRegistry.validationReport(...)` when application startup needs diagnostics rather than fail-fast validation. The returned `SceneValidationReport` contains `SceneGraphSummary` entries plus `SceneValidationProblem` diagnostics with `SceneValidationSeverity` levels for duplicate IDs, missing jump/call targets, unreachable steps, and final-step `NEXT` warnings. Applications can pass `SceneReferenceValidator` instances such as `SceneReferenceValidators.knownSpeakers(...)` or `knownDisplayReferences(...)` to validate app-owned speaker/display IDs without moving those registries into the engine.
 
 ### Scene presentation view models
 
@@ -201,15 +204,21 @@ The `ui` package provides reusable JavaFX surfaces and helpers:
 - `ScreenActionViewModel` describes one route-backed action for a `ScreenViewModel`. It contains the button label, destination route id, and enabled state. Use it when reusable screens need navigation buttons that can be enabled or disabled without coupling the screen model to JavaFX `Button` setup.
 - `PreferencesSummaryViewModel` describes the reusable preferences summary screen with typed rows instead of raw strings. Each `PreferencesSummaryRowViewModel` contains a label/value pair such as window size, HUD alpha, input mode, or master volume, which keeps preference summaries easy to extend and test before flattening them into generic screen lines.
 - `SaveLoadSummaryViewModel` describes the reusable save/load summary screen with explicit schema metadata fields. It keeps the schema version, save directory, informational note, and actions as named data so save/load diagnostics can evolve without parsing or rebuilding display strings.
-- `HudSummaryViewModel` describes the reusable HUD summary screen with a small dedicated model. It currently carries the HUD layer description, opacity, and actions and gives the HUD summary room to grow beyond a couple of text lines without falling back to ad hoc strings.
+- `SaveSlotPresentation` is a reusable save-slot view contract for already-renderable slot titles, details, and compatibility state when an application wants a custom save browser above engine snapshot validation.
+- `HudSummaryViewModel` describes the reusable HUD summary screen with a small dedicated model. It currently carries the HUD layer description, opacity, and actions and gives the HUD summary room to grow beyond a couple of text lines without falling back to ad hoc strings. Use `HudSummaryRow` for generic label/value HUD summary rows that are already formatted by the caller.
 - `HudStatusContainerViewModel`, `HudStatusGroupViewModel`, and `HudStatusRowViewModel` describe reusable read-only HUD/status overlays with visibility, opacity, stack order, groups, and rows. Applications supply game-specific status values and visibility rules.
 - `SnapshotSectionPreviewViewModel` describes one preview row for a `SaveSnapshotSection`. It contains the section id, schema version, and a shortened JSON payload summary. Use it when save/load diagnostics or future save browsers need to show the contents of composed save snapshots without exposing the full payload or requiring custom parsing in the UI.
+- `ConversationHistoryViewModel`, `ConversationHistoryEntryViewModel`, `ConversationHistoryRowViewModel`, and `ConversationHistoryColumnViewModel` describe recorded conversations from `GameState.conversationHistory()` for review screens. `ConversationHistoryScreen` renders those models as a reusable route.
+- `MainMenuEntry` is the content-neutral contract for one main-menu route/action entry, and `InformationalScreenModels.backToMainMenu(...)` builds simple placeholder or error screen models with a standard main-menu action.
+- `DisplayPreviewBinding` carries image id, source path, layer, and asset-resolution state for display diagnostics and app-owned previews.
+- `ScreenBackgroundFit` names reusable background sizing modes: stretch or center-crop.
 - `ScreenInventory`, `ScreenInventoryItem`, `ScreenInventorySource`, `ScreenInventoryScanner`, and `ScreenInventoryAssignmentCategory` provide content-neutral inventory models for application-owned screen/style/control migration scanners. Use them to classify source artifacts as route-backed, reusable-control-backed, deferred, deprecated, excluded, or app-owned without hard-coding source-engine names in the engine.
 - `ViewModelScreen` renders a `ScreenViewModel` with generic labels and navigation buttons.
 - `ScreenShell` wraps screen content in a consistent shell.
 - `ScreenNavigation` centralizes navigation callbacks.
-- `MainMenuScreen`, `SceneFlowScreen`, `DisplayBindingsScreen`, `HudSummaryScreen`, `SaveLoadSummaryScreen`, and `PreferencesSummaryScreen` provide generic reusable screens or screen models.
-- `CaptureTestScreen` supports test/manual capture workflows.
+- `PreviewSummaryView` creates simple titled preview panels for display, scene, and snapshot summaries.
+- `MainMenuScreen`, `SceneFlowScreen`, `DisplayBindingsScreen`, `HudSummaryScreen`, `SaveLoadSummaryScreen`, `PreferencesSummaryScreen`, and `ConversationHistoryScreen` provide generic reusable screens or screen models.
+- `CaptureTestScreen` supports test/manual capture workflows; its `CaptureFormModel` stores validated capture form values.
 - `UiTheme` loads the reusable stylesheet from `src/main/resources/com/eb/javafx/ui/eb.css`.
 - `StartupErrorReporter`, `StartupFailureException`, and `StartupFailureCategory` provide structured startup diagnostics.
 
@@ -263,13 +272,18 @@ Concrete media files and path resolution remain application-owned. Applications 
 
 Example/demo code: [`examples/user-manual/08-audio-support/AudioServiceDemo.java`](../examples/user-manual/08-audio-support/AudioServiceDemo.java)
 
+Additional example/demo code:
+- [`examples/user-manual/08-audio-support/AudioAdapterPolicyDemo.java`](../examples/user-manual/08-audio-support/AudioAdapterPolicyDemo.java)
+
 ## 9. Game support, state, saves, preferences, and random behavior
 
 ### Game support
 
 Use `GameSupportService` and `ActionRegistry` to register reusable `GameAction` objects. Actions can use `ActionRequirement` checks, `ActionEffect` outcomes, `ActionContext`, `RequirementResult`, and `ActionResult` to keep generic game-rule plumbing separate from authored domain rules.
 
-Use `CodeTableDefinition` and `CodeDefinition` to define project-supplied code lists such as time slots, roles, goals, postures, positions, duties, or listener types. `GameClock` and `GameDateTime` use a time-slot code table so reusable time progression does not embed a specific game calendar or schedule.
+Use `DefinitionRegistry` and the `IdentifiedDefinition` contract when an application needs a deterministic reusable registry with duplicate-ID checks. Use `CodeTableDefinition` and `CodeDefinition` to define project-supplied code lists such as time slots, roles, goals, postures, positions, duties, or listener types. `GameClock` and `GameDateTime` use a time-slot code table so reusable time progression does not embed a specific game calendar or schedule.
+
+Use `LocationRegistry`, `LocationDescriptor`, and `LocationOccupancy` for reusable location metadata and per-save character placement. Location descriptors store stable location IDs, display/localization titles, route IDs, optional parent locations, tags, and generic action IDs. `LocationRegistry.validateReferences(...)` checks parent-location and action references after static modules register definitions, while `LocationOccupancy` tracks where generic character IDs are currently placed without owning authored movement rules.
 
 Use `CategoryCodeTableDefinition.load(Path)` when category data should come from authored JSON, typically with the path returned by `ApplicationResourceConfig.resolveCategoryCodeTables(applicationRoot)`. The root object contains a `language` field and a `tables` array; titles in that file are interpreted as text for that language so applications can provide parallel files for later translation:
 
@@ -305,17 +319,17 @@ Use the immutable helper methods to work with authored category files without ha
 Use the generic support packages when an application needs reusable game systems without moving authored content into the engine:
 
 - `LocalizationService` and `LocalizedTextBundle` select a language, resolve stable text IDs, and report missing translations.
-- `AssetCatalog` stores app-owned asset definitions, preload hints, and deterministic validation problems for missing files or paths that escape the configured asset root.
-- `InputMap` stores context-scoped actions and trigger bindings so menu, dialogue, gameplay, and debug controls can be rebindable without hard-coding UI controls.
+- `AssetCatalog` stores app-owned `AssetDefinition` entries with `AssetType`, preload hints, and deterministic `AssetValidationReport` / `AssetValidationProblem` diagnostics for missing files or paths that escape the configured asset root.
+- `InputMap` stores context-scoped `InputAction` values and `InputBinding` trigger bindings. Triggers combine an `InputDevice` and `InputTrigger` value so menu, dialogue, gameplay, and debug controls can be rebindable without hard-coding UI controls.
 - `GameEventBus` publishes lightweight runtime events and keeps a deterministic history for diagnostics, tests, or save-related inspection.
 - `ProgressTracker`, `ProgressSupport`, and `ProgressSnapshotCodec` model reusable flags, counters, milestones, unlocks, action requirements/effects, and save snapshot sections.
-- `InventoryCatalog` and `InventoryState` provide generic item definitions and stack quantities while authored item data remains application-owned.
-- `CharacterRegistry` and `RelationshipState` provide reusable character profile metadata and numeric relationship state.
-- `JournalState` provides generic unlocked/read state for journal, quest, task, or log entry definitions.
-- `DiagnosticRegistry` combines reusable health checks into structured reports for startup or debug screens.
-- `SettingsStore` and `AccessibilityProfile` carry game settings and accessibility choices above raw preferences.
-- `TimelineSequence` and `TimelinePlayer` provide deterministic timing primitives that can drive UI, display, text, or audio adapters.
-- `DebugRegistry` collects reusable debug snapshots for application-owned developer menus or test screens.
+- `InventoryCatalog` and `InventoryState` provide generic `InventoryItemDefinition` metadata and stack quantities while authored item data remains application-owned.
+- `CharacterRegistry` and `RelationshipState` provide reusable `CharacterProfile` metadata and numeric relationship state.
+- `JournalState` provides generic unlocked/read state for `JournalEntryDefinition` entries, with `JournalEntryStatus` recording whether each journal, quest, task, or log entry is unlocked and read.
+- `DiagnosticRegistry` combines `DiagnosticCheck` callbacks into `DiagnosticReport` values containing `DiagnosticProblem` rows and `DiagnosticSeverity` levels for startup or debug screens.
+- `SettingsStore` carries `SettingDefinition` entries, `SettingType` metadata, and runtime values above raw preferences. `AccessibilityProfile` carries accessibility choices such as font scale, contrast, motion, captions, and screen-reader labels.
+- `TimelineSequence`, `TimelineStep`, and `TimelinePlayer` provide deterministic timing primitives with `TimelineStatus` state that can drive UI, display, text, or audio adapters.
+- `DebugRegistry` collects `DebugSnapshot` values from `DebugInspector` callbacks for application-owned developer menus or test screens.
 
 These modules intentionally store IDs, metadata, and reusable state only. Concrete content, progression rules, screen design, and save-file schemas should stay in application repositories.
 
@@ -325,11 +339,13 @@ Example/demo code:
 
 ### State
 
-Use `GameStateFactory` to create base `GameState` instances. Keep project-specific state fields and schemas in the application repository unless they are represented by reusable engine abstractions.
+Use `GameStateFactory` to create base `GameState` instances. `GameState` currently stores the startup route and a reusable `DialogHistory` instance for per-save conversation review. Keep project-specific state fields and schemas in the application repository unless they are represented by reusable engine abstractions.
 
 ### Save/load
 
 Use `SaveLoadService` for reusable save-slot workflows. It supports slot summaries and JSON persistence behavior suitable for engine-level tests and extension by application code. `SaveLoadSummaryScreen` and `SaveLoadSummaryViewModel` expose the current save schema version and configured save directory as reusable diagnostic UI data. Use `SaveSnapshotCodec` and `SaveSnapshotSection` when an application wants to compose engine-owned state slices, such as scene-flow progress, into its own save document; the application still owns the outer save schema and any project-specific state fields.
+
+`SaveLoadService.SaveSchema` reports the current save schema version and directory, while `SaveLoadService.SaveSlotSummary` summarizes one slot number and whether it currently has data. Use `SaveSnapshotRegistry` to register required or optional snapshot sections and validate composed `SaveSnapshotDocument` objects. If an application needs to load older section payloads, register a `SaveSnapshotSectionMigration` so the registry can migrate sections to the current version during compose/decompose.
 
 ### Preferences
 
@@ -353,6 +369,8 @@ Use `TextTagParser` to tokenize visual-novel-style text with simple styling meta
 
 Use `TextEffect` and `StyledTextSpan` to carry rendering-neutral rich-text metadata such as gradient, kinetic, or glitch parameters before a JavaFX renderer exists. Use `TextTemplateProcessor` with a `TextVariableResolver` for simple app-supplied `{variable}` replacement while preserving unknown markers.
 
+Use `DialogHistory` when a save needs reusable conversation review data. Start a dated `DialogHistoryEntry` with a `GameDateTime` or `GameClock`, append `DialogMessage` rows, and end it with a closing timestamp. Speaker messages use `DialogSpeaker` plus the standard message column, while multi-column dialog can store explicit `DialogColumn` values for app-owned renderers.
+
 Use utility classes for common engine behavior:
 
 - `Validation` for null, blank, positive, and unit-interval checks.
@@ -361,10 +379,13 @@ Use utility classes for common engine behavior:
 - `PathUtils` for repository-relative and asset-path helpers.
 - `FontResources` for packaged engine fonts under `/com/eb/javafx/fonts`, including font filename discovery, validated resource paths, resource URLs/streams, and JavaFX `Font` loading.
 - `TimeFormatting` for reusable time display formatting.
-- `JsonStrings` for JSON string escaping.
+- `JsonStrings` for JSON string escaping and parsing quoted strings; `JsonStrings.ParsedString` reports the parsed value and end index for callers that parse larger documents.
+- `SimpleJson` and `JsonData` for small engine-owned JSON configuration documents that need object, array, string, boolean, null, and numeric value handling without an additional dependency.
 - `InitializationGuard` for fail-fast service initialization checks.
+- `UtilConvert`, `UtilString`, `UtilUnicode`, and `ECharMappings` for small conversion, string, Unicode, and character-mapping helpers retained for reusable engine code.
+- `UtilImage` for image conversion helpers used by reusable JavaFX/AWT bridge code.
 - `UtilJavaFx.run(Runnable)` for executing work immediately on the JavaFX application thread or scheduling it with `Platform.runLater(...)` from a background thread.
-- `VectorImage` for reusable SVG loading, metadata, sizing, styling, transform, export, and sanitization helpers.
+- `VectorImage` and `VectorImage.ViewBox` for reusable SVG loading, metadata, sizing, styling, transform, export, and sanitization helpers.
 
 Prefer these helpers over duplicating validation and formatting logic in application code.
 
