@@ -11,19 +11,32 @@ See [docs/USER_MANUAL.md](docs/USER_MANUAL.md) for setup, package responsibiliti
 ## Included
 
 - Reusable JavaFX foundation packages:
+  - `accessibility`
   - `audio`
+  - `assets`
   - `bootstrap`
+  - `characters`
   - `content`
+  - `debug`
+  - `diagnostics`
   - `display`
+  - `events`
   - `gamesupport`
+  - `input`
+  - `inventory`
+  - `journal`
+  - `localization`
   - `prefs`
+  - `progress`
   - `random`
   - `globalApi`
   - `routing`
   - `save`
   - `scene`
+  - `settings`
   - `state`
   - `text`
+  - `timeline`
   - `ui`
   - `util`
 - `src/main/resources/com/eb/javafx/ui/eb.css`

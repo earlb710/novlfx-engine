@@ -13,7 +13,7 @@ Example/demo index: [`examples/user-manual/README.md`](../examples/user-manual/R
 - **UI screens and themes**: use reusable JavaFX screens, navigation helpers, startup error reporting, and CSS theme loading.
 - **Display support**: define image assets, layers, transforms, layered characters, JSON-backed display definitions, interpolation, and animations.
 - **Audio support**: validate channel-based sound requests and produce playback commands for application media adapters.
-- **Game support services**: use reusable action, requirement, effect, game-clock, state, save/load, preference, and random utilities.
+- **Game support services**: use reusable action, requirement, effect, game-clock, localization, asset, input, event, progress, inventory, character, journal, diagnostics, settings, accessibility, timeline, debug, state, save/load, preference, and random utilities.
 - **Text and utility helpers**: parse simple styled text tags and use common validation, collection, path, packaged font, JSON, and time helpers.
 - **Extension boundaries**: keep authored game content, application launchers, concrete assets, and domain-specific rules in the application repository.
 - **Application shell integration**: create the first app-owned JavaFX launcher, bootstrap flow, and media adapter on top of the reusable engine.
@@ -44,19 +44,32 @@ Example/demo code: [`examples/user-manual/02-project-setup-and-validation/demo.s
 
 The engine publishes the Java module `com.novlfx.engine`. It exports reusable packages under `com.eb.javafx.*`:
 
+- `accessibility`: reusable accessibility profile choices such as font scale, contrast, motion, captions, and screen-reader label support.
 - `audio`: channel definitions, sound requests, and validated playback commands.
+- `assets`: application-owned asset catalogs, preload hints, and existence/path validation reports.
 - `bootstrap`: startup phases, bootstrap reporting, and boot context assembly.
+- `characters`: generic character profiles, tags, metadata, and relationship values.
 - `content`: reusable static content module and registry contracts, including JSON-backed display content modules.
+- `debug`: reusable debug snapshot and inspector models for app-owned developer tools.
+- `diagnostics`: structured health-check problems, reports, and check registries.
 - `display`: image assets, display layers, transforms, layered characters, JSON definition loading, interpolation, and animation playback.
+- `events`: lightweight runtime event bus and event history models.
 - `gamesupport`: generic action, requirement, effect, clock, date/time, and game-support registry behavior.
 - `globalApi`: adapters for global-style navigation, screen visibility, randomness, and sound requests.
+- `input`: action definitions, device triggers, bindings, and context-aware input maps.
+- `inventory`: generic item definitions, catalogs, and quantity state.
+- `journal`: generic journal/quest/log definitions and read/unread state.
+- `localization`: language-specific text bundles, language selection, lookup, and missing-text diagnostics.
 - `prefs`: persisted user preferences such as window size, fullscreen state, and master volume.
+- `progress`: reusable flags, counters, milestones, unlocks, game-support bridges, and save snapshot codec.
 - `random`: deterministic and non-deterministic random helpers.
 - `routing`: route descriptors, route modules, route factories, contexts, and scene router behavior.
 - `save`: reusable save/load slot metadata and JSON persistence workflow.
 - `scene`: scene definitions, JSON import/export, steps, choices, transitions, execution results, flow-state JSON snapshots, and view models.
+- `settings`: higher-level game setting definitions and runtime value store above raw preferences.
 - `state`: basic mutable game-state creation and snapshots.
 - `text`: text tag parsing, text tokens, token types, and text style metadata.
+- `timeline`: generic sequence, timed-step, and playback primitives for UI/display/text/audio timing.
 - `ui`: reusable JavaFX screens, navigation shells, theme loading, and startup failure reporting.
 - `util`: validation, immutable collection, result, path, packaged font resource, time, JSON string, and initialization helpers.
 
@@ -286,6 +299,25 @@ Use the immutable helper methods to work with authored category files without ha
 - `addTable(...)`, `editTable(...)`, and `removeTable(...)` return updated category sets.
 - `CodeTableDefinition.withTitle(...)`, `addCode(...)`, `editCode(...)`, and `removeCode(...)` return updated tables.
 - `save(path)` writes the updated category set back to JSON, and `toJson()` returns the same formatted JSON string for previews or tests.
+
+### Generic support modules
+
+Use the generic support packages when an application needs reusable game systems without moving authored content into the engine:
+
+- `LocalizationService` and `LocalizedTextBundle` select a language, resolve stable text IDs, and report missing translations.
+- `AssetCatalog` stores app-owned asset definitions, preload hints, and deterministic validation problems for missing files or paths that escape the configured asset root.
+- `InputMap` stores context-scoped actions and trigger bindings so menu, dialogue, gameplay, and debug controls can be rebindable without hard-coding UI controls.
+- `GameEventBus` publishes lightweight runtime events and keeps a deterministic history for diagnostics, tests, or save-related inspection.
+- `ProgressTracker`, `ProgressSupport`, and `ProgressSnapshotCodec` model reusable flags, counters, milestones, unlocks, action requirements/effects, and save snapshot sections.
+- `InventoryCatalog` and `InventoryState` provide generic item definitions and stack quantities while authored item data remains application-owned.
+- `CharacterRegistry` and `RelationshipState` provide reusable character profile metadata and numeric relationship state.
+- `JournalState` provides generic unlocked/read state for journal, quest, task, or log entry definitions.
+- `DiagnosticRegistry` combines reusable health checks into structured reports for startup or debug screens.
+- `SettingsStore` and `AccessibilityProfile` carry game settings and accessibility choices above raw preferences.
+- `TimelineSequence` and `TimelinePlayer` provide deterministic timing primitives that can drive UI, display, text, or audio adapters.
+- `DebugRegistry` collects reusable debug snapshots for application-owned developer menus or test screens.
+
+These modules intentionally store IDs, metadata, and reusable state only. Concrete content, progression rules, screen design, and save-file schemas should stay in application repositories.
 
 ### State
 
