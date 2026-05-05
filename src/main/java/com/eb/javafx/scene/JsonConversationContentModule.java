@@ -61,6 +61,7 @@ public final class JsonConversationContentModule implements StaticContentModule,
                 .map(conversation -> SceneDefinition.of(conversation.id(), stepsFor(conversation)));
     }
 
+    /** Descriptive alias for callers that prefer explicit id-based lookup naming. */
     public Optional<SceneDefinition> conversationById(String id) {
         return conversation(id);
     }
@@ -71,6 +72,7 @@ public final class JsonConversationContentModule implements StaticContentModule,
                 .orElseThrow(() -> new IllegalArgumentException("Unknown conversation id: " + checkedId));
     }
 
+    /** Descriptive alias for callers that prefer explicit id-based lookup naming. */
     public SceneDefinition requireConversationById(String id) {
         return requireConversation(id);
     }
