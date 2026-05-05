@@ -1727,12 +1727,16 @@ public final class ScreenDesignerApplication {
             return new DefaultValueType(DefaultValueCategory.BLOCK, "block", null);
         }
 
-        static DefaultValueType item(String role) {
-            return new DefaultValueType(DefaultValueCategory.ITEM, role, role);
+        static DefaultValueType item(String itemRole) {
+            return roleBacked(DefaultValueCategory.ITEM, itemRole);
         }
 
-        static DefaultValueType label(String role) {
-            return new DefaultValueType(DefaultValueCategory.LABEL, role, role);
+        static DefaultValueType label(String labelRole) {
+            return roleBacked(DefaultValueCategory.LABEL, labelRole);
+        }
+
+        private static DefaultValueType roleBacked(DefaultValueCategory category, String role) {
+            return new DefaultValueType(category, role, role);
         }
 
         @Override
