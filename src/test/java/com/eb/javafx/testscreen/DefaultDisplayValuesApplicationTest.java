@@ -6,6 +6,7 @@ import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
+import javax.swing.JTable;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.JViewport;
@@ -78,6 +79,8 @@ final class DefaultDisplayValuesApplicationTest {
                 DefaultDisplayValuesApplication.applicationVariableFieldLabels());
         assertEquals(List.of("string", "number", "bool"),
                 DefaultDisplayValuesApplication.applicationVariableTypeOptions());
+        assertEquals(List.of("Add Variable", "Remove Variable"),
+                DefaultDisplayValuesApplication.applicationVariableActionLabels());
         assertEquals(List.of(new DefaultDisplayValuesApplication.ApplicationVariable("", "string", "", "")),
                 DefaultDisplayValuesApplication.applicationVariables());
     }
@@ -106,6 +109,47 @@ final class DefaultDisplayValuesApplicationTest {
 
         assertTrue(panel.getBorder() instanceof TitledBorder);
         assertEquals("Application Variables", ((TitledBorder) panel.getBorder()).getTitle());
+    }
+
+    @Test
+    void applicationVariablesPanelIncludesAddAndRemoveActionsBelowTable() {
+        JPanel panel = DefaultDisplayValuesApplication.applicationVariablesPanel(
+                DefaultDisplayValuesApplication.applicationVariables());
+        JPanel actions = (JPanel) ((BorderLayout) panel.getLayout()).getLayoutComponent(BorderLayout.SOUTH);
+
+        assertEquals("Add Variable", ((JButton) actions.getComponent(0)).getText());
+        assertEquals("Remove Variable", ((JButton) actions.getComponent(1)).getText());
+    }
+
+    @Test
+    void applicationVariableActionsAddDefaultRowsAndRemoveSelectedRows() {
+        JPanel panel = DefaultDisplayValuesApplication.applicationVariablesPanel(
+                DefaultDisplayValuesApplication.applicationVariables());
+        JTable table = applicationVariablesTable(panel);
+        JPanel actions = (JPanel) ((BorderLayout) panel.getLayout()).getLayoutComponent(BorderLayout.SOUTH);
+        DefaultTableModel model = (DefaultTableModel) table.getModel();
+
+        assertEquals(1, model.getRowCount());
+        ((JButton) actions.getComponent(0)).doClick();
+        assertEquals(2, model.getRowCount());
+        assertEquals("string", model.getValueAt(1, 1));
+
+        table.setRowSelectionInterval(0, 0);
+        ((JButton) actions.getComponent(1)).doClick();
+        assertEquals(1, model.getRowCount());
+    }
+
+    @Test
+    void applicationVariableRemoveActionRemovesLastRowWhenNothingSelected() {
+        DefaultTableModel model = DefaultDisplayValuesApplication.applicationVariablesTableModel(List.of(
+                new DefaultDisplayValuesApplication.ApplicationVariable("one", "string", "1", ""),
+                new DefaultDisplayValuesApplication.ApplicationVariable("two", "number", "2", "")));
+        JTable table = new JTable(model);
+
+        DefaultDisplayValuesApplication.removeApplicationVariableRows(table);
+
+        assertEquals(1, model.getRowCount());
+        assertEquals("one", model.getValueAt(0, 0));
     }
 
     @Test
@@ -174,5 +218,11 @@ final class DefaultDisplayValuesApplicationTest {
         JScrollPane scrollPane = (JScrollPane) ((BorderLayout) panel.getLayout()).getLayoutComponent(BorderLayout.CENTER);
         JViewport viewport = scrollPane.getViewport();
         return (JTextArea) viewport.getView();
+    }
+
+    private static JTable applicationVariablesTable(JPanel panel) {
+        JScrollPane scrollPane = (JScrollPane) ((BorderLayout) panel.getLayout()).getLayoutComponent(BorderLayout.CENTER);
+        JViewport viewport = scrollPane.getViewport();
+        return (JTable) viewport.getView();
     }
 }

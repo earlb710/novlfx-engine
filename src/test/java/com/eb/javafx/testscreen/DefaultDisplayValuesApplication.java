@@ -163,16 +163,29 @@ public final class DefaultDisplayValuesApplication {
         return List.of(new ApplicationVariable("", applicationVariableTypeOptions().get(0), "", ""));
     }
 
+    static List<String> applicationVariableActionLabels() {
+        return List.of("Add Variable", "Remove Variable");
+    }
+
     static JPanel applicationVariablesPanel(List<ApplicationVariable> variables) {
         Validation.requireNonNull(variables, "Application variables are required.");
         JPanel panel = new JPanel(new BorderLayout(6, 6));
         panel.setBorder(BorderFactory.createTitledBorder("Application Variables"));
-        JTable table = new JTable(applicationVariablesTableModel(variables));
+        DefaultTableModel model = applicationVariablesTableModel(variables);
+        JTable table = new JTable(model);
         table.getColumnModel().getColumn(1).setCellEditor(new DefaultCellEditor(
                 new JComboBox<>(applicationVariableTypeOptions().toArray(String[]::new))));
         table.setFillsViewportHeight(true);
         table.setPreferredScrollableViewportSize(new Dimension(640, 96));
         panel.add(new JScrollPane(table), BorderLayout.CENTER);
+        JPanel actions = new JPanel(new GridLayout(1, 2, 6, 0));
+        JButton add = new JButton(applicationVariableActionLabels().get(0));
+        JButton remove = new JButton(applicationVariableActionLabels().get(1));
+        add.addActionListener(event -> addApplicationVariableRow(model));
+        remove.addActionListener(event -> removeApplicationVariableRows(table));
+        actions.add(add);
+        actions.add(remove);
+        panel.add(actions, BorderLayout.SOUTH);
         return panel;
     }
 
@@ -185,6 +198,27 @@ public final class DefaultDisplayValuesApplication {
                 variable.value(),
                 variable.description()}));
         return model;
+    }
+
+    static void addApplicationVariableRow(DefaultTableModel model) {
+        Validation.requireNonNull(model, "Application variables table model is required.");
+        ApplicationVariable variable = applicationVariables().get(0);
+        model.addRow(new Object[]{variable.name(), variable.type(), variable.value(), variable.description()});
+    }
+
+    static void removeApplicationVariableRows(JTable table) {
+        Validation.requireNonNull(table, "Application variables table is required.");
+        if (!(table.getModel() instanceof DefaultTableModel model) || model.getRowCount() == 0) {
+            return;
+        }
+        int[] selectedRows = table.getSelectedRows();
+        if (selectedRows.length == 0) {
+            model.removeRow(model.getRowCount() - 1);
+            return;
+        }
+        for (int index = selectedRows.length - 1; index >= 0; index--) {
+            model.removeRow(table.convertRowIndexToModel(selectedRows[index]));
+        }
     }
 
     static Component editableField(ApplicationConfigField field) {
