@@ -77,5 +77,5 @@ The screen designer starts in `examples/screen-designs`, which now includes seve
 - Open the repository root as a Gradle project in Android Studio.
 - Let Android Studio use the checked-in Gradle wrapper during sync.
 - Run Gradle tasks such as `build`, `test`, and `runTestScreen` from the Gradle tool window.
-- Import the shared `Full Clean Build` and `Test Screen` run configurations from `.run/` if Android Studio does not pick them up automatically after sync.
+- Import the shared `Full Clean Build`, `Test Screen`, and `Screen Designer` run configurations from `.run/` if Android Studio does not pick them up automatically after sync.
 - Keep `local.properties` local to your machine; Android Studio will create or update it with your SDK path as needed.
