@@ -157,18 +157,31 @@ final class ConversationEditorApplicationTest {
                 0,
                 "Updated variant",
                 2.5,
-                List.of("met_guide", "has_key"));
+                List.of("context=met_guide", "context=has_key"));
 
         assertEquals("Updated variant", updated.conversations().get(0).lines().get(0).variants().get(0).text());
         assertEquals(2.5, updated.conversations().get(0).lines().get(0).variants().get(0).weight());
-        assertEquals(List.of("met_guide", "has_key"),
+        assertEquals(List.of("context=met_guide", "context=has_key"),
                 updated.conversations().get(0).lines().get(0).variants().get(0).conditions());
     }
 
     @Test
-    void conditionTextsOmitBlankValuesAndKeepOnlyThreeLines() {
-        assertEquals(List.of("first", "second", "third"),
-                ConversationEditorApplication.conditionTexts(List.of("first", "", "second", " ", "third", "fourth")));
+    void conditionTextCombinesTypeOperandAndValue() {
+        assertEquals("context=met_guide",
+                ConversationEditorApplication.conditionText("context", "=", " met_guide "));
+        assertEquals("", ConversationEditorApplication.conditionText("context", "=", " "));
+    }
+
+    @Test
+    void conditionTextsOmitBlankValuesAndKeepOnlyThreeRows() {
+        assertEquals(List.of("context=first", "context=second", "context=third"),
+                ConversationEditorApplication.conditionTexts(List.of(
+                        ConversationEditorApplication.conditionText("context", "=", "first"),
+                        "",
+                        ConversationEditorApplication.conditionText("context", "=", "second"),
+                        " ",
+                        ConversationEditorApplication.conditionText("context", "=", "third"),
+                        ConversationEditorApplication.conditionText("context", "=", "fourth"))));
     }
 
     @Test

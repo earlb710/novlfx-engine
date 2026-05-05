@@ -55,6 +55,8 @@ import java.util.stream.Stream;
 /** Manual Swing editor for LR2Alt-compatible JSON conversation documents. */
 public final class ConversationEditorApplication {
     private static final int MAX_CONDITION_FIELDS = 3;
+    private static final String CONDITION_TYPE_CONTEXT = "context";
+    private static final String CONDITION_OPERAND_EQUALS = "=";
 
     private ConversationDefinition conversation = sampleConversation();
     private final DefaultListModel<ConversationFile> fileListModel = new DefaultListModel<>();
@@ -76,7 +78,7 @@ public final class ConversationEditorApplication {
     private final JComboBox<LineType> lineTypeField = new JComboBox<>(LineType.values());
     private final JTextArea variantTextArea = new JTextArea();
     private final JTextField variantWeightField = new JTextField();
-    private final List<JTextField> variantConditionFields = Stream.generate(JTextField::new)
+    private final List<ConditionFieldRow> variantConditionRows = Stream.generate(ConditionFieldRow::create)
             .limit(MAX_CONDITION_FIELDS)
             .toList();
     private final JLabel statusLabel = new JLabel();
@@ -230,11 +232,25 @@ public final class ConversationEditorApplication {
         GridBagConstraints constraints = new GridBagConstraints();
         constraints.gridx = 0;
         constraints.gridy = 0;
-        constraints.weightx = 1.0;
+        constraints.weightx = 0.0;
         constraints.fill = GridBagConstraints.HORIZONTAL;
         constraints.insets = new Insets(2, 2, 2, 2);
-        for (JTextField field : variantConditionFields) {
-            panel.add(field, constraints);
+        panel.add(new JLabel("Type"), constraints);
+        constraints.gridx = 1;
+        panel.add(new JLabel("Operand"), constraints);
+        constraints.gridx = 2;
+        constraints.weightx = 1.0;
+        panel.add(new JLabel("Value"), constraints);
+        constraints.gridy++;
+        for (ConditionFieldRow row : variantConditionRows) {
+            constraints.gridx = 0;
+            constraints.weightx = 0.0;
+            panel.add(row.typeField(), constraints);
+            constraints.gridx = 1;
+            panel.add(row.operandField(), constraints);
+            constraints.gridx = 2;
+            constraints.weightx = 1.0;
+            panel.add(row.valueField(), constraints);
             constraints.gridy++;
         }
         return panel;
@@ -285,7 +301,11 @@ public final class ConversationEditorApplication {
         installDirtyStateListener(conversationDescriptionField);
         installDirtyStateListener(variantTextArea);
         installDirtyStateListener(variantWeightField);
-        variantConditionFields.forEach(this::installDirtyStateListener);
+        variantConditionRows.forEach(row -> {
+            row.typeField().addActionListener(event -> refreshEditorState());
+            row.operandField().addActionListener(event -> refreshEditorState());
+            installDirtyStateListener(row.valueField());
+        });
         lineSpeakerField.addActionListener(event -> refreshEditorState());
         lineListenerField.addActionListener(event -> refreshEditorState());
         lineTypeField.addActionListener(event -> refreshEditorState());
@@ -978,7 +998,7 @@ public final class ConversationEditorApplication {
                 selectedLineType().jsonValue(),
                 variantTextArea.getText(),
                 variantWeightField.getText(),
-                String.join("|", variantConditionValues()));
+                variantConditionFieldState());
     }
 
     static List<String> conditionTexts(List<String> values) {
@@ -988,16 +1008,32 @@ public final class ConversationEditorApplication {
                 .toList();
     }
 
+    static String conditionText(String conditionType, String operand, String value) {
+        String checkedValue = value == null ? "" : value.trim();
+        if (checkedValue.isBlank()) {
+            return "";
+        }
+        String checkedType = Validation.requireNonBlank(conditionType, "Condition type is required.").trim();
+        String checkedOperand = Validation.requireNonBlank(operand, "Condition operand is required.").trim();
+        return checkedType + checkedOperand + checkedValue;
+    }
+
     private List<String> variantConditionValues() {
-        return variantConditionFields.stream()
-                .map(JTextField::getText)
+        return variantConditionRows.stream()
+                .map(ConditionFieldRow::conditionText)
                 .toList();
     }
 
     private void setConditionFields(List<String> conditions) {
-        for (int index = 0; index < variantConditionFields.size(); index++) {
-            variantConditionFields.get(index).setText(index < conditions.size() ? conditions.get(index) : "");
+        for (int index = 0; index < variantConditionRows.size(); index++) {
+            variantConditionRows.get(index).setConditionText(index < conditions.size() ? conditions.get(index) : "");
         }
+    }
+
+    private String variantConditionFieldState() {
+        return variantConditionRows.stream()
+                .map(ConditionFieldRow::fieldState)
+                .reduce("", (left, right) -> left + "|" + right);
     }
 
     private static List<String> roleChoices(ConversationDefinition conversation, String currentValue, boolean includeBlank) {
@@ -1059,6 +1095,53 @@ public final class ConversationEditorApplication {
         public String toString() {
             Path fileName = path.getFileName();
             return fileName == null ? path.toString() : fileName.toString();
+        }
+    }
+
+    private record ConditionFieldRow(JComboBox<String> typeField, JComboBox<String> operandField, JTextField valueField) {
+        private static ConditionFieldRow create() {
+            return new ConditionFieldRow(
+                    new JComboBox<>(new String[]{CONDITION_TYPE_CONTEXT}),
+                    new JComboBox<>(new String[]{CONDITION_OPERAND_EQUALS}),
+                    new JTextField());
+        }
+
+        String conditionText() {
+            return ConversationEditorApplication.conditionText(
+                    selectedValue(typeField, CONDITION_TYPE_CONTEXT),
+                    selectedValue(operandField, CONDITION_OPERAND_EQUALS),
+                    valueField.getText());
+        }
+
+        String fieldState() {
+            return selectedValue(typeField, CONDITION_TYPE_CONTEXT)
+                    + selectedValue(operandField, CONDITION_OPERAND_EQUALS)
+                    + valueField.getText();
+        }
+
+        void setConditionText(String conditionText) {
+            String checkedCondition = conditionText == null ? "" : conditionText.trim();
+            typeField.setSelectedItem(CONDITION_TYPE_CONTEXT);
+            operandField.setSelectedItem(CONDITION_OPERAND_EQUALS);
+            if (checkedCondition.isBlank()) {
+                valueField.setText("");
+                return;
+            }
+            int separatorIndex = checkedCondition.indexOf(CONDITION_OPERAND_EQUALS);
+            if (separatorIndex > 0) {
+                String type = checkedCondition.substring(0, separatorIndex);
+                String value = checkedCondition.substring(separatorIndex + CONDITION_OPERAND_EQUALS.length());
+                if (CONDITION_TYPE_CONTEXT.equals(type)) {
+                    valueField.setText(value);
+                    return;
+                }
+            }
+            valueField.setText(checkedCondition);
+        }
+
+        private static String selectedValue(JComboBox<String> comboBox, String defaultValue) {
+            Object selectedItem = comboBox.getSelectedItem();
+            return selectedItem == null ? defaultValue : selectedItem.toString();
         }
     }
 
