@@ -18,6 +18,24 @@ final class DefaultDisplayValuesApplicationTest {
     }
 
     @Test
+    void defaultAppValuesTabsStartWithApplicationAndDisplayValues() {
+        assertEquals(List.of("Application Values", "Display Values", "Default CSS", "Layout Contract"),
+                DefaultDisplayValuesApplication.tabLabels());
+    }
+
+    @Test
+    void applicationValuesExposeApplicationConfigFields() {
+        assertEquals(List.of("debug", "categoryCodeTablesPath", "imageAssetRoot", "resources.uiTheme"),
+                DefaultDisplayValuesApplication.applicationConfigFields().stream()
+                        .map(DefaultDisplayValuesApplication.ApplicationConfigField::label)
+                        .toList());
+        assertEquals("true", DefaultDisplayValuesApplication.applicationConfigFields().get(0).value());
+        assertTrue(DefaultDisplayValuesApplication.applicationConfigFields().stream()
+                .anyMatch(field -> field.label().equals("resources.uiTheme")
+                        && field.value().equals("src/main/resources/com/eb/javafx/ui/default.css")));
+    }
+
+    @Test
     void displayResourceContentsLoadFromClasspath() {
         assertTrue(DefaultDisplayValuesApplication.resourceContents("/com/eb/javafx/ui/default.css")
                 .contains(".root"));

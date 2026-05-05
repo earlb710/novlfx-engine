@@ -15,8 +15,8 @@ import java.util.List;
 public final class ManagementApplication {
     private static final List<ManagementAction> ACTIONS = List.of(
             new ManagementAction(
-                    "Default Display Values",
-                    "Edit engine default display values.",
+                    "Default App Values",
+                    "View engine default application and display values.",
                     () -> DefaultDisplayValuesApplication.main(new String[0])),
             new ManagementAction(
                     "Screen Designer",
