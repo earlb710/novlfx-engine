@@ -1,10 +1,10 @@
 # JavaFX Engine Remaining Plan
 
-This local plan tracks reusable `novlfx-engine` work that remains after the current generic JSON-loader and contract extraction slice. Keep app-authored story content, LR2Alt IDs, game rules, and concrete media assets in consuming application repositories.
+This local plan tracks reusable `novlfx-engine` work that remains after the current generic JSON-loader and contract extraction slice. Keep app-authored story content, AltLife IDs, game rules, and concrete media assets in consuming application repositories.
 
 ## Still to do
 
-- [ ] Review [`earlb710/Lr2Alt`](https://github.com/earlb710/Lr2Alt.git) for content-agnostic JavaFX helpers that should be ported into this engine.
+- [ ] Review [`earlb710/AltLife`](https://github.com/earlb710/AltLife.git) for content-agnostic JavaFX helpers that should be ported into this engine.
 - [ ] Expand JSON loading beyond simple display and scene definitions only when reusable schemas are stable.
 - [x] Add application-side examples that resolve JSON paths through `ApplicationResourceConfig`.
 - [x] Add richer scene validation for unreachable branches, scene graph summaries, and speaker/display reference checks supplied by app registries.

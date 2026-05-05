@@ -17,7 +17,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-/** Registers an LR2Alt-compatible JSON conversation document as content definitions and scene definitions. */
+/** Registers an AltLife-compatible JSON conversation document as content definitions and scene definitions. */
 public final class JsonConversationContentModule implements StaticContentModule, SceneModule {
     private final ConversationDefinition document;
 
@@ -165,7 +165,7 @@ public final class JsonConversationContentModule implements StaticContentModule,
     }
 
     private static String choiceValue(ConversationVariant variant, int variantIndex) {
-        // LR2Alt exports and draft editor rows may omit choice values; use the zero-based JSON variant index so every runtime choice still returns a stable authored value.
+        // AltLife exports and draft editor rows may omit choice values; use the zero-based JSON variant index so every runtime choice still returns a stable authored value.
         return variant.value().isEmpty() ? Integer.toString(variantIndex) : variant.value();
     }
 

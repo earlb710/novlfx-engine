@@ -24,8 +24,12 @@ public final class ManagementApplication {
                     ScreenDesignerApplication::showFromManagement),
             new ManagementAction(
                     "Conversation Editor",
-                    "Open the LR2Alt-compatible conversation JSON editor.",
-                    () -> ConversationEditorApplication.main(new String[0])));
+                    "Open the AltLife-compatible conversation JSON editor.",
+                    () -> ConversationEditorApplication.main(new String[0])),
+            new ManagementAction(
+                    "Manage Code Tables",
+                    "Open the category code table JSON viewer.",
+                    () -> CodeTableManagementApplication.main(new String[0])));
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> new ManagementApplication().show());
@@ -35,7 +39,7 @@ public final class ManagementApplication {
         JFrame frame = new JFrame("NovlFX Management");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setContentPane(content());
-        frame.setSize(420, 260);
+        frame.setSize(420, 320);
         frame.setLocationByPlatform(true);
         frame.setVisible(true);
     }

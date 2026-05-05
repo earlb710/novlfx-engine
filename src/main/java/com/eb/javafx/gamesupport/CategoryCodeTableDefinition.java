@@ -5,6 +5,7 @@ import com.eb.javafx.util.Validation;
 import com.eb.javafx.util.JsonStrings;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -45,6 +46,21 @@ public final class CategoryCodeTableDefinition {
             return fromJson(Files.readString(jsonPath, StandardCharsets.UTF_8), jsonPath.toString());
         } catch (IOException exception) {
             throw new IllegalArgumentException("Unable to read category code table JSON: " + jsonPath, exception);
+        }
+    }
+
+    /** Loads category code tables from a UTF-8 classpath resource. */
+    public static CategoryCodeTableDefinition loadResource(String resourceName) {
+        String checkedResourceName = Validation.requireNonBlank(
+                resourceName,
+                "Category code table resource name is required.");
+        try (InputStream inputStream = CategoryCodeTableDefinition.class.getResourceAsStream(checkedResourceName)) {
+            if (inputStream == null) {
+                throw new IllegalArgumentException("Missing category code table resource: " + checkedResourceName);
+            }
+            return fromJson(new String(inputStream.readAllBytes(), StandardCharsets.UTF_8), checkedResourceName);
+        } catch (IOException exception) {
+            throw new IllegalArgumentException("Unable to read category code table resource: " + checkedResourceName, exception);
         }
     }
 

@@ -28,6 +28,8 @@ final class GameSupportServiceTest {
         assertTrue(service.isInitialized());
         assertTrue(service.actionRegistry().isEmpty());
         assertTrue(service.locationRegistry().isEmpty());
+        assertFalse(service.codeTableRegistry().isEmpty());
+        assertTrue(service.codeTableRegistry().contains(SystemCodeTables.CONDITION_TYPES_TABLE_ID));
         assertEquals(1, service.gameClock().currentTime().day());
         assertEquals("default", service.gameClock().currentTime().timeSlotId());
     }

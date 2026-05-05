@@ -1,6 +1,6 @@
 # Portable JavaFX Plan Extract
 
-This document extracts the reusable JavaFX engine guidance from the referenced JavaFX port planning material into `novlfx-engine`. It is intentionally limited to cross-project foundation code and omits application-specific story content, assets, route names, migration metadata, and game rules from Lr2Alt or any other source project : https://github.com/earlb710/Lr2Alt.git
+This document extracts the reusable JavaFX engine guidance from the referenced JavaFX port planning material into `novlfx-engine`. It is intentionally limited to cross-project foundation code and omits application-specific story content, assets, route names, migration metadata, and game rules from AltLife or any other source project : https://github.com/earlb710/AltLife.git
 
 ## Portability filter
 
