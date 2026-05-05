@@ -127,12 +127,13 @@ final class ScreenDesignModelTest {
                         new ScreenDesignItem("display", "profile", ScreenDesignItemType.TEXT_AREA,
                                 "Ignored", "Display text", null, null, null, Map.of()),
                         new ScreenDesignItem("notes", "profile", ScreenDesignItemType.MULTI_LINE_FIELD,
-                                "Notes", null, "Saved", "Default", null, Map.of())),
+                                "Notes", null, "Saved", "Default", null, Map.of("fontSize", "22"))),
                 List.of());
 
-        List<String> lines = ScreenDesignLayoutAdapter.toLayoutModel(model).contentSections().get(0).lines();
+        ScreenLayoutSection section = ScreenDesignLayoutAdapter.toLayoutModel(model).contentSections().get(0);
 
-        assertEquals(List.of("Display text", "Notes: Saved"), lines);
+        assertEquals(List.of("Display text", "Notes: Saved"), section.lines());
+        assertEquals("22", section.lineMetadata().get(1).get("fontSize"));
     }
 
     @Test

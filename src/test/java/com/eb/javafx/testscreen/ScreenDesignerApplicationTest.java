@@ -209,9 +209,12 @@ final class ScreenDesignerApplicationTest {
                         ScreenDesignerApplication.NavigationNode.block("main")));
         assertEquals("Item Properties", ScreenDesignerApplication.propertiesTitleFor(
                 ScreenDesignerApplication.NavigationNode.item("title.text", "main", false)));
-        assertEquals(List.of("Target block", "Item id", "Type", "Label", "Text/default value", "Current value", "Editable"),
+        assertEquals(List.of("Target block", "Item id", "Type", "Label", "Text/default value", "Current value", "Editable",
+                        "Font size", "Font style", "Color", "Label font size", "Label font style", "Label color"),
                 ScreenDesignerApplication.propertyLabelsFor(
                         ScreenDesignerApplication.NavigationNode.item("title.text", "main", false)));
+        assertEquals(List.of("Target block", "Item id", "Type", "Text/default value", "Font size", "Font style", "Color"),
+                ScreenDesignerApplication.itemPropertyLabelsFor(ScreenDesignItemType.TEXT));
         assertEquals("Item Properties", ScreenDesignerApplication.propertiesTitleFor(
                 ScreenDesignerApplication.NavigationNode.item("temp.field", "main", true)));
     }

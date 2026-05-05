@@ -8,7 +8,7 @@
 }
 
 .screen-title {
-    -fx-font-size: 28px;
+    -fx-font-size: 34px;
     -fx-font-weight: bold;
     -fx-text-fill: #66c1e0;
 }
@@ -54,6 +54,7 @@
 
 .layout-section-title {
     -fx-font-weight: bold;
+    -fx-font-size: 20px;
     -fx-text-fill: #66c1e0;
 }
 
@@ -95,7 +96,7 @@
 
 .label {
     -fx-text-fill: #ffffff;
-    -fx-font-size: 14px;
+    -fx-font-size: 18px;
 }
 
 .button {

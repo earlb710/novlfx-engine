@@ -3,7 +3,9 @@ package com.eb.javafx.ui;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.Map;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -35,5 +37,16 @@ final class ScreenLayoutRendererTest {
         assertThrows(IllegalArgumentException.class, () -> ScreenLayoutRenderer.createRoot(null));
         assertThrows(IllegalArgumentException.class, () -> ScreenLayoutRenderer.createRoot(null, null));
         assertThrows(IllegalArgumentException.class, () -> ScreenLayoutRenderer.createScene(null, model));
+    }
+
+    @Test
+    void rendererConvertsSafeLineMetadataToInlineFontAndColorStyle() {
+        String style = ScreenLayoutRenderer.lineStyle(Map.of(
+                "fontSize", "22",
+                "fontStyle", "bold italic",
+                "color", "#66c1e0"));
+
+        assertEquals("-fx-font-size: 22px; -fx-font-weight: bold; -fx-font-style: italic; -fx-text-fill: #66c1e0; ", style);
+        assertEquals("", ScreenLayoutRenderer.lineStyle(Map.of("color", "red; -fx-padding: 99")));
     }
 }

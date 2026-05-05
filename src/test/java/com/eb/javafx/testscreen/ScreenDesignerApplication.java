@@ -65,6 +65,12 @@ import javax.swing.tree.TreeSelectionModel;
 /** Manual Swing screen designer for editing JSON-backed reusable screen designs. */
 public final class ScreenDesignerApplication {
     private static final String SCREEN_PARENT_OPTION = "<screen>";
+    private static final String ITEM_FONT_SIZE_KEY = "fontSize";
+    private static final String ITEM_FONT_STYLE_KEY = "fontStyle";
+    private static final String ITEM_COLOR_KEY = "color";
+    private static final String LABEL_FONT_SIZE_KEY = "labelFontSize";
+    private static final String LABEL_FONT_STYLE_KEY = "labelFontStyle";
+    private static final String LABEL_COLOR_KEY = "labelColor";
     private static final AtomicBoolean JAVAFX_STARTED = new AtomicBoolean();
     private ScreenDesignModel design = sampleDesign();
     private final DefaultTreeModel objectTreeModel = new DefaultTreeModel(new DefaultMutableTreeNode());
@@ -88,6 +94,12 @@ public final class ScreenDesignerApplication {
     private final JTextArea itemContentArea = new JTextArea(3, 20);
     private final JTextField itemValueField = new JTextField();
     private final JCheckBox itemEditableBox = new JCheckBox();
+    private final JTextField itemFontSizeField = new JTextField();
+    private final JTextField itemFontStyleField = new JTextField();
+    private final JTextField itemColorField = new JTextField();
+    private final JTextField itemLabelFontSizeField = new JTextField();
+    private final JTextField itemLabelFontStyleField = new JTextField();
+    private final JTextField itemLabelColorField = new JTextField();
     private final JTextArea jsonArea = new JTextArea();
     private final JLabel statusLabel = new JLabel();
     private Path currentPath;
@@ -205,14 +217,25 @@ public final class ScreenDesignerApplication {
 
     private void applySelectedProperties() {
         NavigationNode navigationNode = selectedNavigationNode().orElseGet(() -> NavigationNode.screen(design.id()));
+        NavigationNode updatedSelection = appliedNavigationNode(navigationNode);
         switch (navigationNode.type()) {
             case SCREEN -> applyScreenProperties();
             case BLOCK -> applyBlockProperties(navigationNode.id());
             case ITEM, TEMPORARY_ITEM -> applyItemProperties(navigationNode.id(), navigationNode.type() == NodeType.TEMPORARY_ITEM);
         }
         refreshAll();
-        objectTree.clearSelection();
-        updateSelectedNavigationState();
+        selectNavigationNode(updatedSelection);
+    }
+
+    private NavigationNode appliedNavigationNode(NavigationNode currentNode) {
+        return switch (currentNode.type()) {
+            case SCREEN -> NavigationNode.screen(screenIdField.getText());
+            case BLOCK -> NavigationNode.block(blockIdField.getText());
+            case ITEM, TEMPORARY_ITEM -> NavigationNode.item(
+                    normalizedItemId(itemIdField.getText(), currentNode.type() == NodeType.TEMPORARY_ITEM),
+                    (String) itemBlockBox.getSelectedItem(),
+                    currentNode.type() == NodeType.TEMPORARY_ITEM);
+        };
     }
 
     private void resetSelectedProperties() {
@@ -245,7 +268,7 @@ public final class ScreenDesignerApplication {
         String itemId = itemIdField.getText();
         String content = blankToNull(itemContentText(effectiveType));
         design = replaceItem(design, oldItemId, new ScreenDesignItem(
-                temporary && !itemId.startsWith("temp.") ? "temp." + itemId : itemId,
+                normalizedItemId(itemId, temporary),
                 (String) itemBlockBox.getSelectedItem(),
                 effectiveType,
                 itemLabel(effectiveType, itemLabelField.getText(), itemId),
@@ -254,7 +277,7 @@ public final class ScreenDesignerApplication {
                 isFieldType(effectiveType) ? content : null,
                 editableSelection(effectiveType, itemEditableBox.isSelected()),
                 existing.styleClass(),
-                existing.metadata()), temporary);
+                itemMetadata(existing.metadata(), effectiveType)), temporary);
     }
 
     private void newScreen() {
@@ -323,21 +346,26 @@ public final class ScreenDesignerApplication {
                 : existing.editable());
         typeBox.addActionListener(event -> refreshItemTypeState(typeBox, labelField, editableBox));
         refreshItemTypeState(typeBox, labelField, editableBox);
-        JPanel fields = new JPanel(new GridLayout(7, 2, 6, 6));
+        boolean fieldType = isFieldType((ScreenDesignItemType) typeBox.getSelectedItem());
+        JPanel fields = new JPanel(new GridLayout(fieldType ? 7 : 4, 2, 6, 6));
         fields.add(new JLabel("Target block"));
         fields.add(blockBox);
         fields.add(new JLabel("Item id"));
         fields.add(itemIdField);
         fields.add(new JLabel("Type"));
         fields.add(typeBox);
-        fields.add(new JLabel("Label"));
-        fields.add(labelField);
+        if (fieldType) {
+            fields.add(new JLabel("Label"));
+            fields.add(labelField);
+        }
         fields.add(new JLabel("Text/default value"));
         fields.add(contentField);
-        fields.add(new JLabel("Current value"));
-        fields.add(valueField);
-        fields.add(new JLabel("Editable"));
-        fields.add(editableBox);
+        if (fieldType) {
+            fields.add(new JLabel("Current value"));
+            fields.add(valueField);
+            fields.add(new JLabel("Editable"));
+            fields.add(editableBox);
+        }
         int result = JOptionPane.showConfirmDialog(null, fields, title, JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
         String itemId = itemIdField.getText();
         String blockId = (String) blockBox.getSelectedItem();
@@ -349,7 +377,7 @@ public final class ScreenDesignerApplication {
         String value = blankToNull(valueField.getText());
         ScreenDesignItemType effectiveType = type == null ? ScreenDesignItemType.TEXT : type;
         return Optional.of(new ScreenDesignItem(
-                temporary && !itemId.startsWith("temp.") ? "temp." + itemId : itemId,
+                normalizedItemId(itemId, temporary),
                 blockId,
                 effectiveType,
                 itemLabel(effectiveType, labelField.getText(), itemId),
@@ -817,6 +845,29 @@ public final class ScreenDesignerApplication {
         return path == null ? Optional.empty() : navigationNodeFor(path.getLastPathComponent());
     }
 
+    private void selectNavigationNode(NavigationNode targetNode) {
+        DefaultMutableTreeNode root = (DefaultMutableTreeNode) objectTreeModel.getRoot();
+        TreePath path = findTreePath(root, targetNode, new TreePath(root));
+        if (path != null) {
+            objectTree.setSelectionPath(path);
+            objectTree.scrollPathToVisible(path);
+        }
+    }
+
+    private static TreePath findTreePath(DefaultMutableTreeNode treeNode, NavigationNode targetNode, TreePath path) {
+        if (navigationNodeFor(treeNode).filter(targetNode::equals).isPresent()) {
+            return path;
+        }
+        for (int index = 0; index < treeNode.getChildCount(); index++) {
+            DefaultMutableTreeNode child = (DefaultMutableTreeNode) treeNode.getChildAt(index);
+            TreePath found = findTreePath(child, targetNode, path.pathByAddingChild(child));
+            if (found != null) {
+                return found;
+            }
+        }
+        return null;
+    }
+
     private JPopupMenu createContextMenu(NavigationNode navigationNode) {
         JPopupMenu menu = new JPopupMenu();
         for (String label : contextActionLabelsFor(navigationNode, !design.blocks().isEmpty())) {
@@ -967,15 +1018,34 @@ public final class ScreenDesignerApplication {
         itemContentArea.setWrapStyleWord(true);
         itemValueField.setText(nullToBlank(item.value()));
         itemEditableBox.setSelected(item.editable());
+        itemFontSizeField.setText(metadataValue(item.metadata(), ITEM_FONT_SIZE_KEY));
+        itemFontStyleField.setText(metadataValue(item.metadata(), ITEM_FONT_STYLE_KEY));
+        itemColorField.setText(metadataValue(item.metadata(), ITEM_COLOR_KEY));
+        itemLabelFontSizeField.setText(metadataValue(item.metadata(), LABEL_FONT_SIZE_KEY));
+        itemLabelFontStyleField.setText(metadataValue(item.metadata(), LABEL_FONT_STYLE_KEY));
+        itemLabelColorField.setText(metadataValue(item.metadata(), LABEL_COLOR_KEY));
         refreshItemTypeState();
-        JPanel fields = propertyGrid(propertyLabelsFor(NavigationNode.item(item.id(), item.blockId(), temporary)).size());
-        addPropertyRow(fields, 0, "Target block", itemBlockBox);
-        addPropertyRow(fields, 1, "Item id", itemIdField);
-        addPropertyRow(fields, 2, "Type", itemTypeBox);
-        addPropertyRow(fields, 3, "Label", itemLabelField);
-        addPropertyRow(fields, 4, "Text/default value", itemContentComponent(item.type()));
-        addPropertyRow(fields, 5, "Current value", itemValueField);
-        addPropertyRow(fields, 6, "Editable", itemEditableBox);
+        JPanel fields = propertyGrid(itemPropertyLabelsFor(item.type()).size());
+        int row = 0;
+        addPropertyRow(fields, row++, "Target block", itemBlockBox);
+        addPropertyRow(fields, row++, "Item id", itemIdField);
+        addPropertyRow(fields, row++, "Type", itemTypeBox);
+        if (isFieldType(item.type())) {
+            addPropertyRow(fields, row++, "Label", itemLabelField);
+        }
+        addPropertyRow(fields, row++, "Text/default value", itemContentComponent(item.type()));
+        if (isFieldType(item.type())) {
+            addPropertyRow(fields, row++, "Current value", itemValueField);
+            addPropertyRow(fields, row++, "Editable", itemEditableBox);
+        }
+        addPropertyRow(fields, row++, "Font size", itemFontSizeField);
+        addPropertyRow(fields, row++, "Font style", itemFontStyleField);
+        addPropertyRow(fields, row++, "Color", itemColorField);
+        if (isFieldType(item.type())) {
+            addPropertyRow(fields, row++, "Label font size", itemLabelFontSizeField);
+            addPropertyRow(fields, row++, "Label font style", itemLabelFontStyleField);
+            addPropertyRow(fields, row, "Label color", itemLabelColorField);
+        }
         return fields;
     }
 
@@ -1064,6 +1134,40 @@ public final class ScreenDesignerApplication {
         return nonBlankLabel == null ? itemId : nonBlankLabel;
     }
 
+    private Map<String, String> itemMetadata(Map<String, String> existingMetadata, ScreenDesignItemType type) {
+        Map<String, String> metadata = new LinkedHashMap<>(existingMetadata);
+        putOptionalMetadata(metadata, ITEM_FONT_SIZE_KEY, itemFontSizeField.getText());
+        putOptionalMetadata(metadata, ITEM_FONT_STYLE_KEY, itemFontStyleField.getText());
+        putOptionalMetadata(metadata, ITEM_COLOR_KEY, itemColorField.getText());
+        if (isFieldType(type)) {
+            putOptionalMetadata(metadata, LABEL_FONT_SIZE_KEY, itemLabelFontSizeField.getText());
+            putOptionalMetadata(metadata, LABEL_FONT_STYLE_KEY, itemLabelFontStyleField.getText());
+            putOptionalMetadata(metadata, LABEL_COLOR_KEY, itemLabelColorField.getText());
+        } else {
+            metadata.remove(LABEL_FONT_SIZE_KEY);
+            metadata.remove(LABEL_FONT_STYLE_KEY);
+            metadata.remove(LABEL_COLOR_KEY);
+        }
+        return metadata;
+    }
+
+    private static void putOptionalMetadata(Map<String, String> metadata, String key, String value) {
+        String nonBlankValue = blankToNull(value);
+        if (nonBlankValue == null) {
+            metadata.remove(key);
+        } else {
+            metadata.put(key, nonBlankValue);
+        }
+    }
+
+    private static String metadataValue(Map<String, String> metadata, String key) {
+        return metadata.getOrDefault(key, "");
+    }
+
+    private static String normalizedItemId(String itemId, boolean temporary) {
+        return temporary && !itemId.startsWith("temp.") ? "temp." + itemId : itemId;
+    }
+
     static boolean isFieldType(ScreenDesignItemType type) {
         return type == ScreenDesignItemType.FIELD || type == ScreenDesignItemType.MULTI_LINE_FIELD;
     }
@@ -1099,8 +1203,25 @@ public final class ScreenDesignerApplication {
         return switch (navigationNode.type()) {
             case SCREEN -> List.of("Screen id", "Title", "Layout type");
             case BLOCK -> List.of("Block id", "Title", "Layout type", "Parent block");
-            case ITEM, TEMPORARY_ITEM -> List.of("Target block", "Item id", "Type", "Label", "Text/default value", "Current value", "Editable");
+            case ITEM, TEMPORARY_ITEM -> itemPropertyLabelsFor(ScreenDesignItemType.FIELD);
         };
+    }
+
+    static List<String> itemPropertyLabelsFor(ScreenDesignItemType type) {
+        ArrayList<String> labels = new ArrayList<>(List.of("Target block", "Item id", "Type"));
+        if (isFieldType(type)) {
+            labels.add("Label");
+        }
+        labels.add("Text/default value");
+        if (isFieldType(type)) {
+            labels.add("Current value");
+            labels.add("Editable");
+        }
+        labels.addAll(List.of("Font size", "Font style", "Color"));
+        if (isFieldType(type)) {
+            labels.addAll(List.of("Label font size", "Label font style", "Label color"));
+        }
+        return labels;
     }
 
     static boolean canAddItemForNode(NavigationNode navigationNode) {

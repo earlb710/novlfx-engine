@@ -43,7 +43,13 @@ public final class ScreenDesignLayoutAdapter {
                 .map(item -> itemLine(item, temporaryItemIds.contains(item.id())))
                 .toList();
         List<String> lineIds = blockItems.stream().map(ScreenDesignItem::id).toList();
-        return new ScreenLayoutSection(block.id(), block.title(), lines, block.styleClass(), lineIds);
+        return new ScreenLayoutSection(
+                block.id(),
+                block.title(),
+                lines,
+                block.styleClass(),
+                lineIds,
+                blockItems.stream().map(ScreenDesignItem::metadata).toList());
     }
 
     private static String itemLine(ScreenDesignItem item, boolean temporary) {
