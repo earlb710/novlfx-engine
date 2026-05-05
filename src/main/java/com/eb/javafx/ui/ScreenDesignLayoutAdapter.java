@@ -50,9 +50,10 @@ public final class ScreenDesignLayoutAdapter {
         String prefix = temporary ? "[temporary] " : "";
         String label = item.label() == null ? item.id() : item.label();
         return switch (item.type()) {
-            case TEXT -> prefix + (item.text() == null ? label : item.text());
+            case TEXT -> prefix + (item.text() == null ? item.id() : item.text());
+            case TEXT_AREA -> prefix + (item.text() == null ? item.id() : item.text());
             case FIELD -> prefix + label + ": " + fallback(item.value(), item.defaultValue());
-            case TEXT_AREA -> prefix + label + ": " + fallback(item.value(), item.defaultValue());
+            case MULTI_LINE_FIELD -> prefix + label + ": " + fallback(item.value(), item.defaultValue());
             case BUTTON -> prefix + "[" + label + "]";
         };
     }

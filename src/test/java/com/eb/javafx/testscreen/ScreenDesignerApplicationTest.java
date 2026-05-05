@@ -220,15 +220,27 @@ final class ScreenDesignerApplicationTest {
     void itemContentEditorIsSingleLineExceptForTextAreaItems() {
         assertFalse(ScreenDesignerApplication.usesMultiLineContentEditor(ScreenDesignItemType.TEXT));
         assertFalse(ScreenDesignerApplication.usesMultiLineContentEditor(ScreenDesignItemType.FIELD));
+        assertTrue(ScreenDesignerApplication.usesMultiLineContentEditor(ScreenDesignItemType.MULTI_LINE_FIELD));
         assertTrue(ScreenDesignerApplication.usesMultiLineContentEditor(ScreenDesignItemType.TEXT_AREA));
     }
 
     @Test
-    void editableSelectionIsNotApplicableForButtonItems() {
-        assertTrue(ScreenDesignerApplication.isEditableApplicable(ScreenDesignItemType.TEXT));
+    void editableSelectionIsOnlyApplicableForFieldItems() {
+        assertFalse(ScreenDesignerApplication.isEditableApplicable(ScreenDesignItemType.TEXT));
+        assertFalse(ScreenDesignerApplication.editableSelection(ScreenDesignItemType.TEXT, true));
         assertTrue(ScreenDesignerApplication.editableSelection(ScreenDesignItemType.FIELD, true));
+        assertTrue(ScreenDesignerApplication.editableSelection(ScreenDesignItemType.MULTI_LINE_FIELD, true));
         assertFalse(ScreenDesignerApplication.isEditableApplicable(ScreenDesignItemType.BUTTON));
         assertFalse(ScreenDesignerApplication.editableSelection(ScreenDesignItemType.BUTTON, true));
+    }
+
+    @Test
+    void labelsAreNotApplicableForTextDisplayItems() {
+        assertFalse(ScreenDesignerApplication.isLabelApplicable(ScreenDesignItemType.TEXT));
+        assertFalse(ScreenDesignerApplication.isLabelApplicable(ScreenDesignItemType.TEXT_AREA));
+        assertTrue(ScreenDesignerApplication.isLabelApplicable(ScreenDesignItemType.FIELD));
+        assertEquals(null, ScreenDesignerApplication.itemLabel(ScreenDesignItemType.TEXT, "Title", "title.text"));
+        assertEquals("name.field", ScreenDesignerApplication.itemLabel(ScreenDesignItemType.FIELD, "", "name.field"));
     }
 
     @Test

@@ -49,11 +49,17 @@ final class ScreenDesignModelTest {
     }
 
     @Test
-    void itemEditableDefaultsToTrueExceptForButtonsAndRoundTripsJson() {
-        assertTrue(new ScreenDesignItem("field", "profile", ScreenDesignItemType.FIELD,
+    void itemEditableDefaultsToFalseAndOnlyFieldTypesCanBeEditable() {
+        assertFalse(new ScreenDesignItem("field", "profile", ScreenDesignItemType.FIELD,
                 "Field", null, null, "value", null, Map.of()).editable());
+        ScreenDesignItem text = new ScreenDesignItem("text", "profile", ScreenDesignItemType.TEXT,
+                "Text", "Line", null, null, true, null, Map.of());
+        assertFalse(text.editable());
+        assertEquals(null, text.label());
+        assertTrue(new ScreenDesignItem("multi", "profile", ScreenDesignItemType.MULTI_LINE_FIELD,
+                "Multi", null, null, "value", true, null, Map.of()).editable());
         assertFalse(new ScreenDesignItem("button", "profile", ScreenDesignItemType.BUTTON,
-                "Button", null, null, null, null, Map.of()).editable());
+                "Button", null, null, null, true, null, Map.of()).editable());
 
         ScreenDesignItem item = new ScreenDesignItem("readonly", "profile", ScreenDesignItemType.FIELD,
                 "Readonly", null, null, "value", false, null, Map.of());
@@ -111,6 +117,22 @@ final class ScreenDesignModelTest {
         assertEquals("settings.profile", layout.title());
         assertEquals("profile", layout.contentSections().get(0).id());
         assertEquals(List.of("profile.name"), layout.contentSections().get(0).lineIds());
+    }
+
+    @Test
+    void adaptsMultilineTextAsUnlabeledTextAndMultilineFieldAsField() {
+        ScreenDesignModel model = new ScreenDesignModel("x", "X", ScreenLayoutType.FORM, Map.of(),
+                List.of(new ScreenDesignBlock("profile", "Profile")),
+                List.of(
+                        new ScreenDesignItem("display", "profile", ScreenDesignItemType.TEXT_AREA,
+                                "Ignored", "Display text", null, null, null, Map.of()),
+                        new ScreenDesignItem("notes", "profile", ScreenDesignItemType.MULTI_LINE_FIELD,
+                                "Notes", null, "Saved", "Default", null, Map.of())),
+                List.of());
+
+        List<String> lines = ScreenDesignLayoutAdapter.toLayoutModel(model).contentSections().get(0).lines();
+
+        assertEquals(List.of("Display text", "Notes: Saved"), lines);
     }
 
     @Test

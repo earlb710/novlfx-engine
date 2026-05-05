@@ -211,6 +211,8 @@ public final class ScreenDesignerApplication {
             case ITEM, TEMPORARY_ITEM -> applyItemProperties(navigationNode.id(), navigationNode.type() == NodeType.TEMPORARY_ITEM);
         }
         refreshAll();
+        objectTree.clearSelection();
+        updateSelectedNavigationState();
     }
 
     private void resetSelectedProperties() {
@@ -241,16 +243,15 @@ public final class ScreenDesignerApplication {
         ScreenDesignItemType type = (ScreenDesignItemType) itemTypeBox.getSelectedItem();
         ScreenDesignItemType effectiveType = type == null ? ScreenDesignItemType.TEXT : type;
         String itemId = itemIdField.getText();
-        String label = blankToNull(itemLabelField.getText());
         String content = blankToNull(itemContentText(effectiveType));
         design = replaceItem(design, oldItemId, new ScreenDesignItem(
                 temporary && !itemId.startsWith("temp.") ? "temp." + itemId : itemId,
                 (String) itemBlockBox.getSelectedItem(),
                 effectiveType,
-                label == null ? itemId : label,
-                effectiveType == ScreenDesignItemType.TEXT ? content : null,
-                blankToNull(itemValueField.getText()),
-                effectiveType == ScreenDesignItemType.FIELD || effectiveType == ScreenDesignItemType.TEXT_AREA ? content : null,
+                itemLabel(effectiveType, itemLabelField.getText(), itemId),
+                isTextContentType(effectiveType) ? content : null,
+                isFieldType(effectiveType) ? blankToNull(itemValueField.getText()) : null,
+                isFieldType(effectiveType) ? content : null,
                 editableSelection(effectiveType, itemEditableBox.isSelected()),
                 existing.styleClass(),
                 existing.metadata()), temporary);
@@ -320,8 +321,8 @@ public final class ScreenDesignerApplication {
         editableBox.setSelected(existing == null
                 ? ScreenDesignItem.defaultEditable((ScreenDesignItemType) typeBox.getSelectedItem())
                 : existing.editable());
-        typeBox.addActionListener(event -> refreshEditableState(typeBox, editableBox));
-        refreshEditableState(typeBox, editableBox);
+        typeBox.addActionListener(event -> refreshItemTypeState(typeBox, labelField, editableBox));
+        refreshItemTypeState(typeBox, labelField, editableBox);
         JPanel fields = new JPanel(new GridLayout(7, 2, 6, 6));
         fields.add(new JLabel("Target block"));
         fields.add(blockBox);
@@ -344,7 +345,6 @@ public final class ScreenDesignerApplication {
             return Optional.empty();
         }
         ScreenDesignItemType type = (ScreenDesignItemType) typeBox.getSelectedItem();
-        String label = blankToNull(labelField.getText());
         String content = blankToNull(contentField.getText());
         String value = blankToNull(valueField.getText());
         ScreenDesignItemType effectiveType = type == null ? ScreenDesignItemType.TEXT : type;
@@ -352,10 +352,10 @@ public final class ScreenDesignerApplication {
                 temporary && !itemId.startsWith("temp.") ? "temp." + itemId : itemId,
                 blockId,
                 effectiveType,
-                label == null ? itemId : label,
-                effectiveType == ScreenDesignItemType.TEXT ? content : null,
-                value,
-                effectiveType == ScreenDesignItemType.FIELD || effectiveType == ScreenDesignItemType.TEXT_AREA ? content : null,
+                itemLabel(effectiveType, labelField.getText(), itemId),
+                isTextContentType(effectiveType) ? content : null,
+                isFieldType(effectiveType) ? value : null,
+                isFieldType(effectiveType) ? content : null,
                 editableSelection(effectiveType, editableBox.isSelected()),
                 existing == null ? null : existing.styleClass(),
                 existing == null ? Map.of() : existing.metadata()));
@@ -678,7 +678,7 @@ public final class ScreenDesignerApplication {
     }
 
     private static String itemContent(ScreenDesignItem item) {
-        return nullToBlank(item.type() == ScreenDesignItemType.TEXT ? item.text() : item.defaultValue());
+        return nullToBlank(isTextContentType(item.type()) ? item.text() : item.defaultValue());
     }
 
     private static ScreenLayoutType[] blockLayoutOptions() {
@@ -967,7 +967,7 @@ public final class ScreenDesignerApplication {
         itemContentArea.setWrapStyleWord(true);
         itemValueField.setText(nullToBlank(item.value()));
         itemEditableBox.setSelected(item.editable());
-        refreshItemEditableState();
+        refreshItemTypeState();
         JPanel fields = propertyGrid(propertyLabelsFor(NavigationNode.item(item.id(), item.blockId(), temporary)).size());
         addPropertyRow(fields, 0, "Target block", itemBlockBox);
         addPropertyRow(fields, 1, "Item id", itemIdField);
@@ -1016,28 +1016,60 @@ public final class ScreenDesignerApplication {
     }
 
     static boolean usesMultiLineContentEditor(ScreenDesignItemType type) {
-        return type == ScreenDesignItemType.TEXT_AREA;
+        return type == ScreenDesignItemType.TEXT_AREA || type == ScreenDesignItemType.MULTI_LINE_FIELD;
     }
 
     private void refreshItemEditableState() {
-        refreshEditableState(itemTypeBox, itemEditableBox);
+        refreshItemTypeState();
     }
 
-    private static void refreshEditableState(JComboBox<ScreenDesignItemType> typeBox, JCheckBox editableBox) {
+    private void refreshItemTypeState() {
+        refreshItemTypeState(itemTypeBox, itemLabelField, itemEditableBox);
+    }
+
+    private static void refreshItemTypeState(
+            JComboBox<ScreenDesignItemType> typeBox,
+            JTextField labelField,
+            JCheckBox editableBox) {
         ScreenDesignItemType type = (ScreenDesignItemType) typeBox.getSelectedItem();
-        boolean applicable = isEditableApplicable(type);
-        editableBox.setEnabled(applicable);
-        if (!applicable) {
+        boolean labelApplicable = isLabelApplicable(type);
+        labelField.setEnabled(labelApplicable);
+        if (!labelApplicable) {
+            labelField.setText("");
+        }
+        boolean editableApplicable = isEditableApplicable(type);
+        editableBox.setEnabled(editableApplicable);
+        if (!editableApplicable) {
             editableBox.setSelected(false);
         }
     }
 
+    static boolean isLabelApplicable(ScreenDesignItemType type) {
+        return ScreenDesignItem.supportsLabel(type);
+    }
+
     static boolean isEditableApplicable(ScreenDesignItemType type) {
-        return type != ScreenDesignItemType.BUTTON;
+        return isFieldType(type);
     }
 
     static boolean editableSelection(ScreenDesignItemType type, boolean selected) {
         return isEditableApplicable(type) && selected;
+    }
+
+    static String itemLabel(ScreenDesignItemType type, String label, String itemId) {
+        if (!isLabelApplicable(type)) {
+            return null;
+        }
+        String nonBlankLabel = blankToNull(label);
+        return nonBlankLabel == null ? itemId : nonBlankLabel;
+    }
+
+    static boolean isFieldType(ScreenDesignItemType type) {
+        return type == ScreenDesignItemType.FIELD || type == ScreenDesignItemType.MULTI_LINE_FIELD;
+    }
+
+    static boolean isTextContentType(ScreenDesignItemType type) {
+        return type == ScreenDesignItemType.TEXT || type == ScreenDesignItemType.TEXT_AREA;
     }
 
     static ScreenLayoutType defaultLayoutType() {
