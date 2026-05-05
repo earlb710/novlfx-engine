@@ -192,7 +192,7 @@ public final class ScreenDesignerApplication {
     }
 
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> new ScreenDesignerApplication(true).show());
+        SwingUtilities.invokeLater(() -> new ScreenDesignerApplication().show());
     }
 
     static void showFromManagement() {

@@ -141,8 +141,7 @@ public final class DefaultDisplayValuesApplication {
             checkBox.setSelected(Boolean.parseBoolean(field.value()));
             return checkBox;
         }
-        JTextField textField = new JTextField(field.value());
-        return textField;
+        return new JTextField(field.value());
     }
 
     private static List<ApplicationConfigField> editedApplicationConfigFields(Map<ApplicationConfigField, Component> editors) {
