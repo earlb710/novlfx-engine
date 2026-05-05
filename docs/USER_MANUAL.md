@@ -60,7 +60,28 @@ Launch the manual conversation editor with:
 ./gradlew --no-daemon runConversationEditor
 ```
 
-The conversation editor edits JSON-backed `ConversationDefinition` documents using the same exported conversation schema as LR2Alt: top-level `schemaVersion`, `language`, and `conversations`; each conversation has `id`, `description`, `lines`, and line `variants`.
+The conversation editor edits JSON-backed `ConversationDefinition` documents using the same exported conversation shape as LR2Alt: top-level `name`, `language`, and `conversations`; each conversation has `id`, `description`, `lines`, and line `variants`.
+
+Each line has `speaker`, `listener`, optional `type`, and one or more `variants`. If `type` is omitted, it defaults to `say`. Supported line types are:
+
+- `say`: normal dialogue text.
+- `shout`: converts the selected variant text to uppercase, escapes authored text, and wraps it in `<b></b>`.
+- `whisper`: converts the selected variant text to lowercase, escapes authored text, and wraps it in `<i></i>`.
+- `choice`: treats each variant as a player-selectable choice. Each choice variant can carry its own `value`; if `value` is empty or omitted, the runtime projection uses the zero-based variant index as the choice value. A variant can also carry its own `conditions` array; the editor builds each condition from a condition type such as `context` or `time of day`, the `=` operand, and a selected value, then stores it as a compact string such as `context=has_key` or `time of day=evening`. The runtime projection stores the choice value and those conditions with the generated scene choice metadata.
+
+Example choice line:
+
+```json
+{
+  "speaker": "guide",
+  "listener": "",
+  "type": "choice",
+  "variants": [
+    {"text": "Take the left path.", "value": "left", "weight": 1.0, "conditions": ["context=has_key", "time of day=evening"]},
+    {"text": "Take the right path.", "value": "", "weight": 1.0, "conditions": []}
+  ]
+}
+```
 
 Example/demo code: [`examples/user-manual/02-project-setup-and-validation/demo.sh`](../examples/user-manual/02-project-setup-and-validation/demo.sh)
 
@@ -248,10 +269,12 @@ Use `SceneRegistry.validationReport(...)` when application startup needs diagnos
 Scene view models are deliberately UI-neutral. They are useful when the engine needs to expose scene execution state to JavaFX screens, tests, debug panels, or application-owned renderers without passing mutable executor objects or JavaFX controls across package boundaries. Use `ScenePresenter` to convert a `SceneExecutionResult` into these models after each scene execution step or choice selection.
 
 - `SceneViewModel` is the top-level scene presentation state. It carries the current execution status, scene id, step id, speaker id, text definition id, display reference, choices, selected choice history, message, dialogue rows, status rows, and effect previews. Use it as the single object handed to a scene renderer such as `SceneFlowView` so the renderer can display scene progress without knowing how scene execution works.
-- `SceneChoiceViewModel` represents one rendered choice after availability has already been evaluated. It includes the choice id, choice text definition id, whether the choice is available, an optional disabled reason, whether it was selected earlier, string metadata, and effect previews. Use it to build choice buttons or test choice state without re-running requirement checks in the UI layer.
+- `SceneChoiceViewModel` represents one rendered choice after availability has already been evaluated. It includes the choice id, returned choice value, choice text definition id, whether the choice is available, an optional disabled reason, whether it was selected earlier, string metadata, and effect previews. Use it to build choice buttons or test choice state without re-running requirement checks in the UI layer.
 - `SceneDialogueRowViewModel` represents one dialogue or narration row. It includes the step type, optional speaker id, text definition id, and optional display reference. Use it when a renderer needs a normalized row for dialogue panels instead of inspecting raw `SceneStep` objects.
 - `SceneStatusRowViewModel` represents one label/value diagnostic row such as status, active scene, active step, selected choices, pending interruption, or message. Use it for HUD, debug, and manual-test surfaces where scene execution state should be visible in a consistent format.
 - `SceneEffectPreviewViewModel` represents preview-only metadata for a scene step or choice. It contains a label and value derived from `preview.*` metadata or a fallback reference. Use it when a prototype UI wants to show what display, effect, or authored metadata would be applied before an application supplies custom rendering.
+
+`SceneFlowView.createContent(...)` renders choice buttons that call the supplied choice handler with the `SceneChoiceViewModel.value()`, not the internal choice id. `SceneFlowView.displayAndWaitForChoice(...)` can display a conversation-style `SceneViewModel` through an application-supplied display handler, block until a choice button is pressed, and return that choice value. If the displayed view model has no choices, it displays the content and returns `null`.
 
 Use `SceneDefinitionJson` for simple JSON-authored scenes that do not require executable Java `ActionRequirement` or `ActionEffect` instances. JSON scenes can include dialogue/narration text definition IDs, choices, transitions, display references, and string metadata. Register more complex requirements/effects through Java scene modules. In an application, keep the scene JSON path in `ApplicationResourceConfig.resources()` and resolve it with `resolveResource(applicationRoot, "sceneDefinitions")` before loading.
 
@@ -277,7 +300,7 @@ The `ui` package provides reusable JavaFX surfaces and helpers:
 - `ScreenBackgroundFit` names reusable background sizing modes: stretch or center-crop.
 - `ScreenLayoutType`, `ScreenLayoutModel`, and `ScreenLayoutSection` define reusable screen layout intent without JavaFX control state. Use them when a screen needs a stable general structure such as a titled panel, two-column layout, sidebar/content layout, HUD/status overlay, dialogue surface, menu/action list, form, or preview/card grid.
 - `ScreenDesignModel`, `ScreenDesignBlock`, and `ScreenDesignItem` define editable JSON-backed screen designs with stable screen, block, and item ids. Use `ScreenDesignService.addItemToBlock(...)` or `addTemporaryItemToBlock(...)` when code needs to target a block id directly; temporary items render in preview/test mode but `ScreenDesignJson.save(...)` excludes them from persisted JSON. `ScreenDesignJson` saves/loads documents with top-level `id`, `title`, `layoutType`, `metadata`, ordered `blocks`, and ordered saved `items`. Each block carries `id`, optional `title`, optional `styleClass`, and `metadata`; each item carries `id`, `blockId`, `type`, optional `label`, `text`, `value`, `defaultValue`, `styleClass`, and `metadata`.
-- `ConversationDefinition`, `ConversationDefinitionJson`, and `JsonConversationContentModule` define JSON-backed conversation documents for authored visual-novel content using the LR2Alt exported schema. A conversation file has top-level `schemaVersion`, `language`, and ordered `conversations`; each conversation carries `id`, `description`, `lines`, and text `variants`. `JsonConversationContentModule` projects that document into reusable content definitions and scene definitions when runtime registration is needed.
+- `ConversationDefinition`, `ConversationDefinitionJson`, and `JsonConversationContentModule` define JSON-backed conversation documents for authored visual-novel content using the LR2Alt exported shape. A conversation file has top-level `name`, `language`, and ordered `conversations`; each conversation carries `id`, `description`, and typed `lines`. Line `type` supports `say` by default, `shout` for uppercase bold text, `whisper` for lowercase italic text, and `choice` for player-selectable variants with per-choice values and conditions. `JsonConversationContentModule` projects that document into reusable content definitions and scene definitions when runtime registration is needed.
 - `ScreenLayoutContract` loads the machine-readable layout contract from `src/main/resources/com/eb/javafx/ui/layout-contract.json`, which lists engine-provided layout types, the default stylesheet, and stable CSS style hooks applications can target.
 - `ScreenInventory`, `ScreenInventoryItem`, `ScreenInventorySource`, `ScreenInventoryScanner`, and `ScreenInventoryAssignmentCategory` provide content-neutral inventory models for application-owned screen/style/control migration scanners. Use them to classify source artifacts as route-backed, reusable-control-backed, deferred, deprecated, excluded, or app-owned without hard-coding source-engine names in the engine.
 - `ViewModelScreen` renders a `ScreenViewModel` with generic labels and navigation buttons.

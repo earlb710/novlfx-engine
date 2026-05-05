@@ -5,6 +5,8 @@ import com.eb.javafx.content.StaticContentModule;
 import com.eb.javafx.display.ImageDisplayRegistry;
 import com.eb.javafx.scene.ConversationDefinition.ConversationBlock;
 import com.eb.javafx.scene.ConversationDefinition.ConversationLine;
+import com.eb.javafx.scene.ConversationDefinition.ConversationVariant;
+import com.eb.javafx.util.JsonStrings;
 import com.eb.javafx.util.Validation;
 
 import java.nio.file.Path;
@@ -12,6 +14,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /** Registers an LR2Alt-compatible JSON conversation document as content definitions and scene definitions. */
 public final class JsonConversationContentModule implements StaticContentModule, SceneModule {
@@ -55,7 +58,14 @@ public final class JsonConversationContentModule implements StaticContentModule,
             definitions.put(titleDefinitionId(conversation), conversation.description());
             for (int index = 0; index < conversation.lines().size(); index++) {
                 ConversationLine line = conversation.lines().get(index);
-                definitions.put(lineDefinitionId(conversation, index), line.variants().get(0).text());
+                if (line.type() == ConversationDefinition.LineType.CHOICE) {
+                    for (int variantIndex = 0; variantIndex < line.variants().size(); variantIndex++) {
+                        ConversationVariant variant = line.variants().get(variantIndex);
+                        definitions.put(choiceDefinitionId(conversation, index, variantIndex), variant.text());
+                    }
+                } else {
+                    definitions.put(lineDefinitionId(conversation, index), line.type().formatText(line.variants().get(0).text()));
+                }
             }
         });
         return Collections.unmodifiableMap(definitions);
@@ -77,6 +87,18 @@ public final class JsonConversationContentModule implements StaticContentModule,
 
     private static SceneStep stepFor(ConversationBlock conversation, int lineIndex) {
         ConversationLine line = conversation.lines().get(lineIndex);
+        if (line.type() == ConversationDefinition.LineType.CHOICE) {
+            return SceneStep.create(
+                    stepId(lineIndex),
+                    SceneStepType.CHOICE,
+                    null,
+                    null,
+                    null,
+                    choicesFor(conversation, lineIndex),
+                    List.of(),
+                    transitionFor(conversation, lineIndex),
+                    Map.of("lineType", line.type().jsonValue()));
+        }
         String definitionId = lineDefinitionId(conversation, lineIndex);
         if ("narrator".equalsIgnoreCase(line.speaker())) {
             return SceneStep.create(
@@ -88,7 +110,7 @@ public final class JsonConversationContentModule implements StaticContentModule,
                     List.of(),
                     List.of(),
                     transitionFor(conversation, lineIndex),
-                    Map.of("speaker", line.speaker()));
+                    Map.of("speaker", line.speaker(), "lineType", line.type().jsonValue()));
         }
         return SceneStep.create(
                 stepId(lineIndex),
@@ -99,7 +121,35 @@ public final class JsonConversationContentModule implements StaticContentModule,
                 List.of(),
                 List.of(),
                 transitionFor(conversation, lineIndex),
-                Map.of());
+                Map.of("lineType", line.type().jsonValue()));
+    }
+
+    private static List<SceneChoice> choicesFor(ConversationBlock conversation, int lineIndex) {
+        ConversationLine line = conversation.lines().get(lineIndex);
+        return java.util.stream.IntStream.range(0, line.variants().size())
+                .mapToObj(index -> choiceFor(conversation, lineIndex, index, line.variants().get(index)))
+                .toList();
+    }
+
+    private static SceneChoice choiceFor(ConversationBlock conversation, int lineIndex, int variantIndex, ConversationVariant variant) {
+        Map<String, String> metadata = new LinkedHashMap<>();
+        metadata.put("value", choiceValue(variant, variantIndex));
+        if (!variant.conditions().isEmpty()) {
+            metadata.put("conditions", conditionsJson(variant.conditions()));
+        }
+        return new SceneChoice(
+                choiceId(lineIndex, variantIndex),
+                choiceDefinitionId(conversation, lineIndex, variantIndex),
+                List.of(),
+                List.of(),
+                null,
+                SceneTransition.next(),
+                metadata);
+    }
+
+    private static String choiceValue(ConversationVariant variant, int variantIndex) {
+        // LR2Alt exports and draft editor rows may omit choice values; use the zero-based JSON variant index so every runtime choice still returns a stable authored value.
+        return variant.value().isEmpty() ? Integer.toString(variantIndex) : variant.value();
     }
 
     private static SceneTransition transitionFor(ConversationBlock conversation, int lineIndex) {
@@ -114,7 +164,21 @@ public final class JsonConversationContentModule implements StaticContentModule,
         return conversation.id() + ".line." + String.format("%04d", lineIndex + 1);
     }
 
+    static String choiceDefinitionId(ConversationBlock conversation, int lineIndex, int variantIndex) {
+        return lineDefinitionId(conversation, lineIndex) + ".choice." + String.format("%04d", variantIndex + 1);
+    }
+
     private static String stepId(int lineIndex) {
         return "line-" + String.format("%04d", lineIndex + 1);
+    }
+
+    private static String choiceId(int lineIndex, int variantIndex) {
+        return stepId(lineIndex) + "-choice-" + String.format("%04d", variantIndex + 1);
+    }
+
+    private static String conditionsJson(List<String> conditions) {
+        return conditions.stream()
+                .map(JsonStrings::quote)
+                .collect(Collectors.joining(", ", "[", "]"));
     }
 }

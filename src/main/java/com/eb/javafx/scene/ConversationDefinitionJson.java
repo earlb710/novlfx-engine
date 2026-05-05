@@ -3,6 +3,7 @@ package com.eb.javafx.scene;
 import com.eb.javafx.scene.ConversationDefinition.ConversationBlock;
 import com.eb.javafx.scene.ConversationDefinition.ConversationLine;
 import com.eb.javafx.scene.ConversationDefinition.ConversationVariant;
+import com.eb.javafx.scene.ConversationDefinition.LineType;
 import com.eb.javafx.util.JsonData;
 import com.eb.javafx.util.JsonStrings;
 import com.eb.javafx.util.Validation;
@@ -48,7 +49,7 @@ public final class ConversationDefinitionJson {
                 .map(entry -> parseConversation(JsonData.requireObject(entry, "conversations[]")))
                 .toList();
         return new ConversationDefinition(
-                JsonData.requiredInt(root, "schemaVersion", "conversation schemaVersion"),
+                JsonData.requiredString(root, "name", "conversation name"),
                 JsonData.requiredString(root, "language", "conversation language"),
                 conversations);
     }
@@ -56,7 +57,7 @@ public final class ConversationDefinitionJson {
     public static String toJson(ConversationDefinition document) {
         Validation.requireNonNull(document, "Conversation definition is required.");
         StringBuilder json = new StringBuilder("{\n")
-                .append("  \"schemaVersion\": ").append(document.schemaVersion()).append(",\n")
+                .append("  \"name\": ").append(JsonStrings.quote(document.name())).append(",\n")
                 .append("  \"language\": ").append(JsonStrings.quote(document.language())).append(",\n")
                 .append("  \"conversations\": [\n");
         for (int index = 0; index < document.conversations().size(); index++) {
@@ -86,16 +87,51 @@ public final class ConversationDefinitionJson {
                 .toList();
         return new ConversationLine(
                 JsonData.requiredString(object, "speaker", "conversation line speaker"),
+                stringAllowingEmpty(object, "listener", "conversation line listener", ""),
+                lineType(object),
                 variants);
     }
 
+    private static LineType lineType(Map<String, Object> object) {
+        return JsonData.optionalString(object, "type", "conversation line type")
+                .map(LineType::fromJson)
+                .orElse(LineType.SAY);
+    }
+
     private static ConversationVariant parseVariant(Map<String, Object> object) {
-        return new ConversationVariant(requiredStringAllowingEmpty(object, "text", "conversation variant text"));
+        return new ConversationVariant(
+                requiredStringAllowingEmpty(object, "text", "conversation variant text"),
+                stringAllowingEmpty(object, "value", "conversation variant value", ""),
+                JsonData.optionalDouble(object, "weight", 1.0, "conversation variant weight"),
+                JsonData.optionalStringList(object, "conditions", "conversation variant conditions"));
     }
 
     private static String requiredStringAllowingEmpty(Map<String, Object> object, String key, String description) {
-        Object value = object.get(key);
-        if (!object.containsKey(key) || value == null) {
+        if (!object.containsKey(key)) {
+            throw new IllegalArgumentException("Missing JSON string for " + description + ".");
+        }
+        return requiredStringAllowingEmpty(object.get(key), description);
+    }
+
+    private static String stringAllowingEmpty(Map<String, Object> object, String key, String description, String defaultValue) {
+        if (!object.containsKey(key)) {
+            return defaultValue;
+        }
+        return stringAllowingEmpty(object.get(key), description, defaultValue);
+    }
+
+    private static String stringAllowingEmpty(Object value, String description, String defaultValue) {
+        if (value == null) {
+            return defaultValue;
+        }
+        if (value instanceof String stringValue) {
+            return stringValue;
+        }
+        throw new IllegalArgumentException("Expected JSON string for " + description + ".");
+    }
+
+    private static String requiredStringAllowingEmpty(Object value, String description) {
+        if (value == null) {
             throw new IllegalArgumentException("Missing JSON string for " + description + ".");
         }
         if (value instanceof String stringValue) {
@@ -123,14 +159,30 @@ public final class ConversationDefinitionJson {
     private static void appendLine(StringBuilder json, ConversationLine line, String indent) {
         json.append(indent).append("{\n")
                 .append(indent).append("  \"speaker\": ").append(JsonStrings.quote(line.speaker())).append(",\n")
+                .append(indent).append("  \"listener\": ").append(JsonStrings.quote(line.listener())).append(",\n")
+                .append(indent).append("  \"type\": ").append(JsonStrings.quote(line.type().jsonValue())).append(",\n")
                 .append(indent).append("  \"variants\": [");
         for (int index = 0; index < line.variants().size(); index++) {
             if (index > 0) {
                 json.append(", ");
             }
-            json.append("{\"text\": ").append(JsonStrings.quote(line.variants().get(index).text())).append('}');
+            appendVariant(json, line.variants().get(index));
         }
         json.append("]\n")
                 .append(indent).append('}');
+    }
+
+    private static void appendVariant(StringBuilder json, ConversationVariant variant) {
+        json.append("{\"text\": ").append(JsonStrings.quote(variant.text()))
+                .append(", \"value\": ").append(JsonStrings.quote(variant.value()))
+                .append(", \"weight\": ").append(variant.weight())
+                .append(", \"conditions\": [");
+        for (int index = 0; index < variant.conditions().size(); index++) {
+            if (index > 0) {
+                json.append(", ");
+            }
+            json.append(JsonStrings.quote(variant.conditions().get(index)));
+        }
+        json.append("]}");
     }
 }
