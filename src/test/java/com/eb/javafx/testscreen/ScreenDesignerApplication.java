@@ -1511,13 +1511,13 @@ public final class ScreenDesignerApplication {
     }
 
     static String[] defaultValueFontFamilyOptions() {
-        List<String> options = new ArrayList<>();
+        LinkedHashSet<String> options = new LinkedHashSet<>();
         options.add(DEFAULT_OPTION);
         options.addAll(FontResources.fontFileNames());
         Arrays.stream(GraphicsEnvironment.getLocalGraphicsEnvironment().getAvailableFontFamilyNames())
                 .sorted(Comparator.naturalOrder())
                 .forEach(options::add);
-        return new LinkedHashSet<>(options).toArray(String[]::new);
+        return options.toArray(String[]::new);
     }
 
     static String[] defaultValueFontStyleOptions() {
@@ -1574,13 +1574,6 @@ public final class ScreenDesignerApplication {
             return currentValue == null ? "" : currentValue;
         }
         return "#%02x%02x%02x".formatted(selected.getRed(), selected.getGreen(), selected.getBlue());
-    }
-
-    private static String[] legacyFontFamilyOptions() {
-        List<String> options = new ArrayList<>();
-        options.add(DEFAULT_OPTION);
-        options.addAll(FontResources.fontFileNames());
-        return options.toArray(String[]::new);
     }
 
     private static void setComboValue(JComboBox<String> comboBox, String value) {
