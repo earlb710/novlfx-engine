@@ -31,19 +31,26 @@ public final class ScreenDesignLayoutAdapter {
     }
 
     public static ScreenLayoutModel toLayoutModel(ScreenDesignModel design, boolean includeTemporaryItems) {
+        return toLayoutModel(design, includeTemporaryItems, DisplayDefaults.defaults());
+    }
+
+    public static ScreenLayoutModel toLayoutModel(
+            ScreenDesignModel design,
+            boolean includeTemporaryItems,
+            DisplayDefaults defaults) {
         Validation.requireNonNull(design, "Screen design is required.");
-        DisplayDefaults defaults = DisplayDefaults.defaults();
+        DisplayDefaults effectiveDefaults = Validation.requireNonNull(defaults, "Display defaults are required.");
         List<ScreenDesignItem> previewItems = includeTemporaryItems ? design.allItemsForPreview() : design.items();
         Set<String> temporaryItemIds = includeTemporaryItems
                 ? design.temporaryItems().stream().map(ScreenDesignItem::id).collect(Collectors.toSet())
                 : Set.of();
-        Map<String, String> screenMetadata = mergedMetadata(defaults.screen(), design.metadata());
+        Map<String, String> screenMetadata = mergedMetadata(effectiveDefaults.screen(), design.metadata());
         List<ScreenLayoutSection> sections = HierarchyTraversal.depthFirst(
                         design.blocks(),
                         ScreenDesignBlock::id,
                         ScreenDesignBlock::parentBlockId,
                         null).stream()
-                .map(block -> toSection(block, previewItems, temporaryItemIds, design.metadata(), defaults))
+                .map(block -> toSection(block, previewItems, temporaryItemIds, design.metadata(), effectiveDefaults))
                 .toList();
         return new ScreenLayoutModel(design.layoutType(), design.title(), null, sections, List.of(), List.of(), List.of(), null, screenMetadata);
     }

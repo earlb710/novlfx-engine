@@ -306,6 +306,12 @@ final class ScreenDesignerApplicationTest {
     }
 
     @Test
+    void actionToolbarLabelsIncludeDefaultValuesEditor() {
+        assertEquals(List.of("Edit Default Values", "Validate", "Open Preview", "Add Temporary Field", "Promote Temporary"),
+                ScreenDesignerApplication.actionToolbarLabels());
+    }
+
+    @Test
     void editorPinsPropertyButtonsBelowScrollablePropertiesPanel() throws Exception {
         ScreenDesignerApplication application = new ScreenDesignerApplication();
         invokeNoArgs(application, "refreshAll");

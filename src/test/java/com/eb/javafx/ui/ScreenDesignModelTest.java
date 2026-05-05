@@ -193,6 +193,28 @@ final class ScreenDesignModelTest {
     }
 
     @Test
+    void layoutCanUseSuppliedDisplayDefaultsOverrides() {
+        ScreenDesignModel model = design();
+        DisplayDefaults defaults = DisplayDefaults.fromJson("""
+                {
+                  "screen": {"backgroundColor": "#010203", "borderStyle": "dashed"},
+                  "block": {"backgroundColor": "#111213", "transparency": "0.25", "borderStyle": "dotted"},
+                  "items": {"field": {"backgroundColor": "#212223", "transparency": "0.5"}},
+                  "labels": {}
+                }
+                """, "inline");
+
+        ScreenLayoutModel layout = ScreenDesignLayoutAdapter.toLayoutModel(model, true, defaults);
+
+        assertEquals("#010203", layout.metadata().get("backgroundColor"));
+        assertEquals("dashed", layout.metadata().get("borderStyle"));
+        assertEquals("#111213", layout.contentSections().get(0).metadata().get("backgroundColor"));
+        assertEquals("0.25", layout.contentSections().get(0).metadata().get("transparency"));
+        assertEquals("#212223", layout.contentSections().get(0).lineMetadata().get(0).get("backgroundColor"));
+        assertEquals("0.5", layout.contentSections().get(0).lineMetadata().get(0).get("transparency"));
+    }
+
+    @Test
     void itemBackgroundDefaultsDoNotInheritContainerBackgroundOverrides() {
         ScreenDesignModel model = new ScreenDesignModel("x", "X", ScreenLayoutType.FORM, Map.of("backgroundColor", "#111111"),
                 List.of(new ScreenDesignBlock("profile", "Profile", ScreenLayoutType.FORM, null, null,

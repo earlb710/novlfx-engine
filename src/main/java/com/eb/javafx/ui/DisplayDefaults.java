@@ -39,6 +39,17 @@ public record DisplayDefaults(
         return DEFAULTS;
     }
 
+    public static String defaultJson() {
+        try (InputStream inputStream = DisplayDefaults.class.getResourceAsStream(DEFAULT_RESOURCE)) {
+            if (inputStream == null) {
+                throw new StartupFailureException(StartupFailureCategory.MISSING_ASSET, "Missing display defaults JSON.");
+            }
+            return new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
+        } catch (IOException exception) {
+            throw new StartupFailureException(StartupFailureCategory.MISSING_ASSET, "Unable to read display defaults JSON.");
+        }
+    }
+
     public static DisplayDefaults fromJson(String json, String sourceName) {
         Map<String, Object> root = JsonData.rootObject(json, sourceName);
         return new DisplayDefaults(
@@ -61,14 +72,7 @@ public record DisplayDefaults(
     }
 
     private static DisplayDefaults loadDefaults() {
-        try (InputStream inputStream = DisplayDefaults.class.getResourceAsStream(DEFAULT_RESOURCE)) {
-            if (inputStream == null) {
-                throw new StartupFailureException(StartupFailureCategory.MISSING_ASSET, "Missing display defaults JSON.");
-            }
-            return fromJson(new String(inputStream.readAllBytes(), StandardCharsets.UTF_8), DEFAULT_RESOURCE);
-        } catch (IOException exception) {
-            throw new StartupFailureException(StartupFailureCategory.MISSING_ASSET, "Unable to read display defaults JSON.");
-        }
+        return fromJson(defaultJson(), DEFAULT_RESOURCE);
     }
 
     private static Map<String, Map<String, String>> nestedDefaults(Map<String, Object> root, String key, String description) {

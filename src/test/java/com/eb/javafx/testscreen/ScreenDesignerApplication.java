@@ -106,6 +106,7 @@ public final class ScreenDesignerApplication {
     private final JTree objectTree = new JTree(objectTreeModel);
     private final JButton addItemButton = new JButton("Add Item");
     private final JPanel propertiesPanel = new JPanel(new BorderLayout(8, 8));
+    private final JButton editDefaultValuesButton = new JButton("Edit Default Values");
     private final JButton applyPropertiesButton = new JButton("Apply Properties");
     private final JButton resetPropertiesButton = new JButton("Reset Properties");
     private final JTextField screenIdField = new JTextField();
@@ -157,6 +158,8 @@ public final class ScreenDesignerApplication {
     private final JLabel statusLabel = new JLabel();
     private Path currentPath;
     private String savedJsonSnapshot = ScreenDesignJson.toJson(design);
+    private DisplayDefaults displayDefaults = DisplayDefaults.defaults();
+    private String displayDefaultsJson = DisplayDefaults.defaultJson();
     private volatile Stage previewStage;
 
     public static void main(String[] args) {
@@ -223,10 +226,12 @@ public final class ScreenDesignerApplication {
         JButton preview = new JButton("Open Preview");
         JButton addTemp = new JButton("Add Temporary Field");
         JButton promote = new JButton("Promote Temporary");
+        editDefaultValuesButton.addActionListener(event -> runSafely("Edit Default Values", this::editDefaultValues));
         validate.addActionListener(event -> runSafely("Validate", this::showValidation));
         preview.addActionListener(event -> runSafely("Open Preview", this::openPreview));
         addTemp.addActionListener(event -> runSafely("Add Temporary Field", () -> addItem(true)));
         promote.addActionListener(event -> runSafely("Promote Temporary", this::promoteTemporary));
+        panel.add(editDefaultValuesButton);
         panel.add(validate);
         panel.add(preview);
         panel.add(addTemp);
@@ -626,6 +631,41 @@ public final class ScreenDesignerApplication {
         JOptionPane.showMessageDialog(null, validationSummary(problems));
     }
 
+    private void editDefaultValues() {
+        JTextArea editor = new JTextArea(displayDefaultsJson, 28, 80);
+        editor.setCaretPosition(0);
+        JScrollPane scrollPane = new JScrollPane(editor);
+        JPanel content = new JPanel(new BorderLayout(8, 8));
+        content.add(new JLabel("<html>Edit preview defaults from <code>"
+                + DisplayDefaults.DEFAULT_RESOURCE
+                + "</code>. Changes apply only in the designer preview.</html>"), BorderLayout.NORTH);
+        content.add(scrollPane, BorderLayout.CENTER);
+        while (true) {
+            int result = JOptionPane.showConfirmDialog(
+                    null,
+                    content,
+                    "Edit Default Values",
+                    JOptionPane.OK_CANCEL_OPTION,
+                    JOptionPane.PLAIN_MESSAGE);
+            if (result != JOptionPane.OK_OPTION) {
+                return;
+            }
+            try {
+                displayDefaultsJson = editor.getText();
+                displayDefaults = DisplayDefaults.fromJson(displayDefaultsJson, "screen designer default values");
+                statusLabel.setText("Updated default display values for preview.");
+                refreshPreview();
+                return;
+            } catch (RuntimeException exception) {
+                JOptionPane.showMessageDialog(
+                        null,
+                        exception.getMessage(),
+                        "Default Values Error",
+                        JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+
     private void openPreview() {
         List<ScreenDesignValidationProblem> problems = ScreenDesignValidator.validate(design);
         if (!problems.isEmpty()) {
@@ -639,7 +679,8 @@ public final class ScreenDesignerApplication {
         }
         ensureJavaFxStarted();
         ScreenDesignModel designSnapshot = design;
-        Platform.runLater(() -> showPreviewStage(designSnapshot));
+        DisplayDefaults defaultsSnapshot = displayDefaults;
+        Platform.runLater(() -> showPreviewStage(designSnapshot, defaultsSnapshot));
     }
 
     private void refreshAll() {
@@ -734,6 +775,10 @@ public final class ScreenDesignerApplication {
 
     static List<String> fileMenuActionLabels() {
         return List.of("New", "Load", "Save", "Save As");
+    }
+
+    static List<String> actionToolbarLabels() {
+        return List.of("Edit Default Values", "Validate", "Open Preview", "Add Temporary Field", "Promote Temporary");
     }
 
     static Path screenDesignExamplesDirectory() {
@@ -876,7 +921,17 @@ public final class ScreenDesignerApplication {
         }
     }
 
-    private void showPreviewStage(ScreenDesignModel designSnapshot) {
+    private void refreshPreview() {
+        if (previewStage == null) {
+            return;
+        }
+        ensureJavaFxStarted();
+        ScreenDesignModel designSnapshot = design;
+        DisplayDefaults defaultsSnapshot = displayDefaults;
+        Platform.runLater(() -> showPreviewStage(designSnapshot, defaultsSnapshot));
+    }
+
+    private void showPreviewStage(ScreenDesignModel designSnapshot, DisplayDefaults defaultsSnapshot) {
         try {
             PreferencesService preferencesService = new PreferencesService();
             preferencesService.load();
@@ -884,7 +939,7 @@ public final class ScreenDesignerApplication {
             UiTheme uiTheme = new UiTheme();
             uiTheme.initialize(preferencesService);
 
-            ScreenLayoutModel previewModel = ScreenDesignLayoutAdapter.toLayoutModel(designSnapshot, true);
+            ScreenLayoutModel previewModel = ScreenDesignLayoutAdapter.toLayoutModel(designSnapshot, true, defaultsSnapshot);
             Scene scene = new Scene(
                     ScreenLayoutRenderer.createRoot(previewModel),
                     preferencesService.windowWidth(),
