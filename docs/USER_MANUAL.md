@@ -185,7 +185,11 @@ BootContext context = new BootstrapService(options).boot(primaryStage);
 Use `context.resourceConfig().resolveCategoryCodeTables(context.applicationRoot())` when app-owned content modules need to load generic category JSON during startup.
 Use `context.resourceConfig().resolveResource(context.applicationRoot(), "displayDefinitions")` with `JsonDisplayContentModule` when app-owned display definitions should be loaded during the static content phase, and use named resources such as `sceneDefinitions` to load JSON-authored scene modules from the application side.
 
-The management UI includes a **Default App Values** screen for inspecting these startup defaults and related display resources. The **Application Values** tab presents editable application config fields with local **Save** and **Reset** actions. Beneath those fields, the **Application Variables** block provides a multiline table for app-owned variable notes or future app-specific persistence with four fields: `name`, `type`, `value`, and `description`. The type field is limited to `string`, `number`, or `bool`; use **Add Variable** to append a blank row and **Remove Variable** to delete selected rows, or the last row when nothing is selected.
+The management UI includes a **Default App Values** screen for inspecting these startup defaults and related display resources. The **Application Values** tab presents editable application config fields with local **Save** and **Reset** actions.
+
+Beneath those fields, the **Application Variables** block provides a multiline table for app-owned variable notes or future app-specific persistence with four fields: `name`, `type`, `value`, and `description`. The type field is limited to `string`, `number`, or `bool`; use **Add Variable** to append a blank row and **Remove Variable** to delete selected rows, or the last row when nothing is selected.
+
+Below that, the **Load Files** block provides a second table for tracking authored startup loads with three fields: `type`, `path`, and `file name`. The type field is limited to `code table` or `conversation`; use **Add Load** to append a blank row and **Remove Load** to delete selected rows, or the last row when nothing is selected. Leave `file name` empty when the intent is to load every file in the specified directory.
 
 ```json
 {
