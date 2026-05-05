@@ -88,4 +88,51 @@ final class ConversationEditorApplicationTest {
     void fileMenuLabelsContainFileActions() {
         assertEquals(List.of("New", "Load", "Save", "Save As"), ConversationEditorApplication.fileMenuActionLabels());
     }
+
+    @Test
+    void editorTabsExposeConversationDetailAndJsonAreas() {
+        assertEquals(List.of("Conversations"), ConversationEditorApplication.conversationTabLabels());
+        assertEquals(List.of("Detail", "JSON"), ConversationEditorApplication.detailTabLabels());
+    }
+
+    @Test
+    void conversationFieldsCanUpdateDocumentAndSelectedConversation() {
+        ConversationDefinition updated = ConversationEditorApplication.updateConversationBlock(
+                ConversationEditorApplication.updateDocument(ConversationEditorApplication.sampleConversation(), 2, "fr"),
+                0,
+                "opening.changed",
+                "Changed description");
+
+        assertEquals(2, updated.schemaVersion());
+        assertEquals("fr", updated.language());
+        assertEquals("opening.changed", updated.conversations().get(0).id());
+        assertEquals("Changed description", updated.conversations().get(0).description());
+    }
+
+    @Test
+    void lineDetailFieldsCanUpdateSpeakerAndVariants() {
+        ConversationDefinition updated = ConversationEditorApplication.updateLine(
+                ConversationEditorApplication.sampleConversation(),
+                0,
+                0,
+                "hero",
+                List.of("First variant", "Second variant"));
+
+        assertEquals("hero", updated.conversations().get(0).lines().get(0).speaker());
+        assertEquals("First variant", updated.conversations().get(0).lines().get(0).variants().get(0).text());
+        assertEquals("Second variant", updated.conversations().get(0).lines().get(0).variants().get(1).text());
+    }
+
+    @Test
+    void addAndRemoveLineChangesSelectedConversationLines() {
+        ConversationDefinition added = ConversationEditorApplication.addLine(ConversationEditorApplication.sampleConversation(), 0);
+
+        assertEquals(3, added.conversations().get(0).lines().size());
+        assertEquals("speaker", added.conversations().get(0).lines().get(2).speaker());
+
+        ConversationDefinition removed = ConversationEditorApplication.removeLine(added, 0, 2);
+
+        assertEquals(2, removed.conversations().get(0).lines().size());
+        assertEquals("narrator", removed.conversations().get(0).lines().get(0).speaker());
+    }
 }
