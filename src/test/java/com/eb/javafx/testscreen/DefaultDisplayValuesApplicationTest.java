@@ -10,10 +10,12 @@ import javax.swing.JTable;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.JViewport;
+import javax.swing.border.Border;
 import javax.swing.border.TitledBorder;
 import javax.swing.table.DefaultTableModel;
 import java.awt.BorderLayout;
 import java.awt.Component;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -86,6 +88,18 @@ final class DefaultDisplayValuesApplicationTest {
     }
 
     @Test
+    void applicationLoadsExposeFieldsTypesAndDefaultRows() {
+        assertEquals(List.of("Type", "Path", "File Name"),
+                DefaultDisplayValuesApplication.applicationLoadFieldLabels());
+        assertEquals(List.of("code table", "conversation"),
+                DefaultDisplayValuesApplication.applicationLoadTypeOptions());
+        assertEquals(List.of("Add Load", "Remove Load"),
+                DefaultDisplayValuesApplication.applicationLoadActionLabels());
+        assertEquals(List.of(new DefaultDisplayValuesApplication.ApplicationLoad("code table", "", "")),
+                DefaultDisplayValuesApplication.applicationLoads());
+    }
+
+    @Test
     void applicationVariablesTableModelUsesHelperFields() {
         DefaultTableModel model = DefaultDisplayValuesApplication.applicationVariablesTableModel(List.of(
                 new DefaultDisplayValuesApplication.ApplicationVariable("enabled", "bool", "true", "Feature flag")));
@@ -100,6 +114,21 @@ final class DefaultDisplayValuesApplicationTest {
         assertEquals("bool", model.getValueAt(0, 1));
         assertEquals("true", model.getValueAt(0, 2));
         assertEquals("Feature flag", model.getValueAt(0, 3));
+    }
+
+    @Test
+    void applicationLoadsTableModelUsesHelperFields() {
+        DefaultTableModel model = DefaultDisplayValuesApplication.applicationLoadsTableModel(List.of(
+                new DefaultDisplayValuesApplication.ApplicationLoad("conversation", "content/conversations", "intro.json")));
+
+        assertEquals(3, model.getColumnCount());
+        assertEquals("Type", model.getColumnName(0));
+        assertEquals("Path", model.getColumnName(1));
+        assertEquals("File Name", model.getColumnName(2));
+        assertEquals(1, model.getRowCount());
+        assertEquals("conversation", model.getValueAt(0, 0));
+        assertEquals("content/conversations", model.getValueAt(0, 1));
+        assertEquals("intro.json", model.getValueAt(0, 2));
     }
 
     @Test
@@ -122,6 +151,25 @@ final class DefaultDisplayValuesApplicationTest {
     }
 
     @Test
+    void loadFilesPanelIsTitledBlock() {
+        JPanel panel = DefaultDisplayValuesApplication.loadFilesPanel(
+                DefaultDisplayValuesApplication.applicationLoads());
+
+        assertTrue(panel.getBorder() instanceof TitledBorder);
+        assertEquals("Load Files", ((TitledBorder) panel.getBorder()).getTitle());
+    }
+
+    @Test
+    void loadFilesPanelIncludesAddAndRemoveActionsBelowTable() {
+        JPanel panel = DefaultDisplayValuesApplication.loadFilesPanel(
+                DefaultDisplayValuesApplication.applicationLoads());
+        JPanel actions = (JPanel) ((BorderLayout) panel.getLayout()).getLayoutComponent(BorderLayout.SOUTH);
+
+        assertEquals("Add Load", ((JButton) actions.getComponent(0)).getText());
+        assertEquals("Remove Load", ((JButton) actions.getComponent(1)).getText());
+    }
+
+    @Test
     void applicationVariableActionsAddDefaultRowsAndRemoveSelectedRows() {
         JPanel panel = DefaultDisplayValuesApplication.applicationVariablesPanel(
                 DefaultDisplayValuesApplication.applicationVariables());
@@ -140,6 +188,24 @@ final class DefaultDisplayValuesApplicationTest {
     }
 
     @Test
+    void loadFileActionsAddDefaultRowsAndRemoveSelectedRows() {
+        JPanel panel = DefaultDisplayValuesApplication.loadFilesPanel(
+                DefaultDisplayValuesApplication.applicationLoads());
+        JTable table = applicationVariablesTable(panel);
+        JPanel actions = (JPanel) ((BorderLayout) panel.getLayout()).getLayoutComponent(BorderLayout.SOUTH);
+        DefaultTableModel model = (DefaultTableModel) table.getModel();
+
+        assertEquals(1, model.getRowCount());
+        ((JButton) actions.getComponent(0)).doClick();
+        assertEquals(2, model.getRowCount());
+        assertEquals("code table", model.getValueAt(1, 0));
+
+        table.setRowSelectionInterval(0, 0);
+        ((JButton) actions.getComponent(1)).doClick();
+        assertEquals(1, model.getRowCount());
+    }
+
+    @Test
     void applicationVariableRemoveActionRemovesLastRowWhenNothingSelected() {
         DefaultTableModel model = DefaultDisplayValuesApplication.applicationVariablesTableModel(List.of(
                 new DefaultDisplayValuesApplication.ApplicationVariable("one", "string", "1", ""),
@@ -150,6 +216,38 @@ final class DefaultDisplayValuesApplicationTest {
 
         assertEquals(1, model.getRowCount());
         assertEquals("one", model.getValueAt(0, 0));
+    }
+
+    @Test
+    void loadFileRemoveActionRemovesLastRowWhenNothingSelected() {
+        DefaultTableModel model = DefaultDisplayValuesApplication.applicationLoadsTableModel(List.of(
+                new DefaultDisplayValuesApplication.ApplicationLoad("code table", "config/codes", ""),
+                new DefaultDisplayValuesApplication.ApplicationLoad("conversation", "content/conversations", "intro.json")));
+        JTable table = new JTable(model);
+
+        DefaultDisplayValuesApplication.removeApplicationLoadRows(table);
+
+        assertEquals(1, model.getRowCount());
+        assertEquals("code table", model.getValueAt(0, 0));
+    }
+
+    @Test
+    void applicationValuesPanelPlacesLoadFilesBelowApplicationVariables() {
+        JPanel panel = DefaultDisplayValuesApplication.applicationValuesPanel(
+                DefaultDisplayValuesApplication.applicationConfigFields());
+        JPanel fieldPanel = applicationValuesFieldPanel(panel);
+
+        List<String> titles = new ArrayList<>();
+        for (Component component : fieldPanel.getComponents()) {
+            if (component instanceof JPanel child) {
+                Border border = child.getBorder();
+                if (border instanceof TitledBorder titledBorder) {
+                    titles.add(titledBorder.getTitle());
+                }
+            }
+        }
+
+        assertEquals(List.of("Application Variables", "Load Files"), titles);
     }
 
     @Test
@@ -224,5 +322,11 @@ final class DefaultDisplayValuesApplicationTest {
         JScrollPane scrollPane = (JScrollPane) ((BorderLayout) panel.getLayout()).getLayoutComponent(BorderLayout.CENTER);
         JViewport viewport = scrollPane.getViewport();
         return (JTable) viewport.getView();
+    }
+
+    private static JPanel applicationValuesFieldPanel(JPanel panel) {
+        JScrollPane scrollPane = (JScrollPane) ((BorderLayout) panel.getLayout()).getLayoutComponent(BorderLayout.CENTER);
+        JViewport viewport = scrollPane.getViewport();
+        return (JPanel) viewport.getView();
     }
 }

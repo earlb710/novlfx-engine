@@ -118,9 +118,17 @@ public final class DefaultDisplayValuesApplication {
         variablesConstraints.fill = GridBagConstraints.BOTH;
         variablesConstraints.insets = new Insets(8, 3, 3, 3);
         fieldPanel.add(applicationVariablesPanel(applicationVariables()), variablesConstraints);
+        GridBagConstraints loadsConstraints = new GridBagConstraints();
+        loadsConstraints.gridx = 0;
+        loadsConstraints.gridy = fields.size() + 1;
+        loadsConstraints.gridwidth = 2;
+        loadsConstraints.weightx = 1.0;
+        loadsConstraints.fill = GridBagConstraints.BOTH;
+        loadsConstraints.insets = new Insets(8, 3, 3, 3);
+        fieldPanel.add(loadFilesPanel(applicationLoads()), loadsConstraints);
         GridBagConstraints filler = new GridBagConstraints();
         filler.gridx = 0;
-        filler.gridy = fields.size() + 1;
+        filler.gridy = fields.size() + 2;
         filler.gridwidth = 2;
         filler.weighty = 1.0;
         filler.fill = GridBagConstraints.VERTICAL;
@@ -167,6 +175,22 @@ public final class DefaultDisplayValuesApplication {
         return List.of("Add Variable", "Remove Variable");
     }
 
+    static List<String> applicationLoadFieldLabels() {
+        return List.of("Type", "Path", "File Name");
+    }
+
+    static List<String> applicationLoadTypeOptions() {
+        return List.of("code table", "conversation");
+    }
+
+    static List<ApplicationLoad> applicationLoads() {
+        return List.of(new ApplicationLoad(applicationLoadTypeOptions().get(0), "", ""));
+    }
+
+    static List<String> applicationLoadActionLabels() {
+        return List.of("Add Load", "Remove Load");
+    }
+
     static JPanel applicationVariablesPanel(List<ApplicationVariable> variables) {
         Validation.requireNonNull(variables, "Application variables are required.");
         JPanel panel = new JPanel(new BorderLayout(6, 6));
@@ -189,6 +213,29 @@ public final class DefaultDisplayValuesApplication {
         return panel;
     }
 
+    static JPanel loadFilesPanel(List<ApplicationLoad> loads) {
+        Validation.requireNonNull(loads, "Application loads are required.");
+        JPanel panel = new JPanel(new BorderLayout(6, 6));
+        panel.setBorder(BorderFactory.createTitledBorder("Load Files"));
+        panel.add(new JLabel("Leave File Name empty to load all files in the directory."), BorderLayout.NORTH);
+        DefaultTableModel model = applicationLoadsTableModel(loads);
+        JTable table = new JTable(model);
+        table.getColumnModel().getColumn(0).setCellEditor(new DefaultCellEditor(
+                new JComboBox<>(applicationLoadTypeOptions().toArray(String[]::new))));
+        table.setFillsViewportHeight(true);
+        table.setPreferredScrollableViewportSize(new Dimension(640, 96));
+        panel.add(new JScrollPane(table), BorderLayout.CENTER);
+        JPanel actions = new JPanel(new GridLayout(1, 2, 6, 0));
+        JButton add = new JButton(applicationLoadActionLabels().get(0));
+        JButton remove = new JButton(applicationLoadActionLabels().get(1));
+        add.addActionListener(event -> addApplicationLoadRow(model));
+        remove.addActionListener(event -> removeApplicationLoadRows(table));
+        actions.add(add);
+        actions.add(remove);
+        panel.add(actions, BorderLayout.SOUTH);
+        return panel;
+    }
+
     static DefaultTableModel applicationVariablesTableModel(List<ApplicationVariable> variables) {
         Validation.requireNonNull(variables, "Application variables are required.");
         DefaultTableModel model = new DefaultTableModel(applicationVariableFieldLabels().toArray(String[]::new), 0);
@@ -200,14 +247,45 @@ public final class DefaultDisplayValuesApplication {
         return model;
     }
 
+    static DefaultTableModel applicationLoadsTableModel(List<ApplicationLoad> loads) {
+        Validation.requireNonNull(loads, "Application loads are required.");
+        DefaultTableModel model = new DefaultTableModel(applicationLoadFieldLabels().toArray(String[]::new), 0);
+        loads.forEach(load -> model.addRow(new Object[]{
+                load.type(),
+                load.path(),
+                load.fileName()}));
+        return model;
+    }
+
     static void addApplicationVariableRow(DefaultTableModel model) {
         Validation.requireNonNull(model, "Application variables table model is required.");
         ApplicationVariable variable = applicationVariables().get(0);
         model.addRow(new Object[]{variable.name(), variable.type(), variable.value(), variable.description()});
     }
 
+    static void addApplicationLoadRow(DefaultTableModel model) {
+        Validation.requireNonNull(model, "Application loads table model is required.");
+        ApplicationLoad load = applicationLoads().get(0);
+        model.addRow(new Object[]{load.type(), load.path(), load.fileName()});
+    }
+
     static void removeApplicationVariableRows(JTable table) {
         Validation.requireNonNull(table, "Application variables table is required.");
+        if (!(table.getModel() instanceof DefaultTableModel model) || model.getRowCount() == 0) {
+            return;
+        }
+        int[] selectedRows = table.getSelectedRows();
+        if (selectedRows.length == 0) {
+            model.removeRow(model.getRowCount() - 1);
+            return;
+        }
+        for (int index = selectedRows.length - 1; index >= 0; index--) {
+            model.removeRow(table.convertRowIndexToModel(selectedRows[index]));
+        }
+    }
+
+    static void removeApplicationLoadRows(JTable table) {
+        Validation.requireNonNull(table, "Application loads table is required.");
         if (!(table.getModel() instanceof DefaultTableModel model) || model.getRowCount() == 0) {
             return;
         }
@@ -362,6 +440,17 @@ public final class DefaultDisplayValuesApplication {
             description = Validation.requireNonNull(description, "Application variable description is required.");
             if (!applicationVariableTypeOptions().contains(type)) {
                 throw new IllegalArgumentException("Unsupported application variable type: " + type);
+            }
+        }
+    }
+
+    record ApplicationLoad(String type, String path, String fileName) {
+        ApplicationLoad {
+            type = Validation.requireNonBlank(type, "Application load type is required.");
+            path = Validation.requireNonNull(path, "Application load path is required.");
+            fileName = Validation.requireNonNull(fileName, "Application load file name is required.");
+            if (!applicationLoadTypeOptions().contains(type)) {
+                throw new IllegalArgumentException("Unsupported application load type: " + type);
             }
         }
     }
