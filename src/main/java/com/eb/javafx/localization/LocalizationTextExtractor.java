@@ -77,6 +77,8 @@ public final class LocalizationTextExtractor {
         for (TextToken token : column.tokens()) {
             if (token.type() == TextTokenType.TEXT) {
                 text.append(token.text());
+            } else if (token.type() == TextTokenType.ICON) {
+                // Inline icons are display-only and omitted from plain-text localization output.
             } else if (token.type() == TextTokenType.PARAGRAPH) {
                 text.append(System.lineSeparator());
             }

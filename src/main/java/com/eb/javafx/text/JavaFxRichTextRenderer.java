@@ -1,11 +1,13 @@
 package com.eb.javafx.text;
 
+import com.eb.javafx.display.ImageDisplayRegistry;
 import com.eb.javafx.util.Validation;
 import javafx.animation.Animation;
 import javafx.animation.FadeTransition;
 import javafx.animation.TranslateTransition;
 import javafx.scene.Node;
 import javafx.scene.effect.DropShadow;
+import javafx.scene.image.ImageView;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.CycleMethod;
 import javafx.scene.paint.LinearGradient;
@@ -21,25 +23,54 @@ import javafx.util.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 /** Renders parsed visual-novel text tokens into JavaFX rich text nodes. */
 public final class JavaFxRichTextRenderer {
     private static final String EFFECT_PROPERTY = "novlfx.text.effects";
+    private static final String ICON_PROPERTY = "novlfx.text.iconId";
     private static final String DEFAULT_GRADIENT = "#ffffff,#80d8ff";
+    private static final double DEFAULT_INLINE_ICON_HEIGHT = 18.0;
+    private static final double DEFAULT_INLINE_ICON_BASELINE_OFFSET = 3.0;
 
     private final TextTagParser parser;
+    private final ImageDisplayRegistry imageDisplayRegistry;
+    private final Function<String, Node> inlineIconFactory;
     private final boolean playKineticEffects;
 
     public JavaFxRichTextRenderer() {
-        this(new TextTagParser(), false);
+        this(new TextTagParser(), null, null, false);
     }
 
     public JavaFxRichTextRenderer(TextTagParser parser) {
-        this(parser, false);
+        this(parser, null, null, false);
+    }
+
+    public JavaFxRichTextRenderer(ImageDisplayRegistry imageDisplayRegistry) {
+        this(new TextTagParser(), imageDisplayRegistry, null, false);
     }
 
     public JavaFxRichTextRenderer(TextTagParser parser, boolean playKineticEffects) {
+        this(parser, null, null, playKineticEffects);
+    }
+
+    public JavaFxRichTextRenderer(TextTagParser parser, ImageDisplayRegistry imageDisplayRegistry) {
+        this(parser, imageDisplayRegistry, null, false);
+    }
+
+    public JavaFxRichTextRenderer(TextTagParser parser, ImageDisplayRegistry imageDisplayRegistry, boolean playKineticEffects) {
+        this(parser, imageDisplayRegistry, null, playKineticEffects);
+    }
+
+    JavaFxRichTextRenderer(TextTagParser parser, Function<String, Node> inlineIconFactory) {
+        this(parser, null, inlineIconFactory, false);
+    }
+
+    private JavaFxRichTextRenderer(TextTagParser parser, ImageDisplayRegistry imageDisplayRegistry,
+                                   Function<String, Node> inlineIconFactory, boolean playKineticEffects) {
         this.parser = Validation.requireNonNull(parser, "Text tag parser is required.");
+        this.imageDisplayRegistry = imageDisplayRegistry;
+        this.inlineIconFactory = inlineIconFactory;
         this.playKineticEffects = playKineticEffects;
     }
 
@@ -51,8 +82,24 @@ public final class JavaFxRichTextRenderer {
     /** Renders pre-parsed text tokens into a {@link TextFlow}. */
     public TextFlow render(List<TextToken> tokens) {
         TextFlow flow = new TextFlow();
-        flow.getChildren().addAll(textNodes(tokens));
+        flow.getChildren().addAll(nodes(tokens));
         return flow;
+    }
+
+    /** Converts renderable tokens to JavaFX text/image nodes; pause tokens are rendering-neutral. */
+    public List<Node> nodes(List<TextToken> tokens) {
+        Validation.requireNonNull(tokens, "Text tokens are required.");
+        List<Node> nodes = new ArrayList<>();
+        for (TextToken token : tokens) {
+            if (token.type() == TextTokenType.TEXT) {
+                nodes.add(textNode(token.text(), token.style()));
+            } else if (token.type() == TextTokenType.ICON) {
+                nodes.add(iconNode(token.iconId()));
+            } else if (token.type() == TextTokenType.PARAGRAPH) {
+                nodes.add(textNode(System.lineSeparator(), TextStyle.plain()));
+            }
+        }
+        return List.copyOf(nodes);
     }
 
     /** Converts text and paragraph tokens to JavaFX text nodes; pause tokens are rendering-neutral. */
@@ -74,6 +121,44 @@ public final class JavaFxRichTextRenderer {
         applyStyle(text, style);
         applyEffects(text, style.effects());
         return text;
+    }
+
+    private Node iconNode(String iconId) {
+        if (inlineIconFactory != null) {
+            Node iconNode = inlineIconFactory.apply(iconId);
+            if (iconNode != null) {
+                return tagIconNode(iconId, iconNode);
+            }
+        }
+        if (imageDisplayRegistry != null) {
+            try {
+                return imageDisplayRegistry.createImageView(iconId)
+                        .<Node>map(imageView -> tagIconNode(iconId, configureInlineIcon(imageView)))
+                        .orElseGet(() -> fallbackIconNode(iconId));
+            } catch (IllegalStateException exception) {
+                return fallbackIconNode(iconId);
+            }
+        }
+        return fallbackIconNode(iconId);
+    }
+
+    private Node tagIconNode(String iconId, Node node) {
+        node.getProperties().put(ICON_PROPERTY, iconId);
+        return node;
+    }
+
+    private ImageView configureInlineIcon(ImageView imageView) {
+        imageView.setPreserveRatio(true);
+        imageView.setFitWidth(0.0);
+        imageView.setFitHeight(DEFAULT_INLINE_ICON_HEIGHT);
+        imageView.setTranslateY(DEFAULT_INLINE_ICON_BASELINE_OFFSET);
+        return imageView;
+    }
+
+    private Text fallbackIconNode(String iconId) {
+        Text fallback = textNode("[" + iconId + "]", TextStyle.plain());
+        fallback.getProperties().put(ICON_PROPERTY, iconId);
+        return fallback;
     }
 
     private void applyStyle(Text text, TextStyle style) {
