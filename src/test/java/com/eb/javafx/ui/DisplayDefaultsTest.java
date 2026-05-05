@@ -10,8 +10,15 @@ final class DisplayDefaultsTest {
     void bundledDefaultsExposeScreenBlockAndRoleDefaults() {
         DisplayDefaults defaults = DisplayDefaults.defaults();
 
-        assertEquals("#0a1426", defaults.screen().get("backgroundColor"));
-        assertEquals("solid", defaults.screen().get("borderStyle"));
+        assertEquals("", defaults.screen().get("fontFamily"));
+        assertEquals("", defaults.screen().get("fontSize"));
+        assertEquals("", defaults.screen().get("fontStyle"));
+        assertEquals("", defaults.screen().get("color"));
+        assertEquals("", defaults.screen().get("backgroundColor"));
+        assertEquals("", defaults.screen().get("borderStyle"));
+        assertEquals("", defaults.screen().get("borderCorner"));
+        assertEquals("", defaults.screen().get("borderThickness"));
+        assertEquals("", defaults.screen().get("borderColor"));
         assertEquals("#143869", defaults.block().get("backgroundColor"));
         assertEquals("0", defaults.block().get("transparency"));
         assertEquals("28", defaults.itemDefaults(DisplayDefaults.ROLE_HEADING).get("fontSize"));

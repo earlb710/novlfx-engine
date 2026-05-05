@@ -67,4 +67,19 @@ final class ScreenLayoutRendererTest {
         assertEquals("",
                 ScreenLayoutRenderer.containerStyle(Map.of("backgroundColor", "red; -fx-padding: 99")));
     }
+
+    @Test
+    void rendererLeavesBlankMetadataForCssInheritance() {
+        assertEquals("", ScreenLayoutRenderer.lineStyle(Map.of(
+                "fontFamily", "",
+                "fontSize", "",
+                "fontStyle", "",
+                "color", "")));
+        assertEquals("", ScreenLayoutRenderer.containerStyle(Map.of(
+                "backgroundColor", "",
+                "borderStyle", "",
+                "borderCorner", "",
+                "borderThickness", "",
+                "borderColor", "")));
+    }
 }

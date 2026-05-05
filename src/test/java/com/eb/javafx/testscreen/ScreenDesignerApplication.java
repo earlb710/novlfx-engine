@@ -1548,7 +1548,7 @@ public final class ScreenDesignerApplication {
 
     static String[] defaultValueFontFamilyOptions() {
         LinkedHashSet<String> options = new LinkedHashSet<>();
-        options.add(DEFAULT_OPTION);
+        options.add("");
         options.addAll(FontResources.fontFileNames());
         Arrays.stream(GraphicsEnvironment.getLocalGraphicsEnvironment().getAvailableFontFamilyNames())
                 .sorted(Comparator.naturalOrder())
@@ -1557,7 +1557,7 @@ public final class ScreenDesignerApplication {
     }
 
     static String[] defaultValueFontStyleOptions() {
-        return Arrays.copyOfRange(FONT_STYLE_OPTIONS, 1, FONT_STYLE_OPTIONS.length);
+        return withBlankDefaultOption(FONT_STYLE_OPTIONS);
     }
 
     static List<String> orderedDefaultAttributeKeys(Map<String, String> attributes) {
@@ -1631,11 +1631,18 @@ public final class ScreenDesignerApplication {
     }
 
     static String[] defaultValueBorderStyleOptions() {
-        return Arrays.copyOfRange(BORDER_STYLE_OPTIONS, 1, BORDER_STYLE_OPTIONS.length);
+        return withBlankDefaultOption(BORDER_STYLE_OPTIONS);
     }
 
     static String[] defaultValueBorderCornerOptions() {
-        return Arrays.copyOfRange(BORDER_CORNER_OPTIONS, 1, BORDER_CORNER_OPTIONS.length);
+        return withBlankDefaultOption(BORDER_CORNER_OPTIONS);
+    }
+
+    private static String[] withBlankDefaultOption(String[] options) {
+        String[] values = new String[options.length];
+        values[0] = "";
+        System.arraycopy(options, 1, values, 1, options.length - 1);
+        return values;
     }
 
     private static JComboBox<String> defaultValueBorderStyleBox() {

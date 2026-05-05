@@ -355,6 +355,10 @@ final class ScreenDesignerApplicationTest {
                 ScreenDesignerApplication.defaultValueAttributeEditor("borderColor"));
         assertEquals(ScreenDesignerApplication.DefaultValueAttributeEditor.TEXT,
                 ScreenDesignerApplication.defaultValueAttributeEditor("fontSize"));
+        assertEquals("", ScreenDesignerApplication.defaultValueFontFamilyOptions()[0]);
+        assertEquals("", ScreenDesignerApplication.defaultValueFontStyleOptions()[0]);
+        assertEquals("", ScreenDesignerApplication.defaultValueBorderStyleOptions()[0]);
+        assertEquals("", ScreenDesignerApplication.defaultValueBorderCornerOptions()[0]);
     }
 
     @Test
