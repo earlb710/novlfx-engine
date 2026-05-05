@@ -50,7 +50,9 @@ public final class ScreenLayoutRenderer {
         addActions(content, context, model.primaryActions(), ScreenShell.LAYOUT_PRIMARY_ACTION_STYLE_CLASS);
         addActions(content, context, model.secondaryActions(), ScreenShell.LAYOUT_SECONDARY_ACTION_STYLE_CLASS);
         addOptionalText(content, model.footer(), ScreenShell.LAYOUT_FOOTER_STYLE_CLASS);
-        return ScreenShell.titled(model.title(), content);
+        BorderPane root = ScreenShell.titled(model.title(), content);
+        applyContainerStyle(root, model.metadata());
+        return root;
     }
 
     private static Node layoutContent(RouteContext context, ScreenLayoutModel model) {
@@ -125,6 +127,7 @@ public final class ScreenLayoutRenderer {
         if (section.styleClass() != null && !section.styleClass().isBlank()) {
             sectionNode.getStyleClass().add(section.styleClass());
         }
+        applyContainerStyle(sectionNode, section.metadata());
         addOptionalText(sectionNode, section.title(), ScreenShell.LAYOUT_SECTION_TITLE_STYLE_CLASS);
         for (int index = 0; index < section.lines().size(); index++) {
             String line = section.lines().get(index);
@@ -148,12 +151,25 @@ public final class ScreenLayoutRenderer {
         }
     }
 
+    private static void applyContainerStyle(javafx.scene.layout.Region region, Map<String, String> metadata) {
+        String style = containerStyle(metadata);
+        if (!style.isEmpty()) {
+            region.setStyle(style);
+        }
+    }
+
     static String lineStyle(Map<String, String> metadata) {
         StringBuilder style = new StringBuilder();
         appendFontFamily(style, metadata.get("fontFamily"));
         appendFontSize(style, metadata.get("fontSize"));
         appendFontStyle(style, metadata.get("fontStyle"));
         appendColor(style, metadata.get("color"));
+        return style.toString();
+    }
+
+    static String containerStyle(Map<String, String> metadata) {
+        StringBuilder style = new StringBuilder();
+        appendBackgroundColor(style, metadata.get("backgroundColor"));
         return style.toString();
     }
 
@@ -187,6 +203,12 @@ public final class ScreenLayoutRenderer {
     private static void appendColor(StringBuilder style, String value) {
         if (value != null && COLOR_PATTERN.matcher(value).matches()) {
             style.append("-fx-text-fill: ").append(value).append("; ");
+        }
+    }
+
+    private static void appendBackgroundColor(StringBuilder style, String value) {
+        if (value != null && COLOR_PATTERN.matcher(value).matches()) {
+            style.append("-fx-background-color: ").append(value).append("; ");
         }
     }
 

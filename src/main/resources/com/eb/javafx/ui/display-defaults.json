@@ -1,0 +1,46 @@
+{
+  "screen": {
+    "fontFamily": "OpenDyslexic3-Regular.ttf",
+    "fontSize": "18",
+    "fontStyle": "normal",
+    "color": "#ffffff",
+    "backgroundColor": "#0a1426"
+  },
+  "block": {
+    "fontSize": "16",
+    "color": "#ffffff",
+    "backgroundColor": "#143869"
+  },
+  "items": {
+    "text": {
+      "fontSize": "18",
+      "color": "#ffffff"
+    },
+    "heading": {
+      "fontSize": "28",
+      "fontStyle": "bold",
+      "color": "#ffff66"
+    },
+    "subheading": {
+      "fontSize": "22",
+      "fontStyle": "bold",
+      "color": "#66c1e0"
+    },
+    "field": {
+      "fontSize": "18",
+      "color": "#ffffff"
+    },
+    "button": {
+      "fontSize": "18",
+      "fontStyle": "bold",
+      "color": "#ffffff"
+    }
+  },
+  "labels": {
+    "fieldLabel": {
+      "fontSize": "16",
+      "fontStyle": "bold",
+      "color": "#ffff66"
+    }
+  }
+}

@@ -160,6 +160,41 @@ final class ScreenDesignModelTest {
     }
 
     @Test
+    void layoutMetadataUsesDisplayRoleDefaultsWhenScreenDoesNotOverrideThem() {
+        ScreenDesignModel model = new ScreenDesignModel("x", "X", ScreenLayoutType.FORM, Map.of(),
+                List.of(new ScreenDesignBlock("profile", "Profile")),
+                List.of(new ScreenDesignItem("display", "profile", ScreenDesignItemType.TEXT,
+                        "Ignored", "Display text", null, null, null,
+                        Map.of("displayRole", DisplayDefaults.ROLE_HEADING))),
+                List.of());
+
+        Map<String, String> metadata = ScreenDesignLayoutAdapter.toLayoutModel(model)
+                .contentSections().get(0)
+                .lineMetadata().get(0);
+
+        assertEquals("28", metadata.get("fontSize"));
+        assertEquals("bold", metadata.get("fontStyle"));
+        assertEquals("#ffff66", metadata.get("color"));
+    }
+
+    @Test
+    void layoutCarriesScreenAndBlockBackgroundDefaults() {
+        ScreenDesignModel model = design();
+
+        ScreenLayoutModel layout = ScreenDesignLayoutAdapter.toLayoutModel(model);
+
+        assertEquals("#0a1426", layout.metadata().get("backgroundColor"));
+        assertEquals("#143869", layout.contentSections().get(0).metadata().get("backgroundColor"));
+    }
+
+    @Test
+    void defaultRoleMatchesItemTypeWhenNoExplicitDisplayRoleIsStored() {
+        assertEquals(DisplayDefaults.ROLE_TEXT, ScreenDesignLayoutAdapter.defaultRole(ScreenDesignItemType.TEXT));
+        assertEquals(DisplayDefaults.ROLE_FIELD, ScreenDesignLayoutAdapter.defaultRole(ScreenDesignItemType.FIELD));
+        assertEquals(DisplayDefaults.ROLE_BUTTON, ScreenDesignLayoutAdapter.defaultRole(ScreenDesignItemType.BUTTON));
+    }
+
+    @Test
     void renamesBlocksAndItemsWhileKeepingReferencesValid() {
         ScreenDesignModel renamed = ScreenDesignService.renameItem(
                 ScreenDesignService.renameBlock(design(), "profile", "identity"),
