@@ -888,7 +888,7 @@ public final class ConversationEditorApplication {
         return updateVariant(document, conversationIndex, lineIndex, variantIndex, text, variant.tooltipText(), value, weight, conditions);
     }
 
-    static ConversationDefinition updateVariant(
+    static ConversationDefinition updateVariantKeepingTooltipAndValue(
             ConversationDefinition document,
             int conversationIndex,
             int lineIndex,

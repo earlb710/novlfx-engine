@@ -150,7 +150,7 @@ final class ConversationEditorApplicationTest {
 
     @Test
     void variantDetailFieldsCanUpdateTextWeightAndConditions() {
-        ConversationDefinition updated = ConversationEditorApplication.updateVariant(
+        ConversationDefinition updated = ConversationEditorApplication.updateVariantKeepingTooltipAndValue(
                 ConversationEditorApplication.sampleConversation(),
                 0,
                 0,
@@ -202,7 +202,7 @@ final class ConversationEditorApplicationTest {
 
     @Test
     void conditionValueChoicesIncludeContextAndTimeOfDayValues() {
-        ConversationDefinition conversation = ConversationEditorApplication.updateVariant(
+        ConversationDefinition conversation = ConversationEditorApplication.updateVariantKeepingTooltipAndValue(
                 ConversationEditorApplication.sampleConversation(),
                 0,
                 0,
