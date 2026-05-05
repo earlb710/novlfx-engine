@@ -54,7 +54,7 @@ import java.util.stream.Stream;
 
 /** Manual Swing editor for LR2Alt-compatible JSON conversation documents. */
 public final class ConversationEditorApplication {
-    private static final int MAX_CONDITION_FIELDS = 3;
+    private static final int MAX_CONDITION_ROWS_DISPLAYED = 3;
     private static final String CONDITION_TYPE_CONTEXT = "context";
     private static final String CONDITION_OPERAND_EQUALS = "=";
 
@@ -79,7 +79,7 @@ public final class ConversationEditorApplication {
     private final JTextArea variantTextArea = new JTextArea();
     private final JTextField variantWeightField = new JTextField();
     private final List<ConditionFieldRow> variantConditionRows = Stream.generate(ConditionFieldRow::create)
-            .limit(MAX_CONDITION_FIELDS)
+            .limit(MAX_CONDITION_ROWS_DISPLAYED)
             .toList();
     private final JLabel statusLabel = new JLabel();
     private Path currentFolder = conversationExamplesDirectory();
@@ -1003,19 +1003,23 @@ public final class ConversationEditorApplication {
 
     static List<String> conditionTexts(List<String> values) {
         return values.stream()
-                .filter(value -> value != null && !value.isBlank())
-                .limit(MAX_CONDITION_FIELDS)
+                .filter(value -> !isBlankConditionValue(value))
+                .limit(MAX_CONDITION_ROWS_DISPLAYED)
                 .toList();
     }
 
     static String conditionText(String conditionType, String operand, String value) {
         String checkedValue = value == null ? "" : value.trim();
-        if (checkedValue.isBlank()) {
+        if (isBlankConditionValue(checkedValue)) {
             return "";
         }
         String checkedType = Validation.requireNonBlank(conditionType, "Condition type is required.").trim();
         String checkedOperand = Validation.requireNonBlank(operand, "Condition operand is required.").trim();
         return checkedType + checkedOperand + checkedValue;
+    }
+
+    private static boolean isBlankConditionValue(String value) {
+        return value == null || value.isBlank();
     }
 
     private List<String> variantConditionValues() {
