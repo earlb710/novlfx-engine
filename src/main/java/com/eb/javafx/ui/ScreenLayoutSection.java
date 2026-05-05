@@ -26,7 +26,9 @@ public record ScreenLayoutSection(
         lineIds = List.copyOf(Validation.requireNonNull(lineIds, "Screen layout section line ids are required."));
         lineMetadata = Validation.requireNonNull(lineMetadata, "Screen layout section line metadata is required.")
                 .stream()
-                .map(lineEntry -> Map.copyOf(Validation.requireNonNull(lineEntry, "Screen layout section line metadata entry is required.")))
+                .map(lineMetadataEntry -> Map.copyOf(Validation.requireNonNull(
+                        lineMetadataEntry,
+                        "Screen layout section line metadata entry is required.")))
                 .toList();
         lines.forEach(line -> Validation.requireNonBlank(line, "Screen layout section line text is required."));
         lineIds.forEach(lineId -> Validation.requireNonBlank(lineId, "Screen layout section line id is required."));

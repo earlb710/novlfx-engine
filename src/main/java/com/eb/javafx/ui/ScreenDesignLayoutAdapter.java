@@ -99,6 +99,7 @@ public final class ScreenDesignLayoutAdapter {
     }
 
     private static Map<String, String> textStyleMetadata(Map<String, String> metadata) {
+        // Item text inherits text styling from screen/block defaults, but not container background/border values.
         LinkedHashMap<String, String> filtered = new LinkedHashMap<>();
         copyIfPresent(metadata, filtered, FONT_FAMILY_KEY);
         copyIfPresent(metadata, filtered, FONT_SIZE_KEY);
