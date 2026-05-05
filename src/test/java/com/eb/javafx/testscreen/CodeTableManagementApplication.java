@@ -277,9 +277,13 @@ public final class CodeTableManagementApplication {
                         ? cwd.resolve("examples/user-manual/09-game-support-state-save-prefs-random")
                         : cwd.getParent().resolve("examples/user-manual/09-game-support-state-save-prefs-random"));
         return candidates.stream()
-                .filter(Files::isDirectory)
+                .filter(CodeTableManagementApplication::isCodeTableExamplesDirectory)
                 .findFirst()
                 .orElse(cwd.resolve("examples/user-manual/09-game-support-state-save-prefs-random"));
+    }
+
+    private static boolean isCodeTableExamplesDirectory(Path path) {
+        return Files.isDirectory(path) && Files.isRegularFile(path.resolve("category-code-tables.demo.json"));
     }
 
     static List<Path> codeTableJsonFiles(Path folder) {
