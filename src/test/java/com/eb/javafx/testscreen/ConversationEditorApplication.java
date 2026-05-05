@@ -863,6 +863,18 @@ public final class ConversationEditorApplication {
         return new ConversationDefinition(document.name(), document.language(), blocks);
     }
 
+    static ConversationDefinition updateVariant(
+            ConversationDefinition document,
+            int conversationIndex,
+            int lineIndex,
+            int variantIndex,
+            String text,
+            double weight,
+            List<String> conditions) {
+        ConversationVariant variant = document.conversations().get(conversationIndex).lines().get(lineIndex).variants().get(variantIndex);
+        return updateVariant(document, conversationIndex, lineIndex, variantIndex, text, variant.value(), weight, conditions);
+    }
+
     static ConversationDefinition addLine(ConversationDefinition document, int conversationIndex) {
         List<ConversationBlock> blocks = new ArrayList<>(document.conversations());
         ConversationBlock block = blocks.get(conversationIndex);
@@ -997,6 +1009,7 @@ public final class ConversationEditorApplication {
                     selectedLineIndex(selectedData),
                     selectedVariantIndex(selectedData),
                     variantTextArea.getText(),
+                    variantValueField.getText(),
                     variantWeight(),
                     conditionTexts(variantConditionValues()));
         };
@@ -1012,6 +1025,7 @@ public final class ConversationEditorApplication {
                 selectedComboBoxValue(lineListenerField),
                 selectedLineType().jsonValue(),
                 variantTextArea.getText(),
+                variantValueField.getText(),
                 variantWeightField.getText(),
                 variantConditionFieldState());
     }
