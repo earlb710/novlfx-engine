@@ -54,7 +54,7 @@ public final class SceneDefinitionJson {
         return toJson(List.of(scene));
     }
 
-    private static SceneDefinition parseScene(Map<String, Object> object) {
+    static SceneDefinition parseScene(Map<String, Object> object) {
         rejectExecutableHooks(object, "scene " + object.get("id"));
         List<SceneStep> steps = JsonData.optionalList(object, "steps", "scene steps").stream()
                 .map(entry -> parseStep(JsonData.requireObject(entry, "scene steps[]")))
@@ -131,7 +131,7 @@ public final class SceneDefinitionJson {
         }
     }
 
-    private static void appendScene(StringBuilder json, SceneDefinition scene, String indent) {
+    static void appendScene(StringBuilder json, SceneDefinition scene, String indent) {
         json.append(indent).append("{\n")
                 .append(indent).append("  \"id\": ").append(JsonStrings.quote(scene.id())).append(",\n")
                 .append(indent).append("  \"metadata\": ").append(stringMapJson(scene.metadata())).append(",\n")
@@ -182,7 +182,7 @@ public final class SceneDefinitionJson {
                 + ", \"targetSceneId\": " + JsonStrings.nullableQuote(transition.targetSceneId()) + "}";
     }
 
-    private static String stringMapJson(Map<String, String> values) {
+    static String stringMapJson(Map<String, String> values) {
         StringBuilder json = new StringBuilder("{");
         int index = 0;
         for (Map.Entry<String, String> entry : values.entrySet()) {

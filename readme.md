@@ -64,6 +64,14 @@ See [docs/USER_MANUAL.md](docs/USER_MANUAL.md) for setup, package responsibiliti
 ./gradlew --no-daemon runTestScreen
 ```
 
+## Launch the management app
+
+```bash
+./gradlew --no-daemon runManagementApp
+```
+
+The management app opens a button-only launcher for authoring and diagnostic screens such as default display values, the screen designer, and the conversation editor.
+
 ## Launch the screen designer
 
 ```bash
@@ -71,6 +79,14 @@ See [docs/USER_MANUAL.md](docs/USER_MANUAL.md) for setup, package responsibiliti
 ```
 
 The screen designer starts in `examples/screen-designs`, which now includes several sample JSON screen designs and a JavaFX preview button for the current design.
+
+## Launch the conversation editor
+
+```bash
+./gradlew --no-daemon runConversationEditor
+```
+
+The conversation editor starts in `examples/conversations` and edits LR2Alt-compatible exported conversation JSON with `schemaVersion`, `language`, `conversations`, `lines`, and `variants`.
 
 ## Android Studio
 

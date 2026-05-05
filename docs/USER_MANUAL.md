@@ -46,6 +46,22 @@ Launch the manual screen designer with:
 
 The screen designer edits JSON-backed `ScreenDesignModel` documents with stable editable screen, block, and item ids. Saved items are written to JSON, while temporary preview/test items can be added to a block by id for validation without being included in normal save output.
 
+Launch the management app with:
+
+```bash
+./gradlew --no-daemon runManagementApp
+```
+
+The management app is a button-only launcher for manual authoring and diagnostic screens, including default display values, the screen designer, and the conversation editor.
+
+Launch the manual conversation editor with:
+
+```bash
+./gradlew --no-daemon runConversationEditor
+```
+
+The conversation editor edits JSON-backed `ConversationDefinition` documents using the same exported conversation schema as LR2Alt: top-level `schemaVersion`, `language`, and `conversations`; each conversation has `id`, `description`, `lines`, and line `variants`.
+
 Example/demo code: [`examples/user-manual/02-project-setup-and-validation/demo.sh`](../examples/user-manual/02-project-setup-and-validation/demo.sh)
 
 ## 3. Module and package layout
@@ -224,6 +240,7 @@ The `ui` package provides reusable JavaFX surfaces and helpers:
 - `ScreenBackgroundFit` names reusable background sizing modes: stretch or center-crop.
 - `ScreenLayoutType`, `ScreenLayoutModel`, and `ScreenLayoutSection` define reusable screen layout intent without JavaFX control state. Use them when a screen needs a stable general structure such as a titled panel, two-column layout, sidebar/content layout, HUD/status overlay, dialogue surface, menu/action list, form, or preview/card grid.
 - `ScreenDesignModel`, `ScreenDesignBlock`, and `ScreenDesignItem` define editable JSON-backed screen designs with stable screen, block, and item ids. Use `ScreenDesignService.addItemToBlock(...)` or `addTemporaryItemToBlock(...)` when code needs to target a block id directly; temporary items render in preview/test mode but `ScreenDesignJson.save(...)` excludes them from persisted JSON. `ScreenDesignJson` saves/loads documents with top-level `id`, `title`, `layoutType`, `metadata`, ordered `blocks`, and ordered saved `items`. Each block carries `id`, optional `title`, optional `styleClass`, and `metadata`; each item carries `id`, `blockId`, `type`, optional `label`, `text`, `value`, `defaultValue`, `styleClass`, and `metadata`.
+- `ConversationDefinition`, `ConversationDefinitionJson`, and `JsonConversationContentModule` define JSON-backed conversation documents for authored visual-novel content using the LR2Alt exported schema. A conversation file has top-level `schemaVersion`, `language`, and ordered `conversations`; each conversation carries `id`, `description`, `lines`, and text `variants`. `JsonConversationContentModule` projects that document into reusable content definitions and scene definitions when runtime registration is needed.
 - `ScreenLayoutContract` loads the machine-readable layout contract from `src/main/resources/com/eb/javafx/ui/layout-contract.json`, which lists engine-provided layout types, the default stylesheet, and stable CSS style hooks applications can target.
 - `ScreenInventory`, `ScreenInventoryItem`, `ScreenInventorySource`, `ScreenInventoryScanner`, and `ScreenInventoryAssignmentCategory` provide content-neutral inventory models for application-owned screen/style/control migration scanners. Use them to classify source artifacts as route-backed, reusable-control-backed, deferred, deprecated, excluded, or app-owned without hard-coding source-engine names in the engine.
 - `ViewModelScreen` renders a `ScreenViewModel` with generic labels and navigation buttons.
