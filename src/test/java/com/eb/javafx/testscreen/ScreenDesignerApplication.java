@@ -652,6 +652,9 @@ public final class ScreenDesignerApplication {
             if (event.getValueIsAdjusting()) {
                 return;
             }
+            if (attributesTable.isEditing()) {
+                attributesTable.getCellEditor().stopCellEditing();
+            }
             DefaultValueType selectedType = typeList.getSelectedValue();
             if (selectedType != null) {
                 tableModel.setAttributes(editedValues.get(selectedType));
@@ -673,6 +676,9 @@ public final class ScreenDesignerApplication {
         JButton save = new JButton("Save");
         JButton cancel = new JButton("Cancel");
         save.addActionListener(event -> {
+            if (attributesTable.isEditing()) {
+                attributesTable.getCellEditor().stopCellEditing();
+            }
             try {
                 displayDefaults = displayDefaultsFromEditedValues(editedValues);
                 displayDefaultsJson = displayDefaultsJson(displayDefaults);
