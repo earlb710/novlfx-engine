@@ -204,16 +204,20 @@ final class ScreenDesignerApplicationTest {
                         ScreenDesignerApplication.NavigationNode.screen("sample.screen")));
         assertEquals("Block Properties", ScreenDesignerApplication.propertiesTitleFor(
                 ScreenDesignerApplication.NavigationNode.block("main")));
-        assertEquals(List.of("Block id", "Title", "Layout type", "Parent block", "Font", "Font size", "Font style", "Color"),
+        assertEquals(List.of("Block id", "Title", "Layout type", "Parent block",
+                        "Font", "Font size", "Font style", "Color"),
                 ScreenDesignerApplication.propertyLabelsFor(
                         ScreenDesignerApplication.NavigationNode.block("main")));
         assertEquals("Item Properties", ScreenDesignerApplication.propertiesTitleFor(
                 ScreenDesignerApplication.NavigationNode.item("title.text", "main", false)));
-        assertEquals(List.of("Target block", "Item id", "Type", "Label", "Text/default value", "Current value", "Editable",
-                        "Font", "Font size", "Font style", "Color", "Label font", "Label font size", "Label font style", "Label color"),
+        assertEquals(List.of("Target block", "Item id", "Type", "Label",
+                        "Text/default value", "Current value", "Editable", "Font",
+                        "Font size", "Font style", "Color", "Label font",
+                        "Label font size", "Label font style", "Label color"),
                 ScreenDesignerApplication.propertyLabelsFor(
                         ScreenDesignerApplication.NavigationNode.item("title.text", "main", false)));
-        assertEquals(List.of("Target block", "Item id", "Type", "Text/default value", "Font", "Font size", "Font style", "Color"),
+        assertEquals(List.of("Target block", "Item id", "Type", "Text/default value",
+                        "Font", "Font size", "Font style", "Color"),
                 ScreenDesignerApplication.itemPropertyLabelsFor(ScreenDesignItemType.TEXT));
         assertEquals("Item Properties", ScreenDesignerApplication.propertiesTitleFor(
                 ScreenDesignerApplication.NavigationNode.item("temp.field", "main", true)));
