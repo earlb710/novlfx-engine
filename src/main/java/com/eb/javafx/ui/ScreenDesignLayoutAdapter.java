@@ -3,7 +3,9 @@ package com.eb.javafx.ui;
 import com.eb.javafx.util.Validation;
 import com.eb.javafx.util.HierarchyTraversal;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -27,7 +29,7 @@ public final class ScreenDesignLayoutAdapter {
                         ScreenDesignBlock::id,
                         ScreenDesignBlock::parentBlockId,
                         null).stream()
-                .map(block -> toSection(block, previewItems, temporaryItemIds))
+                .map(block -> toSection(block, previewItems, temporaryItemIds, design.metadata()))
                 .toList();
         return new ScreenLayoutModel(design.layoutType(), design.title(), null, sections, List.of(), List.of(), List.of(), null);
     }
@@ -35,10 +37,12 @@ public final class ScreenDesignLayoutAdapter {
     private static ScreenLayoutSection toSection(
             ScreenDesignBlock block,
             List<ScreenDesignItem> items,
-            Set<String> temporaryItemIds) {
+            Set<String> temporaryItemIds,
+            Map<String, String> screenMetadata) {
         List<ScreenDesignItem> blockItems = items.stream()
                 .filter(item -> block.id().equals(item.blockId()))
                 .toList();
+        Map<String, String> blockMetadata = mergedMetadata(screenMetadata, block.metadata());
         List<String> lines = blockItems.stream()
                 .map(item -> itemLine(item, temporaryItemIds.contains(item.id())))
                 .toList();
@@ -49,7 +53,13 @@ public final class ScreenDesignLayoutAdapter {
                 lines,
                 block.styleClass(),
                 lineIds,
-                blockItems.stream().map(ScreenDesignItem::metadata).toList());
+                blockItems.stream().map(item -> mergedMetadata(blockMetadata, item.metadata())).toList());
+    }
+
+    private static Map<String, String> mergedMetadata(Map<String, String> inherited, Map<String, String> overriding) {
+        Map<String, String> metadata = new LinkedHashMap<>(inherited);
+        metadata.putAll(overriding);
+        return Map.copyOf(metadata);
     }
 
     private static String itemLine(ScreenDesignItem item, boolean temporary) {

@@ -42,11 +42,13 @@ final class ScreenLayoutRendererTest {
     @Test
     void rendererConvertsSafeLineMetadataToInlineFontAndColorStyle() {
         String style = ScreenLayoutRenderer.lineStyle(Map.of(
+                "fontFamily", "Serif",
                 "fontSize", "22",
                 "fontStyle", "bold italic",
                 "color", "#66c1e0"));
 
-        assertEquals("-fx-font-size: 22px; -fx-font-weight: bold; -fx-font-style: italic; -fx-text-fill: #66c1e0; ", style);
+        assertEquals("-fx-font-family: \"Serif\"; -fx-font-size: 22px; -fx-font-weight: bold; -fx-font-style: italic; -fx-text-fill: #66c1e0; ", style);
         assertEquals("", ScreenLayoutRenderer.lineStyle(Map.of("color", "red; -fx-padding: 99")));
+        assertEquals("", ScreenLayoutRenderer.lineStyle(Map.of("fontFamily", "Serif\"; -fx-padding: 99")));
     }
 }

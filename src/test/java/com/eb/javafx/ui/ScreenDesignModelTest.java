@@ -137,6 +137,29 @@ final class ScreenDesignModelTest {
     }
 
     @Test
+    void layoutMetadataInheritsFromScreenAndBlockBeforeItemOverrides() {
+        ScreenDesignModel model = new ScreenDesignModel("x", "X", ScreenLayoutType.FORM, Map.of(
+                "fontSize", "18",
+                "fontStyle", "italic",
+                "color", "#ffffff"),
+                List.of(new ScreenDesignBlock("profile", "Profile", null, Map.of(
+                        "fontSize", "22",
+                        "fontFamily", "Alien.ttf"))),
+                List.of(new ScreenDesignItem("display", "profile", ScreenDesignItemType.TEXT,
+                        "Ignored", "Display text", null, null, null, Map.of("color", "#66c1e0"))),
+                List.of());
+
+        Map<String, String> metadata = ScreenDesignLayoutAdapter.toLayoutModel(model)
+                .contentSections().get(0)
+                .lineMetadata().get(0);
+
+        assertEquals("22", metadata.get("fontSize"));
+        assertEquals("italic", metadata.get("fontStyle"));
+        assertEquals("#66c1e0", metadata.get("color"));
+        assertEquals("Alien.ttf", metadata.get("fontFamily"));
+    }
+
+    @Test
     void renamesBlocksAndItemsWhileKeepingReferencesValid() {
         ScreenDesignModel renamed = ScreenDesignService.renameItem(
                 ScreenDesignService.renameBlock(design(), "profile", "identity"),

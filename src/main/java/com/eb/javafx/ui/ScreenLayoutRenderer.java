@@ -1,6 +1,7 @@
 package com.eb.javafx.ui;
 
 import com.eb.javafx.routing.RouteContext;
+import com.eb.javafx.util.FontResources;
 import com.eb.javafx.util.Validation;
 import javafx.geometry.Insets;
 import javafx.scene.Node;
@@ -14,6 +15,7 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 
 /**
@@ -23,7 +25,9 @@ public final class ScreenLayoutRenderer {
     private static final double SECTION_SPACING = 8;
     private static final double REGION_SPACING = 12;
     private static final Pattern FONT_SIZE_PATTERN = Pattern.compile("\\d+(\\.\\d+)?(px|pt|em)?");
+    private static final Pattern FONT_FAMILY_PATTERN = Pattern.compile("[\\p{Alnum} ._\\-]+");
     private static final Pattern COLOR_PATTERN = Pattern.compile("#[0-9a-fA-F]{3,8}|[a-zA-Z]+");
+    private static final Map<String, String> FONT_FAMILY_CACHE = new ConcurrentHashMap<>();
 
     private ScreenLayoutRenderer() {
     }
@@ -146,10 +150,18 @@ public final class ScreenLayoutRenderer {
 
     static String lineStyle(Map<String, String> metadata) {
         StringBuilder style = new StringBuilder();
+        appendFontFamily(style, metadata.get("fontFamily"));
         appendFontSize(style, metadata.get("fontSize"));
         appendFontStyle(style, metadata.get("fontStyle"));
         appendColor(style, metadata.get("color"));
         return style.toString();
+    }
+
+    private static void appendFontFamily(StringBuilder style, String value) {
+        String family = fontFamily(value);
+        if (family != null) {
+            style.append("-fx-font-family: \"").append(cssQuoted(family)).append("\"; ");
+        }
     }
 
     private static void appendFontSize(StringBuilder style, String value) {
@@ -176,6 +188,28 @@ public final class ScreenLayoutRenderer {
         if (value != null && COLOR_PATTERN.matcher(value).matches()) {
             style.append("-fx-text-fill: ").append(value).append("; ");
         }
+    }
+
+    private static String fontFamily(String value) {
+        if (value == null || !FONT_FAMILY_PATTERN.matcher(value).matches()) {
+            return null;
+        }
+        if (!FontResources.isPackagedFont(value)) {
+            return value;
+        }
+        return FONT_FAMILY_CACHE.computeIfAbsent(value, ScreenLayoutRenderer::loadedFontFamily);
+    }
+
+    private static String loadedFontFamily(String fileName) {
+        try {
+            return FontResources.load(fileName, 12).getFamily();
+        } catch (RuntimeException exception) {
+            return fileName;
+        }
+    }
+
+    private static String cssQuoted(String value) {
+        return value.replace("\\", "\\\\").replace("\"", "\\\"");
     }
 
     private static void addActions(VBox parent, RouteContext context, Iterable<ScreenActionViewModel> actions, String actionStyleClass) {
