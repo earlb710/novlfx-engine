@@ -217,6 +217,21 @@ final class ScreenDesignerApplicationTest {
     }
 
     @Test
+    void itemContentEditorIsSingleLineExceptForTextAreaItems() {
+        assertFalse(ScreenDesignerApplication.usesMultiLineContentEditor(ScreenDesignItemType.TEXT));
+        assertFalse(ScreenDesignerApplication.usesMultiLineContentEditor(ScreenDesignItemType.FIELD));
+        assertTrue(ScreenDesignerApplication.usesMultiLineContentEditor(ScreenDesignItemType.TEXT_AREA));
+    }
+
+    @Test
+    void emptyLayoutSelectionDefaultsToForm() {
+        assertEquals(com.eb.javafx.ui.ScreenLayoutType.FORM, ScreenDesignerApplication.defaultLayoutType());
+        assertEquals(com.eb.javafx.ui.ScreenLayoutType.FORM, ScreenDesignerApplication.layoutTypeOrDefault(null));
+        assertEquals(com.eb.javafx.ui.ScreenLayoutType.DIALOGUE,
+                ScreenDesignerApplication.layoutTypeOrDefault(com.eb.javafx.ui.ScreenLayoutType.DIALOGUE));
+    }
+
+    @Test
     void fileMenuLabelsContainFileActionsMovedFromToolbar() {
         assertEquals(List.of("New", "Load", "Save", "Save As"),
                 ScreenDesignerApplication.fileMenuActionLabels());

@@ -37,7 +37,11 @@ import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 import java.awt.BorderLayout;
+import java.awt.Component;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
 import java.awt.GridLayout;
+import java.awt.Insets;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.nio.file.Files;
@@ -78,6 +82,7 @@ public final class ScreenDesignerApplication {
     private final JTextField itemIdField = new JTextField();
     private final JTextField itemLabelField = new JTextField();
     private final JTextField itemContentField = new JTextField();
+    private final JTextArea itemContentArea = new JTextArea(3, 20);
     private final JTextField itemValueField = new JTextField();
     private final JTextArea previewArea = new JTextArea();
     private final JTextArea jsonArea = new JTextArea();
@@ -201,7 +206,8 @@ public final class ScreenDesignerApplication {
 
     private void applyScreenProperties() {
         design = new ScreenDesignModel(screenIdField.getText(), titleField.getText(),
-                (ScreenLayoutType) layoutTypeBox.getSelectedItem(), design.metadata(), design.blocks(), design.items(), design.temporaryItems());
+                layoutTypeOrDefault((ScreenLayoutType) layoutTypeBox.getSelectedItem()),
+                design.metadata(), design.blocks(), design.items(), design.temporaryItems());
     }
 
     private void applyBlockProperties(String oldBlockId) {
@@ -211,7 +217,7 @@ public final class ScreenDesignerApplication {
         design = replaceBlock(design, oldBlockId, new ScreenDesignBlock(
                 newBlockId,
                 title == null ? newBlockId : title,
-                (ScreenLayoutType) blockLayoutTypeBox.getSelectedItem(),
+                layoutTypeOrDefault((ScreenLayoutType) blockLayoutTypeBox.getSelectedItem()),
                 parentBlockSelection((String) parentBlockBox.getSelectedItem()),
                 existing.styleClass(),
                 existing.metadata()));
@@ -223,7 +229,7 @@ public final class ScreenDesignerApplication {
         ScreenDesignItemType effectiveType = type == null ? ScreenDesignItemType.TEXT : type;
         String itemId = itemIdField.getText();
         String label = blankToNull(itemLabelField.getText());
-        String content = blankToNull(itemContentField.getText());
+        String content = blankToNull(itemContentText(effectiveType));
         design = replaceItem(design, oldItemId, new ScreenDesignItem(
                 temporary && !itemId.startsWith("temp.") ? "temp." + itemId : itemId,
                 (String) itemBlockBox.getSelectedItem(),
@@ -334,7 +340,7 @@ public final class ScreenDesignerApplication {
         JTextField blockIdField = new JTextField(existing == null ? "" : existing.id());
         JTextField titleField = new JTextField(existing == null ? "" : nullToBlank(existing.title()));
         JComboBox<ScreenLayoutType> layoutBox = new JComboBox<>(blockLayoutOptions());
-        layoutBox.setSelectedItem(existing == null ? null : existing.layoutType());
+        layoutBox.setSelectedItem(existing == null ? defaultLayoutType() : layoutTypeOrDefault(existing.layoutType()));
         JComboBox<String> parentBlockBox = new JComboBox<>(parentBlockOptions(existing == null ? null : existing.id()));
         if (existing != null && existing.parentBlockId() != null) {
             parentBlockBox.setSelectedItem(existing.parentBlockId());
@@ -362,7 +368,7 @@ public final class ScreenDesignerApplication {
         return Optional.of(new ScreenDesignBlock(
                 blockId,
                 blockTitle == null ? blockId : blockTitle,
-                (ScreenLayoutType) layoutBox.getSelectedItem(),
+                layoutTypeOrDefault((ScreenLayoutType) layoutBox.getSelectedItem()),
                 parentBlockId,
                 existing == null ? null : existing.styleClass(),
                 existing == null ? Map.of() : existing.metadata()));
@@ -878,14 +884,11 @@ public final class ScreenDesignerApplication {
     private JPanel screenPropertiesPanel() {
         screenIdField.setText(design.id());
         titleField.setText(design.title());
-        layoutTypeBox.setSelectedItem(design.layoutType());
+        layoutTypeBox.setSelectedItem(layoutTypeOrDefault(design.layoutType()));
         JPanel fields = propertyGrid(propertyLabelsFor(NavigationNode.screen(design.id())).size());
-        fields.add(new JLabel("Screen id"));
-        fields.add(screenIdField);
-        fields.add(new JLabel("Title"));
-        fields.add(titleField);
-        fields.add(new JLabel("Layout type"));
-        fields.add(layoutTypeBox);
+        addPropertyRow(fields, 0, "Screen id", screenIdField);
+        addPropertyRow(fields, 1, "Title", titleField);
+        addPropertyRow(fields, 2, "Layout type", layoutTypeBox);
         return fields;
     }
 
@@ -893,18 +896,14 @@ public final class ScreenDesignerApplication {
         ScreenDesignBlock block = findBlock(blockId);
         blockIdField.setText(block.id());
         blockTitleField.setText(nullToBlank(block.title()));
-        blockLayoutTypeBox.setSelectedItem(block.layoutType());
+        blockLayoutTypeBox.setSelectedItem(layoutTypeOrDefault(block.layoutType()));
         replaceComboItems(parentBlockBox, parentBlockOptions(block.id()));
         parentBlockBox.setSelectedItem(block.parentBlockId() == null ? SCREEN_PARENT_OPTION : block.parentBlockId());
         JPanel fields = propertyGrid(propertyLabelsFor(NavigationNode.block(blockId)).size());
-        fields.add(new JLabel("Block id"));
-        fields.add(blockIdField);
-        fields.add(new JLabel("Title"));
-        fields.add(blockTitleField);
-        fields.add(new JLabel("Layout type"));
-        fields.add(blockLayoutTypeBox);
-        fields.add(new JLabel("Parent block"));
-        fields.add(parentBlockBox);
+        addPropertyRow(fields, 0, "Block id", blockIdField);
+        addPropertyRow(fields, 1, "Title", blockTitleField);
+        addPropertyRow(fields, 2, "Layout type", blockLayoutTypeBox);
+        addPropertyRow(fields, 3, "Parent block", parentBlockBox);
         return fields;
     }
 
@@ -916,25 +915,66 @@ public final class ScreenDesignerApplication {
         itemIdField.setText(item.id());
         itemLabelField.setText(nullToBlank(item.label()));
         itemContentField.setText(itemContent(item));
+        itemContentArea.setText(itemContent(item));
+        itemContentArea.setLineWrap(true);
+        itemContentArea.setWrapStyleWord(true);
         itemValueField.setText(nullToBlank(item.value()));
         JPanel fields = propertyGrid(propertyLabelsFor(NavigationNode.item(item.id(), item.blockId(), temporary)).size());
-        fields.add(new JLabel("Target block"));
-        fields.add(itemBlockBox);
-        fields.add(new JLabel("Item id"));
-        fields.add(itemIdField);
-        fields.add(new JLabel("Type"));
-        fields.add(itemTypeBox);
-        fields.add(new JLabel("Label"));
-        fields.add(itemLabelField);
-        fields.add(new JLabel("Text/default value"));
-        fields.add(itemContentField);
-        fields.add(new JLabel("Current value"));
-        fields.add(itemValueField);
+        addPropertyRow(fields, 0, "Target block", itemBlockBox);
+        addPropertyRow(fields, 1, "Item id", itemIdField);
+        addPropertyRow(fields, 2, "Type", itemTypeBox);
+        addPropertyRow(fields, 3, "Label", itemLabelField);
+        addPropertyRow(fields, 4, "Text/default value", itemContentComponent(item.type()));
+        addPropertyRow(fields, 5, "Current value", itemValueField);
         return fields;
     }
 
     private static JPanel propertyGrid(int rows) {
-        return new JPanel(new GridLayout(rows, 2, 6, 6));
+        JPanel panel = new JPanel(new GridBagLayout());
+        GridBagConstraints filler = new GridBagConstraints();
+        filler.gridx = 0;
+        filler.gridy = rows;
+        filler.gridwidth = 2;
+        filler.weighty = 1.0;
+        filler.fill = GridBagConstraints.VERTICAL;
+        panel.add(new JPanel(), filler);
+        return panel;
+    }
+
+    private static void addPropertyRow(JPanel panel, int row, String label, Component component) {
+        panel.add(new JLabel(label), propertyConstraints(row, 0, 0.0));
+        panel.add(component, propertyConstraints(row, 1, 1.0));
+    }
+
+    private static GridBagConstraints propertyConstraints(int row, int column, double weightx) {
+        GridBagConstraints constraints = new GridBagConstraints();
+        constraints.gridx = column;
+        constraints.gridy = row;
+        constraints.weightx = weightx;
+        constraints.anchor = GridBagConstraints.NORTHWEST;
+        constraints.fill = column == 0 ? GridBagConstraints.NONE : GridBagConstraints.HORIZONTAL;
+        constraints.insets = new Insets(3, 3, 3, 3);
+        return constraints;
+    }
+
+    private Component itemContentComponent(ScreenDesignItemType type) {
+        return usesMultiLineContentEditor(type) ? new JScrollPane(itemContentArea) : itemContentField;
+    }
+
+    private String itemContentText(ScreenDesignItemType type) {
+        return usesMultiLineContentEditor(type) ? itemContentArea.getText() : itemContentField.getText();
+    }
+
+    static boolean usesMultiLineContentEditor(ScreenDesignItemType type) {
+        return type == ScreenDesignItemType.TEXT_AREA;
+    }
+
+    static ScreenLayoutType defaultLayoutType() {
+        return ScreenLayoutType.FORM;
+    }
+
+    static ScreenLayoutType layoutTypeOrDefault(ScreenLayoutType layoutType) {
+        return layoutType == null ? defaultLayoutType() : layoutType;
     }
 
     private static void replaceComboItems(JComboBox<String> comboBox, String[] items) {
