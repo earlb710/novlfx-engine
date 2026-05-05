@@ -948,8 +948,7 @@ public final class ScreenDesignerApplication {
         return switch (navigationNode.type()) {
             case SCREEN -> "Screen Properties";
             case BLOCK -> "Block Properties";
-            case ITEM -> "Item Properties";
-            case TEMPORARY_ITEM -> "Temporary Item Properties";
+            case ITEM, TEMPORARY_ITEM -> "Item Properties";
         };
     }
 

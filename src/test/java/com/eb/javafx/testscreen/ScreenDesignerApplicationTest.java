@@ -212,6 +212,8 @@ final class ScreenDesignerApplicationTest {
         assertEquals(List.of("Target block", "Item id", "Type", "Label", "Text/default value", "Current value"),
                 ScreenDesignerApplication.propertyLabelsFor(
                         ScreenDesignerApplication.NavigationNode.item("title.text", "main", false)));
+        assertEquals("Item Properties", ScreenDesignerApplication.propertiesTitleFor(
+                ScreenDesignerApplication.NavigationNode.item("temp.field", "main", true)));
     }
 
     @Test
