@@ -1,6 +1,7 @@
 package com.eb.javafx.testscreen;
 
 import com.eb.javafx.util.Validation;
+import com.eb.javafx.ui.DisplayDefaults;
 
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -15,11 +16,13 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
-/** Manual viewer for engine default display resources. */
+/** Manual editor for engine default display values and viewer for related resources. */
 public final class DefaultDisplayValuesApplication {
     private static final List<DisplayResource> DISPLAY_RESOURCES = List.of(
             new DisplayResource("Default CSS", "/com/eb/javafx/ui/default.css"),
             new DisplayResource("Layout Contract", "/com/eb/javafx/ui/layout-contract.json"));
+    private DisplayDefaults displayDefaults = DisplayDefaults.defaults();
+    private final JLabel statusLabel = new JLabel("Editing default display values from " + DisplayDefaults.DEFAULT_RESOURCE);
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> new DefaultDisplayValuesApplication().show());
@@ -28,18 +31,29 @@ public final class DefaultDisplayValuesApplication {
     private void show() {
         JFrame frame = new JFrame("NovlFX Default Display Values");
         frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        frame.setContentPane(content());
+        frame.setContentPane(content(frame));
         frame.setSize(900, 650);
         frame.setLocationByPlatform(true);
         frame.setVisible(true);
     }
 
-    private JPanel content() {
+    private JPanel content(JFrame frame) {
         JPanel root = new JPanel(new BorderLayout(8, 8));
-        root.add(new JLabel("Engine-owned default display resources"), BorderLayout.NORTH);
         JTabbedPane tabs = new JTabbedPane();
+        tabs.addTab("Edit Values", ScreenDesignerApplication.defaultValuesEditorPanel(
+                displayDefaults,
+                updatedDefaults -> {
+                    displayDefaults = updatedDefaults;
+                    statusLabel.setText("Updated default display values for this management screen.");
+                },
+                frame::dispose,
+                frame,
+                "<html>Edit default display values from <code>"
+                        + DisplayDefaults.DEFAULT_RESOURCE
+                        + "</code>. Changes apply only to this management screen.</html>"));
         displayResources().forEach(resource -> tabs.addTab(resource.label(), new JScrollPane(textArea(resourceContents(resource.path())))));
         root.add(tabs, BorderLayout.CENTER);
+        root.add(statusLabel, BorderLayout.SOUTH);
         return root;
     }
 

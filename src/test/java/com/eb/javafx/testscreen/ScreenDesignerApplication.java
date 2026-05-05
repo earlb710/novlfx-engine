@@ -75,6 +75,7 @@ import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 import javax.swing.JTree;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
@@ -177,9 +178,26 @@ public final class ScreenDesignerApplication {
     private DisplayDefaults displayDefaults = DisplayDefaults.defaults();
     private String displayDefaultsJson = DisplayDefaults.defaultJson();
     private volatile Stage previewStage;
+    private final boolean exitOnClose;
+
+    public ScreenDesignerApplication() {
+        this(true);
+    }
+
+    ScreenDesignerApplication(boolean exitOnClose) {
+        this.exitOnClose = exitOnClose;
+    }
 
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> new ScreenDesignerApplication().show());
+        SwingUtilities.invokeLater(() -> new ScreenDesignerApplication(true).show());
+    }
+
+    static void showFromManagement() {
+        new ScreenDesignerApplication(false).show();
+    }
+
+    boolean exitsOnClose() {
+        return exitOnClose;
     }
 
     private void show() {
@@ -648,8 +666,35 @@ public final class ScreenDesignerApplication {
     }
 
     private void editDefaultValues() {
+        JDialog dialog = new JDialog((Frame) null, "Edit Default Values", true);
+        dialog.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+        dialog.setContentPane(defaultValuesEditorPanel(
+                displayDefaults,
+                updatedDefaults -> {
+                    displayDefaults = updatedDefaults;
+                    displayDefaultsJson = displayDefaultsJson(displayDefaults);
+                    statusLabel.setText("Updated default display values for preview.");
+                    refreshPreview();
+                    dialog.dispose();
+                },
+                dialog::dispose,
+                dialog,
+                "<html>Edit preview defaults from <code>"
+                        + DisplayDefaults.DEFAULT_RESOURCE
+                        + "</code>. Changes apply only in the designer preview.</html>"));
+        dialog.setSize(760, 520);
+        dialog.setLocationRelativeTo(null);
+        dialog.setVisible(true);
+    }
+
+    static JPanel defaultValuesEditorPanel(
+            DisplayDefaults initialDefaults,
+            Consumer<DisplayDefaults> saveAction,
+            Runnable cancelAction,
+            Component messageParent,
+            String introText) {
         List<DefaultValueType> types = defaultValueTypes();
-        Map<DefaultValueType, Map<String, String>> editedValues = editableDefaultValueMaps(displayDefaults, types);
+        Map<DefaultValueType, Map<String, String>> editedValues = editableDefaultValueMaps(initialDefaults, types);
         JList<DefaultValueType> typeList = new JList<>(types.toArray(DefaultValueType[]::new));
         typeList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         DefaultAttributesTableModel tableModel = new DefaultAttributesTableModel(editedValues.get(types.get(0)));
@@ -670,15 +715,11 @@ public final class ScreenDesignerApplication {
         typeList.setSelectedIndex(0);
 
         JPanel content = new JPanel(new BorderLayout(8, 8));
-        content.add(new JLabel("<html>Edit preview defaults from <code>"
-                + DisplayDefaults.DEFAULT_RESOURCE
-                + "</code>. Changes apply only in the designer preview.</html>"), BorderLayout.NORTH);
+        content.add(new JLabel(introText), BorderLayout.NORTH);
         JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, new JScrollPane(typeList), new JScrollPane(attributesTable));
         splitPane.setDividerLocation(180);
         content.add(splitPane, BorderLayout.CENTER);
 
-        JDialog dialog = new JDialog((Frame) null, "Edit Default Values", true);
-        dialog.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
         JPanel actions = new JPanel(new GridLayout(1, 2, 6, 0));
         JButton save = new JButton("Save");
         JButton cancel = new JButton("Cancel");
@@ -687,27 +728,20 @@ public final class ScreenDesignerApplication {
                 attributesTable.getCellEditor().stopCellEditing();
             }
             try {
-                displayDefaults = displayDefaultsFromEditedValues(editedValues);
-                displayDefaultsJson = displayDefaultsJson(displayDefaults);
-                statusLabel.setText("Updated default display values for preview.");
-                refreshPreview();
-                dialog.dispose();
+                saveAction.accept(displayDefaultsFromEditedValues(editedValues));
             } catch (RuntimeException exception) {
                 JOptionPane.showMessageDialog(
-                        dialog,
+                        messageParent,
                         exception.getMessage(),
                         "Default Values Error",
                         JOptionPane.ERROR_MESSAGE);
             }
         });
-        cancel.addActionListener(event -> dialog.dispose());
+        cancel.addActionListener(event -> cancelAction.run());
         actions.add(save);
         actions.add(cancel);
         content.add(actions, BorderLayout.SOUTH);
-        dialog.setContentPane(content);
-        dialog.setSize(760, 520);
-        dialog.setLocationRelativeTo(null);
-        dialog.setVisible(true);
+        return content;
     }
 
     private void openPreview() {
@@ -868,7 +902,9 @@ public final class ScreenDesignerApplication {
                 }
             });
         }
-        System.exit(0);
+        if (exitOnClose) {
+            System.exit(0);
+        }
     }
 
     static boolean hasUnsavedChanges(String savedJson, String currentJson) {
@@ -1524,12 +1560,44 @@ public final class ScreenDesignerApplication {
         return Arrays.copyOfRange(FONT_STYLE_OPTIONS, 1, FONT_STYLE_OPTIONS.length);
     }
 
+    static List<String> orderedDefaultAttributeKeys(Map<String, String> attributes) {
+        List<String> preferredOrder = List.of(
+                FONT_FAMILY_KEY,
+                ITEM_FONT_SIZE_KEY,
+                ITEM_FONT_STYLE_KEY,
+                ITEM_COLOR_KEY,
+                BACKGROUND_COLOR_KEY,
+                HOVER_BACKGROUND_COLOR_KEY,
+                PRESSED_BACKGROUND_COLOR_KEY,
+                TRANSPARENCY_KEY,
+                BORDER_STYLE_KEY,
+                BORDER_CORNER_KEY,
+                BORDER_THICKNESS_KEY,
+                BORDER_COLOR_KEY,
+                LABEL_FONT_FAMILY_KEY,
+                LABEL_FONT_SIZE_KEY,
+                LABEL_FONT_STYLE_KEY,
+                LABEL_COLOR_KEY);
+        ArrayList<String> keys = new ArrayList<>(attributes.keySet());
+        keys.sort(Comparator.comparingInt(key -> {
+            int index = preferredOrder.indexOf(key);
+            return index < 0 ? preferredOrder.size() : index;
+        }).thenComparing(Comparator.naturalOrder()));
+        return keys;
+    }
+
     static DefaultValueAttributeEditor defaultValueAttributeEditor(String attributeName) {
         if (isDefaultValueFontAttribute(attributeName)) {
             return DefaultValueAttributeEditor.FONT;
         }
         if (isDefaultValueFontStyleAttribute(attributeName)) {
             return DefaultValueAttributeEditor.FONT_STYLE;
+        }
+        if (BORDER_STYLE_KEY.equals(attributeName)) {
+            return DefaultValueAttributeEditor.BORDER_STYLE;
+        }
+        if (BORDER_CORNER_KEY.equals(attributeName)) {
+            return DefaultValueAttributeEditor.BORDER_CORNER;
         }
         if (isDefaultValueColorAttribute(attributeName)) {
             return DefaultValueAttributeEditor.COLOR;
@@ -1559,10 +1627,28 @@ public final class ScreenDesignerApplication {
         return new JComboBox<>(defaultValueFontStyleOptions());
     }
 
+    static String[] defaultValueBorderStyleOptions() {
+        return Arrays.copyOfRange(BORDER_STYLE_OPTIONS, 1, BORDER_STYLE_OPTIONS.length);
+    }
+
+    static String[] defaultValueBorderCornerOptions() {
+        return Arrays.copyOfRange(BORDER_CORNER_OPTIONS, 1, BORDER_CORNER_OPTIONS.length);
+    }
+
+    private static JComboBox<String> defaultValueBorderStyleBox() {
+        return new JComboBox<>(defaultValueBorderStyleOptions());
+    }
+
+    private static JComboBox<String> defaultValueBorderCornerBox() {
+        return new JComboBox<>(defaultValueBorderCornerOptions());
+    }
+
     private static TableCellEditor defaultValueCellEditor(String attributeName) {
         return switch (defaultValueAttributeEditor(attributeName)) {
             case FONT -> new DefaultCellEditor(defaultValueFontFamilyBox());
             case FONT_STYLE -> new DefaultCellEditor(defaultValueFontStyleBox());
+            case BORDER_STYLE -> new DefaultCellEditor(defaultValueBorderStyleBox());
+            case BORDER_CORNER -> new DefaultCellEditor(defaultValueBorderCornerBox());
             case COLOR -> new ColorValueCellEditor();
             case TEXT -> new DefaultCellEditor(new JTextField());
         };
@@ -1792,6 +1878,8 @@ public final class ScreenDesignerApplication {
         TEXT,
         FONT,
         FONT_STYLE,
+        BORDER_STYLE,
+        BORDER_CORNER,
         COLOR
     }
 
@@ -1833,7 +1921,7 @@ public final class ScreenDesignerApplication {
 
         private void setAttributes(Map<String, String> attributes) {
             this.attributes = attributes;
-            this.keys = new ArrayList<>(attributes.keySet());
+            this.keys = orderedDefaultAttributeKeys(attributes);
             fireTableDataChanged();
         }
 

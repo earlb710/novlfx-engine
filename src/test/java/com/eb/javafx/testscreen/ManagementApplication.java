@@ -16,12 +16,12 @@ public final class ManagementApplication {
     private static final List<ManagementAction> ACTIONS = List.of(
             new ManagementAction(
                     "Default Display Values",
-                    "View engine default display resources.",
+                    "Edit engine default display values.",
                     () -> DefaultDisplayValuesApplication.main(new String[0])),
             new ManagementAction(
                     "Screen Designer",
                     "Open the JSON-backed screen designer.",
-                    () -> ScreenDesignerApplication.main(new String[0])),
+                    ScreenDesignerApplication::showFromManagement),
             new ManagementAction(
                     "Conversation Editor",
                     "Open the LR2Alt-compatible conversation JSON editor.",
