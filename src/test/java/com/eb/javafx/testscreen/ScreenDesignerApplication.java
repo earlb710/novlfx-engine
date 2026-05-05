@@ -267,6 +267,7 @@ public final class ScreenDesignerApplication {
         JSplitPane split = new JSplitPane(JSplitPane.VERTICAL_SPLIT, propertiesScrollPane, new JScrollPane(jsonArea));
         split.setDividerLocation(340);
         panel.add(split, BorderLayout.CENTER);
+        panel.add(propertyActionPanel(), BorderLayout.SOUTH);
         return panel;
     }
 
@@ -1059,7 +1060,6 @@ public final class ScreenDesignerApplication {
         propertiesPanel.removeAll();
         propertiesPanel.add(new JLabel(propertiesTitleFor(navigationNode)), BorderLayout.NORTH);
         propertiesPanel.add(propertiesFieldsFor(navigationNode), BorderLayout.CENTER);
-        propertiesPanel.add(propertyActionPanel(), BorderLayout.SOUTH);
         propertiesPanel.revalidate();
         propertiesPanel.repaint();
     }

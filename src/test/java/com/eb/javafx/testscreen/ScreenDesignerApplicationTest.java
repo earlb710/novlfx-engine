@@ -8,6 +8,10 @@ import com.eb.javafx.ui.ScreenDesignModel;
 import com.eb.javafx.ui.ScreenDesignValidator;
 import org.junit.jupiter.api.Test;
 
+import java.awt.BorderLayout;
+import java.awt.Component;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -15,6 +19,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.swing.JButton;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JSplitPane;
 import javax.swing.tree.DefaultMutableTreeNode;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -44,6 +52,31 @@ final class ScreenDesignerApplicationTest {
             for (Path jsonFile : jsonFiles) {
                 ScreenDesignModel design = ScreenDesignJson.load(jsonFile);
                 assertFalse(ScreenDesignValidator.validate(design).size() > 0, () -> "Invalid example: " + jsonFile);
+            }
+        }
+    }
+
+    @Test
+    void bundledScreenDesignExamplesDemonstrateNewStylingMetadata() throws IOException {
+        try (var paths = Files.list(ScreenDesignerApplication.screenDesignExamplesDirectory())) {
+            List<ScreenDesignModel> designs = paths
+                    .filter(path -> path.getFileName().toString().endsWith(".json"))
+                    .sorted()
+                    .map(ScreenDesignJson::load)
+                    .toList();
+
+            assertFalse(designs.isEmpty());
+            for (ScreenDesignModel design : designs) {
+                assertTrue(design.metadata().containsKey("backgroundColor"));
+                assertTrue(design.metadata().containsKey("borderStyle"));
+                assertTrue(design.blocks().stream().allMatch(block ->
+                        block.metadata().containsKey("backgroundColor")
+                                && block.metadata().containsKey("transparency")
+                                && block.metadata().containsKey("borderStyle")
+                                && block.metadata().containsKey("borderColor")));
+                assertTrue(design.items().stream().allMatch(item ->
+                        item.metadata().containsKey("backgroundColor")
+                                && item.metadata().containsKey("transparency")));
             }
         }
     }
@@ -273,6 +306,32 @@ final class ScreenDesignerApplicationTest {
     }
 
     @Test
+    void editorPinsPropertyButtonsBelowScrollablePropertiesPanel() throws Exception {
+        ScreenDesignerApplication application = new ScreenDesignerApplication();
+        invokeNoArgs(application, "refreshAll");
+        JPanel editor = (JPanel) invokeNoArgs(application, "editor");
+        JPanel propertiesPanel = (JPanel) fieldValue(application, "propertiesPanel");
+
+        BorderLayout editorLayout = (BorderLayout) editor.getLayout();
+        Component center = editorLayout.getLayoutComponent(BorderLayout.CENTER);
+        Component south = editorLayout.getLayoutComponent(BorderLayout.SOUTH);
+        BorderLayout propertiesLayout = (BorderLayout) propertiesPanel.getLayout();
+
+        assertInstanceOf(JSplitPane.class, center);
+        assertInstanceOf(JPanel.class, south);
+        assertEquals(null, propertiesLayout.getLayoutComponent(BorderLayout.SOUTH));
+
+        JSplitPane splitPane = (JSplitPane) center;
+        assertInstanceOf(JScrollPane.class, splitPane.getTopComponent());
+
+        JPanel actionPanel = (JPanel) south;
+        assertEquals(List.of("Apply Properties", "Reset Properties"),
+                java.util.Arrays.stream(actionPanel.getComponents())
+                        .map(component -> ((JButton) component).getText())
+                        .toList());
+    }
+
+    @Test
     void replaceBlockRenamesBlockAndMovesItsItems() {
         ScreenDesignModel design = new ScreenDesignModel(
                 "sample.screen",
@@ -355,5 +414,17 @@ final class ScreenDesignerApplicationTest {
                         List.of()));
 
         assertEquals("Screen design block references unknown parent block id: missing", exception.getMessage());
+    }
+
+    private static Object invokeNoArgs(Object target, String methodName) throws Exception {
+        Method method = target.getClass().getDeclaredMethod(methodName);
+        method.setAccessible(true);
+        return method.invoke(target);
+    }
+
+    private static Object fieldValue(Object target, String fieldName) throws Exception {
+        Field field = target.getClass().getDeclaredField(fieldName);
+        field.setAccessible(true);
+        return field.get(target);
     }
 }

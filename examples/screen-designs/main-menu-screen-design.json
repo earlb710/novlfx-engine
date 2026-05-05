@@ -2,19 +2,40 @@
   "id": "main.menu",
   "title": "Main Menu",
   "layoutType": "MENU_ACTION_LIST",
-  "metadata": {"description": "Menu-focused sample screen design"},
+  "metadata": {
+    "description": "Menu-focused sample screen design",
+    "backgroundColor": "#0d1b2d",
+    "borderStyle": "solid",
+    "borderCorner": "rounded",
+    "borderThickness": "2",
+    "borderColor": "#4f86c6"
+  },
   "blocks": [
     {
       "id": "status",
       "title": "Session",
       "styleClass": null,
-      "metadata": {}
+      "metadata": {
+        "backgroundColor": "#1b2b42",
+        "transparency": "0.1",
+        "borderStyle": "solid",
+        "borderCorner": "rounded",
+        "borderThickness": "1",
+        "borderColor": "#82addd"
+      }
     },
     {
       "id": "actions",
       "title": "Actions",
       "styleClass": null,
-      "metadata": {}
+      "metadata": {
+        "backgroundColor": "#16263b",
+        "transparency": "0.05",
+        "borderStyle": "dashed",
+        "borderCorner": "rounded",
+        "borderThickness": "1",
+        "borderColor": "#6d9dd4"
+      }
     }
   ],
   "items": [
@@ -27,7 +48,10 @@
       "value": null,
       "defaultValue": null,
       "styleClass": null,
-      "metadata": {}
+      "metadata": {
+        "backgroundColor": "#23354d",
+        "transparency": "0.05"
+      }
     },
     {
       "id": "actions.new-game",
@@ -38,7 +62,10 @@
       "value": null,
       "defaultValue": null,
       "styleClass": null,
-      "metadata": {}
+      "metadata": {
+        "backgroundColor": "#23354d",
+        "transparency": "0.05"
+      }
     },
     {
       "id": "actions.load-save",
@@ -49,7 +76,10 @@
       "value": null,
       "defaultValue": null,
       "styleClass": null,
-      "metadata": {}
+      "metadata": {
+        "backgroundColor": "#23354d",
+        "transparency": "0.05"
+      }
     },
     {
       "id": "actions.settings",
@@ -60,7 +90,10 @@
       "value": null,
       "defaultValue": null,
       "styleClass": null,
-      "metadata": {}
+      "metadata": {
+        "backgroundColor": "#23354d",
+        "transparency": "0.05"
+      }
     }
   ]
 }

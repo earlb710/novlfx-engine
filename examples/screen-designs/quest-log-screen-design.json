@@ -2,19 +2,40 @@
   "id": "journal.quests",
   "title": "Quest Log",
   "layoutType": "TWO_COLUMN",
-  "metadata": {"description": "Two-column quest tracker sample"},
+  "metadata": {
+    "description": "Two-column quest tracker sample",
+    "backgroundColor": "#101d33",
+    "borderStyle": "solid",
+    "borderCorner": "rounded",
+    "borderThickness": "2",
+    "borderColor": "#5b8bd9"
+  },
   "blocks": [
     {
       "id": "active-quests",
       "title": "Active Quests",
       "styleClass": null,
-      "metadata": {}
+      "metadata": {
+        "backgroundColor": "#173255",
+        "transparency": "0.05",
+        "borderStyle": "solid",
+        "borderCorner": "rounded",
+        "borderThickness": "1",
+        "borderColor": "#5b8bd9"
+      }
     },
     {
       "id": "details",
       "title": "Selected Quest",
       "styleClass": null,
-      "metadata": {}
+      "metadata": {
+        "backgroundColor": "#1b2740",
+        "transparency": "0.15",
+        "borderStyle": "dashed",
+        "borderCorner": "rounded",
+        "borderThickness": "1",
+        "borderColor": "#9db8e8"
+      }
     }
   ],
   "items": [
@@ -27,7 +48,10 @@
       "value": null,
       "defaultValue": null,
       "styleClass": null,
-      "metadata": {}
+      "metadata": {
+        "backgroundColor": "#21344f",
+        "transparency": "0.1"
+      }
     },
     {
       "id": "active-quests.repair-radio",
@@ -38,7 +62,10 @@
       "value": null,
       "defaultValue": null,
       "styleClass": null,
-      "metadata": {}
+      "metadata": {
+        "backgroundColor": "#20324a",
+        "transparency": "0.2"
+      }
     },
     {
       "id": "details.priority",
@@ -49,7 +76,10 @@
       "value": null,
       "defaultValue": "High",
       "styleClass": null,
-      "metadata": {}
+      "metadata": {
+        "backgroundColor": "#1a2438",
+        "transparency": "0.05"
+      }
     },
     {
       "id": "details.notes",
@@ -60,7 +90,10 @@
       "value": null,
       "defaultValue": "Ava was last seen near the east platform after curfew.",
       "styleClass": null,
-      "metadata": {}
+      "metadata": {
+        "backgroundColor": "#1d2b43",
+        "transparency": "0.1"
+      }
     }
   ]
 }
