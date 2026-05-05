@@ -185,6 +185,23 @@ final class ConversationEditorApplicationTest {
     }
 
     @Test
+    void conditionValueChoicesIncludeContextAndTimeOfDayValues() {
+        ConversationDefinition conversation = ConversationEditorApplication.updateVariant(
+                ConversationEditorApplication.sampleConversation(),
+                0,
+                0,
+                0,
+                "Updated variant",
+                1.0,
+                List.of("context=has_key", "time of day=evening"));
+
+        assertEquals(List.of("has_key"),
+                ConversationEditorApplication.conditionValueChoices(conversation, "context"));
+        assertEquals(List.of("morning", "afternoon", "evening", "night"),
+                ConversationEditorApplication.conditionValueChoices(conversation, "time of day"));
+    }
+
+    @Test
     void addLineChangesSelectedConversationLines() {
         ConversationDefinition added = ConversationEditorApplication.addLine(ConversationEditorApplication.sampleConversation(), 0);
 

@@ -67,7 +67,7 @@ Each line has `speaker`, `listener`, optional `type`, and one or more `variants`
 - `say`: normal dialogue text.
 - `shout`: converts the selected variant text to uppercase, escapes authored text, and wraps it in `<b></b>`.
 - `whisper`: converts the selected variant text to lowercase, escapes authored text, and wraps it in `<i></i>`.
-- `choice`: treats each variant as a player-selectable choice. Each choice variant can carry its own `conditions` array; the editor builds each condition from a condition type such as `context`, the `=` operand, and a value, then stores it as a compact string such as `context=has_key`. The runtime projection stores those conditions with the generated scene choice metadata.
+- `choice`: treats each variant as a player-selectable choice. Each choice variant can carry its own `conditions` array; the editor builds each condition from a condition type such as `context` or `time of day`, the `=` operand, and a selected value, then stores it as a compact string such as `context=has_key` or `time of day=evening`. The runtime projection stores those conditions with the generated scene choice metadata.
 
 Example choice line:
 
@@ -77,7 +77,7 @@ Example choice line:
   "listener": "",
   "type": "choice",
   "variants": [
-    {"text": "Take the left path.", "weight": 1.0, "conditions": ["context=has_key"]},
+    {"text": "Take the left path.", "weight": 1.0, "conditions": ["context=has_key", "time of day=evening"]},
     {"text": "Take the right path.", "weight": 1.0, "conditions": []}
   ]
 }

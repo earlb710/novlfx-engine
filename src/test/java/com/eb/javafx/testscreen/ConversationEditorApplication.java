@@ -49,6 +49,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -56,7 +57,10 @@ import java.util.stream.Stream;
 public final class ConversationEditorApplication {
     private static final int MAX_VISIBLE_CONDITION_ROWS = 3;
     private static final String CONDITION_TYPE_CONTEXT = "context";
+    private static final String CONDITION_TYPE_TIME_OF_DAY = "time of day";
     private static final String CONDITION_OPERAND_EQUALS = "=";
+    private static final List<String> CONDITION_TYPES = List.of(CONDITION_TYPE_CONTEXT, CONDITION_TYPE_TIME_OF_DAY);
+    private static final List<String> DEFAULT_TIME_OF_DAY_VALUES = List.of("morning", "afternoon", "evening", "night");
 
     private ConversationDefinition conversation = sampleConversation();
     private final DefaultListModel<ConversationFile> fileListModel = new DefaultListModel<>();
@@ -302,9 +306,13 @@ public final class ConversationEditorApplication {
         installDirtyStateListener(variantTextArea);
         installDirtyStateListener(variantWeightField);
         variantConditionRows.forEach(row -> {
-            row.typeField().addActionListener(event -> refreshEditorState());
+            row.typeField().addActionListener(event -> {
+                row.setValueChoices(conditionValueChoices(row.conditionType()));
+                refreshEditorState();
+            });
             row.operandField().addActionListener(event -> refreshEditorState());
-            installDirtyStateListener(row.valueField());
+            row.valueField().addActionListener(event -> refreshEditorState());
+            installDirtyStateListener(row.valueEditor());
         });
         lineSpeakerField.addActionListener(event -> refreshEditorState());
         lineListenerField.addActionListener(event -> refreshEditorState());
@@ -1030,7 +1038,9 @@ public final class ConversationEditorApplication {
 
     private void setConditionFields(List<String> conditions) {
         for (int index = 0; index < variantConditionRows.size(); index++) {
-            variantConditionRows.get(index).setConditionText(index < conditions.size() ? conditions.get(index) : "");
+            ConditionFieldRow row = variantConditionRows.get(index);
+            row.setConditionText(index < conditions.size() ? conditions.get(index) : "");
+            row.setValueChoices(conditionValueChoices(row.conditionType()));
         }
     }
 
@@ -1038,6 +1048,41 @@ public final class ConversationEditorApplication {
         return variantConditionRows.stream()
                 .map(ConditionFieldRow::fieldState)
                 .reduce("", (left, right) -> left + "|" + right);
+    }
+
+    private List<String> conditionValueChoices(String conditionType) {
+        return conditionValueChoices(conversation, conditionType);
+    }
+
+    static List<String> conditionValueChoices(ConversationDefinition conversation, String conditionType) {
+        LinkedHashSet<String> choices = new LinkedHashSet<>();
+        String checkedType = normalizedConditionType(conditionType);
+        if (CONDITION_TYPE_TIME_OF_DAY.equals(checkedType)) {
+            choices.addAll(DEFAULT_TIME_OF_DAY_VALUES);
+        }
+        conversation.conversations().stream()
+                .flatMap(block -> block.lines().stream())
+                .flatMap(line -> line.variants().stream())
+                .flatMap(variant -> variant.conditions().stream())
+                .map(ConditionParts::parse)
+                .filter(parts -> normalizedConditionType(parts.type()).equals(checkedType))
+                .map(ConditionParts::value)
+                .filter(value -> !isBlankConditionValue(value))
+                .forEach(choices::add);
+        return List.copyOf(choices);
+    }
+
+    private static String normalizedConditionType(String conditionType) {
+        if (conditionType == null || conditionType.isBlank()) {
+            return CONDITION_TYPE_CONTEXT;
+        }
+        String checkedType = conditionType.trim();
+        if (checkedType.equalsIgnoreCase("timeofday")
+                || checkedType.equalsIgnoreCase("time_of_day")
+                || checkedType.equalsIgnoreCase("time-of-day")) {
+            return CONDITION_TYPE_TIME_OF_DAY;
+        }
+        return checkedType;
     }
 
     private static List<String> roleChoices(ConversationDefinition conversation, String currentValue, boolean includeBlank) {
@@ -1102,45 +1147,70 @@ public final class ConversationEditorApplication {
         }
     }
 
-    private record ConditionFieldRow(JComboBox<String> typeField, JComboBox<String> operandField, JTextField valueField) {
+    private record ConditionParts(String type, String operand, String value) {
+        private static ConditionParts parse(String conditionText) {
+            String checkedCondition = conditionText == null ? "" : conditionText.trim();
+            int separatorIndex = checkedCondition.indexOf(CONDITION_OPERAND_EQUALS);
+            if (separatorIndex > 0) {
+                return new ConditionParts(
+                        normalizedConditionType(checkedCondition.substring(0, separatorIndex)),
+                        CONDITION_OPERAND_EQUALS,
+                        checkedCondition.substring(separatorIndex + CONDITION_OPERAND_EQUALS.length()));
+            }
+            return new ConditionParts(CONDITION_TYPE_CONTEXT, CONDITION_OPERAND_EQUALS, checkedCondition);
+        }
+    }
+
+    private record ConditionFieldRow(JComboBox<String> typeField, JComboBox<String> operandField, JComboBox<String> valueField) {
         private static ConditionFieldRow create() {
+            JComboBox<String> valueField = new JComboBox<>();
+            valueField.setEditable(true);
             return new ConditionFieldRow(
-                    new JComboBox<>(new String[]{CONDITION_TYPE_CONTEXT}),
+                    new JComboBox<>(CONDITION_TYPES.toArray(String[]::new)),
                     new JComboBox<>(new String[]{CONDITION_OPERAND_EQUALS}),
-                    new JTextField());
+                    valueField);
         }
 
         String conditionText() {
             return ConversationEditorApplication.conditionText(
-                    selectedValue(typeField, CONDITION_TYPE_CONTEXT),
+                    conditionType(),
                     selectedValue(operandField, CONDITION_OPERAND_EQUALS),
-                    valueField.getText());
+                    value());
         }
 
         String fieldState() {
-            return selectedValue(typeField, CONDITION_TYPE_CONTEXT)
+            return conditionType()
                     + selectedValue(operandField, CONDITION_OPERAND_EQUALS)
-                    + valueField.getText();
+                    + value();
+        }
+
+        String conditionType() {
+            return selectedValue(typeField, CONDITION_TYPE_CONTEXT);
+        }
+
+        String value() {
+            return selectedValue(valueField, "");
+        }
+
+        JTextComponent valueEditor() {
+            return (JTextComponent) valueField.getEditor().getEditorComponent();
+        }
+
+        void setValueChoices(List<String> choices) {
+            String currentValue = value();
+            valueField.removeAllItems();
+            choices.forEach(valueField::addItem);
+            if (!currentValue.isBlank() && !choices.contains(currentValue)) {
+                valueField.addItem(currentValue);
+            }
+            valueField.setSelectedItem(currentValue);
         }
 
         void setConditionText(String conditionText) {
-            String checkedCondition = conditionText == null ? "" : conditionText.trim();
-            typeField.setSelectedItem(CONDITION_TYPE_CONTEXT);
+            ConditionParts parts = ConditionParts.parse(conditionText);
+            selectOrAdd(typeField, parts.type());
             operandField.setSelectedItem(CONDITION_OPERAND_EQUALS);
-            if (checkedCondition.isBlank()) {
-                valueField.setText("");
-                return;
-            }
-            int separatorIndex = checkedCondition.indexOf(CONDITION_OPERAND_EQUALS);
-            if (separatorIndex > 0) {
-                String type = checkedCondition.substring(0, separatorIndex);
-                String value = checkedCondition.substring(separatorIndex + CONDITION_OPERAND_EQUALS.length());
-                selectOrAdd(typeField, type);
-                operandField.setSelectedItem(CONDITION_OPERAND_EQUALS);
-                valueField.setText(value);
-                return;
-            }
-            valueField.setText(checkedCondition);
+            valueField.setSelectedItem(parts.value());
         }
 
         private static void selectOrAdd(JComboBox<String> comboBox, String value) {
