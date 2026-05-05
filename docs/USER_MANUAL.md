@@ -46,6 +46,14 @@ Launch the manual screen designer with:
 
 The screen designer edits JSON-backed `ScreenDesignModel` documents with stable editable screen, block, and item ids. Saved items are written to JSON, while temporary preview/test items can be added to a block by id for validation without being included in normal save output.
 
+Launch the management app with:
+
+```bash
+./gradlew --no-daemon runManagementApp
+```
+
+The management app is a button-only launcher for manual authoring and diagnostic screens, including default display values, the screen designer, and the conversation editor.
+
 Launch the manual conversation editor with:
 
 ```bash

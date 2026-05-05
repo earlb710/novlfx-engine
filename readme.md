@@ -64,6 +64,14 @@ See [docs/USER_MANUAL.md](docs/USER_MANUAL.md) for setup, package responsibiliti
 ./gradlew --no-daemon runTestScreen
 ```
 
+## Launch the management app
+
+```bash
+./gradlew --no-daemon runManagementApp
+```
+
+The management app opens a button-only launcher for authoring and diagnostic screens such as default display values, the screen designer, and the conversation editor.
+
 ## Launch the screen designer
 
 ```bash
