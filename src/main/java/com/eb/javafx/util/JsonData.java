@@ -98,6 +98,17 @@ public final class JsonData {
         throw new IllegalArgumentException("Expected JSON number for " + description + ".");
     }
 
+    public static boolean optionalBoolean(Map<String, Object> object, String key, boolean defaultValue, String description) {
+        if (!object.containsKey(key) || object.get(key) == null) {
+            return defaultValue;
+        }
+        Object value = object.get(key);
+        if (value instanceof Boolean booleanValue) {
+            return booleanValue;
+        }
+        throw new IllegalArgumentException("Expected JSON boolean for " + description + ".");
+    }
+
     public static List<String> stringList(Object value, String description) {
         List<String> strings = new ArrayList<>();
         int index = 0;

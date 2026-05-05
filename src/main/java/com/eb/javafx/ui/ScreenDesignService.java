@@ -1,10 +1,12 @@
 package com.eb.javafx.ui;
 
 import com.eb.javafx.util.Validation;
+import com.eb.javafx.util.HierarchyTraversal;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.UnaryOperator;
 
 /** Immutable mutation helpers for editable screen designs. */
@@ -22,14 +24,19 @@ public final class ScreenDesignService {
 
     public static ScreenDesignModel removeBlock(ScreenDesignModel design, String blockId) {
         Validation.requireNonBlank(blockId, "Screen design block id is required.");
+        Set<String> removedBlockIds = HierarchyTraversal.descendantIds(
+                design.blocks(),
+                ScreenDesignBlock::id,
+                ScreenDesignBlock::parentBlockId,
+                blockId);
         ArrayList<ScreenDesignBlock> blocks = new ArrayList<>(design.blocks().stream()
-                .filter(block -> !blockId.equals(block.id()))
+                .filter(block -> !removedBlockIds.contains(block.id()))
                 .toList());
         ArrayList<ScreenDesignItem> items = new ArrayList<>(design.items().stream()
-                .filter(item -> !blockId.equals(item.blockId()))
+                .filter(item -> !removedBlockIds.contains(item.blockId()))
                 .toList());
         ArrayList<ScreenDesignItem> temporary = new ArrayList<>(design.temporaryItems().stream()
-                .filter(item -> !blockId.equals(item.blockId()))
+                .filter(item -> !removedBlockIds.contains(item.blockId()))
                 .toList());
         return create(design, blocks, items, temporary);
     }
@@ -39,7 +46,9 @@ public final class ScreenDesignService {
         Validation.requireNonBlank(newBlockId, "New screen design block id is required.");
         List<ScreenDesignBlock> blocks = design.blocks().stream()
                 .map(block -> oldBlockId.equals(block.id())
-                        ? new ScreenDesignBlock(newBlockId, block.title(), block.styleClass(), block.metadata())
+                        ? new ScreenDesignBlock(newBlockId, block.title(), block.layoutType(), block.parentBlockId(), block.styleClass(), block.metadata())
+                        : oldBlockId.equals(block.parentBlockId())
+                        ? new ScreenDesignBlock(block.id(), block.title(), block.layoutType(), newBlockId, block.styleClass(), block.metadata())
                         : block)
                 .toList();
         List<ScreenDesignItem> items = design.items().stream()

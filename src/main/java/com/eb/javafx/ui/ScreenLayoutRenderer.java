@@ -13,12 +13,17 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 
+import java.util.Map;
+import java.util.regex.Pattern;
+
 /**
  * JavaFX renderer for reusable, UI-neutral screen layout models.
  */
 public final class ScreenLayoutRenderer {
     private static final double SECTION_SPACING = 8;
     private static final double REGION_SPACING = 12;
+    private static final Pattern FONT_SIZE_PATTERN = Pattern.compile("\\d+(\\.\\d+)?(px|pt|em)?");
+    private static final Pattern COLOR_PATTERN = Pattern.compile("#[0-9a-fA-F]{3,8}|[a-zA-Z]+");
 
     private ScreenLayoutRenderer() {
     }
@@ -124,9 +129,53 @@ public final class ScreenLayoutRenderer {
                 label.setId(section.lineIds().get(index));
             }
             label.getStyleClass().add(ScreenShell.LAYOUT_SECTION_ROW_STYLE_CLASS);
+            if (!section.lineMetadata().isEmpty()) {
+                applyLineStyle(label, section.lineMetadata().get(index));
+            }
             sectionNode.getChildren().add(label);
         }
         return sectionNode;
+    }
+
+    private static void applyLineStyle(Label label, Map<String, String> metadata) {
+        String style = lineStyle(metadata);
+        if (!style.isEmpty()) {
+            label.setStyle(style);
+        }
+    }
+
+    static String lineStyle(Map<String, String> metadata) {
+        StringBuilder style = new StringBuilder();
+        appendFontSize(style, metadata.get("fontSize"));
+        appendFontStyle(style, metadata.get("fontStyle"));
+        appendColor(style, metadata.get("color"));
+        return style.toString();
+    }
+
+    private static void appendFontSize(StringBuilder style, String value) {
+        if (value != null && FONT_SIZE_PATTERN.matcher(value).matches()) {
+            style.append("-fx-font-size: ").append(value.matches("\\d+(\\.\\d+)?") ? value + "px" : value).append("; ");
+        }
+    }
+
+    private static void appendFontStyle(StringBuilder style, String value) {
+        if (value == null) {
+            return;
+        }
+        switch (value.toLowerCase()) {
+            case "bold" -> style.append("-fx-font-weight: bold; ");
+            case "italic" -> style.append("-fx-font-style: italic; ");
+            case "bold italic", "italic bold" -> style.append("-fx-font-weight: bold; -fx-font-style: italic; ");
+            case "normal" -> style.append("-fx-font-weight: normal; -fx-font-style: normal; ");
+            default -> {
+            }
+        }
+    }
+
+    private static void appendColor(StringBuilder style, String value) {
+        if (value != null && COLOR_PATTERN.matcher(value).matches()) {
+            style.append("-fx-text-fill: ").append(value).append("; ");
+        }
     }
 
     private static void addActions(VBox parent, RouteContext context, Iterable<ScreenActionViewModel> actions, String actionStyleClass) {

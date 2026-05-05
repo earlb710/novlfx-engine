@@ -26,6 +26,8 @@ final class ScreenDesignModelTest {
 
         assertEquals("profile", loaded.blocks().get(0).id());
         assertEquals("summary", loaded.blocks().get(1).id());
+        assertEquals("profile", loaded.blocks().get(1).parentBlockId());
+        assertEquals(ScreenLayoutType.TWO_COLUMN, loaded.blocks().get(1).layoutType());
         assertEquals("profile.name", loaded.items().get(0).id());
         assertEquals("summary.text", loaded.items().get(1).id());
         assertEquals(List.of(), loaded.temporaryItems());
@@ -47,6 +49,31 @@ final class ScreenDesignModelTest {
     }
 
     @Test
+    void itemEditableDefaultsToFalseAndOnlyFieldTypesCanBeEditable() {
+        assertFalse(new ScreenDesignItem("field", "profile", ScreenDesignItemType.FIELD,
+                "Field", null, null, "value", null, Map.of()).editable());
+        ScreenDesignItem text = new ScreenDesignItem("text", "profile", ScreenDesignItemType.TEXT,
+                "Text", "Line", null, null, true, null, Map.of());
+        assertFalse(text.editable());
+        assertEquals(null, text.label());
+        assertTrue(new ScreenDesignItem("multi", "profile", ScreenDesignItemType.MULTI_LINE_FIELD,
+                "Multi", null, null, "value", true, null, Map.of()).editable());
+        assertFalse(new ScreenDesignItem("button", "profile", ScreenDesignItemType.BUTTON,
+                "Button", null, null, null, true, null, Map.of()).editable());
+
+        ScreenDesignItem item = new ScreenDesignItem("readonly", "profile", ScreenDesignItemType.FIELD,
+                "Readonly", null, null, "value", false, null, Map.of());
+        ScreenDesignModel model = new ScreenDesignModel("x", "X", ScreenLayoutType.FORM, Map.of(),
+                List.of(new ScreenDesignBlock("profile", "Profile")),
+                List.of(item),
+                List.of());
+
+        ScreenDesignModel roundTripped = ScreenDesignJson.fromJson(ScreenDesignJson.toJson(model), "round-trip");
+
+        assertFalse(roundTripped.items().get(0).editable());
+    }
+
+    @Test
     void addsItemsProgrammaticallyByBlockIdAndRejectsInvalidTargets() {
         ScreenDesignModel updated = ScreenDesignService.addItemToBlock(design(), "summary",
                 new ScreenDesignItem("summary.extra", "ignored", ScreenDesignItemType.TEXT,
@@ -65,12 +92,20 @@ final class ScreenDesignModelTest {
         String badReferenceJson = """
                 {"id":"x","title":"X","layoutType":"FORM","blocks":[{"id":"a"}],"items":[{"id":"i","blockId":"b","type":"TEXT","text":"Line"}]}
                 """;
+        String cyclicParentJson = """
+                {"id":"x","title":"X","layoutType":"FORM","blocks":[{"id":"a","parentBlockId":"b"},{"id":"b","parentBlockId":"a"}],"items":[]}
+                """;
+        String selfParentJson = """
+                {"id":"x","title":"X","layoutType":"FORM","blocks":[{"id":"a","parentBlockId":"a"}],"items":[]}
+                """;
         String unsupportedTypeJson = """
                 {"id":"x","title":"X","layoutType":"FORM","blocks":[{"id":"a"}],"items":[{"id":"i","blockId":"a","type":"UNKNOWN"}]}
                 """;
 
         assertThrows(IllegalArgumentException.class, () -> ScreenDesignJson.fromJson(duplicateBlockJson, "duplicate"));
         assertThrows(IllegalArgumentException.class, () -> ScreenDesignJson.fromJson(badReferenceJson, "bad-ref"));
+        assertThrows(IllegalArgumentException.class, () -> ScreenDesignJson.fromJson(cyclicParentJson, "cycle"));
+        assertThrows(IllegalArgumentException.class, () -> ScreenDesignJson.fromJson(selfParentJson, "self-parent"));
         assertThrows(IllegalArgumentException.class, () -> ScreenDesignJson.fromJson(unsupportedTypeJson, "bad-type"));
     }
 
@@ -85,6 +120,23 @@ final class ScreenDesignModelTest {
     }
 
     @Test
+    void adaptsMultilineTextAsUnlabeledTextAndMultilineFieldAsField() {
+        ScreenDesignModel model = new ScreenDesignModel("x", "X", ScreenLayoutType.FORM, Map.of(),
+                List.of(new ScreenDesignBlock("profile", "Profile")),
+                List.of(
+                        new ScreenDesignItem("display", "profile", ScreenDesignItemType.TEXT_AREA,
+                                "Ignored", "Display text", null, null, null, Map.of()),
+                        new ScreenDesignItem("notes", "profile", ScreenDesignItemType.MULTI_LINE_FIELD,
+                                "Notes", null, "Saved", "Default", null, Map.of("fontSize", "22"))),
+                List.of());
+
+        ScreenLayoutSection section = ScreenDesignLayoutAdapter.toLayoutModel(model).contentSections().get(0);
+
+        assertEquals(List.of("Display text", "Notes: Saved"), section.lines());
+        assertEquals("22", section.lineMetadata().get(1).get("fontSize"));
+    }
+
+    @Test
     void renamesBlocksAndItemsWhileKeepingReferencesValid() {
         ScreenDesignModel renamed = ScreenDesignService.renameItem(
                 ScreenDesignService.renameBlock(design(), "profile", "identity"),
@@ -92,15 +144,24 @@ final class ScreenDesignModelTest {
                 "identity.name");
 
         assertEquals("identity", renamed.blocks().get(0).id());
+        assertEquals("identity", renamed.blocks().get(1).parentBlockId());
         assertEquals("identity", renamed.items().get(0).blockId());
         assertEquals("identity.name", renamed.items().get(0).id());
+    }
+
+    @Test
+    void removingParentBlockAlsoRemovesNestedBlocksAndTheirItems() {
+        ScreenDesignModel updated = ScreenDesignService.removeBlock(design(), "profile");
+
+        assertEquals(List.of(), updated.blocks());
+        assertEquals(List.of(), updated.items());
     }
 
     private static ScreenDesignModel design() {
         return new ScreenDesignModel("settings.profile", "settings.profile", ScreenLayoutType.FORM, Map.of("area", "settings"),
                 List.of(
                         new ScreenDesignBlock("profile", "Profile", "profile-block", Map.of()),
-                        new ScreenDesignBlock("summary", "Summary", null, Map.of())),
+                        new ScreenDesignBlock("summary", "Summary", ScreenLayoutType.TWO_COLUMN, "profile", null, Map.of())),
                 List.of(
                         new ScreenDesignItem("profile.name", "profile", ScreenDesignItemType.FIELD,
                                 "Name", null, null, "Player", null, Map.of()),

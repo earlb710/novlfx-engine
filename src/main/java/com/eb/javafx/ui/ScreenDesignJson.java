@@ -93,6 +93,10 @@ public final class ScreenDesignJson {
         return new ScreenDesignBlock(
                 JsonData.requiredString(object, "id", "screen design block id"),
                 optionalString(object, "title", "screen design block title"),
+                JsonData.optionalString(object, "layoutType", "screen design block layoutType")
+                        .map(layoutType -> JsonData.enumValue(ScreenLayoutType.class, layoutType, "screen design block layoutType"))
+                        .orElse(null),
+                optionalString(object, "parentBlockId", "screen design block parentBlockId"),
                 optionalString(object, "styleClass", "screen design block styleClass"),
                 JsonData.optionalObject(object, "metadata", "screen design block metadata")
                         .map(metadata -> JsonData.stringMap(metadata, "screen design block metadata"))
@@ -100,16 +104,18 @@ public final class ScreenDesignJson {
     }
 
     private static ScreenDesignItem parseItem(Map<String, Object> object) {
+        ScreenDesignItemType type = JsonData.enumValue(ScreenDesignItemType.class,
+                JsonData.requiredString(object, "type", "screen design item type"),
+                "screen design item type");
         return new ScreenDesignItem(
                 JsonData.requiredString(object, "id", "screen design item id"),
                 JsonData.requiredString(object, "blockId", "screen design item blockId"),
-                JsonData.enumValue(ScreenDesignItemType.class,
-                        JsonData.requiredString(object, "type", "screen design item type"),
-                        "screen design item type"),
+                type,
                 optionalString(object, "label", "screen design item label"),
                 optionalString(object, "text", "screen design item text"),
                 optionalString(object, "value", "screen design item value"),
                 optionalString(object, "defaultValue", "screen design item defaultValue"),
+                JsonData.optionalBoolean(object, "editable", ScreenDesignItem.defaultEditable(type), "screen design item editable"),
                 optionalString(object, "styleClass", "screen design item styleClass"),
                 JsonData.optionalObject(object, "metadata", "screen design item metadata")
                         .map(metadata -> JsonData.stringMap(metadata, "screen design item metadata"))
@@ -131,6 +137,10 @@ public final class ScreenDesignJson {
         json.append(indent).append("{\n")
                 .append(indent).append("  \"id\": ").append(JsonStrings.quote(block.id())).append(",\n")
                 .append(indent).append("  \"title\": ").append(JsonStrings.nullableQuote(block.title())).append(",\n")
+                .append(indent).append("  \"layoutType\": ").append(block.layoutType() == null
+                        ? "null"
+                        : JsonStrings.quote(block.layoutType().name())).append(",\n")
+                .append(indent).append("  \"parentBlockId\": ").append(JsonStrings.nullableQuote(block.parentBlockId())).append(",\n")
                 .append(indent).append("  \"styleClass\": ").append(JsonStrings.nullableQuote(block.styleClass())).append(",\n")
                 .append(indent).append("  \"metadata\": ").append(stringMapJson(block.metadata())).append('\n')
                 .append(indent).append('}');
@@ -145,6 +155,7 @@ public final class ScreenDesignJson {
                 .append(indent).append("  \"text\": ").append(JsonStrings.nullableQuote(item.text())).append(",\n")
                 .append(indent).append("  \"value\": ").append(JsonStrings.nullableQuote(item.value())).append(",\n")
                 .append(indent).append("  \"defaultValue\": ").append(JsonStrings.nullableQuote(item.defaultValue())).append(",\n")
+                .append(indent).append("  \"editable\": ").append(item.editable()).append(",\n")
                 .append(indent).append("  \"styleClass\": ").append(JsonStrings.nullableQuote(item.styleClass())).append(",\n")
                 .append(indent).append("  \"metadata\": ").append(stringMapJson(item.metadata())).append('\n')
                 .append(indent).append('}');
