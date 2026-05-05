@@ -45,7 +45,7 @@ public final class ConversationDefinition {
     public record ConversationLine(String speaker, String listener, List<ConversationVariant> variants) {
         public ConversationLine {
             speaker = Validation.requireNonBlank(speaker, "Conversation line speaker is required.");
-            listener = listener == null ? "" : listener;
+            listener = Validation.requireNonNull(listener, "Conversation line listener is required.");
             variants = List.copyOf(Validation.requireNonEmpty(variants, "Conversation line variants are required."));
         }
     }

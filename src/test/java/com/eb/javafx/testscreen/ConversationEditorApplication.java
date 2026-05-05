@@ -404,7 +404,11 @@ public final class ConversationEditorApplication {
 
     private double variantWeight() {
         try {
-            return Double.parseDouble(variantWeightField.getText().trim());
+            double weight = Double.parseDouble(variantWeightField.getText().trim());
+            if (weight <= 0.0) {
+                throw new IllegalArgumentException("Variant weight must be positive.");
+            }
+            return weight;
         } catch (NumberFormatException exception) {
             throw new IllegalArgumentException("Variant weight must be a valid number.", exception);
         }
