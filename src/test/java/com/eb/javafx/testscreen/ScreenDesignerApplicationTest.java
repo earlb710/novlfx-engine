@@ -225,7 +225,6 @@ final class ScreenDesignerApplicationTest {
                 ScreenDesignerApplication.NavigationNode.item("temp.field", "main", true)));
     }
 
-
     @Test
     void itemContentEditorIsSingleLineExceptForTextAreaItems() {
         assertFalse(ScreenDesignerApplication.usesMultiLineContentEditor(ScreenDesignItemType.TEXT));

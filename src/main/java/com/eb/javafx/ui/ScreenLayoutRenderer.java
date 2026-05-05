@@ -223,9 +223,10 @@ public final class ScreenLayoutRenderer {
 
     private static void appendOpacity(StringBuilder style, String transparency) {
         Double opacity = opacityFromTransparency(transparency);
-        if (opacity != null && opacity < 1.0) {
-            style.append("-fx-opacity: ").append(trimmedDecimal(opacity)).append("; ");
+        if (opacity == null || opacity < 0.0 || opacity > 1.0 || opacity == 1.0) {
+            return;
         }
+        style.append("-fx-opacity: ").append(trimmedDecimal(opacity)).append("; ");
     }
 
     private static void appendBorderStyle(StringBuilder style, String value) {
@@ -286,11 +287,7 @@ public final class ScreenLayoutRenderer {
             return null;
         }
         try {
-            double transparency = Double.parseDouble(value);
-            if (transparency < 0.0 || transparency > 1.0) {
-                return null;
-            }
-            return 1.0 - transparency;
+            return 1.0 - Double.parseDouble(value);
         } catch (NumberFormatException exception) {
             return null;
         }
