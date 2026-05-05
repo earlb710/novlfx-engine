@@ -14,6 +14,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /** Registers an LR2Alt-compatible JSON conversation document as content definitions and scene definitions. */
 public final class JsonConversationContentModule implements StaticContentModule, SceneModule {
@@ -169,14 +170,8 @@ public final class JsonConversationContentModule implements StaticContentModule,
     }
 
     private static String conditionsJson(List<String> conditions) {
-        StringBuilder json = new StringBuilder("[");
-        for (int index = 0; index < conditions.size(); index++) {
-            if (index > 0) {
-                json.append(", ");
-            }
-            json.append(JsonStrings.quote(conditions.get(index)));
-        }
-        json.append(']');
-        return json.toString();
+        return conditions.stream()
+                .map(JsonStrings::quote)
+                .collect(Collectors.joining(", ", "[", "]"));
     }
 }

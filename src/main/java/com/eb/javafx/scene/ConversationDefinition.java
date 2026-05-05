@@ -10,8 +10,8 @@ import java.util.Locale;
  * Data-only authored conversation document using the LR2Alt exported JSON shape.
  *
  * <p>The schema mirrors authored conversation files with a top-level {@code name}, {@code language}, and ordered
- * {@code conversations}; each conversation has dialogue {@code lines}, and each line has a speaker plus one or more
- * text variants.</p>
+ * {@code conversations}; each conversation has typed dialogue {@code lines}, and each line has a speaker plus one
+ * or more text variants that can also serve as choices.</p>
  */
 public final class ConversationDefinition {
     private final String name;
