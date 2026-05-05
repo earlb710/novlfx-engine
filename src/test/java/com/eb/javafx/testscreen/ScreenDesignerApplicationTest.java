@@ -314,8 +314,8 @@ final class ScreenDesignerApplicationTest {
     @Test
     void editorPinsPropertyButtonsBelowScrollablePropertiesPanel() throws Exception {
         ScreenDesignerApplication application = new ScreenDesignerApplication();
-        invokeNoArgs(application, "refreshAll");
-        JPanel editor = (JPanel) invokeNoArgs(application, "editor");
+        invokePrivateMethod(application, "refreshAll");
+        JPanel editor = (JPanel) invokePrivateMethod(application, "editor");
         JPanel propertiesPanel = (JPanel) fieldValue(application, "propertiesPanel");
 
         BorderLayout editorLayout = (BorderLayout) editor.getLayout();
@@ -422,7 +422,7 @@ final class ScreenDesignerApplicationTest {
         assertEquals("Screen design block references unknown parent block id: missing", exception.getMessage());
     }
 
-    private static Object invokeNoArgs(Object target, String methodName) throws Exception {
+    private static Object invokePrivateMethod(Object target, String methodName) throws Exception {
         Method method = target.getClass().getDeclaredMethod(methodName);
         method.setAccessible(true);
         return method.invoke(target);

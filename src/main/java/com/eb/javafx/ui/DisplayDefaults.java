@@ -42,11 +42,15 @@ public record DisplayDefaults(
     public static String defaultJson() {
         try (InputStream inputStream = DisplayDefaults.class.getResourceAsStream(DEFAULT_RESOURCE)) {
             if (inputStream == null) {
-                throw new StartupFailureException(StartupFailureCategory.MISSING_ASSET, "Missing display defaults JSON.");
+                throw new StartupFailureException(
+                        StartupFailureCategory.MISSING_ASSET,
+                        "Missing display defaults JSON: " + DEFAULT_RESOURCE);
             }
             return new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
         } catch (IOException exception) {
-            throw new StartupFailureException(StartupFailureCategory.MISSING_ASSET, "Unable to read display defaults JSON.");
+            throw new StartupFailureException(
+                    StartupFailureCategory.MISSING_ASSET,
+                    "Unable to read display defaults JSON: " + DEFAULT_RESOURCE);
         }
     }
 
