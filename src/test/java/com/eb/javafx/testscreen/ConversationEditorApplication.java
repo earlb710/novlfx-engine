@@ -54,7 +54,7 @@ import java.util.stream.Stream;
 
 /** Manual Swing editor for LR2Alt-compatible JSON conversation documents. */
 public final class ConversationEditorApplication {
-    private static final int MAX_CONDITION_ROWS_DISPLAYED = 3;
+    private static final int MAX_VISIBLE_CONDITION_ROWS = 3;
     private static final String CONDITION_TYPE_CONTEXT = "context";
     private static final String CONDITION_OPERAND_EQUALS = "=";
 
@@ -79,7 +79,7 @@ public final class ConversationEditorApplication {
     private final JTextArea variantTextArea = new JTextArea();
     private final JTextField variantWeightField = new JTextField();
     private final List<ConditionFieldRow> variantConditionRows = Stream.generate(ConditionFieldRow::create)
-            .limit(MAX_CONDITION_ROWS_DISPLAYED)
+            .limit(MAX_VISIBLE_CONDITION_ROWS)
             .toList();
     private final JLabel statusLabel = new JLabel();
     private Path currentFolder = conversationExamplesDirectory();
@@ -1004,7 +1004,7 @@ public final class ConversationEditorApplication {
     static List<String> conditionTexts(List<String> values) {
         return values.stream()
                 .filter(value -> !isBlankConditionValue(value))
-                .limit(MAX_CONDITION_ROWS_DISPLAYED)
+                .limit(MAX_VISIBLE_CONDITION_ROWS)
                 .toList();
     }
 
@@ -1135,12 +1135,23 @@ public final class ConversationEditorApplication {
             if (separatorIndex > 0) {
                 String type = checkedCondition.substring(0, separatorIndex);
                 String value = checkedCondition.substring(separatorIndex + CONDITION_OPERAND_EQUALS.length());
-                if (CONDITION_TYPE_CONTEXT.equals(type)) {
-                    valueField.setText(value);
+                selectOrAdd(typeField, type);
+                operandField.setSelectedItem(CONDITION_OPERAND_EQUALS);
+                valueField.setText(value);
+                return;
+            }
+            valueField.setText(checkedCondition);
+        }
+
+        private static void selectOrAdd(JComboBox<String> comboBox, String value) {
+            for (int index = 0; index < comboBox.getItemCount(); index++) {
+                if (comboBox.getItemAt(index).equals(value)) {
+                    comboBox.setSelectedIndex(index);
                     return;
                 }
             }
-            valueField.setText(checkedCondition);
+            comboBox.addItem(value);
+            comboBox.setSelectedItem(value);
         }
 
         private static String selectedValue(JComboBox<String> comboBox, String defaultValue) {
