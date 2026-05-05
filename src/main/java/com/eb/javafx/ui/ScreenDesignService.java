@@ -22,14 +22,15 @@ public final class ScreenDesignService {
 
     public static ScreenDesignModel removeBlock(ScreenDesignModel design, String blockId) {
         Validation.requireNonBlank(blockId, "Screen design block id is required.");
+        java.util.Set<String> removedBlockIds = descendantBlockIds(design.blocks(), blockId);
         ArrayList<ScreenDesignBlock> blocks = new ArrayList<>(design.blocks().stream()
-                .filter(block -> !blockId.equals(block.id()))
+                .filter(block -> !removedBlockIds.contains(block.id()))
                 .toList());
         ArrayList<ScreenDesignItem> items = new ArrayList<>(design.items().stream()
-                .filter(item -> !blockId.equals(item.blockId()))
+                .filter(item -> !removedBlockIds.contains(item.blockId()))
                 .toList());
         ArrayList<ScreenDesignItem> temporary = new ArrayList<>(design.temporaryItems().stream()
-                .filter(item -> !blockId.equals(item.blockId()))
+                .filter(item -> !removedBlockIds.contains(item.blockId()))
                 .toList());
         return create(design, blocks, items, temporary);
     }
@@ -39,7 +40,9 @@ public final class ScreenDesignService {
         Validation.requireNonBlank(newBlockId, "New screen design block id is required.");
         List<ScreenDesignBlock> blocks = design.blocks().stream()
                 .map(block -> oldBlockId.equals(block.id())
-                        ? new ScreenDesignBlock(newBlockId, block.title(), block.styleClass(), block.metadata())
+                        ? new ScreenDesignBlock(newBlockId, block.title(), block.layoutType(), block.parentBlockId(), block.styleClass(), block.metadata())
+                        : oldBlockId.equals(block.parentBlockId())
+                        ? new ScreenDesignBlock(block.id(), block.title(), block.layoutType(), newBlockId, block.styleClass(), block.metadata())
                         : block)
                 .toList();
         List<ScreenDesignItem> items = design.items().stream()
@@ -152,6 +155,22 @@ public final class ScreenDesignService {
         if (!exists) {
             throw new IllegalArgumentException("Unknown screen design block id: " + blockId);
         }
+    }
+
+    private static java.util.Set<String> descendantBlockIds(List<ScreenDesignBlock> blocks, String rootBlockId) {
+        java.util.LinkedHashSet<String> descendants = new java.util.LinkedHashSet<>();
+        java.util.ArrayDeque<String> pending = new java.util.ArrayDeque<>();
+        descendants.add(rootBlockId);
+        pending.add(rootBlockId);
+        while (!pending.isEmpty()) {
+            String parentId = pending.removeFirst();
+            for (ScreenDesignBlock block : blocks) {
+                if (parentId.equals(block.parentBlockId()) && descendants.add(block.id())) {
+                    pending.addLast(block.id());
+                }
+            }
+        }
+        return descendants;
     }
 
     private static ScreenDesignModel create(

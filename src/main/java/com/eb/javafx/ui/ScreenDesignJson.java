@@ -93,6 +93,10 @@ public final class ScreenDesignJson {
         return new ScreenDesignBlock(
                 JsonData.requiredString(object, "id", "screen design block id"),
                 optionalString(object, "title", "screen design block title"),
+                JsonData.optionalString(object, "layoutType", "screen design block layoutType")
+                        .map(layoutType -> JsonData.enumValue(ScreenLayoutType.class, layoutType, "screen design block layoutType"))
+                        .orElse(null),
+                optionalString(object, "parentBlockId", "screen design block parentBlockId"),
                 optionalString(object, "styleClass", "screen design block styleClass"),
                 JsonData.optionalObject(object, "metadata", "screen design block metadata")
                         .map(metadata -> JsonData.stringMap(metadata, "screen design block metadata"))
@@ -131,6 +135,10 @@ public final class ScreenDesignJson {
         json.append(indent).append("{\n")
                 .append(indent).append("  \"id\": ").append(JsonStrings.quote(block.id())).append(",\n")
                 .append(indent).append("  \"title\": ").append(JsonStrings.nullableQuote(block.title())).append(",\n")
+                .append(indent).append("  \"layoutType\": ").append(block.layoutType() == null
+                        ? "null"
+                        : JsonStrings.quote(block.layoutType().name())).append(",\n")
+                .append(indent).append("  \"parentBlockId\": ").append(JsonStrings.nullableQuote(block.parentBlockId())).append(",\n")
                 .append(indent).append("  \"styleClass\": ").append(JsonStrings.nullableQuote(block.styleClass())).append(",\n")
                 .append(indent).append("  \"metadata\": ").append(stringMapJson(block.metadata())).append('\n')
                 .append(indent).append('}');

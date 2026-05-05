@@ -21,6 +21,7 @@ public final class ScreenDesignValidator {
                 problems.add(error("blocks." + block.id(), "Duplicate screen design block id: " + block.id()));
             }
         }
+        validateBlockParents(design.blocks(), blockIds, problems);
         Set<String> itemIds = new HashSet<>();
         validateItems(design.items(), "items", blockIds, itemIds, problems);
         validateItems(design.temporaryItems(), "temporaryItems", blockIds, itemIds, problems);
@@ -38,6 +39,7 @@ public final class ScreenDesignValidator {
                 problems.add(error("blocks." + block.id(), "Duplicate screen design block id: " + block.id()));
             }
         }
+        validateBlockParents(blocks, blockIds, problems);
         Set<String> itemIds = new HashSet<>();
         validateItems(items, "items", blockIds, itemIds, problems);
         validateItems(temporaryItems, "temporaryItems", blockIds, itemIds, problems);
@@ -70,6 +72,36 @@ public final class ScreenDesignValidator {
             }
             if (!blockIds.contains(item.blockId())) {
                 problems.add(error(path + "." + item.id(), "Screen design item references unknown block id: " + item.blockId()));
+            }
+        }
+    }
+
+    private static void validateBlockParents(
+            List<ScreenDesignBlock> blocks,
+            Set<String> blockIds,
+            List<ScreenDesignValidationProblem> problems) {
+        java.util.Map<String, String> parentByBlockId = new java.util.HashMap<>();
+        for (ScreenDesignBlock block : blocks) {
+            if (block.parentBlockId() != null && !blockIds.contains(block.parentBlockId())) {
+                problems.add(error("blocks." + block.id(),
+                        "Screen design block references unknown parent block id: " + block.parentBlockId()));
+            }
+            if (block.id().equals(block.parentBlockId())) {
+                problems.add(error("blocks." + block.id(),
+                        "Screen design block cannot use itself as parent: " + block.id()));
+            }
+            parentByBlockId.put(block.id(), block.parentBlockId());
+        }
+        for (ScreenDesignBlock block : blocks) {
+            Set<String> seen = new HashSet<>();
+            String current = block.id();
+            while (current != null) {
+                if (!seen.add(current)) {
+                    problems.add(error("blocks." + block.id(),
+                            "Screen design block parent cycle detected: " + block.id()));
+                    break;
+                }
+                current = parentByBlockId.get(current);
             }
         }
     }

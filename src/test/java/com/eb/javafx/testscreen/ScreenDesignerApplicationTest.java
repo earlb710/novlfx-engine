@@ -92,6 +92,29 @@ final class ScreenDesignerApplicationTest {
     }
 
     @Test
+    void navigationTreeNestsChildBlocksUnderParentBlocks() {
+        ScreenDesignModel design = new ScreenDesignModel(
+                "sample.screen",
+                "Sample Screen",
+                com.eb.javafx.ui.ScreenLayoutType.FORM,
+                Map.of(),
+                List.of(
+                        new ScreenDesignBlock("main", "Main"),
+                        new ScreenDesignBlock("details", "Details", com.eb.javafx.ui.ScreenLayoutType.TWO_COLUMN, "main", null, Map.of())),
+                List.of(new ScreenDesignItem("details.text", "details", ScreenDesignItemType.TEXT,
+                        "Details", "Saved", null, null, null, Map.of())),
+                List.of());
+
+        DefaultMutableTreeNode root = ScreenDesignerApplication.buildNavigationTree(design);
+        DefaultMutableTreeNode mainBlock = (DefaultMutableTreeNode) root.getChildAt(0);
+        DefaultMutableTreeNode detailsBlock = (DefaultMutableTreeNode) mainBlock.getChildAt(0);
+
+        assertEquals(1, root.getChildCount());
+        assertEquals("block: details", detailsBlock.getUserObject().toString());
+        assertEquals("item: details.text", ((DefaultMutableTreeNode) detailsBlock.getChildAt(0)).getUserObject().toString());
+    }
+
+    @Test
     void blockIdForNodeUsesSelectedTreeNodeType() {
         ScreenDesignModel design = new ScreenDesignModel(
                 "sample.screen",
@@ -148,18 +171,28 @@ final class ScreenDesignerApplicationTest {
                 ScreenDesignerApplication.contextActionLabelsFor(
                         ScreenDesignerApplication.NavigationNode.screen("sample.screen"),
                         false));
-        assertEquals(List.of("Add Block", "Add Item"),
+        assertEquals(List.of("Add Block"),
                 ScreenDesignerApplication.contextActionLabelsFor(
                         ScreenDesignerApplication.NavigationNode.screen("sample.screen"),
                         true));
-        assertEquals(List.of("Add Item", "Edit Block", "Remove Block"),
+        assertEquals(List.of("Add Block", "Add Item", "Edit Block", "Remove Block"),
                 ScreenDesignerApplication.contextActionLabelsFor(
                         ScreenDesignerApplication.NavigationNode.block("main"),
                         true));
-        assertEquals(List.of("Add Item", "Edit Item", "Remove Item"),
+        assertEquals(List.of("Add Block", "Add Item", "Edit Item", "Remove Item"),
                 ScreenDesignerApplication.contextActionLabelsFor(
                         ScreenDesignerApplication.NavigationNode.item("title.text", "main", false),
                         true));
+    }
+
+    @Test
+    void addItemIsOnlyEnabledForBlockAndItemNodes() {
+        assertFalse(ScreenDesignerApplication.canAddItemForNode(
+                ScreenDesignerApplication.NavigationNode.screen("sample.screen")));
+        assertTrue(ScreenDesignerApplication.canAddItemForNode(
+                ScreenDesignerApplication.NavigationNode.block("main")));
+        assertTrue(ScreenDesignerApplication.canAddItemForNode(
+                ScreenDesignerApplication.NavigationNode.item("title.text", "main", false)));
     }
 
     @Test
@@ -175,7 +208,9 @@ final class ScreenDesignerApplicationTest {
                 "Sample Screen",
                 com.eb.javafx.ui.ScreenLayoutType.FORM,
                 Map.of(),
-                List.of(new ScreenDesignBlock("main", "Main")),
+                List.of(
+                        new ScreenDesignBlock("main", "Main"),
+                        new ScreenDesignBlock("nested", "Nested", com.eb.javafx.ui.ScreenLayoutType.DIALOGUE, "main", null, Map.of())),
                 List.of(new ScreenDesignItem("title.text", "main", ScreenDesignItemType.TEXT,
                         "Title", "Saved", null, null, null, Map.of())),
                 List.of(new ScreenDesignItem("temp.field", "main", ScreenDesignItemType.FIELD,
@@ -187,6 +222,7 @@ final class ScreenDesignerApplicationTest {
                 new ScreenDesignBlock("content", "Content"));
 
         assertEquals("content", updated.blocks().get(0).id());
+        assertEquals("content", updated.blocks().get(1).parentBlockId());
         assertEquals("content", updated.items().get(0).blockId());
         assertEquals("content", updated.temporaryItems().get(0).blockId());
     }
@@ -233,5 +269,20 @@ final class ScreenDesignerApplicationTest {
                         false));
 
         assertEquals("Unknown block for screen design item: orphan.text -> missing", exception.getMessage());
+    }
+
+    @Test
+    void screenDesignModelRejectsBlocksThatReferenceMissingParents() {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> new ScreenDesignModel(
+                        "sample.screen",
+                        "Sample Screen",
+                        com.eb.javafx.ui.ScreenLayoutType.FORM,
+                        Map.of(),
+                        List.of(new ScreenDesignBlock("child", "Child", null, "missing", null, Map.of())),
+                        List.of(),
+                        List.of()));
+
+        assertEquals("Screen design block references unknown parent block id: missing", exception.getMessage());
     }
 }

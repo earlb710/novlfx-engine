@@ -26,6 +26,8 @@ final class ScreenDesignModelTest {
 
         assertEquals("profile", loaded.blocks().get(0).id());
         assertEquals("summary", loaded.blocks().get(1).id());
+        assertEquals("profile", loaded.blocks().get(1).parentBlockId());
+        assertEquals(ScreenLayoutType.TWO_COLUMN, loaded.blocks().get(1).layoutType());
         assertEquals("profile.name", loaded.items().get(0).id());
         assertEquals("summary.text", loaded.items().get(1).id());
         assertEquals(List.of(), loaded.temporaryItems());
@@ -65,12 +67,16 @@ final class ScreenDesignModelTest {
         String badReferenceJson = """
                 {"id":"x","title":"X","layoutType":"FORM","blocks":[{"id":"a"}],"items":[{"id":"i","blockId":"b","type":"TEXT","text":"Line"}]}
                 """;
+        String cyclicParentJson = """
+                {"id":"x","title":"X","layoutType":"FORM","blocks":[{"id":"a","parentBlockId":"b"},{"id":"b","parentBlockId":"a"}],"items":[]}
+                """;
         String unsupportedTypeJson = """
                 {"id":"x","title":"X","layoutType":"FORM","blocks":[{"id":"a"}],"items":[{"id":"i","blockId":"a","type":"UNKNOWN"}]}
                 """;
 
         assertThrows(IllegalArgumentException.class, () -> ScreenDesignJson.fromJson(duplicateBlockJson, "duplicate"));
         assertThrows(IllegalArgumentException.class, () -> ScreenDesignJson.fromJson(badReferenceJson, "bad-ref"));
+        assertThrows(IllegalArgumentException.class, () -> ScreenDesignJson.fromJson(cyclicParentJson, "cycle"));
         assertThrows(IllegalArgumentException.class, () -> ScreenDesignJson.fromJson(unsupportedTypeJson, "bad-type"));
     }
 
@@ -92,15 +98,24 @@ final class ScreenDesignModelTest {
                 "identity.name");
 
         assertEquals("identity", renamed.blocks().get(0).id());
+        assertEquals("identity", renamed.blocks().get(1).parentBlockId());
         assertEquals("identity", renamed.items().get(0).blockId());
         assertEquals("identity.name", renamed.items().get(0).id());
+    }
+
+    @Test
+    void removingParentBlockAlsoRemovesNestedBlocksAndTheirItems() {
+        ScreenDesignModel updated = ScreenDesignService.removeBlock(design(), "profile");
+
+        assertEquals(List.of(), updated.blocks());
+        assertEquals(List.of(), updated.items());
     }
 
     private static ScreenDesignModel design() {
         return new ScreenDesignModel("settings.profile", "settings.profile", ScreenLayoutType.FORM, Map.of("area", "settings"),
                 List.of(
                         new ScreenDesignBlock("profile", "Profile", "profile-block", Map.of()),
-                        new ScreenDesignBlock("summary", "Summary", null, Map.of())),
+                        new ScreenDesignBlock("summary", "Summary", ScreenLayoutType.TWO_COLUMN, "profile", null, Map.of())),
                 List.of(
                         new ScreenDesignItem("profile.name", "profile", ScreenDesignItemType.FIELD,
                                 "Name", null, null, "Player", null, Map.of()),

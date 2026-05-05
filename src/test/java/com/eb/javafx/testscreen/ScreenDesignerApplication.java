@@ -57,10 +57,12 @@ import javax.swing.tree.TreeSelectionModel;
 
 /** Manual Swing screen designer for editing JSON-backed reusable screen designs. */
 public final class ScreenDesignerApplication {
+    private static final String SCREEN_PARENT_OPTION = "<screen>";
     private static final AtomicBoolean JAVAFX_STARTED = new AtomicBoolean();
     private ScreenDesignModel design = sampleDesign();
     private final DefaultTreeModel objectTreeModel = new DefaultTreeModel(new DefaultMutableTreeNode());
     private final JTree objectTree = new JTree(objectTreeModel);
+    private final JButton addItemButton = new JButton("Add Item");
     private final JTextField screenIdField = new JTextField();
     private final JTextField titleField = new JTextField();
     private final JComboBox<ScreenLayoutType> layoutTypeBox = new JComboBox<>(ScreenLayoutType.values());
@@ -142,6 +144,7 @@ public final class ScreenDesignerApplication {
     private JPanel navigation() {
         objectTree.getSelectionModel().setSelectionMode(TreeSelectionModel.SINGLE_TREE_SELECTION);
         objectTree.setRootVisible(true);
+        objectTree.addTreeSelectionListener(event -> updateNavigationActionState());
         installTreeContextMenu();
         JPanel panel = new JPanel(new BorderLayout(8, 8));
         panel.add(new JScrollPane(objectTree), BorderLayout.CENTER);
@@ -152,11 +155,11 @@ public final class ScreenDesignerApplication {
     private JPanel navigationActions() {
         JPanel panel = new JPanel(new GridLayout(1, 2, 6, 0));
         JButton addBlock = new JButton("Add Block");
-        JButton addItem = new JButton("Add Item");
         addBlock.addActionListener(event -> runSafely("Add Block", this::addBlock));
-        addItem.addActionListener(event -> runSafely("Add Item", () -> addItem(false)));
+        addItemButton.addActionListener(event -> runSafely("Add Item", () -> addItem(false)));
+        addItemButton.setEnabled(false);
         panel.add(addBlock);
-        panel.add(addItem);
+        panel.add(addItemButton);
         return panel;
     }
 
@@ -194,11 +197,16 @@ public final class ScreenDesignerApplication {
     }
 
     private void addBlock() {
-        String blockId = JOptionPane.showInputDialog("Block id");
-        if (blockId != null && !blockId.isBlank()) {
-            design = ScreenDesignService.addBlock(design, new ScreenDesignBlock(blockId, blockId));
-            refreshAll();
+        addBlock(selectedBlockId().orElse(null));
+    }
+
+    private void addBlock(String parentBlockId) {
+        Optional<ScreenDesignBlock> created = showBlockDialog("Add Block", null, parentBlockId);
+        if (created.isEmpty()) {
+            return;
         }
+        design = ScreenDesignService.addBlock(design, created.orElseThrow());
+        refreshAll();
     }
 
     private void addItem(boolean temporary) {
@@ -276,23 +284,51 @@ public final class ScreenDesignerApplication {
                 existing == null ? Map.of() : existing.metadata()));
     }
 
-    private void editBlock(String blockId) {
-        ScreenDesignBlock block = findBlock(blockId);
-        JTextField blockIdField = new JTextField(block.id());
-        JTextField titleField = new JTextField(block.title() == null ? block.id() : block.title());
-        JPanel fields = new JPanel(new GridLayout(2, 2, 6, 6));
+    private Optional<ScreenDesignBlock> showBlockDialog(String title, ScreenDesignBlock existing, String selectedParentBlockId) {
+        JTextField blockIdField = new JTextField(existing == null ? "" : existing.id());
+        JTextField titleField = new JTextField(existing == null ? "" : nullToBlank(existing.title()));
+        JComboBox<ScreenLayoutType> layoutBox = new JComboBox<>(blockLayoutOptions());
+        layoutBox.setSelectedItem(existing == null ? null : existing.layoutType());
+        JComboBox<String> parentBlockBox = new JComboBox<>(parentBlockOptions(existing == null ? null : existing.id()));
+        if (existing != null && existing.parentBlockId() != null) {
+            parentBlockBox.setSelectedItem(existing.parentBlockId());
+        } else if (selectedParentBlockId != null) {
+            parentBlockBox.setSelectedItem(selectedParentBlockId);
+        } else {
+            parentBlockBox.setSelectedItem(SCREEN_PARENT_OPTION);
+        }
+        JPanel fields = new JPanel(new GridLayout(4, 2, 6, 6));
         fields.add(new JLabel("Block id"));
         fields.add(blockIdField);
         fields.add(new JLabel("Title"));
         fields.add(titleField);
-        int result = JOptionPane.showConfirmDialog(null, fields, "Edit Block", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
-        String newBlockId = blockIdField.getText();
-        if (result != JOptionPane.OK_OPTION || newBlockId == null || newBlockId.isBlank()) {
+        fields.add(new JLabel("Layout type"));
+        fields.add(layoutBox);
+        fields.add(new JLabel("Parent block"));
+        fields.add(parentBlockBox);
+        int result = JOptionPane.showConfirmDialog(null, fields, title, JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+        String blockId = blockIdField.getText();
+        if (result != JOptionPane.OK_OPTION || blockId == null || blockId.isBlank()) {
+            return Optional.empty();
+        }
+        String parentBlockId = parentBlockSelection((String) parentBlockBox.getSelectedItem());
+        String blockTitle = blankToNull(titleField.getText());
+        return Optional.of(new ScreenDesignBlock(
+                blockId,
+                blockTitle == null ? blockId : blockTitle,
+                (ScreenLayoutType) layoutBox.getSelectedItem(),
+                parentBlockId,
+                existing == null ? null : existing.styleClass(),
+                existing == null ? Map.of() : existing.metadata()));
+    }
+
+    private void editBlock(String blockId) {
+        ScreenDesignBlock block = findBlock(blockId);
+        Optional<ScreenDesignBlock> updated = showBlockDialog("Edit Block", block, block.parentBlockId());
+        if (updated.isEmpty()) {
             return;
         }
-        String title = blankToNull(titleField.getText());
-        design = replaceBlock(design, blockId,
-                new ScreenDesignBlock(newBlockId, title == null ? newBlockId : title, block.styleClass(), block.metadata()));
+        design = replaceBlock(design, blockId, updated.orElseThrow());
         refreshAll();
     }
 
@@ -308,7 +344,7 @@ public final class ScreenDesignerApplication {
 
     private void removeBlock(String blockId) {
         if (JOptionPane.showConfirmDialog(null,
-                "Remove block '" + blockId + "' and all of its items?",
+                "Remove block '" + blockId + "' and all nested blocks/items?",
                 "Remove Block",
                 JOptionPane.OK_CANCEL_OPTION,
                 JOptionPane.WARNING_MESSAGE) != JOptionPane.OK_OPTION) {
@@ -405,6 +441,7 @@ public final class ScreenDesignerApplication {
         for (int row = 0; row < objectTree.getRowCount(); row++) {
             objectTree.expandRow(row);
         }
+        updateNavigationActionState();
         previewArea.setText(previewText(ScreenDesignLayoutAdapter.toLayoutModel(design, true)));
         jsonArea.setText(ScreenDesignJson.toJson(design));
         statusLabel.setText(statusText(currentPath, ScreenDesignValidator.validate(design)));
@@ -420,7 +457,18 @@ public final class ScreenDesignerApplication {
         for (ScreenDesignBlock block : design.blocks()) {
             DefaultMutableTreeNode blockNode = new DefaultMutableTreeNode(NavigationNode.block(block.id()));
             blockNodes.put(block.id(), blockNode);
-            root.add(blockNode);
+        }
+        for (ScreenDesignBlock block : design.blocks()) {
+            DefaultMutableTreeNode blockNode = blockNodes.get(block.id());
+            if (block.parentBlockId() == null) {
+                root.add(blockNode);
+                continue;
+            }
+            DefaultMutableTreeNode parentNode = blockNodes.get(block.parentBlockId());
+            if (parentNode == null) {
+                throw new IllegalStateException("Unknown parent block for screen design block: " + block.id() + " -> " + block.parentBlockId());
+            }
+            parentNode.add(blockNode);
         }
         addItemNodes(blockNodes, design.items(), false);
         addItemNodes(blockNodes, design.temporaryItems(), true);
@@ -459,18 +507,15 @@ public final class ScreenDesignerApplication {
     static List<String> contextActionLabelsFor(NavigationNode navigationNode, boolean hasBlocks) {
         ArrayList<String> labels = new ArrayList<>();
         switch (navigationNode.type()) {
-            case SCREEN -> {
-                labels.add("Add Block");
-                if (hasBlocks) {
-                    labels.add("Add Item");
-                }
-            }
+            case SCREEN -> labels.add("Add Block");
             case BLOCK -> {
+                labels.add("Add Block");
                 labels.add("Add Item");
                 labels.add("Edit Block");
                 labels.add("Remove Block");
             }
             case ITEM, TEMPORARY_ITEM -> {
+                labels.add("Add Block");
                 labels.add("Add Item");
                 labels.add("Edit Item");
                 labels.add("Remove Item");
@@ -542,6 +587,28 @@ public final class ScreenDesignerApplication {
 
     private static String itemContent(ScreenDesignItem item) {
         return nullToBlank(item.type() == ScreenDesignItemType.TEXT ? item.text() : item.defaultValue());
+    }
+
+    private ScreenLayoutType[] blockLayoutOptions() {
+        ScreenLayoutType[] values = new ScreenLayoutType[ScreenLayoutType.values().length + 1];
+        System.arraycopy(ScreenLayoutType.values(), 0, values, 1, ScreenLayoutType.values().length);
+        return values;
+    }
+
+    private String[] parentBlockOptions(String excludedBlockId) {
+        List<String> options = new ArrayList<>();
+        options.add(SCREEN_PARENT_OPTION);
+        java.util.Set<String> excludedIds = excludedBlockId == null ? java.util.Set.of() : descendantBlockIds(design.blocks(), excludedBlockId);
+        for (ScreenDesignBlock block : design.blocks()) {
+            if (!excludedIds.contains(block.id())) {
+                options.add(block.id());
+            }
+        }
+        return options.toArray(String[]::new);
+    }
+
+    private static String parentBlockSelection(String selectedParent) {
+        return selectedParent == null || SCREEN_PARENT_OPTION.equals(selectedParent) ? null : selectedParent;
     }
 
     private JFileChooser jsonChooser() {
@@ -668,7 +735,7 @@ public final class ScreenDesignerApplication {
 
     private void performContextAction(String label, NavigationNode navigationNode) {
         switch (label) {
-            case "Add Block" -> addBlock();
+            case "Add Block" -> addBlock(navigationNode.type() == NodeType.SCREEN ? null : navigationNode.blockId());
             case "Add Item" -> addItem(false);
             case "Edit Block" -> editBlock(navigationNode.id());
             case "Remove Block" -> removeBlock(navigationNode.id());
@@ -699,7 +766,11 @@ public final class ScreenDesignerApplication {
             throw new IllegalArgumentException("Unknown screen design block id: " + oldBlockId);
         }
         List<ScreenDesignBlock> blocks = design.blocks().stream()
-                .map(block -> oldBlockId.equals(block.id()) ? updatedBlock : block)
+                .map(block -> oldBlockId.equals(block.id())
+                        ? updatedBlock
+                        : oldBlockId.equals(block.parentBlockId())
+                        ? new ScreenDesignBlock(block.id(), block.title(), block.layoutType(), updatedBlock.id(), block.styleClass(), block.metadata())
+                        : block)
                 .toList();
         List<ScreenDesignItem> items = remapItems(design.items(), oldBlockId, updatedBlock.id());
         List<ScreenDesignItem> temporaryItems = remapItems(design.temporaryItems(), oldBlockId, updatedBlock.id());
@@ -724,6 +795,30 @@ public final class ScreenDesignerApplication {
         return items.stream()
                 .map(item -> oldBlockId.equals(item.blockId()) ? item.inBlock(newBlockId) : item)
                 .toList();
+    }
+
+    private void updateNavigationActionState() {
+        addItemButton.setEnabled(selectedNavigationNode().map(ScreenDesignerApplication::canAddItemForNode).orElse(false));
+    }
+
+    static boolean canAddItemForNode(NavigationNode navigationNode) {
+        return navigationNode.type() != NodeType.SCREEN;
+    }
+
+    private static java.util.Set<String> descendantBlockIds(List<ScreenDesignBlock> blocks, String rootBlockId) {
+        java.util.LinkedHashSet<String> descendants = new java.util.LinkedHashSet<>();
+        java.util.ArrayDeque<String> pending = new java.util.ArrayDeque<>();
+        descendants.add(rootBlockId);
+        pending.add(rootBlockId);
+        while (!pending.isEmpty()) {
+            String parentId = pending.removeFirst();
+            for (ScreenDesignBlock block : blocks) {
+                if (parentId.equals(block.parentBlockId()) && descendants.add(block.id())) {
+                    pending.addLast(block.id());
+                }
+            }
+        }
+        return descendants;
     }
 
     private enum NodeType {

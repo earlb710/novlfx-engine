@@ -3,6 +3,7 @@ package com.eb.javafx.ui;
 import com.eb.javafx.util.Validation;
 
 import java.util.List;
+import java.util.ArrayList;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -21,10 +22,25 @@ public final class ScreenDesignLayoutAdapter {
         Set<String> temporaryItemIds = includeTemporaryItems
                 ? design.temporaryItems().stream().map(ScreenDesignItem::id).collect(Collectors.toSet())
                 : Set.of();
-        List<ScreenLayoutSection> sections = design.blocks().stream()
+        List<ScreenLayoutSection> sections = orderedBlocks(design.blocks()).stream()
                 .map(block -> toSection(block, previewItems, temporaryItemIds))
                 .toList();
         return new ScreenLayoutModel(design.layoutType(), design.title(), null, sections, List.of(), List.of(), List.of(), null);
+    }
+
+    private static List<ScreenDesignBlock> orderedBlocks(List<ScreenDesignBlock> blocks) {
+        ArrayList<ScreenDesignBlock> ordered = new ArrayList<>();
+        appendBlocks(ordered, blocks, null);
+        return List.copyOf(ordered);
+    }
+
+    private static void appendBlocks(List<ScreenDesignBlock> ordered, List<ScreenDesignBlock> blocks, String parentBlockId) {
+        for (ScreenDesignBlock block : blocks) {
+            if (java.util.Objects.equals(parentBlockId, block.parentBlockId())) {
+                ordered.add(block);
+                appendBlocks(ordered, blocks, block.id());
+            }
+        }
     }
 
     private static ScreenLayoutSection toSection(
