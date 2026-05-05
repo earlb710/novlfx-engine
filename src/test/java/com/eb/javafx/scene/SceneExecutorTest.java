@@ -155,6 +155,27 @@ final class SceneExecutorTest {
                 row.label().equals("Selected choices") && row.value().equals("advance")));
     }
 
+    @Test
+    void conversationFlowHandlerDisplaysConversationObjectAndReturnsInput() {
+        SceneDefinition conversation = SceneDefinition.of("conversation.lookup", List.of(SceneStep.choice("choice", List.of(
+                new SceneChoice(
+                        "continue",
+                        "conversation.continue",
+                        List.of(),
+                        List.of(),
+                        null,
+                        SceneTransition.complete(),
+                        Map.of("value", "continue-value"))))));
+        ConversationFlowHandler handler = new ConversationFlowHandler(actionContext(), viewModel -> {
+            assertEquals("conversation.lookup", viewModel.sceneId());
+            assertEquals(SceneExecutionStatus.WAITING_FOR_CHOICE, viewModel.status());
+            assertEquals("continue-value", viewModel.choices().get(0).value());
+            return viewModel.choices().get(0).value();
+        });
+
+        assertEquals("continue-value", handler.display(conversation));
+    }
+
     private ActionContext actionContext() {
         GameRandomService randomService = new GameRandomService();
         randomService.initialize();

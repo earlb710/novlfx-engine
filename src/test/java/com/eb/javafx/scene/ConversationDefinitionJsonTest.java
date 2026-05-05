@@ -13,6 +13,7 @@ import java.nio.file.Path;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -203,6 +204,23 @@ final class ConversationDefinitionJsonTest {
                 sceneRegistry.requireScene("sample.conversation.opening.block_0001").steps().get(4).choices().get(1).metadata().get("value"));
         assertEquals("sample.conversation.opening.block_0001",
                 sceneRegistry.requireScene("sample.conversation.opening.block_0001").id());
+    }
+
+    @Test
+    void looksUpConversationSceneByIdAndSupportsProgrammaticChoiceChanges() {
+        JsonConversationContentModule module = new JsonConversationContentModule(sampleConversation());
+
+        SceneDefinition conversation = module.requireConversationById("sample.conversation.opening.block_0001")
+                .withStep("line-0005", step -> step.withChoice("line-0005-choice-0001",
+                        choice -> choice.disabled("Needs key.").withIcon("icons/key")));
+        SceneChoice changedChoice = conversation.steps().get(4).choices().get(0);
+
+        assertTrue(module.conversationById("sample.conversation.opening.block_0001").isPresent());
+        assertFalse(module.conversationById("missing").isPresent());
+        assertEquals("Needs key.", changedChoice.disabledReason());
+        assertEquals("icons/key", changedChoice.metadata().get("icon"));
+        assertEquals("icons/key", changedChoice.metadata().get("preview.icon"));
+        assertEquals("left-path", changedChoice.metadata().get("value"));
     }
 
     private static ConversationDefinition sampleConversation() {

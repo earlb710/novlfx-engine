@@ -8,6 +8,7 @@ import com.eb.javafx.gamesupport.RequirementResult;
 import com.eb.javafx.util.ImmutableCollections;
 import com.eb.javafx.util.Validation;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -74,6 +75,34 @@ public final class SceneChoice {
 
     public Map<String, String> metadata() {
         return metadata;
+    }
+
+    public SceneChoice withRequirements(List<ActionRequirement> requirements, String disabledReason) {
+        return new SceneChoice(id, textDefinition, requirements, effects, disabledReason, transition, metadata);
+    }
+
+    public SceneChoice disabled(String reason) {
+        String checkedReason = Validation.requireNonBlank(reason, "Scene choice disabled reason is required.");
+        return withRequirements(List.of(context -> RequirementResult.blocked(checkedReason)), checkedReason);
+    }
+
+    public SceneChoice withMetadata(Map<String, String> metadata) {
+        return new SceneChoice(id, textDefinition, requirements, effects, disabledReason, transition, metadata);
+    }
+
+    public SceneChoice withMetadataValue(String key, String value) {
+        String checkedKey = Validation.requireNonBlank(key, "Scene choice metadata key is required.");
+        Map<String, String> updatedMetadata = new LinkedHashMap<>(metadata);
+        updatedMetadata.put(checkedKey, Validation.requireNonNull(value, "Scene choice metadata value is required."));
+        return withMetadata(updatedMetadata);
+    }
+
+    public SceneChoice withIcon(String iconId) {
+        String checkedIconId = Validation.requireNonBlank(iconId, "Scene choice icon id is required.");
+        Map<String, String> updatedMetadata = new LinkedHashMap<>(metadata);
+        updatedMetadata.put("icon", checkedIconId);
+        updatedMetadata.put("preview.icon", checkedIconId);
+        return withMetadata(updatedMetadata);
     }
 
     public RequirementResult availability(ActionContext context) {

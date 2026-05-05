@@ -14,6 +14,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /** Registers an LR2Alt-compatible JSON conversation document as content definitions and scene definitions. */
@@ -50,6 +51,28 @@ public final class JsonConversationContentModule implements StaticContentModule,
 
     public ConversationDefinition conversation() {
         return document;
+    }
+
+    public Optional<SceneDefinition> conversation(String id) {
+        String checkedId = Validation.requireNonBlank(id, "Conversation id is required.");
+        return document.conversations().stream()
+                .filter(conversation -> conversation.id().equals(checkedId))
+                .findFirst()
+                .map(conversation -> SceneDefinition.of(conversation.id(), stepsFor(conversation)));
+    }
+
+    public Optional<SceneDefinition> conversationById(String id) {
+        return conversation(id);
+    }
+
+    public SceneDefinition requireConversation(String id) {
+        String checkedId = Validation.requireNonBlank(id, "Conversation id is required.");
+        return conversation(checkedId)
+                .orElseThrow(() -> new IllegalArgumentException("Unknown conversation id: " + checkedId));
+    }
+
+    public SceneDefinition requireConversationById(String id) {
+        return requireConversation(id);
     }
 
     Map<String, String> definitions() {

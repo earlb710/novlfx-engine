@@ -7,6 +7,7 @@ import com.eb.javafx.util.Validation;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.UnaryOperator;
 
 /**
  * Reusable scene definition containing typed command steps and metadata.
@@ -45,5 +46,21 @@ public final class SceneDefinition {
 
     public Map<String, String> metadata() {
         return metadata;
+    }
+
+    public SceneDefinition withSteps(List<SceneStep> steps) {
+        return new SceneDefinition(id, entryRequirements, steps, metadata);
+    }
+
+    public SceneDefinition withStep(String stepId, UnaryOperator<SceneStep> mutator) {
+        String checkedStepId = Validation.requireNonBlank(stepId, "Scene step id is required.");
+        Objects.requireNonNull(mutator, "mutator");
+        return withSteps(steps.stream()
+                .map(step -> step.id().equals(checkedStepId) ? mutator.apply(step) : step)
+                .toList());
+    }
+
+    public SceneDefinition withMetadata(Map<String, String> metadata) {
+        return new SceneDefinition(id, entryRequirements, steps, metadata);
     }
 }
