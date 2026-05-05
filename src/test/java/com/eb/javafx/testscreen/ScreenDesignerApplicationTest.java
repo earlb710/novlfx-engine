@@ -312,6 +312,34 @@ final class ScreenDesignerApplicationTest {
     }
 
     @Test
+    void defaultValuesEditorListsTypesAndEditableAttributes() {
+        assertEquals(List.of("screen", "block", "text", "heading", "subheading", "field", "button", "fieldLabel"),
+                ScreenDesignerApplication.defaultValueTypeLabels());
+
+        ScreenDesignerApplication.DefaultValueType buttonType = ScreenDesignerApplication.defaultValueTypes().stream()
+                .filter(type -> "button".equals(type.label()))
+                .findFirst()
+                .orElseThrow();
+        Map<String, String> attributes = ScreenDesignerApplication.defaultValueAttributesFor(
+                com.eb.javafx.ui.DisplayDefaults.defaults(),
+                buttonType);
+
+        assertEquals("#0a1426", attributes.get("backgroundColor"));
+        assertEquals("#143869", attributes.get("hoverBackgroundColor"));
+        assertEquals("#0099cc", attributes.get("pressedBackgroundColor"));
+    }
+
+    @Test
+    void defaultValuesEditorSerializesEditedAttributesAsDisplayDefaultsJson() {
+        String json = ScreenDesignerApplication.displayDefaultsJson(com.eb.javafx.ui.DisplayDefaults.defaults());
+        com.eb.javafx.ui.DisplayDefaults reparsed = com.eb.javafx.ui.DisplayDefaults.fromJson(json, "round trip");
+
+        assertEquals(com.eb.javafx.ui.DisplayDefaults.defaults().screen(), reparsed.screen());
+        assertEquals(com.eb.javafx.ui.DisplayDefaults.defaults().itemDefaults(com.eb.javafx.ui.DisplayDefaults.ROLE_BUTTON),
+                reparsed.itemDefaults(com.eb.javafx.ui.DisplayDefaults.ROLE_BUTTON));
+    }
+
+    @Test
     void editorPinsPropertyButtonsBelowScrollablePropertiesPanel() throws Exception {
         ScreenDesignerApplication application = new ScreenDesignerApplication();
         invokePrivateMethod(application, "refreshAll");

@@ -16,6 +16,9 @@ final class DisplayDefaultsTest {
         assertEquals("0", defaults.block().get("transparency"));
         assertEquals("28", defaults.itemDefaults(DisplayDefaults.ROLE_HEADING).get("fontSize"));
         assertEquals("transparent", defaults.itemDefaults(DisplayDefaults.ROLE_TEXT).get("backgroundColor"));
+        assertEquals("#0a1426", defaults.itemDefaults(DisplayDefaults.ROLE_BUTTON).get("backgroundColor"));
+        assertEquals("#143869", defaults.itemDefaults(DisplayDefaults.ROLE_BUTTON).get("hoverBackgroundColor"));
+        assertEquals("#0099cc", defaults.itemDefaults(DisplayDefaults.ROLE_BUTTON).get("pressedBackgroundColor"));
         assertEquals("bold", defaults.labelDefaults(DisplayDefaults.ROLE_FIELD_LABEL).get("fontStyle"));
     }
 
