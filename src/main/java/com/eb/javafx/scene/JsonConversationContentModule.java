@@ -61,11 +61,6 @@ public final class JsonConversationContentModule implements StaticContentModule,
                 .map(conversation -> SceneDefinition.of(conversation.id(), stepsFor(conversation)));
     }
 
-    /** Descriptive alias for callers that prefer explicit id-based lookup naming. */
-    public Optional<SceneDefinition> conversationById(String id) {
-        return findConversationById(id);
-    }
-
     public SceneDefinition requireConversationById(String id) {
         String checkedId = Validation.requireNonBlank(id, "Conversation id is required.");
         return findConversationById(checkedId)

@@ -22,6 +22,7 @@ public final class ConversationFlowHandler {
 
     public String display(SceneDefinition conversation) {
         SceneDefinition checkedConversation = Validation.requireNonNull(conversation, "Conversation scene is required.");
+        // Use a fresh registry so callers can pass independently manipulated copies of the same conversation id.
         SceneRegistry sceneRegistry = new SceneRegistry();
         sceneRegistry.register(checkedConversation);
         SceneExecutor executor = new SceneExecutor(sceneRegistry);
