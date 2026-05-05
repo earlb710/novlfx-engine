@@ -30,7 +30,6 @@ import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreePath;
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
-import java.awt.Component;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.GridLayout;
@@ -181,15 +180,10 @@ public final class ConversationEditorApplication {
             constraints.gridx = 1;
             constraints.weightx = 1.0;
             constraints.fill = GridBagConstraints.HORIZONTAL;
-            panel.add(sizedSingleLineField(row.field()), constraints);
+            panel.add(row.field(), constraints);
             constraints.gridy++;
         }
         return panel;
-    }
-
-    private static Component sizedSingleLineField(JComponent field) {
-        field.setMaximumSize(field.getPreferredSize());
-        return field;
     }
 
     private static FormRow formRow(String label, JComponent field) {

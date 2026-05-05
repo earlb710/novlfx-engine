@@ -98,17 +98,24 @@ public final class ConversationDefinitionJson {
     }
 
     private static String requiredStringAllowingEmpty(Map<String, Object> object, String key, String description) {
-        if (!object.containsKey(key) || object.get(key) == null) {
+        if (!object.containsKey(key)) {
             throw new IllegalArgumentException("Missing JSON string for " + description + ".");
         }
-        return stringAllowingEmpty(object, key, description, null);
+        String value = stringAllowingEmpty(object.get(key), description, null);
+        if (value == null) {
+            throw new IllegalArgumentException("Missing JSON string for " + description + ".");
+        }
+        return value;
     }
 
     private static String stringAllowingEmpty(Map<String, Object> object, String key, String description, String defaultValue) {
         if (!object.containsKey(key)) {
             return defaultValue;
         }
-        Object value = object.get(key);
+        return stringAllowingEmpty(object.get(key), description, defaultValue);
+    }
+
+    private static String stringAllowingEmpty(Object value, String description, String defaultValue) {
         if (value == null) {
             return defaultValue;
         }
