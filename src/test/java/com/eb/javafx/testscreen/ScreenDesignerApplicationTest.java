@@ -8,9 +8,9 @@ import com.eb.javafx.ui.ScreenDesignModel;
 import com.eb.javafx.ui.ScreenDesignValidator;
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
 import java.awt.BorderLayout;
 import java.awt.Component;
-import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.nio.file.Files;

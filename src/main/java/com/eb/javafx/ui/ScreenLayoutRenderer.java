@@ -223,7 +223,7 @@ public final class ScreenLayoutRenderer {
 
     private static void appendOpacity(StringBuilder style, String transparency) {
         Double opacity = opacityFromTransparency(transparency);
-        if (opacity == null || opacity < 0.0 || opacity >= 1.0) {
+        if (opacity == null || opacity < 0.0 || opacity > 1.0) {
             return;
         }
         style.append("-fx-opacity: ").append(formatDecimal(opacity)).append("; ");
