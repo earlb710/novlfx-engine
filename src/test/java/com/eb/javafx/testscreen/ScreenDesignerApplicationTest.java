@@ -359,6 +359,9 @@ final class ScreenDesignerApplicationTest {
         assertEquals("", ScreenDesignerApplication.defaultValueFontStyleOptions()[0]);
         assertEquals("", ScreenDesignerApplication.defaultValueBorderStyleOptions()[0]);
         assertEquals("", ScreenDesignerApplication.defaultValueBorderCornerOptions()[0]);
+        assertEquals("<inherit from CSS>", ScreenDesignerApplication.defaultValueDisplayText(""));
+        assertEquals("<inherit from CSS>", ScreenDesignerApplication.defaultValueDisplayText(null));
+        assertEquals("bold", ScreenDesignerApplication.defaultValueDisplayText("bold"));
     }
 
     @Test

@@ -47,7 +47,9 @@ import javax.swing.ListSelectionModel;
 import javax.swing.SwingUtilities;
 import javax.swing.WindowConstants;
 import javax.swing.table.AbstractTableModel;
+import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.TableCellEditor;
+import javax.swing.table.TableCellRenderer;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
@@ -86,6 +88,7 @@ import javax.swing.tree.TreeSelectionModel;
 public final class ScreenDesignerApplication {
     private static final String SCREEN_PARENT_OPTION = "<screen>";
     private static final String DEFAULT_OPTION = "<default>";
+    private static final String CSS_INHERITANCE_HINT = "<inherit from CSS>";
     private static final String FONT_FAMILY_KEY = "fontFamily";
     private static final String ITEM_FONT_SIZE_KEY = "fontSize";
     private static final String ITEM_FONT_STYLE_KEY = "fontStyle";
@@ -1638,6 +1641,10 @@ public final class ScreenDesignerApplication {
         return withBlankDefaultOption(BORDER_CORNER_OPTIONS);
     }
 
+    static String defaultValueDisplayText(String value) {
+        return value == null || value.isBlank() ? CSS_INHERITANCE_HINT : value;
+    }
+
     private static String[] withBlankDefaultOption(String[] options) {
         String[] values = new String[options.length];
         values[0] = "";
@@ -1971,8 +1978,41 @@ public final class ScreenDesignerApplication {
     }
 
     private static final class DefaultAttributesTable extends JTable {
+        private final TableCellRenderer valueRenderer = new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(
+                    JTable table,
+                    Object value,
+                    boolean isSelected,
+                    boolean hasFocus,
+                    int row,
+                    int column) {
+                Component component = super.getTableCellRendererComponent(
+                        table,
+                        defaultValueDisplayText(value == null ? "" : value.toString()),
+                        isSelected,
+                        hasFocus,
+                        row,
+                        column);
+                if (!isSelected) {
+                    component.setForeground(value == null || value.toString().isBlank()
+                            ? Color.GRAY
+                            : table.getForeground());
+                }
+                return component;
+            }
+        };
+
         private DefaultAttributesTable(DefaultAttributesTableModel model) {
             super(model);
+        }
+
+        @Override
+        public TableCellRenderer getCellRenderer(int row, int column) {
+            if (column == 1) {
+                return valueRenderer;
+            }
+            return super.getCellRenderer(row, column);
         }
 
         @Override

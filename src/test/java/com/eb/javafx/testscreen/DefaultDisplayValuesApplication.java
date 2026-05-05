@@ -4,9 +4,11 @@ import com.eb.javafx.util.Validation;
 import com.eb.javafx.ui.DisplayDefaults;
 import com.eb.javafx.util.JsonData;
 
+import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
@@ -17,6 +19,7 @@ import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import java.awt.GridLayout;
 import java.awt.Insets;
 import java.io.IOException;
 import java.io.InputStream;
@@ -25,6 +28,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 
 /** Manual editor for engine default display values and viewer for related resources. */
 public final class DefaultDisplayValuesApplication {
@@ -33,6 +37,7 @@ public final class DefaultDisplayValuesApplication {
             new DisplayResource("Default CSS", "/com/eb/javafx/ui/default.css"),
             new DisplayResource("Layout Contract", "/com/eb/javafx/ui/layout-contract.json"));
     private DisplayDefaults displayDefaults = DisplayDefaults.defaults();
+    private List<ApplicationConfigField> editedApplicationConfigFields = applicationConfigFields();
     private final JLabel statusLabel = new JLabel("Editing default app values.");
 
     public static void main(String[] args) {
@@ -51,7 +56,13 @@ public final class DefaultDisplayValuesApplication {
     private JPanel content(JFrame frame) {
         JPanel root = new JPanel(new BorderLayout(8, 8));
         JTabbedPane tabs = new JTabbedPane();
-        tabs.addTab("Application Values", applicationValuesPanel(applicationConfigFields()));
+        tabs.addTab("Application Values", applicationValuesPanel(
+                editedApplicationConfigFields,
+                updatedFields -> {
+                    editedApplicationConfigFields = updatedFields;
+                    statusLabel.setText("Updated application values for this management screen.");
+                },
+                frame));
         tabs.addTab("Display Values", ScreenDesignerApplication.defaultValuesEditorPanel(
                 displayDefaults,
                 updatedDefaults -> {
@@ -69,16 +80,27 @@ public final class DefaultDisplayValuesApplication {
         return root;
     }
 
-    private static JPanel applicationValuesPanel(List<ApplicationConfigField> fields) {
+    static JPanel applicationValuesPanel(List<ApplicationConfigField> fields) {
+        return applicationValuesPanel(fields, ignored -> {
+        }, null);
+    }
+
+    private static JPanel applicationValuesPanel(
+            List<ApplicationConfigField> fields,
+            Consumer<List<ApplicationConfigField>> saveAction,
+            Component messageParent) {
         JPanel panel = new JPanel(new BorderLayout(8, 8));
         panel.add(new JLabel("<html>Application config values from <code>"
                 + APPLICATION_CONFIG_RESOURCE
-                + "</code>.</html>"), BorderLayout.NORTH);
+                + "</code>. Changes apply only to this management screen.</html>"), BorderLayout.NORTH);
         JPanel fieldPanel = new JPanel(new GridBagLayout());
+        LinkedHashMap<ApplicationConfigField, Component> editors = new LinkedHashMap<>();
         for (int row = 0; row < fields.size(); row++) {
             ApplicationConfigField field = fields.get(row);
             fieldPanel.add(new JLabel(field.label()), fieldConstraints(row, 0, 0.0));
-            fieldPanel.add(readOnlyField(field), fieldConstraints(row, 1, 1.0));
+            Component editor = editableField(field);
+            editors.put(field, editor);
+            fieldPanel.add(editor, fieldConstraints(row, 1, 1.0));
         }
         GridBagConstraints filler = new GridBagConstraints();
         filler.gridx = 0;
@@ -88,19 +110,67 @@ public final class DefaultDisplayValuesApplication {
         filler.fill = GridBagConstraints.VERTICAL;
         fieldPanel.add(new JPanel(), filler);
         panel.add(new JScrollPane(fieldPanel), BorderLayout.CENTER);
+        JPanel actions = new JPanel(new GridLayout(1, 2, 6, 0));
+        JButton save = new JButton(applicationValueActionLabels().get(0));
+        JButton reset = new JButton(applicationValueActionLabels().get(1));
+        save.addActionListener(event -> {
+            try {
+                saveAction.accept(editedApplicationConfigFields(editors));
+            } catch (RuntimeException exception) {
+                JOptionPane.showMessageDialog(
+                        messageParent,
+                        exception.getMessage(),
+                        "Application Values Error",
+                        JOptionPane.ERROR_MESSAGE);
+            }
+        });
+        reset.addActionListener(event -> editors.forEach((field, editor) -> setEditorValue(editor, field.value())));
+        actions.add(save);
+        actions.add(reset);
+        panel.add(actions, BorderLayout.SOUTH);
         return panel;
     }
 
-    private static Component readOnlyField(ApplicationConfigField field) {
+    static List<String> applicationValueActionLabels() {
+        return List.of("Save", "Reset");
+    }
+
+    static Component editableField(ApplicationConfigField field) {
         if ("true".equals(field.value()) || "false".equals(field.value())) {
             JCheckBox checkBox = new JCheckBox();
             checkBox.setSelected(Boolean.parseBoolean(field.value()));
-            checkBox.setEnabled(false);
             return checkBox;
         }
         JTextField textField = new JTextField(field.value());
-        textField.setEditable(false);
         return textField;
+    }
+
+    private static List<ApplicationConfigField> editedApplicationConfigFields(Map<ApplicationConfigField, Component> editors) {
+        return editors.entrySet().stream()
+                .map(entry -> new ApplicationConfigField(entry.getKey().label(), editorValue(entry.getValue())))
+                .toList();
+    }
+
+    private static String editorValue(Component editor) {
+        if (editor instanceof JCheckBox checkBox) {
+            return Boolean.toString(checkBox.isSelected());
+        }
+        if (editor instanceof JTextField textField) {
+            return textField.getText();
+        }
+        throw new IllegalArgumentException("Unsupported application value editor: " + editor.getClass().getName());
+    }
+
+    private static void setEditorValue(Component editor, String value) {
+        if (editor instanceof JCheckBox checkBox) {
+            checkBox.setSelected(Boolean.parseBoolean(value));
+            return;
+        }
+        if (editor instanceof JTextField textField) {
+            textField.setText(value);
+            return;
+        }
+        throw new IllegalArgumentException("Unsupported application value editor: " + editor.getClass().getName());
     }
 
     private static GridBagConstraints fieldConstraints(int row, int column, double weightx) {

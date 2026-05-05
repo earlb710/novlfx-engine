@@ -2,6 +2,9 @@ package com.eb.javafx.testscreen;
 
 import org.junit.jupiter.api.Test;
 
+import javax.swing.JCheckBox;
+import javax.swing.JTextField;
+import java.awt.Component;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -33,6 +36,26 @@ final class DefaultDisplayValuesApplicationTest {
         assertTrue(DefaultDisplayValuesApplication.applicationConfigFields().stream()
                 .anyMatch(field -> field.label().equals("resources.uiTheme")
                         && field.value().equals("src/main/resources/com/eb/javafx/ui/default.css")));
+    }
+
+    @Test
+    void applicationValuesUseEditableControls() {
+        Component booleanEditor = DefaultDisplayValuesApplication.editableField(
+                new DefaultDisplayValuesApplication.ApplicationConfigField("debug", "true"));
+        Component textEditor = DefaultDisplayValuesApplication.editableField(
+                new DefaultDisplayValuesApplication.ApplicationConfigField("imageAssetRoot", "game"));
+
+        assertTrue(booleanEditor instanceof JCheckBox);
+        assertTrue(booleanEditor.isEnabled());
+        assertTrue(((JCheckBox) booleanEditor).isSelected());
+        assertTrue(textEditor instanceof JTextField);
+        assertTrue(((JTextField) textEditor).isEditable());
+        assertEquals("game", ((JTextField) textEditor).getText());
+    }
+
+    @Test
+    void applicationValuesPanelIncludesSaveAndResetActions() {
+        assertEquals(List.of("Save", "Reset"), DefaultDisplayValuesApplication.applicationValueActionLabels());
     }
 
     @Test
