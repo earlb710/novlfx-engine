@@ -6,6 +6,7 @@ import com.eb.javafx.scene.SceneChoice;
 import com.eb.javafx.scene.SceneDefinition;
 import com.eb.javafx.scene.SceneRegistry;
 import com.eb.javafx.scene.SceneStep;
+import com.eb.javafx.scene.SceneStepType;
 import com.eb.javafx.scene.SceneTransition;
 import com.eb.javafx.scene.SceneValidationProblem;
 import com.eb.javafx.scene.SceneValidationSeverity;
@@ -309,7 +310,7 @@ public final class ConversationEditorApplication {
                         "sample.conversation.choice.continue",
                         SceneTransition.jump("sample.conversation.end"))))));
         SceneDefinition end = SceneDefinition.of("sample.conversation.end", List.of(
-                SceneStep.create("end", com.eb.javafx.scene.SceneStepType.NARRATION, null,
+                SceneStep.create("end", SceneStepType.NARRATION, null,
                         "sample.conversation.end", null, List.of(), List.of(), SceneTransition.complete(), Map.of())));
         return new ConversationDefinition(
                 "sample.conversation",
