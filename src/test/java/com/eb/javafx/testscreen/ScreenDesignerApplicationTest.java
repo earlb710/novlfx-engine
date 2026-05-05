@@ -164,7 +164,7 @@ final class ScreenDesignerApplicationTest {
 
     @Test
     void fileMenuLabelsContainFileActionsMovedFromToolbar() {
-        assertEquals(List.of("New", "Open JSON", "Save", "Save As"),
+        assertEquals(List.of("New", "Load", "Save", "Save As"),
                 ScreenDesignerApplication.fileMenuActionLabels());
     }
 

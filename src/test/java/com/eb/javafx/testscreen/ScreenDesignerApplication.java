@@ -20,7 +20,6 @@ import javafx.scene.Scene;
 import javafx.stage.Stage;
 
 import javax.swing.JButton;
-import javax.swing.BoxLayout;
 import javax.swing.JComboBox;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
@@ -113,7 +112,7 @@ public final class ScreenDesignerApplication {
     private JMenuItem fileMenuItem(String label) {
         Runnable action = switch (label) {
             case "New" -> this::newScreen;
-            case "Open JSON" -> this::loadJson;
+            case "Load" -> this::loadJson;
             case "Save" -> this::saveJson;
             case "Save As" -> this::saveJsonAs;
             default -> throw new IllegalArgumentException("Unknown file menu item: " + label);
@@ -151,14 +150,11 @@ public final class ScreenDesignerApplication {
     }
 
     private JPanel navigationActions() {
-        JPanel panel = new JPanel();
-        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        JPanel panel = new JPanel(new GridLayout(1, 2, 6, 0));
         JButton addBlock = new JButton("Add Block");
         JButton addItem = new JButton("Add Item");
         addBlock.addActionListener(event -> runSafely("Add Block", this::addBlock));
         addItem.addActionListener(event -> runSafely("Add Item", () -> addItem(false)));
-        addBlock.setAlignmentX(JButton.CENTER_ALIGNMENT);
-        addItem.setAlignmentX(JButton.CENTER_ALIGNMENT);
         panel.add(addBlock);
         panel.add(addItem);
         return panel;
@@ -484,7 +480,7 @@ public final class ScreenDesignerApplication {
     }
 
     static List<String> fileMenuActionLabels() {
-        return List.of("New", "Open JSON", "Save", "Save As");
+        return List.of("New", "Load", "Save", "Save As");
     }
 
     private static String previewText(ScreenLayoutModel model) {
