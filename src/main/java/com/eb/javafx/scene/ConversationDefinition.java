@@ -110,9 +110,5 @@ public final class ConversationDefinition {
             conditions = List.copyOf(Validation.requireNonNull(conditions, "Conversation variant conditions are required."));
             tooltipText = Validation.requireNonNull(tooltipText, "Conversation variant tooltip text cannot be null.");
         }
-
-        public ConversationVariant(String text, String value, double weight, List<String> conditions) {
-            this(text, value, weight, conditions, "");
-        }
     }
 }
