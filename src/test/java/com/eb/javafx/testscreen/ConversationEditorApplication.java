@@ -1,15 +1,10 @@
 package com.eb.javafx.testscreen;
 
 import com.eb.javafx.scene.ConversationDefinition;
+import com.eb.javafx.scene.ConversationDefinition.ConversationBlock;
+import com.eb.javafx.scene.ConversationDefinition.ConversationLine;
+import com.eb.javafx.scene.ConversationDefinition.ConversationVariant;
 import com.eb.javafx.scene.ConversationDefinitionJson;
-import com.eb.javafx.scene.SceneChoice;
-import com.eb.javafx.scene.SceneDefinition;
-import com.eb.javafx.scene.SceneRegistry;
-import com.eb.javafx.scene.SceneStep;
-import com.eb.javafx.scene.SceneStepType;
-import com.eb.javafx.scene.SceneTransition;
-import com.eb.javafx.scene.SceneValidationProblem;
-import com.eb.javafx.scene.SceneValidationSeverity;
 import com.eb.javafx.util.Validation;
 
 import javax.swing.JButton;
@@ -34,12 +29,9 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 
-/** Manual Swing editor for JSON-backed conversation bundles. */
+/** Manual Swing editor for LR2Alt-compatible JSON conversation documents. */
 public final class ConversationEditorApplication {
     private ConversationDefinition conversation = sampleConversation();
     private final DefaultTreeModel objectTreeModel = new DefaultTreeModel(new DefaultMutableTreeNode());
@@ -243,80 +235,41 @@ public final class ConversationEditorApplication {
     }
 
     static DefaultMutableTreeNode buildNavigationTree(ConversationDefinition conversation) {
-        DefaultMutableTreeNode root = new DefaultMutableTreeNode("conversation: " + conversation.id());
-        DefaultMutableTreeNode definitions = new DefaultMutableTreeNode("definitions: " + conversation.definitions().size());
-        conversation.definitions().keySet().forEach(key -> definitions.add(new DefaultMutableTreeNode("definition: " + key)));
-        root.add(definitions);
-        DefaultMutableTreeNode scenes = new DefaultMutableTreeNode("scenes: " + conversation.scenes().size());
-        conversation.scenes().forEach(scene -> scenes.add(sceneNode(scene)));
-        root.add(scenes);
+        DefaultMutableTreeNode root = new DefaultMutableTreeNode(
+                "conversation document: schema " + conversation.schemaVersion() + " / " + conversation.language());
+        conversation.conversations().forEach(block -> root.add(conversationNode(block)));
         return root;
     }
 
-    private static DefaultMutableTreeNode sceneNode(SceneDefinition scene) {
-        DefaultMutableTreeNode node = new DefaultMutableTreeNode("scene: " + scene.id());
-        scene.steps().forEach(step -> node.add(stepNode(step)));
+    private static DefaultMutableTreeNode conversationNode(ConversationBlock conversation) {
+        DefaultMutableTreeNode node = new DefaultMutableTreeNode("conversation: " + conversation.id());
+        conversation.lines().forEach(line -> node.add(lineNode(line)));
         return node;
     }
 
-    private static DefaultMutableTreeNode stepNode(SceneStep step) {
-        DefaultMutableTreeNode node = new DefaultMutableTreeNode("step: " + step.id() + " (" + step.type() + ")");
-        step.choices().forEach(choice -> node.add(new DefaultMutableTreeNode("choice: " + choice.id())));
+    private static DefaultMutableTreeNode lineNode(ConversationLine line) {
+        DefaultMutableTreeNode node = new DefaultMutableTreeNode("line: " + line.speaker());
+        line.variants().forEach(variant -> node.add(new DefaultMutableTreeNode("variant: " + preview(variant.text()))));
         return node;
+    }
+
+    private static String preview(String text) {
+        return text.length() <= 40 ? text : text.substring(0, 37) + "...";
     }
 
     static List<String> validationProblems(ConversationDefinition conversation) {
-        List<String> problems = new ArrayList<>();
-        if (!conversation.definitions().containsKey(conversation.titleDefinition())) {
-            problems.add("Missing title definition: " + conversation.titleDefinition());
-        }
-        conversation.scenes().forEach(scene -> scene.steps().forEach(step -> {
-            if (step.textDefinition() != null && !conversation.definitions().containsKey(step.textDefinition())) {
-                problems.add("Missing step text definition: " + scene.id() + "/" + step.id() + " -> " + step.textDefinition());
-            }
-            step.choices().forEach(choice -> addChoiceProblem(conversation, scene, step, choice, problems));
-        }));
-        SceneRegistry registry = new SceneRegistry();
-        conversation.scenes().forEach(registry::register);
-        registry.validationReport(List.of()).problems().stream()
-                .filter(problem -> problem.severity() == SceneValidationSeverity.ERROR)
-                .map(SceneValidationProblem::message)
-                .forEach(problems::add);
-        return List.copyOf(problems);
-    }
-
-    private static void addChoiceProblem(
-            ConversationDefinition conversation,
-            SceneDefinition scene,
-            SceneStep step,
-            SceneChoice choice,
-            List<String> problems) {
-        if (!conversation.definitions().containsKey(choice.textDefinition())) {
-            problems.add("Missing choice text definition: " + scene.id() + "/" + step.id() + "/" + choice.id()
-                    + " -> " + choice.textDefinition());
-        }
+        return List.of();
     }
 
     static ConversationDefinition sampleConversation() {
-        Map<String, String> definitions = new LinkedHashMap<>();
-        definitions.put("sample.conversation.title", "Sample Conversation");
-        definitions.put("sample.conversation.intro", "The JavaFX conversation starts from content definitions.");
-        definitions.put("sample.conversation.choice.continue", "Continue");
-        definitions.put("sample.conversation.end", "The scene-flow conversation is complete.");
-        SceneDefinition start = SceneDefinition.of("sample.conversation.start", List.of(
-                SceneStep.narration("intro", "sample.conversation.intro"),
-                SceneStep.choice("branch", List.of(SceneChoice.of(
-                        "continue",
-                        "sample.conversation.choice.continue",
-                        SceneTransition.jump("sample.conversation.end"))))));
-        SceneDefinition end = SceneDefinition.of("sample.conversation.end", List.of(
-                SceneStep.create("end", SceneStepType.NARRATION, null,
-                        "sample.conversation.end", null, List.of(), List.of(), SceneTransition.complete(), Map.of())));
         return new ConversationDefinition(
-                "sample.conversation",
-                "sample.conversation.title",
-                definitions,
-                List.of(start, end),
-                Map.of("format", "lr2alt-scene-content"));
+                1,
+                "en",
+                List.of(new ConversationBlock(
+                        "sample.conversation.opening.block_0001",
+                        "Generic example conversation using the LR2Alt exported conversation JSON schema.",
+                        List.of(
+                                new ConversationLine("narrator", List.of(new ConversationVariant("A reusable conversation document can hold narration."))),
+                                new ConversationLine("guide", List.of(new ConversationVariant("It can also hold speaker-labelled lines.")))))));
     }
 }

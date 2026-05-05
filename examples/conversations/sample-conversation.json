@@ -1,56 +1,27 @@
 {
-  "id": "sample.conversation",
-  "titleDefinition": "sample.conversation.title",
-  "metadata": {"source": "generic example"},
-  "definitions": {
-    "sample.conversation.title": "Sample Conversation",
-    "sample.conversation.choice.help": "Ask for help",
-    "sample.conversation.choice.explore": "Explore on your own",
-    "sample.conversation.help.line": "The guide points out a safe path through the archive.",
-    "sample.conversation.explore.line": "You take a careful look around and notice a labeled door.",
-    "sample.conversation.end.line": "The conversation ends with your next objective clearly marked."
-  },
-  "scenes": [
+  "schemaVersion": 1,
+  "language": "en",
+  "conversations": [
     {
-      "id": "sample.conversation.start",
-      "metadata": {"conversation": "sample.conversation"},
-      "steps": [
+      "id": "sample.conversation.opening.block_0001",
+      "description": "Generic example conversation using the LR2Alt exported conversation JSON schema.",
+      "lines": [
         {
-          "id": "opening-choice",
-          "type": "CHOICE",
-          "speakerId": null,
-          "textDefinition": null,
-          "displayReference": null,
-          "transition": {"type": "NEXT", "targetSceneId": null},
-          "metadata": {"kind": "branch"},
-          "choices": [
-            {"id": "ask-help", "textDefinition": "sample.conversation.choice.help", "disabledReason": null, "transition": {"type": "JUMP", "targetSceneId": "sample.conversation.help"}, "metadata": {}},
-            {"id": "explore", "textDefinition": "sample.conversation.choice.explore", "disabledReason": null, "transition": {"type": "JUMP", "targetSceneId": "sample.conversation.explore"}, "metadata": {}}
+          "speaker": "narrator",
+          "variants": [
+            {
+              "text": "A reusable conversation document can hold narration."
+            }
+          ]
+        },
+        {
+          "speaker": "guide",
+          "variants": [
+            {
+              "text": "It can also hold speaker-labelled lines."
+            }
           ]
         }
-      ]
-    },
-    {
-      "id": "sample.conversation.help",
-      "metadata": {"conversation": "sample.conversation"},
-      "steps": [
-        {"id": "help-line", "type": "NARRATION", "speakerId": null, "textDefinition": "sample.conversation.help.line", "displayReference": null, "transition": {"type": "NEXT", "targetSceneId": null}, "metadata": {}, "choices": []},
-        {"id": "to-ending", "type": "TRANSITION", "speakerId": null, "textDefinition": null, "displayReference": null, "transition": {"type": "JUMP", "targetSceneId": "sample.conversation.end"}, "metadata": {}, "choices": []}
-      ]
-    },
-    {
-      "id": "sample.conversation.explore",
-      "metadata": {"conversation": "sample.conversation"},
-      "steps": [
-        {"id": "explore-line", "type": "NARRATION", "speakerId": null, "textDefinition": "sample.conversation.explore.line", "displayReference": null, "transition": {"type": "NEXT", "targetSceneId": null}, "metadata": {}, "choices": []},
-        {"id": "to-ending", "type": "TRANSITION", "speakerId": null, "textDefinition": null, "displayReference": null, "transition": {"type": "JUMP", "targetSceneId": "sample.conversation.end"}, "metadata": {}, "choices": []}
-      ]
-    },
-    {
-      "id": "sample.conversation.end",
-      "metadata": {"conversation": "sample.conversation"},
-      "steps": [
-        {"id": "ending-line", "type": "NARRATION", "speakerId": null, "textDefinition": "sample.conversation.end.line", "displayReference": null, "transition": {"type": "COMPLETE", "targetSceneId": null}, "metadata": {}, "choices": []}
       ]
     }
   ]

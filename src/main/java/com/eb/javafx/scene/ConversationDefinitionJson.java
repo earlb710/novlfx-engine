@@ -1,5 +1,8 @@
 package com.eb.javafx.scene;
 
+import com.eb.javafx.scene.ConversationDefinition.ConversationBlock;
+import com.eb.javafx.scene.ConversationDefinition.ConversationLine;
+import com.eb.javafx.scene.ConversationDefinition.ConversationVariant;
 import com.eb.javafx.util.JsonData;
 import com.eb.javafx.util.JsonStrings;
 import com.eb.javafx.util.Validation;
@@ -11,7 +14,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 
-/** JSON import/export for conversation bundles containing content definitions and scene-flow data. */
+/** JSON import/export for LR2Alt-compatible conversation documents. */
 public final class ConversationDefinitionJson {
     private ConversationDefinitionJson() {
     }
@@ -41,32 +44,24 @@ public final class ConversationDefinitionJson {
 
     public static ConversationDefinition fromJson(String json, String sourceName) {
         Map<String, Object> root = JsonData.rootObject(json, sourceName);
-        List<SceneDefinition> scenes = JsonData.requiredList(root, "scenes", "conversation scenes").stream()
-                .map(entry -> SceneDefinitionJson.parseScene(JsonData.requireObject(entry, "conversation scenes[]")))
+        List<ConversationBlock> conversations = JsonData.requiredList(root, "conversations", "conversations").stream()
+                .map(entry -> parseConversation(JsonData.requireObject(entry, "conversations[]")))
                 .toList();
         return new ConversationDefinition(
-                JsonData.requiredString(root, "id", "conversation id"),
-                JsonData.requiredString(root, "titleDefinition", "conversation titleDefinition"),
-                JsonData.optionalObject(root, "definitions", "conversation definitions")
-                        .map(definitions -> JsonData.stringMap(definitions, "conversation definitions"))
-                        .orElse(Map.of()),
-                scenes,
-                JsonData.optionalObject(root, "metadata", "conversation metadata")
-                        .map(metadata -> JsonData.stringMap(metadata, "conversation metadata"))
-                        .orElse(Map.of()));
+                JsonData.requiredInt(root, "schemaVersion", "conversation schemaVersion"),
+                JsonData.requiredString(root, "language", "conversation language"),
+                conversations);
     }
 
-    public static String toJson(ConversationDefinition conversation) {
-        Validation.requireNonNull(conversation, "Conversation definition is required.");
+    public static String toJson(ConversationDefinition document) {
+        Validation.requireNonNull(document, "Conversation definition is required.");
         StringBuilder json = new StringBuilder("{\n")
-                .append("  \"id\": ").append(JsonStrings.quote(conversation.id())).append(",\n")
-                .append("  \"titleDefinition\": ").append(JsonStrings.quote(conversation.titleDefinition())).append(",\n")
-                .append("  \"metadata\": ").append(SceneDefinitionJson.stringMapJson(conversation.metadata())).append(",\n")
-                .append("  \"definitions\": ").append(SceneDefinitionJson.stringMapJson(conversation.definitions())).append(",\n")
-                .append("  \"scenes\": [\n");
-        for (int index = 0; index < conversation.scenes().size(); index++) {
-            SceneDefinitionJson.appendScene(json, conversation.scenes().get(index), "    ");
-            if (index + 1 < conversation.scenes().size()) {
+                .append("  \"schemaVersion\": ").append(document.schemaVersion()).append(",\n")
+                .append("  \"language\": ").append(JsonStrings.quote(document.language())).append(",\n")
+                .append("  \"conversations\": [\n");
+        for (int index = 0; index < document.conversations().size(); index++) {
+            appendConversation(json, document.conversations().get(index), "    ");
+            if (index + 1 < document.conversations().size()) {
                 json.append(',');
             }
             json.append('\n');
@@ -75,4 +70,67 @@ public final class ConversationDefinitionJson {
         return json.toString();
     }
 
+    private static ConversationBlock parseConversation(Map<String, Object> object) {
+        List<ConversationLine> lines = JsonData.requiredList(object, "lines", "conversation lines").stream()
+                .map(entry -> parseLine(JsonData.requireObject(entry, "conversation lines[]")))
+                .toList();
+        return new ConversationBlock(
+                JsonData.requiredString(object, "id", "conversation id"),
+                JsonData.requiredString(object, "description", "conversation description"),
+                lines);
+    }
+
+    private static ConversationLine parseLine(Map<String, Object> object) {
+        List<ConversationVariant> variants = JsonData.requiredList(object, "variants", "conversation line variants").stream()
+                .map(entry -> parseVariant(JsonData.requireObject(entry, "conversation line variants[]")))
+                .toList();
+        return new ConversationLine(
+                JsonData.requiredString(object, "speaker", "conversation line speaker"),
+                variants);
+    }
+
+    private static ConversationVariant parseVariant(Map<String, Object> object) {
+        return new ConversationVariant(requiredStringAllowingEmpty(object, "text", "conversation variant text"));
+    }
+
+    private static String requiredStringAllowingEmpty(Map<String, Object> object, String key, String description) {
+        if (!object.containsKey(key) || object.get(key) == null) {
+            throw new IllegalArgumentException("Missing JSON string for " + description + ".");
+        }
+        Object value = object.get(key);
+        if (value instanceof String stringValue) {
+            return stringValue;
+        }
+        throw new IllegalArgumentException("Expected JSON string for " + description + ".");
+    }
+
+    private static void appendConversation(StringBuilder json, ConversationBlock conversation, String indent) {
+        json.append(indent).append("{\n")
+                .append(indent).append("  \"id\": ").append(JsonStrings.quote(conversation.id())).append(",\n")
+                .append(indent).append("  \"description\": ").append(JsonStrings.quote(conversation.description())).append(",\n")
+                .append(indent).append("  \"lines\": [\n");
+        for (int index = 0; index < conversation.lines().size(); index++) {
+            appendLine(json, conversation.lines().get(index), indent + "    ");
+            if (index + 1 < conversation.lines().size()) {
+                json.append(',');
+            }
+            json.append('\n');
+        }
+        json.append(indent).append("  ]\n")
+                .append(indent).append('}');
+    }
+
+    private static void appendLine(StringBuilder json, ConversationLine line, String indent) {
+        json.append(indent).append("{\n")
+                .append(indent).append("  \"speaker\": ").append(JsonStrings.quote(line.speaker())).append(",\n")
+                .append(indent).append("  \"variants\": [");
+        for (int index = 0; index < line.variants().size(); index++) {
+            if (index > 0) {
+                json.append(", ");
+            }
+            json.append("{\"text\": ").append(JsonStrings.quote(line.variants().get(index).text())).append('}');
+        }
+        json.append("]\n")
+                .append(indent).append('}');
+    }
 }

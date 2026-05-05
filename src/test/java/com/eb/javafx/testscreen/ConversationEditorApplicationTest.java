@@ -1,6 +1,7 @@
 package com.eb.javafx.testscreen;
 
 import com.eb.javafx.scene.ConversationDefinition;
+import com.eb.javafx.scene.ConversationDefinition.ConversationBlock;
 import com.eb.javafx.scene.ConversationDefinitionJson;
 import org.junit.jupiter.api.Test;
 
@@ -9,7 +10,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -32,7 +32,7 @@ final class ConversationEditorApplicationTest {
                     .sorted()
                     .toList();
 
-            assertFalse(jsonFiles.isEmpty());
+            assertEquals(List.of(ConversationEditorApplication.conversationExamplesDirectory().resolve("sample-conversation.json")), jsonFiles);
             for (Path jsonFile : jsonFiles) {
                 ConversationDefinition conversation = ConversationDefinitionJson.load(jsonFile);
                 assertTrue(ConversationEditorApplication.validationProblems(conversation).isEmpty(),
@@ -53,36 +53,29 @@ final class ConversationEditorApplicationTest {
     }
 
     @Test
-    void navigationTreeShowsDefinitionsScenesStepsAndChoices() {
+    void navigationTreeShowsLr2AltConversationDocumentBlocksLinesAndVariants() {
         ConversationDefinition conversation = ConversationEditorApplication.sampleConversation();
 
         DefaultMutableTreeNode root = ConversationEditorApplication.buildNavigationTree(conversation);
 
-        assertEquals("conversation: sample.conversation", root.getUserObject().toString());
-        DefaultMutableTreeNode definitions = (DefaultMutableTreeNode) root.getChildAt(0);
-        DefaultMutableTreeNode scenes = (DefaultMutableTreeNode) root.getChildAt(1);
-        assertEquals("definitions: 4", definitions.getUserObject().toString());
-        assertEquals("definition: sample.conversation.title", ((DefaultMutableTreeNode) definitions.getChildAt(0)).getUserObject().toString());
-        DefaultMutableTreeNode startScene = (DefaultMutableTreeNode) scenes.getChildAt(0);
-        assertEquals("scene: sample.conversation.start", startScene.getUserObject().toString());
-        assertEquals("step: branch (CHOICE)", ((DefaultMutableTreeNode) startScene.getChildAt(1)).getUserObject().toString());
-        assertEquals("choice: continue", ((DefaultMutableTreeNode) ((DefaultMutableTreeNode) startScene.getChildAt(1)).getChildAt(0)).getUserObject().toString());
+        assertEquals("conversation document: schema 1 / en", root.getUserObject().toString());
+        DefaultMutableTreeNode block = (DefaultMutableTreeNode) root.getChildAt(0);
+        DefaultMutableTreeNode line = (DefaultMutableTreeNode) block.getChildAt(0);
+        assertEquals("conversation: sample.conversation.opening.block_0001", block.getUserObject().toString());
+        assertEquals("line: narrator", line.getUserObject().toString());
+        assertEquals("variant: A reusable conversation document can ...",
+                ((DefaultMutableTreeNode) line.getChildAt(0)).getUserObject().toString());
     }
 
     @Test
-    void validationReportsMissingContentDefinitions() {
-        ConversationDefinition conversation = new ConversationDefinition(
-                "missing.content",
-                "missing.title",
-                Map.of(),
-                ConversationEditorApplication.sampleConversation().scenes(),
-                Map.of());
+    void sampleConversationUsesLr2AltDocumentSchema() {
+        ConversationDefinition conversation = ConversationEditorApplication.sampleConversation();
+        ConversationBlock block = conversation.conversations().get(0);
 
-        List<String> problems = ConversationEditorApplication.validationProblems(conversation);
-
-        assertTrue(problems.stream().anyMatch(problem -> problem.contains("Missing title definition")));
-        assertTrue(problems.stream().anyMatch(problem -> problem.contains("Missing step text definition")));
-        assertTrue(problems.stream().anyMatch(problem -> problem.contains("Missing choice text definition")));
+        assertEquals(1, conversation.schemaVersion());
+        assertEquals("en", conversation.language());
+        assertEquals("sample.conversation.opening.block_0001", block.id());
+        assertEquals("narrator", block.lines().get(0).speaker());
     }
 
     @Test

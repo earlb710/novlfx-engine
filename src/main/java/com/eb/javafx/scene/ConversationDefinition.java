@@ -1,54 +1,60 @@
 package com.eb.javafx.scene;
 
-import com.eb.javafx.util.ImmutableCollections;
 import com.eb.javafx.util.Validation;
 
 import java.util.List;
-import java.util.Map;
 
 /**
- * Data-only authored conversation bundle made from content definitions and scene-flow definitions.
+ * Data-only authored conversation document using the LR2Alt exported JSON shape.
  *
- * <p>This mirrors the LR2Alt JavaFX port storage shape: dialogue text is stored in a content definition map and
- * the playable conversation flow is stored as reusable scene definitions.</p>
+ * <p>The schema mirrors LR2Alt files under {@code docs/conversations}: top-level {@code schemaVersion},
+ * {@code language}, and ordered {@code conversations}; each conversation has dialogue {@code lines}, and each
+ * line has a speaker plus one or more text variants.</p>
  */
 public final class ConversationDefinition {
-    private final String id;
-    private final String titleDefinition;
-    private final Map<String, String> definitions;
-    private final List<SceneDefinition> scenes;
-    private final Map<String, String> metadata;
+    private final int schemaVersion;
+    private final String language;
+    private final List<ConversationBlock> conversations;
 
-    public ConversationDefinition(
-            String id,
-            String titleDefinition,
-            Map<String, String> definitions,
-            List<SceneDefinition> scenes,
-            Map<String, String> metadata) {
-        this.id = Validation.requireNonBlank(id, "Conversation id is required.");
-        this.titleDefinition = Validation.requireNonBlank(titleDefinition, "Conversation title definition is required.");
-        this.definitions = ImmutableCollections.copyMap(definitions);
-        this.scenes = List.copyOf(Validation.requireNonEmpty(scenes, "Conversation requires at least one scene."));
-        this.metadata = ImmutableCollections.copyMap(metadata);
+    public ConversationDefinition(int schemaVersion, String language, List<ConversationBlock> conversations) {
+        if (schemaVersion < 1) {
+            throw new IllegalArgumentException("Conversation schemaVersion must be positive.");
+        }
+        this.schemaVersion = schemaVersion;
+        this.language = Validation.requireNonBlank(language, "Conversation language is required.");
+        this.conversations = List.copyOf(Validation.requireNonEmpty(conversations, "Conversation document requires conversations."));
     }
 
-    public String id() {
-        return id;
+    public int schemaVersion() {
+        return schemaVersion;
     }
 
-    public String titleDefinition() {
-        return titleDefinition;
+    public String language() {
+        return language;
     }
 
-    public Map<String, String> definitions() {
-        return definitions;
+    public List<ConversationBlock> conversations() {
+        return conversations;
     }
 
-    public List<SceneDefinition> scenes() {
-        return scenes;
+    public record ConversationBlock(String id, String description, List<ConversationLine> lines) {
+        public ConversationBlock {
+            id = Validation.requireNonBlank(id, "Conversation id is required.");
+            description = Validation.requireNonBlank(description, "Conversation description is required.");
+            lines = List.copyOf(Validation.requireNonEmpty(lines, "Conversation lines are required."));
+        }
     }
 
-    public Map<String, String> metadata() {
-        return metadata;
+    public record ConversationLine(String speaker, List<ConversationVariant> variants) {
+        public ConversationLine {
+            speaker = Validation.requireNonBlank(speaker, "Conversation line speaker is required.");
+            variants = List.copyOf(Validation.requireNonEmpty(variants, "Conversation line variants are required."));
+        }
+    }
+
+    public record ConversationVariant(String text) {
+        public ConversationVariant {
+            text = Validation.requireNonNull(text, "Conversation variant text is required.");
+        }
     }
 }

@@ -2,13 +2,14 @@ package com.eb.javafx.scene;
 
 import com.eb.javafx.content.ContentRegistry;
 import com.eb.javafx.display.ImageDisplayRegistry;
+import com.eb.javafx.scene.ConversationDefinition.ConversationBlock;
+import com.eb.javafx.scene.ConversationDefinition.ConversationLine;
+import com.eb.javafx.scene.ConversationDefinition.ConversationVariant;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -16,20 +17,19 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 final class ConversationDefinitionJsonTest {
     @Test
-    void roundTripsConversationDefinitionsWithScenesAndDefinitions() {
+    void roundTripsLr2AltConversationDocumentShape() {
         ConversationDefinition conversation = sampleConversation();
 
         ConversationDefinition parsed = ConversationDefinitionJson.fromJson(
                 ConversationDefinitionJson.toJson(conversation),
                 "roundtrip");
 
-        assertEquals("sample.conversation", parsed.id());
-        assertEquals("sample.conversation.title", parsed.titleDefinition());
-        assertEquals("Sample Conversation", parsed.definitions().get("sample.conversation.title"));
-        assertEquals(2, parsed.scenes().size());
-        assertEquals("sample.conversation.start", parsed.scenes().get(0).id());
-        assertEquals("continue", parsed.scenes().get(0).steps().get(1).choices().get(0).id());
-        assertEquals(SceneTransitionType.COMPLETE, parsed.scenes().get(1).steps().get(0).transition().type());
+        assertEquals(1, parsed.schemaVersion());
+        assertEquals("en", parsed.language());
+        assertEquals(1, parsed.conversations().size());
+        assertEquals("sample.conversation.opening.block_0001", parsed.conversations().get(0).id());
+        assertEquals("narrator", parsed.conversations().get(0).lines().get(0).speaker());
+        assertEquals("Welcome.", parsed.conversations().get(0).lines().get(0).variants().get(0).text());
     }
 
     @Test
@@ -39,22 +39,68 @@ final class ConversationDefinitionJsonTest {
         ConversationDefinitionJson.save(tempFile, sampleConversation());
         ConversationDefinition loaded = ConversationDefinitionJson.load(tempFile);
 
-        assertEquals("sample.conversation", loaded.id());
-        assertTrue(Files.readString(tempFile).contains("\"definitions\""));
+        assertEquals("sample.conversation.opening.block_0001", loaded.conversations().get(0).id());
+        assertTrue(Files.readString(tempFile).contains("\"conversations\""));
     }
 
     @Test
-    void rejectsExecutableHooksInConversationJson() {
+    void readsLr2AltExportedConversationJsonShape() {
         String json = """
                 {
-                  "id": "bad",
-                  "titleDefinition": "bad.title",
-                  "definitions": {"bad.title": "Bad", "bad.text": "Bad"},
-                  "scenes": [{
-                    "id": "bad.scene",
-                    "entryRequirements": ["code-only"],
-                    "steps": [{"id": "line", "type": "NARRATION", "textDefinition": "bad.text"}]
+                  "schemaVersion": 1,
+                  "language": "en",
+                  "conversations": [
+                    {
+                      "id": "game.bugfix_additions.compatibility_fix.check_save_version.block_0001",
+                      "description": "Extracted dialogue block from label.",
+                      "lines": [
+                        {
+                          "speaker": "Warning",
+                          "variants": [
+                            {
+                              "text": "You are loading a game created by a previous build ([loaded_version])."
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+                """;
+
+        ConversationDefinition parsed = ConversationDefinitionJson.fromJson(json, "lr2alt sample");
+
+        assertEquals("game.bugfix_additions.compatibility_fix.check_save_version.block_0001",
+                parsed.conversations().get(0).id());
+        assertEquals("Warning", parsed.conversations().get(0).lines().get(0).speaker());
+    }
+
+    @Test
+    void allowsEmptyVariantTextLikeLr2AltExports() {
+        String json = """
+                {
+                  "schemaVersion": 1,
+                  "language": "en",
+                  "conversations": [{
+                    "id": "game.debug.empty.block_0001",
+                    "description": "Extracted dialogue block.",
+                    "lines": [{"speaker": "string", "variants": [{"text": ""}]}]
                   }]
+                }
+                """;
+
+        ConversationDefinition parsed = ConversationDefinitionJson.fromJson(json, "empty variant");
+
+        assertEquals("", parsed.conversations().get(0).lines().get(0).variants().get(0).text());
+    }
+
+    @Test
+    void rejectsMissingLr2AltConversationFields() {
+        String json = """
+                {
+                  "schemaVersion": 1,
+                  "language": "en",
+                  "conversations": [{"id": "bad"}]
                 }
                 """;
 
@@ -62,7 +108,7 @@ final class ConversationDefinitionJsonTest {
     }
 
     @Test
-    void jsonConversationContentModuleRegistersDefinitionsAndScenes() {
+    void jsonConversationContentModuleProjectsDefinitionsAndScenesFromLr2AltShape() {
         JsonConversationContentModule module = new JsonConversationContentModule(sampleConversation());
         ContentRegistry contentRegistry = new ContentRegistry();
         ImageDisplayRegistry imageDisplayRegistry = new ImageDisplayRegistry();
@@ -73,30 +119,23 @@ final class ConversationDefinitionJsonTest {
         module.validate(contentRegistry, imageDisplayRegistry);
         module.validateScenes(sceneRegistry);
 
-        assertEquals("Sample Conversation", contentRegistry.definition("sample.conversation.title"));
-        assertEquals("sample.conversation.start", sceneRegistry.requireScene("sample.conversation.start").id());
+        assertEquals("Extracted generic conversation block.",
+                contentRegistry.definition("sample.conversation.opening.block_0001.title"));
+        assertEquals("Welcome.",
+                contentRegistry.definition("sample.conversation.opening.block_0001.line.0001"));
+        assertEquals("sample.conversation.opening.block_0001",
+                sceneRegistry.requireScene("sample.conversation.opening.block_0001").id());
     }
 
     private static ConversationDefinition sampleConversation() {
-        Map<String, String> definitions = new LinkedHashMap<>();
-        definitions.put("sample.conversation.title", "Sample Conversation");
-        definitions.put("sample.conversation.intro", "Welcome.");
-        definitions.put("sample.conversation.choice.continue", "Continue");
-        definitions.put("sample.conversation.end", "Done.");
-        SceneDefinition start = SceneDefinition.of("sample.conversation.start", List.of(
-                SceneStep.narration("intro", "sample.conversation.intro"),
-                SceneStep.choice("branch", List.of(SceneChoice.of(
-                        "continue",
-                        "sample.conversation.choice.continue",
-                        SceneTransition.jump("sample.conversation.end"))))));
-        SceneDefinition end = SceneDefinition.of("sample.conversation.end", List.of(
-                SceneStep.create("end", SceneStepType.NARRATION, null,
-                        "sample.conversation.end", null, List.of(), List.of(), SceneTransition.complete(), Map.of())));
         return new ConversationDefinition(
-                "sample.conversation",
-                "sample.conversation.title",
-                definitions,
-                List.of(start, end),
-                Map.of("format", "lr2alt-scene-content"));
+                1,
+                "en",
+                List.of(new ConversationBlock(
+                        "sample.conversation.opening.block_0001",
+                        "Extracted generic conversation block.",
+                        List.of(
+                                new ConversationLine("narrator", List.of(new ConversationVariant("Welcome."))),
+                                new ConversationLine("guide", List.of(new ConversationVariant("Choose a path.")))))));
     }
 }
