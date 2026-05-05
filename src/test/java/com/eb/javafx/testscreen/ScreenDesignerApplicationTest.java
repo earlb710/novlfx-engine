@@ -1,20 +1,28 @@
 package com.eb.javafx.testscreen;
 
-import com.eb.javafx.ui.ScreenDesignJson;
 import com.eb.javafx.ui.ScreenDesignBlock;
 import com.eb.javafx.ui.ScreenDesignItem;
 import com.eb.javafx.ui.ScreenDesignItemType;
+import com.eb.javafx.ui.ScreenDesignJson;
 import com.eb.javafx.ui.ScreenDesignModel;
 import com.eb.javafx.ui.ScreenDesignValidator;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.awt.BorderLayout;
+import java.awt.Component;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.swing.JButton;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JSplitPane;
 import javax.swing.tree.DefaultMutableTreeNode;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -44,6 +52,31 @@ final class ScreenDesignerApplicationTest {
             for (Path jsonFile : jsonFiles) {
                 ScreenDesignModel design = ScreenDesignJson.load(jsonFile);
                 assertFalse(ScreenDesignValidator.validate(design).size() > 0, () -> "Invalid example: " + jsonFile);
+            }
+        }
+    }
+
+    @Test
+    void bundledScreenDesignExamplesDemonstrateNewStylingMetadata() throws IOException {
+        try (var paths = Files.list(ScreenDesignerApplication.screenDesignExamplesDirectory())) {
+            List<ScreenDesignModel> designs = paths
+                    .filter(path -> path.getFileName().toString().endsWith(".json"))
+                    .sorted()
+                    .map(ScreenDesignJson::load)
+                    .toList();
+
+            assertFalse(designs.isEmpty());
+            for (ScreenDesignModel design : designs) {
+                assertTrue(design.metadata().containsKey("backgroundColor"));
+                assertTrue(design.metadata().containsKey("borderStyle"));
+                assertTrue(design.blocks().stream().allMatch(block ->
+                        block.metadata().containsKey("backgroundColor")
+                                && block.metadata().containsKey("transparency")
+                                && block.metadata().containsKey("borderStyle")
+                                && block.metadata().containsKey("borderColor")));
+                assertTrue(design.items().stream().allMatch(item ->
+                        item.metadata().containsKey("backgroundColor")
+                                && item.metadata().containsKey("transparency")));
             }
         }
     }
@@ -199,21 +232,27 @@ final class ScreenDesignerApplicationTest {
     void propertyLabelsMatchSelectedNavigationNodeType() {
         assertEquals("Screen Properties", ScreenDesignerApplication.propertiesTitleFor(
                 ScreenDesignerApplication.NavigationNode.screen("sample.screen")));
-        assertEquals(List.of("Screen id", "Title", "Layout type"),
+        assertEquals(List.of("Screen id", "Title", "Layout type", "Font", "Font size", "Font style", "Color", "Background color",
+                        "Border style", "Border corner", "Border thickness", "Border color"),
                 ScreenDesignerApplication.propertyLabelsFor(
                         ScreenDesignerApplication.NavigationNode.screen("sample.screen")));
         assertEquals("Block Properties", ScreenDesignerApplication.propertiesTitleFor(
                 ScreenDesignerApplication.NavigationNode.block("main")));
-        assertEquals(List.of("Block id", "Title", "Layout type", "Parent block"),
+        assertEquals(List.of("Block id", "Title", "Layout type", "Parent block",
+                        "Font", "Font size", "Font style", "Color", "Background color",
+                        "Transparency", "Border style", "Border corner", "Border thickness", "Border color"),
                 ScreenDesignerApplication.propertyLabelsFor(
                         ScreenDesignerApplication.NavigationNode.block("main")));
         assertEquals("Item Properties", ScreenDesignerApplication.propertiesTitleFor(
                 ScreenDesignerApplication.NavigationNode.item("title.text", "main", false)));
-        assertEquals(List.of("Target block", "Item id", "Type", "Label", "Text/default value", "Current value", "Editable",
-                        "Font size", "Font style", "Color", "Label font size", "Label font style", "Label color"),
+        assertEquals(List.of("Target block", "Item id", "Type", "Label",
+                        "Text/default value", "Current value", "Editable", "Display role",
+                        "Font", "Font size", "Font style", "Color", "Background color", "Transparency", "Label font",
+                        "Label font size", "Label font style", "Label color"),
                 ScreenDesignerApplication.propertyLabelsFor(
                         ScreenDesignerApplication.NavigationNode.item("title.text", "main", false)));
-        assertEquals(List.of("Target block", "Item id", "Type", "Text/default value", "Font size", "Font style", "Color"),
+        assertEquals(List.of("Target block", "Item id", "Type", "Text/default value", "Display role",
+                        "Font", "Font size", "Font style", "Color", "Background color", "Transparency"),
                 ScreenDesignerApplication.itemPropertyLabelsFor(ScreenDesignItemType.TEXT));
         assertEquals("Item Properties", ScreenDesignerApplication.propertiesTitleFor(
                 ScreenDesignerApplication.NavigationNode.item("temp.field", "main", true)));
@@ -264,6 +303,38 @@ final class ScreenDesignerApplicationTest {
     void fileMenuLabelsContainFileActionsMovedFromToolbar() {
         assertEquals(List.of("New", "Load", "Save", "Save As"),
                 ScreenDesignerApplication.fileMenuActionLabels());
+    }
+
+    @Test
+    void actionToolbarLabelsIncludeDefaultValuesEditor() {
+        assertEquals(List.of("Edit Default Values", "Validate", "Open Preview", "Add Temporary Field", "Promote Temporary"),
+                ScreenDesignerApplication.actionToolbarLabels());
+    }
+
+    @Test
+    void editorPinsPropertyButtonsBelowScrollablePropertiesPanel() throws Exception {
+        ScreenDesignerApplication application = new ScreenDesignerApplication();
+        invokePrivateMethod(application, "refreshAll");
+        JPanel editor = (JPanel) invokePrivateMethod(application, "editor");
+        JPanel propertiesPanel = (JPanel) fieldValue(application, "propertiesPanel");
+
+        BorderLayout editorLayout = (BorderLayout) editor.getLayout();
+        Component center = editorLayout.getLayoutComponent(BorderLayout.CENTER);
+        Component south = editorLayout.getLayoutComponent(BorderLayout.SOUTH);
+        BorderLayout propertiesLayout = (BorderLayout) propertiesPanel.getLayout();
+
+        assertInstanceOf(JSplitPane.class, center);
+        assertInstanceOf(JPanel.class, south);
+        assertEquals(null, propertiesLayout.getLayoutComponent(BorderLayout.SOUTH));
+
+        JSplitPane splitPane = (JSplitPane) center;
+        assertInstanceOf(JScrollPane.class, splitPane.getTopComponent());
+
+        JPanel actionPanel = (JPanel) south;
+        assertEquals(List.of("Apply Properties", "Reset Properties"),
+                java.util.Arrays.stream(actionPanel.getComponents())
+                        .map(component -> ((JButton) component).getText())
+                        .toList());
     }
 
     @Test
@@ -349,5 +420,17 @@ final class ScreenDesignerApplicationTest {
                         List.of()));
 
         assertEquals("Screen design block references unknown parent block id: missing", exception.getMessage());
+    }
+
+    private static Object invokePrivateMethod(Object target, String methodName) throws Exception {
+        Method method = target.getClass().getDeclaredMethod(methodName);
+        method.setAccessible(true);
+        return method.invoke(target);
+    }
+
+    private static Object fieldValue(Object target, String fieldName) throws Exception {
+        Field field = target.getClass().getDeclaredField(fieldName);
+        field.setAccessible(true);
+        return field.get(target);
     }
 }

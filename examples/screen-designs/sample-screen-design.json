@@ -2,13 +2,27 @@
   "id": "settings.profile",
   "title": "Profile Settings",
   "layoutType": "FORM",
-  "metadata": {"description": "Example screen design document"},
+  "metadata": {
+    "description": "Example screen design document",
+    "backgroundColor": "#112244",
+    "borderStyle": "solid",
+    "borderCorner": "rounded",
+    "borderThickness": "2",
+    "borderColor": "#4aa3ff"
+  },
   "blocks": [
     {
       "id": "profile",
       "title": "Profile",
       "styleClass": "profile-block",
-      "metadata": {}
+      "metadata": {
+        "backgroundColor": "#1d3b73",
+        "transparency": "0.1",
+        "borderStyle": "solid",
+        "borderCorner": "rounded",
+        "borderThickness": "1",
+        "borderColor": "#87c5ff"
+      }
     }
   ],
   "items": [
@@ -21,7 +35,10 @@
       "value": null,
       "defaultValue": "Player",
       "styleClass": null,
-      "metadata": {}
+      "metadata": {
+        "backgroundColor": "#1f2f4d",
+        "transparency": "0.15"
+      }
     },
     {
       "id": "profile.note",
@@ -32,7 +49,10 @@
       "value": null,
       "defaultValue": "Temporary test fields can be added in the designer without saving.",
       "styleClass": null,
-      "metadata": {}
+      "metadata": {
+        "backgroundColor": "#20324f",
+        "transparency": "0.05"
+      }
     }
   ]
 }

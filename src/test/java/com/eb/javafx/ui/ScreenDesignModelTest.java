@@ -137,6 +137,109 @@ final class ScreenDesignModelTest {
     }
 
     @Test
+    void layoutMetadataInheritsFromScreenAndBlockBeforeItemOverrides() {
+        ScreenDesignModel model = new ScreenDesignModel("x", "X", ScreenLayoutType.FORM, Map.of(
+                "fontSize", "18",
+                "fontStyle", "italic",
+                "color", "#ffffff"),
+                List.of(new ScreenDesignBlock("profile", "Profile", null, Map.of(
+                        "fontSize", "22",
+                        "fontFamily", "Alien.ttf"))),
+                List.of(new ScreenDesignItem("display", "profile", ScreenDesignItemType.TEXT,
+                        "Ignored", "Display text", null, null, null, Map.of("color", "#66c1e0"))),
+                List.of());
+
+        Map<String, String> metadata = ScreenDesignLayoutAdapter.toLayoutModel(model)
+                .contentSections().get(0)
+                .lineMetadata().get(0);
+
+        assertEquals("22", metadata.get("fontSize"));
+        assertEquals("italic", metadata.get("fontStyle"));
+        assertEquals("#66c1e0", metadata.get("color"));
+        assertEquals("Alien.ttf", metadata.get("fontFamily"));
+    }
+
+    @Test
+    void layoutMetadataUsesDisplayRoleDefaultsWhenScreenDoesNotOverrideThem() {
+        ScreenDesignModel model = new ScreenDesignModel("x", "X", ScreenLayoutType.FORM, Map.of(),
+                List.of(new ScreenDesignBlock("profile", "Profile")),
+                List.of(new ScreenDesignItem("display", "profile", ScreenDesignItemType.TEXT,
+                        "Ignored", "Display text", null, null, null,
+                        Map.of("displayRole", DisplayDefaults.ROLE_HEADING))),
+                List.of());
+
+        Map<String, String> metadata = ScreenDesignLayoutAdapter.toLayoutModel(model)
+                .contentSections().get(0)
+                .lineMetadata().get(0);
+
+        assertEquals("28", metadata.get("fontSize"));
+        assertEquals("bold", metadata.get("fontStyle"));
+        assertEquals("#ffff66", metadata.get("color"));
+        assertEquals("transparent", metadata.get("backgroundColor"));
+        assertEquals("0", metadata.get("transparency"));
+    }
+
+    @Test
+    void layoutCarriesScreenAndBlockBackgroundDefaults() {
+        ScreenDesignModel model = design();
+
+        ScreenLayoutModel layout = ScreenDesignLayoutAdapter.toLayoutModel(model);
+
+        assertEquals("#0a1426", layout.metadata().get("backgroundColor"));
+        assertEquals("solid", layout.metadata().get("borderStyle"));
+        assertEquals("#143869", layout.contentSections().get(0).metadata().get("backgroundColor"));
+        assertEquals("0", layout.contentSections().get(0).metadata().get("transparency"));
+        assertEquals("solid", layout.contentSections().get(0).metadata().get("borderStyle"));
+    }
+
+    @Test
+    void layoutCanUseSuppliedDisplayDefaultsOverrides() {
+        ScreenDesignModel model = design();
+        DisplayDefaults defaults = DisplayDefaults.fromJson("""
+                {
+                  "screen": {"backgroundColor": "#010203", "borderStyle": "dashed"},
+                  "block": {"backgroundColor": "#111213", "transparency": "0.25", "borderStyle": "dotted"},
+                  "items": {"field": {"backgroundColor": "#212223", "transparency": "0.5"}},
+                  "labels": {}
+                }
+                """, "inline");
+
+        ScreenLayoutModel layout = ScreenDesignLayoutAdapter.toLayoutModel(model, true, defaults);
+
+        assertEquals("#010203", layout.metadata().get("backgroundColor"));
+        assertEquals("dashed", layout.metadata().get("borderStyle"));
+        assertEquals("#111213", layout.contentSections().get(0).metadata().get("backgroundColor"));
+        assertEquals("0.25", layout.contentSections().get(0).metadata().get("transparency"));
+        assertEquals("#212223", layout.contentSections().get(0).lineMetadata().get(0).get("backgroundColor"));
+        assertEquals("0.5", layout.contentSections().get(0).lineMetadata().get(0).get("transparency"));
+    }
+
+    @Test
+    void itemBackgroundDefaultsDoNotInheritContainerBackgroundOverrides() {
+        ScreenDesignModel model = new ScreenDesignModel("x", "X", ScreenLayoutType.FORM, Map.of("backgroundColor", "#111111"),
+                List.of(new ScreenDesignBlock("profile", "Profile", ScreenLayoutType.FORM, null, null,
+                        Map.of("backgroundColor", "#222222"))),
+                List.of(new ScreenDesignItem("display", "profile", ScreenDesignItemType.TEXT,
+                        "Ignored", "Display text", null, null, null, Map.of())),
+                List.of());
+
+        Map<String, String> metadata = ScreenDesignLayoutAdapter.toLayoutModel(model)
+                .contentSections().get(0)
+                .lineMetadata().get(0);
+
+        assertEquals("transparent", metadata.get("backgroundColor"));
+        assertEquals("0", metadata.get("transparency"));
+        assertEquals("#ffffff", metadata.get("color"));
+    }
+
+    @Test
+    void defaultRoleMatchesItemTypeWhenNoExplicitDisplayRoleIsStored() {
+        assertEquals(DisplayDefaults.ROLE_TEXT, ScreenDesignLayoutAdapter.defaultRole(ScreenDesignItemType.TEXT));
+        assertEquals(DisplayDefaults.ROLE_FIELD, ScreenDesignLayoutAdapter.defaultRole(ScreenDesignItemType.FIELD));
+        assertEquals(DisplayDefaults.ROLE_BUTTON, ScreenDesignLayoutAdapter.defaultRole(ScreenDesignItemType.BUTTON));
+    }
+
+    @Test
     void renamesBlocksAndItemsWhileKeepingReferencesValid() {
         ScreenDesignModel renamed = ScreenDesignService.renameItem(
                 ScreenDesignService.renameBlock(design(), "profile", "identity"),

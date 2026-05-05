@@ -42,11 +42,29 @@ final class ScreenLayoutRendererTest {
     @Test
     void rendererConvertsSafeLineMetadataToInlineFontAndColorStyle() {
         String style = ScreenLayoutRenderer.lineStyle(Map.of(
+                "fontFamily", "Serif",
                 "fontSize", "22",
                 "fontStyle", "bold italic",
-                "color", "#66c1e0"));
+                "color", "#66c1e0",
+                "backgroundColor", "transparent",
+                "transparency", "0.25"));
 
-        assertEquals("-fx-font-size: 22px; -fx-font-weight: bold; -fx-font-style: italic; -fx-text-fill: #66c1e0; ", style);
+        assertEquals("-fx-font-family: \"Serif\"; -fx-font-size: 22px; -fx-font-weight: bold; -fx-font-style: italic; -fx-text-fill: #66c1e0; -fx-background-color: transparent; -fx-opacity: 0.75; ", style);
         assertEquals("", ScreenLayoutRenderer.lineStyle(Map.of("color", "red; -fx-padding: 99")));
+        assertEquals("", ScreenLayoutRenderer.lineStyle(Map.of("fontFamily", "Serif\"; -fx-padding: 99")));
+    }
+
+    @Test
+    void rendererConvertsSafeContainerMetadataToBackgroundStyle() {
+        assertEquals("-fx-background-color: #143869; -fx-opacity: 0.6; -fx-border-style: dashed; -fx-border-radius: 6px; -fx-background-radius: 6px; -fx-border-width: 2px; -fx-border-color: #0099cc; ",
+                ScreenLayoutRenderer.containerStyle(Map.of(
+                        "backgroundColor", "#143869",
+                        "transparency", "0.4",
+                        "borderStyle", "dashed",
+                        "borderCorner", "rounded",
+                        "borderThickness", "2",
+                        "borderColor", "#0099cc")));
+        assertEquals("",
+                ScreenLayoutRenderer.containerStyle(Map.of("backgroundColor", "red; -fx-padding: 99")));
     }
 }

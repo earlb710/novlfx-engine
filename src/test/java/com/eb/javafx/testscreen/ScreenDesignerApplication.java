@@ -10,10 +10,12 @@ import com.eb.javafx.ui.ScreenDesignModel;
 import com.eb.javafx.ui.ScreenDesignService;
 import com.eb.javafx.ui.ScreenDesignValidationProblem;
 import com.eb.javafx.ui.ScreenDesignValidator;
+import com.eb.javafx.ui.DisplayDefaults;
 import com.eb.javafx.ui.ScreenLayoutModel;
 import com.eb.javafx.ui.ScreenLayoutRenderer;
 import com.eb.javafx.ui.ScreenLayoutType;
 import com.eb.javafx.ui.UiTheme;
+import com.eb.javafx.util.FontResources;
 import com.eb.javafx.util.HierarchyTraversal;
 import javafx.application.Platform;
 import javafx.scene.Scene;
@@ -21,6 +23,7 @@ import javafx.stage.Stage;
 
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
+import javax.swing.JColorChooser;
 import javax.swing.JComboBox;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
@@ -37,7 +40,9 @@ import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Component;
+import java.awt.Dimension;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.GridLayout;
@@ -65,27 +70,71 @@ import javax.swing.tree.TreeSelectionModel;
 /** Manual Swing screen designer for editing JSON-backed reusable screen designs. */
 public final class ScreenDesignerApplication {
     private static final String SCREEN_PARENT_OPTION = "<screen>";
+    private static final String DEFAULT_OPTION = "<default>";
+    private static final String FONT_FAMILY_KEY = "fontFamily";
     private static final String ITEM_FONT_SIZE_KEY = "fontSize";
     private static final String ITEM_FONT_STYLE_KEY = "fontStyle";
     private static final String ITEM_COLOR_KEY = "color";
+    private static final String BACKGROUND_COLOR_KEY = "backgroundColor";
+    private static final String TRANSPARENCY_KEY = "transparency";
+    private static final String BORDER_STYLE_KEY = "borderStyle";
+    private static final String BORDER_CORNER_KEY = "borderCorner";
+    private static final String BORDER_THICKNESS_KEY = "borderThickness";
+    private static final String BORDER_COLOR_KEY = "borderColor";
+    private static final String DISPLAY_ROLE_KEY = "displayRole";
+    private static final String LABEL_FONT_FAMILY_KEY = "labelFontFamily";
     private static final String LABEL_FONT_SIZE_KEY = "labelFontSize";
     private static final String LABEL_FONT_STYLE_KEY = "labelFontStyle";
     private static final String LABEL_COLOR_KEY = "labelColor";
+    private static final String[] FONT_STYLE_OPTIONS = {DEFAULT_OPTION, "normal", "bold", "italic", "bold italic"};
+    private static final String[] FONT_SIZE_OPTIONS = {DEFAULT_OPTION, "10", "12", "14", "16", "18", "20", "22", "24", "28", "32", "36", "48", "64"};
+    private static final String[] TRANSPARENCY_OPTIONS = {DEFAULT_OPTION, "0", "0.1", "0.2", "0.25", "0.3", "0.4", "0.5", "0.6", "0.7", "0.75", "0.8", "0.9", "1"};
+    private static final String[] BORDER_STYLE_OPTIONS = {DEFAULT_OPTION, "solid", "dashed", "dotted", "none"};
+    private static final String[] BORDER_CORNER_OPTIONS = {DEFAULT_OPTION, "square", "rounded", "pill"};
+    private static final String[] BORDER_THICKNESS_OPTIONS = {DEFAULT_OPTION, "1", "2", "3", "4", "6", "8"};
+    private static final String[] ITEM_ROLE_OPTIONS = {
+            DEFAULT_OPTION,
+            DisplayDefaults.ROLE_TEXT,
+            DisplayDefaults.ROLE_HEADING,
+            DisplayDefaults.ROLE_SUBHEADING,
+            DisplayDefaults.ROLE_FIELD,
+            DisplayDefaults.ROLE_BUTTON
+    };
     private static final AtomicBoolean JAVAFX_STARTED = new AtomicBoolean();
     private ScreenDesignModel design = sampleDesign();
     private final DefaultTreeModel objectTreeModel = new DefaultTreeModel(new DefaultMutableTreeNode());
     private final JTree objectTree = new JTree(objectTreeModel);
     private final JButton addItemButton = new JButton("Add Item");
     private final JPanel propertiesPanel = new JPanel(new BorderLayout(8, 8));
+    private final JButton editDefaultValuesButton = new JButton("Edit Default Values");
     private final JButton applyPropertiesButton = new JButton("Apply Properties");
     private final JButton resetPropertiesButton = new JButton("Reset Properties");
     private final JTextField screenIdField = new JTextField();
     private final JTextField titleField = new JTextField();
     private final JComboBox<ScreenLayoutType> layoutTypeBox = new JComboBox<>(ScreenLayoutType.values());
+    private final JComboBox<String> screenFontFamilyBox = fontFamilyBox();
+    private final JComboBox<String> screenFontSizeBox = fontSizeBox();
+    private final JComboBox<String> screenFontStyleBox = fontStyleBox();
+    private final JTextField screenColorField = new JTextField();
+    private final JTextField screenBackgroundColorField = new JTextField();
+    private final JComboBox<String> screenBorderStyleBox = borderStyleBox();
+    private final JComboBox<String> screenBorderCornerBox = borderCornerBox();
+    private final JComboBox<String> screenBorderThicknessBox = borderThicknessBox();
+    private final JTextField screenBorderColorField = new JTextField();
     private final JTextField blockIdField = new JTextField();
     private final JTextField blockTitleField = new JTextField();
     private final JComboBox<ScreenLayoutType> blockLayoutTypeBox = new JComboBox<>(blockLayoutOptions());
     private final JComboBox<String> parentBlockBox = new JComboBox<>();
+    private final JComboBox<String> blockFontFamilyBox = fontFamilyBox();
+    private final JComboBox<String> blockFontSizeBox = fontSizeBox();
+    private final JComboBox<String> blockFontStyleBox = fontStyleBox();
+    private final JTextField blockColorField = new JTextField();
+    private final JTextField blockBackgroundColorField = new JTextField();
+    private final JComboBox<String> blockTransparencyBox = transparencyBox();
+    private final JComboBox<String> blockBorderStyleBox = borderStyleBox();
+    private final JComboBox<String> blockBorderCornerBox = borderCornerBox();
+    private final JComboBox<String> blockBorderThicknessBox = borderThicknessBox();
+    private final JTextField blockBorderColorField = new JTextField();
     private final JComboBox<String> itemBlockBox = new JComboBox<>();
     private final JComboBox<ScreenDesignItemType> itemTypeBox = new JComboBox<>(ScreenDesignItemType.values());
     private final JTextField itemIdField = new JTextField();
@@ -94,16 +143,23 @@ public final class ScreenDesignerApplication {
     private final JTextArea itemContentArea = new JTextArea(3, 20);
     private final JTextField itemValueField = new JTextField();
     private final JCheckBox itemEditableBox = new JCheckBox();
-    private final JTextField itemFontSizeField = new JTextField();
-    private final JTextField itemFontStyleField = new JTextField();
+    private final JComboBox<String> itemDisplayRoleBox = new JComboBox<>(ITEM_ROLE_OPTIONS);
+    private final JComboBox<String> itemFontFamilyBox = fontFamilyBox();
+    private final JComboBox<String> itemFontSizeBox = fontSizeBox();
+    private final JComboBox<String> itemFontStyleBox = fontStyleBox();
     private final JTextField itemColorField = new JTextField();
-    private final JTextField itemLabelFontSizeField = new JTextField();
-    private final JTextField itemLabelFontStyleField = new JTextField();
+    private final JTextField itemBackgroundColorField = new JTextField();
+    private final JComboBox<String> itemTransparencyBox = transparencyBox();
+    private final JComboBox<String> itemLabelFontFamilyBox = fontFamilyBox();
+    private final JComboBox<String> itemLabelFontSizeBox = fontSizeBox();
+    private final JComboBox<String> itemLabelFontStyleBox = fontStyleBox();
     private final JTextField itemLabelColorField = new JTextField();
     private final JTextArea jsonArea = new JTextArea();
     private final JLabel statusLabel = new JLabel();
     private Path currentPath;
     private String savedJsonSnapshot = ScreenDesignJson.toJson(design);
+    private DisplayDefaults displayDefaults = DisplayDefaults.defaults();
+    private String displayDefaultsJson = DisplayDefaults.defaultJson();
     private volatile Stage previewStage;
 
     public static void main(String[] args) {
@@ -121,7 +177,7 @@ public final class ScreenDesignerApplication {
         });
         frame.setJMenuBar(menuBar());
         frame.setContentPane(content());
-        frame.setSize(1100, 700);
+        frame.setSize(1200, 760);
         frame.setLocationByPlatform(true);
         refreshAll();
         frame.setVisible(true);
@@ -170,10 +226,12 @@ public final class ScreenDesignerApplication {
         JButton preview = new JButton("Open Preview");
         JButton addTemp = new JButton("Add Temporary Field");
         JButton promote = new JButton("Promote Temporary");
+        editDefaultValuesButton.addActionListener(event -> runSafely("Edit Default Values", this::editDefaultValues));
         validate.addActionListener(event -> runSafely("Validate", this::showValidation));
         preview.addActionListener(event -> runSafely("Open Preview", this::openPreview));
         addTemp.addActionListener(event -> runSafely("Add Temporary Field", () -> addItem(true)));
         promote.addActionListener(event -> runSafely("Promote Temporary", this::promoteTemporary));
+        panel.add(editDefaultValuesButton);
         panel.add(validate);
         panel.add(preview);
         panel.add(addTemp);
@@ -209,9 +267,12 @@ public final class ScreenDesignerApplication {
         resetPropertiesButton.addActionListener(event -> resetSelectedProperties());
         itemTypeBox.addActionListener(event -> refreshItemEditableState());
         jsonArea.setEditable(false);
-        JSplitPane split = new JSplitPane(JSplitPane.VERTICAL_SPLIT, propertiesPanel, new JScrollPane(jsonArea));
-        split.setDividerLocation(220);
+        JScrollPane propertiesScrollPane = new JScrollPane(propertiesPanel);
+        propertiesScrollPane.setPreferredSize(new Dimension(0, 340));
+        JSplitPane split = new JSplitPane(JSplitPane.VERTICAL_SPLIT, propertiesScrollPane, new JScrollPane(jsonArea));
+        split.setDividerLocation(340);
         panel.add(split, BorderLayout.CENTER);
+        panel.add(propertyActionPanel(), BorderLayout.SOUTH);
         return panel;
     }
 
@@ -245,7 +306,8 @@ public final class ScreenDesignerApplication {
     private void applyScreenProperties() {
         design = new ScreenDesignModel(screenIdField.getText(), titleField.getText(),
                 layoutTypeOrDefault((ScreenLayoutType) layoutTypeBox.getSelectedItem()),
-                design.metadata(), design.blocks(), design.items(), design.temporaryItems());
+                screenMetadata(design.metadata()),
+                design.blocks(), design.items(), design.temporaryItems());
     }
 
     private void applyBlockProperties(String oldBlockId) {
@@ -258,7 +320,7 @@ public final class ScreenDesignerApplication {
                 layoutTypeOrDefault((ScreenLayoutType) blockLayoutTypeBox.getSelectedItem()),
                 parentBlockSelection((String) parentBlockBox.getSelectedItem()),
                 existing.styleClass(),
-                existing.metadata()));
+                blockMetadata(existing.metadata())));
     }
 
     private void applyItemProperties(String oldItemId, boolean temporary) {
@@ -340,6 +402,11 @@ public final class ScreenDesignerApplication {
         JTextField labelField = new JTextField(existing == null ? "" : nullToBlank(existing.label()));
         JTextField contentField = new JTextField(existing == null ? "" : itemContent(existing));
         JTextField valueField = new JTextField(existing == null ? "" : nullToBlank(existing.value()));
+        JComboBox<String> displayRoleBox = new JComboBox<>(ITEM_ROLE_OPTIONS);
+        setComboValue(displayRoleBox, existing == null ? "" : metadataValue(existing.metadata(), DISPLAY_ROLE_KEY));
+        JTextField backgroundColorField = new JTextField(existing == null ? "" : metadataValue(existing.metadata(), BACKGROUND_COLOR_KEY));
+        JComboBox<String> transparencyBox = transparencyBox();
+        setComboValue(transparencyBox, existing == null ? "" : metadataValue(existing.metadata(), TRANSPARENCY_KEY));
         JCheckBox editableBox = new JCheckBox();
         editableBox.setSelected(existing == null
                 ? ScreenDesignItem.defaultEditable((ScreenDesignItemType) typeBox.getSelectedItem())
@@ -347,13 +414,19 @@ public final class ScreenDesignerApplication {
         typeBox.addActionListener(event -> refreshItemTypeState(typeBox, labelField, editableBox));
         refreshItemTypeState(typeBox, labelField, editableBox);
         boolean fieldType = isFieldType((ScreenDesignItemType) typeBox.getSelectedItem());
-        JPanel fields = new JPanel(new GridLayout(fieldType ? 7 : 4, 2, 6, 6));
+        JPanel fields = new JPanel(new GridLayout(fieldType ? 10 : 7, 2, 6, 6));
         fields.add(new JLabel("Target block"));
         fields.add(blockBox);
         fields.add(new JLabel("Item id"));
         fields.add(itemIdField);
         fields.add(new JLabel("Type"));
         fields.add(typeBox);
+        fields.add(new JLabel("Display role"));
+        fields.add(displayRoleBox);
+        fields.add(new JLabel("Background color"));
+        fields.add(colorSelector(backgroundColorField));
+        fields.add(new JLabel("Transparency"));
+        fields.add(transparencyBox);
         if (fieldType) {
             fields.add(new JLabel("Label"));
             fields.add(labelField);
@@ -376,6 +449,10 @@ public final class ScreenDesignerApplication {
         String content = blankToNull(contentField.getText());
         String value = blankToNull(valueField.getText());
         ScreenDesignItemType effectiveType = type == null ? ScreenDesignItemType.TEXT : type;
+        Map<String, String> metadata = existing == null ? new LinkedHashMap<>() : new LinkedHashMap<>(existing.metadata());
+        putOptionalMetadata(metadata, DISPLAY_ROLE_KEY, selectedComboValue(displayRoleBox));
+        putOptionalMetadata(metadata, BACKGROUND_COLOR_KEY, backgroundColorField.getText());
+        putOptionalMetadata(metadata, TRANSPARENCY_KEY, selectedComboValue(transparencyBox));
         return Optional.of(new ScreenDesignItem(
                 normalizedItemId(itemId, temporary),
                 blockId,
@@ -386,7 +463,7 @@ public final class ScreenDesignerApplication {
                 isFieldType(effectiveType) ? content : null,
                 editableSelection(effectiveType, editableBox.isSelected()),
                 existing == null ? null : existing.styleClass(),
-                existing == null ? Map.of() : existing.metadata()));
+                Map.copyOf(metadata)));
     }
 
     private Optional<ScreenDesignBlock> showBlockDialog(String title, ScreenDesignBlock existing, String selectedParentBlockId) {
@@ -395,6 +472,16 @@ public final class ScreenDesignerApplication {
         JComboBox<ScreenLayoutType> layoutBox = new JComboBox<>(blockLayoutOptions());
         layoutBox.setSelectedItem(existing == null ? defaultLayoutType() : layoutTypeOrDefault(existing.layoutType()));
         JComboBox<String> parentBlockBox = new JComboBox<>(parentBlockOptions(existing == null ? null : existing.id()));
+        JComboBox<String> borderStyleBox = borderStyleBox();
+        JComboBox<String> borderCornerBox = borderCornerBox();
+        JComboBox<String> borderThicknessBox = borderThicknessBox();
+        JComboBox<String> transparencyBox = transparencyBox();
+        JTextField backgroundColorField = new JTextField(existing == null ? "" : metadataValue(existing.metadata(), BACKGROUND_COLOR_KEY));
+        JTextField borderColorField = new JTextField(existing == null ? "" : metadataValue(existing.metadata(), BORDER_COLOR_KEY));
+        setComboValue(transparencyBox, existing == null ? "" : metadataValue(existing.metadata(), TRANSPARENCY_KEY));
+        setComboValue(borderStyleBox, existing == null ? "" : metadataValue(existing.metadata(), BORDER_STYLE_KEY));
+        setComboValue(borderCornerBox, existing == null ? "" : metadataValue(existing.metadata(), BORDER_CORNER_KEY));
+        setComboValue(borderThicknessBox, existing == null ? "" : metadataValue(existing.metadata(), BORDER_THICKNESS_KEY));
         if (existing != null && existing.parentBlockId() != null) {
             parentBlockBox.setSelectedItem(existing.parentBlockId());
         } else if (selectedParentBlockId != null) {
@@ -402,7 +489,7 @@ public final class ScreenDesignerApplication {
         } else {
             parentBlockBox.setSelectedItem(SCREEN_PARENT_OPTION);
         }
-        JPanel fields = new JPanel(new GridLayout(4, 2, 6, 6));
+        JPanel fields = new JPanel(new GridLayout(10, 2, 6, 6));
         fields.add(new JLabel("Block id"));
         fields.add(blockIdField);
         fields.add(new JLabel("Title"));
@@ -411,6 +498,18 @@ public final class ScreenDesignerApplication {
         fields.add(layoutBox);
         fields.add(new JLabel("Parent block"));
         fields.add(parentBlockBox);
+        fields.add(new JLabel("Background color"));
+        fields.add(colorSelector(backgroundColorField));
+        fields.add(new JLabel("Transparency"));
+        fields.add(transparencyBox);
+        fields.add(new JLabel("Border style"));
+        fields.add(borderStyleBox);
+        fields.add(new JLabel("Border corner"));
+        fields.add(borderCornerBox);
+        fields.add(new JLabel("Border thickness"));
+        fields.add(borderThicknessBox);
+        fields.add(new JLabel("Border color"));
+        fields.add(colorSelector(borderColorField));
         int result = JOptionPane.showConfirmDialog(null, fields, title, JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
         String blockId = blockIdField.getText();
         if (result != JOptionPane.OK_OPTION || blockId == null || blockId.isBlank()) {
@@ -418,13 +517,20 @@ public final class ScreenDesignerApplication {
         }
         String parentBlockId = parentBlockSelection((String) parentBlockBox.getSelectedItem());
         String blockTitle = blankToNull(titleField.getText());
+        Map<String, String> metadata = existing == null ? new LinkedHashMap<>() : new LinkedHashMap<>(existing.metadata());
+        putOptionalMetadata(metadata, BACKGROUND_COLOR_KEY, backgroundColorField.getText());
+        putOptionalMetadata(metadata, TRANSPARENCY_KEY, selectedComboValue(transparencyBox));
+        putOptionalMetadata(metadata, BORDER_STYLE_KEY, selectedComboValue(borderStyleBox));
+        putOptionalMetadata(metadata, BORDER_CORNER_KEY, selectedComboValue(borderCornerBox));
+        putOptionalMetadata(metadata, BORDER_THICKNESS_KEY, selectedComboValue(borderThicknessBox));
+        putOptionalMetadata(metadata, BORDER_COLOR_KEY, borderColorField.getText());
         return Optional.of(new ScreenDesignBlock(
                 blockId,
                 blockTitle == null ? blockId : blockTitle,
                 layoutTypeOrDefault((ScreenLayoutType) layoutBox.getSelectedItem()),
                 parentBlockId,
                 existing == null ? null : existing.styleClass(),
-                existing == null ? Map.of() : existing.metadata()));
+                Map.copyOf(metadata)));
     }
 
     private void editBlock(String blockId) {
@@ -525,6 +631,41 @@ public final class ScreenDesignerApplication {
         JOptionPane.showMessageDialog(null, validationSummary(problems));
     }
 
+    private void editDefaultValues() {
+        JTextArea editor = new JTextArea(displayDefaultsJson, 28, 80);
+        editor.setCaretPosition(0);
+        JScrollPane scrollPane = new JScrollPane(editor);
+        JPanel content = new JPanel(new BorderLayout(8, 8));
+        content.add(new JLabel("<html>Edit preview defaults from <code>"
+                + DisplayDefaults.DEFAULT_RESOURCE
+                + "</code>. Changes apply only in the designer preview.</html>"), BorderLayout.NORTH);
+        content.add(scrollPane, BorderLayout.CENTER);
+        while (true) {
+            int result = JOptionPane.showConfirmDialog(
+                    null,
+                    content,
+                    "Edit Default Values",
+                    JOptionPane.OK_CANCEL_OPTION,
+                    JOptionPane.PLAIN_MESSAGE);
+            if (result != JOptionPane.OK_OPTION) {
+                return;
+            }
+            try {
+                displayDefaultsJson = editor.getText();
+                displayDefaults = DisplayDefaults.fromJson(displayDefaultsJson, "screen designer default values");
+                statusLabel.setText("Updated default display values for preview.");
+                refreshPreview();
+                return;
+            } catch (RuntimeException exception) {
+                JOptionPane.showMessageDialog(
+                        null,
+                        exception.getMessage(),
+                        "Default Values Error",
+                        JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+
     private void openPreview() {
         List<ScreenDesignValidationProblem> problems = ScreenDesignValidator.validate(design);
         if (!problems.isEmpty()) {
@@ -538,7 +679,8 @@ public final class ScreenDesignerApplication {
         }
         ensureJavaFxStarted();
         ScreenDesignModel designSnapshot = design;
-        Platform.runLater(() -> showPreviewStage(designSnapshot));
+        DisplayDefaults defaultsSnapshot = displayDefaults;
+        Platform.runLater(() -> showPreviewStage(designSnapshot, defaultsSnapshot));
     }
 
     private void refreshAll() {
@@ -633,6 +775,10 @@ public final class ScreenDesignerApplication {
 
     static List<String> fileMenuActionLabels() {
         return List.of("New", "Load", "Save", "Save As");
+    }
+
+    static List<String> actionToolbarLabels() {
+        return List.of("Edit Default Values", "Validate", "Open Preview", "Add Temporary Field", "Promote Temporary");
     }
 
     static Path screenDesignExamplesDirectory() {
@@ -775,7 +921,17 @@ public final class ScreenDesignerApplication {
         }
     }
 
-    private void showPreviewStage(ScreenDesignModel designSnapshot) {
+    private void refreshPreview() {
+        if (previewStage == null) {
+            return;
+        }
+        ensureJavaFxStarted();
+        ScreenDesignModel designSnapshot = design;
+        DisplayDefaults defaultsSnapshot = displayDefaults;
+        Platform.runLater(() -> showPreviewStage(designSnapshot, defaultsSnapshot));
+    }
+
+    private void showPreviewStage(ScreenDesignModel designSnapshot, DisplayDefaults defaultsSnapshot) {
         try {
             PreferencesService preferencesService = new PreferencesService();
             preferencesService.load();
@@ -783,7 +939,7 @@ public final class ScreenDesignerApplication {
             UiTheme uiTheme = new UiTheme();
             uiTheme.initialize(preferencesService);
 
-            ScreenLayoutModel previewModel = ScreenDesignLayoutAdapter.toLayoutModel(designSnapshot, true);
+            ScreenLayoutModel previewModel = ScreenDesignLayoutAdapter.toLayoutModel(designSnapshot, true, defaultsSnapshot);
             Scene scene = new Scene(
                     ScreenLayoutRenderer.createRoot(previewModel),
                     preferencesService.windowWidth(),
@@ -959,7 +1115,6 @@ public final class ScreenDesignerApplication {
         propertiesPanel.removeAll();
         propertiesPanel.add(new JLabel(propertiesTitleFor(navigationNode)), BorderLayout.NORTH);
         propertiesPanel.add(propertiesFieldsFor(navigationNode), BorderLayout.CENTER);
-        propertiesPanel.add(propertyActionPanel(), BorderLayout.SOUTH);
         propertiesPanel.revalidate();
         propertiesPanel.repaint();
     }
@@ -983,10 +1138,28 @@ public final class ScreenDesignerApplication {
         screenIdField.setText(design.id());
         titleField.setText(design.title());
         layoutTypeBox.setSelectedItem(layoutTypeOrDefault(design.layoutType()));
+        setComboValue(screenFontFamilyBox, metadataValue(design.metadata(), FONT_FAMILY_KEY));
+        setComboValue(screenFontSizeBox, metadataValue(design.metadata(), ITEM_FONT_SIZE_KEY));
+        setComboValue(screenFontStyleBox, metadataValue(design.metadata(), ITEM_FONT_STYLE_KEY));
+        screenColorField.setText(metadataValue(design.metadata(), ITEM_COLOR_KEY));
+        screenBackgroundColorField.setText(metadataValue(design.metadata(), BACKGROUND_COLOR_KEY));
+        setComboValue(screenBorderStyleBox, metadataValue(design.metadata(), BORDER_STYLE_KEY));
+        setComboValue(screenBorderCornerBox, metadataValue(design.metadata(), BORDER_CORNER_KEY));
+        setComboValue(screenBorderThicknessBox, metadataValue(design.metadata(), BORDER_THICKNESS_KEY));
+        screenBorderColorField.setText(metadataValue(design.metadata(), BORDER_COLOR_KEY));
         JPanel fields = propertyGrid(propertyLabelsFor(NavigationNode.screen(design.id())).size());
         addPropertyRow(fields, 0, "Screen id", screenIdField);
         addPropertyRow(fields, 1, "Title", titleField);
         addPropertyRow(fields, 2, "Layout type", layoutTypeBox);
+        addPropertyRow(fields, 3, "Font", screenFontFamilyBox);
+        addPropertyRow(fields, 4, "Font size", screenFontSizeBox);
+        addPropertyRow(fields, 5, "Font style", screenFontStyleBox);
+        addPropertyRow(fields, 6, "Color", colorSelector(screenColorField));
+        addPropertyRow(fields, 7, "Background color", colorSelector(screenBackgroundColorField));
+        addPropertyRow(fields, 8, "Border style", screenBorderStyleBox);
+        addPropertyRow(fields, 9, "Border corner", screenBorderCornerBox);
+        addPropertyRow(fields, 10, "Border thickness", screenBorderThicknessBox);
+        addPropertyRow(fields, 11, "Border color", colorSelector(screenBorderColorField));
         return fields;
     }
 
@@ -997,11 +1170,31 @@ public final class ScreenDesignerApplication {
         blockLayoutTypeBox.setSelectedItem(layoutTypeOrDefault(block.layoutType()));
         replaceComboItems(parentBlockBox, parentBlockOptions(block.id()));
         parentBlockBox.setSelectedItem(block.parentBlockId() == null ? SCREEN_PARENT_OPTION : block.parentBlockId());
+        setComboValue(blockFontFamilyBox, metadataValue(block.metadata(), FONT_FAMILY_KEY));
+        setComboValue(blockFontSizeBox, metadataValue(block.metadata(), ITEM_FONT_SIZE_KEY));
+        setComboValue(blockFontStyleBox, metadataValue(block.metadata(), ITEM_FONT_STYLE_KEY));
+        blockColorField.setText(metadataValue(block.metadata(), ITEM_COLOR_KEY));
+        blockBackgroundColorField.setText(metadataValue(block.metadata(), BACKGROUND_COLOR_KEY));
+        setComboValue(blockTransparencyBox, metadataValue(block.metadata(), TRANSPARENCY_KEY));
+        setComboValue(blockBorderStyleBox, metadataValue(block.metadata(), BORDER_STYLE_KEY));
+        setComboValue(blockBorderCornerBox, metadataValue(block.metadata(), BORDER_CORNER_KEY));
+        setComboValue(blockBorderThicknessBox, metadataValue(block.metadata(), BORDER_THICKNESS_KEY));
+        blockBorderColorField.setText(metadataValue(block.metadata(), BORDER_COLOR_KEY));
         JPanel fields = propertyGrid(propertyLabelsFor(NavigationNode.block(blockId)).size());
         addPropertyRow(fields, 0, "Block id", blockIdField);
         addPropertyRow(fields, 1, "Title", blockTitleField);
         addPropertyRow(fields, 2, "Layout type", blockLayoutTypeBox);
         addPropertyRow(fields, 3, "Parent block", parentBlockBox);
+        addPropertyRow(fields, 4, "Font", blockFontFamilyBox);
+        addPropertyRow(fields, 5, "Font size", blockFontSizeBox);
+        addPropertyRow(fields, 6, "Font style", blockFontStyleBox);
+        addPropertyRow(fields, 7, "Color", colorSelector(blockColorField));
+        addPropertyRow(fields, 8, "Background color", colorSelector(blockBackgroundColorField));
+        addPropertyRow(fields, 9, "Transparency", blockTransparencyBox);
+        addPropertyRow(fields, 10, "Border style", blockBorderStyleBox);
+        addPropertyRow(fields, 11, "Border corner", blockBorderCornerBox);
+        addPropertyRow(fields, 12, "Border thickness", blockBorderThicknessBox);
+        addPropertyRow(fields, 13, "Border color", colorSelector(blockBorderColorField));
         return fields;
     }
 
@@ -1018,11 +1211,16 @@ public final class ScreenDesignerApplication {
         itemContentArea.setWrapStyleWord(true);
         itemValueField.setText(nullToBlank(item.value()));
         itemEditableBox.setSelected(item.editable());
-        itemFontSizeField.setText(metadataValue(item.metadata(), ITEM_FONT_SIZE_KEY));
-        itemFontStyleField.setText(metadataValue(item.metadata(), ITEM_FONT_STYLE_KEY));
+        setComboValue(itemDisplayRoleBox, metadataValue(item.metadata(), DISPLAY_ROLE_KEY));
+        setComboValue(itemFontFamilyBox, metadataValue(item.metadata(), FONT_FAMILY_KEY));
+        setComboValue(itemFontSizeBox, metadataValue(item.metadata(), ITEM_FONT_SIZE_KEY));
+        setComboValue(itemFontStyleBox, metadataValue(item.metadata(), ITEM_FONT_STYLE_KEY));
         itemColorField.setText(metadataValue(item.metadata(), ITEM_COLOR_KEY));
-        itemLabelFontSizeField.setText(metadataValue(item.metadata(), LABEL_FONT_SIZE_KEY));
-        itemLabelFontStyleField.setText(metadataValue(item.metadata(), LABEL_FONT_STYLE_KEY));
+        itemBackgroundColorField.setText(metadataValue(item.metadata(), BACKGROUND_COLOR_KEY));
+        setComboValue(itemTransparencyBox, metadataValue(item.metadata(), TRANSPARENCY_KEY));
+        setComboValue(itemLabelFontFamilyBox, metadataValue(item.metadata(), LABEL_FONT_FAMILY_KEY));
+        setComboValue(itemLabelFontSizeBox, metadataValue(item.metadata(), LABEL_FONT_SIZE_KEY));
+        setComboValue(itemLabelFontStyleBox, metadataValue(item.metadata(), LABEL_FONT_STYLE_KEY));
         itemLabelColorField.setText(metadataValue(item.metadata(), LABEL_COLOR_KEY));
         refreshItemTypeState();
         JPanel fields = propertyGrid(itemPropertyLabelsFor(item.type()).size());
@@ -1038,13 +1236,18 @@ public final class ScreenDesignerApplication {
             addPropertyRow(fields, row++, "Current value", itemValueField);
             addPropertyRow(fields, row++, "Editable", itemEditableBox);
         }
-        addPropertyRow(fields, row++, "Font size", itemFontSizeField);
-        addPropertyRow(fields, row++, "Font style", itemFontStyleField);
-        addPropertyRow(fields, row++, "Color", itemColorField);
+        addPropertyRow(fields, row++, "Display role", itemDisplayRoleBox);
+        addPropertyRow(fields, row++, "Font", itemFontFamilyBox);
+        addPropertyRow(fields, row++, "Font size", itemFontSizeBox);
+        addPropertyRow(fields, row++, "Font style", itemFontStyleBox);
+        addPropertyRow(fields, row++, "Color", colorSelector(itemColorField));
+        addPropertyRow(fields, row++, "Background color", colorSelector(itemBackgroundColorField));
+        addPropertyRow(fields, row++, "Transparency", itemTransparencyBox);
         if (isFieldType(item.type())) {
-            addPropertyRow(fields, row++, "Label font size", itemLabelFontSizeField);
-            addPropertyRow(fields, row++, "Label font style", itemLabelFontStyleField);
-            addPropertyRow(fields, row, "Label color", itemLabelColorField);
+            addPropertyRow(fields, row++, "Label font", itemLabelFontFamilyBox);
+            addPropertyRow(fields, row++, "Label font size", itemLabelFontSizeBox);
+            addPropertyRow(fields, row++, "Label font style", itemLabelFontStyleBox);
+            addPropertyRow(fields, row, "Label color", colorSelector(itemLabelColorField));
         }
         return fields;
     }
@@ -1064,6 +1267,28 @@ public final class ScreenDesignerApplication {
     private static void addPropertyRow(JPanel panel, int row, String label, Component component) {
         panel.add(new JLabel(label), propertyConstraints(row, 0, 0.0));
         panel.add(component, propertyConstraints(row, 1, 1.0));
+    }
+
+    private static Component colorSelector(JTextField colorField) {
+        JPanel panel = new JPanel(new BorderLayout(6, 0));
+        JButton choose = new JButton("Choose...");
+        choose.addActionListener(event -> {
+            Color selected = JColorChooser.showDialog(panel, "Choose Color", initialColor(colorField.getText()));
+            if (selected != null) {
+                colorField.setText("#%02x%02x%02x".formatted(selected.getRed(), selected.getGreen(), selected.getBlue()));
+            }
+        });
+        panel.add(colorField, BorderLayout.CENTER);
+        panel.add(choose, BorderLayout.EAST);
+        return panel;
+    }
+
+    private static Color initialColor(String value) {
+        try {
+            return value != null && value.matches("#[0-9a-fA-F]{6}") ? Color.decode(value) : Color.WHITE;
+        } catch (NumberFormatException exception) {
+            return Color.WHITE;
+        }
     }
 
     private static GridBagConstraints propertyConstraints(int row, int column, double weightx) {
@@ -1135,19 +1360,56 @@ public final class ScreenDesignerApplication {
     }
 
     private Map<String, String> itemMetadata(Map<String, String> existingMetadata, ScreenDesignItemType type) {
-        Map<String, String> metadata = new LinkedHashMap<>(existingMetadata);
-        putOptionalMetadata(metadata, ITEM_FONT_SIZE_KEY, itemFontSizeField.getText());
-        putOptionalMetadata(metadata, ITEM_FONT_STYLE_KEY, itemFontStyleField.getText());
-        putOptionalMetadata(metadata, ITEM_COLOR_KEY, itemColorField.getText());
+        Map<String, String> metadata = fontMetadata(existingMetadata, itemFontFamilyBox, itemFontSizeBox, itemFontStyleBox, itemColorField);
+        putOptionalMetadata(metadata, DISPLAY_ROLE_KEY, selectedComboValue(itemDisplayRoleBox));
+        putOptionalMetadata(metadata, BACKGROUND_COLOR_KEY, itemBackgroundColorField.getText());
+        putOptionalMetadata(metadata, TRANSPARENCY_KEY, selectedComboValue(itemTransparencyBox));
         if (isFieldType(type)) {
-            putOptionalMetadata(metadata, LABEL_FONT_SIZE_KEY, itemLabelFontSizeField.getText());
-            putOptionalMetadata(metadata, LABEL_FONT_STYLE_KEY, itemLabelFontStyleField.getText());
+            putOptionalMetadata(metadata, LABEL_FONT_FAMILY_KEY, selectedComboValue(itemLabelFontFamilyBox));
+            putOptionalMetadata(metadata, LABEL_FONT_SIZE_KEY, selectedComboValue(itemLabelFontSizeBox));
+            putOptionalMetadata(metadata, LABEL_FONT_STYLE_KEY, selectedComboValue(itemLabelFontStyleBox));
             putOptionalMetadata(metadata, LABEL_COLOR_KEY, itemLabelColorField.getText());
         } else {
+            metadata.remove(LABEL_FONT_FAMILY_KEY);
             metadata.remove(LABEL_FONT_SIZE_KEY);
             metadata.remove(LABEL_FONT_STYLE_KEY);
             metadata.remove(LABEL_COLOR_KEY);
         }
+        return metadata;
+    }
+
+    private Map<String, String> screenMetadata(Map<String, String> existingMetadata) {
+        Map<String, String> metadata = fontMetadata(existingMetadata, screenFontFamilyBox, screenFontSizeBox, screenFontStyleBox, screenColorField);
+        putOptionalMetadata(metadata, BACKGROUND_COLOR_KEY, screenBackgroundColorField.getText());
+        putOptionalMetadata(metadata, BORDER_STYLE_KEY, selectedComboValue(screenBorderStyleBox));
+        putOptionalMetadata(metadata, BORDER_CORNER_KEY, selectedComboValue(screenBorderCornerBox));
+        putOptionalMetadata(metadata, BORDER_THICKNESS_KEY, selectedComboValue(screenBorderThicknessBox));
+        putOptionalMetadata(metadata, BORDER_COLOR_KEY, screenBorderColorField.getText());
+        return metadata;
+    }
+
+    private Map<String, String> blockMetadata(Map<String, String> existingMetadata) {
+        Map<String, String> metadata = fontMetadata(existingMetadata, blockFontFamilyBox, blockFontSizeBox, blockFontStyleBox, blockColorField);
+        putOptionalMetadata(metadata, BACKGROUND_COLOR_KEY, blockBackgroundColorField.getText());
+        putOptionalMetadata(metadata, TRANSPARENCY_KEY, selectedComboValue(blockTransparencyBox));
+        putOptionalMetadata(metadata, BORDER_STYLE_KEY, selectedComboValue(blockBorderStyleBox));
+        putOptionalMetadata(metadata, BORDER_CORNER_KEY, selectedComboValue(blockBorderCornerBox));
+        putOptionalMetadata(metadata, BORDER_THICKNESS_KEY, selectedComboValue(blockBorderThicknessBox));
+        putOptionalMetadata(metadata, BORDER_COLOR_KEY, blockBorderColorField.getText());
+        return metadata;
+    }
+
+    private static Map<String, String> fontMetadata(
+            Map<String, String> existingMetadata,
+            JComboBox<String> fontFamilyBox,
+            JComboBox<String> fontSizeBox,
+            JComboBox<String> fontStyleBox,
+            JTextField colorField) {
+        Map<String, String> metadata = new LinkedHashMap<>(existingMetadata);
+        putOptionalMetadata(metadata, FONT_FAMILY_KEY, selectedComboValue(fontFamilyBox));
+        putOptionalMetadata(metadata, ITEM_FONT_SIZE_KEY, selectedComboValue(fontSizeBox));
+        putOptionalMetadata(metadata, ITEM_FONT_STYLE_KEY, selectedComboValue(fontStyleBox));
+        putOptionalMetadata(metadata, ITEM_COLOR_KEY, colorField.getText());
         return metadata;
     }
 
@@ -1162,6 +1424,64 @@ public final class ScreenDesignerApplication {
 
     private static String metadataValue(Map<String, String> metadata, String key) {
         return metadata.getOrDefault(key, "");
+    }
+
+    private static JComboBox<String> fontStyleBox() {
+        return new JComboBox<>(FONT_STYLE_OPTIONS);
+    }
+
+    private static JComboBox<String> fontSizeBox() {
+        JComboBox<String> comboBox = new JComboBox<>(FONT_SIZE_OPTIONS);
+        comboBox.setEditable(true);
+        return comboBox;
+    }
+
+    private static JComboBox<String> fontFamilyBox() {
+        JComboBox<String> comboBox = new JComboBox<>(fontFamilyOptions());
+        comboBox.setEditable(true);
+        return comboBox;
+    }
+
+    private static JComboBox<String> transparencyBox() {
+        JComboBox<String> comboBox = new JComboBox<>(TRANSPARENCY_OPTIONS);
+        comboBox.setEditable(true);
+        return comboBox;
+    }
+
+    private static JComboBox<String> borderStyleBox() {
+        return new JComboBox<>(BORDER_STYLE_OPTIONS);
+    }
+
+    private static JComboBox<String> borderCornerBox() {
+        return new JComboBox<>(BORDER_CORNER_OPTIONS);
+    }
+
+    private static JComboBox<String> borderThicknessBox() {
+        JComboBox<String> comboBox = new JComboBox<>(BORDER_THICKNESS_OPTIONS);
+        comboBox.setEditable(true);
+        return comboBox;
+    }
+
+    private static String[] fontFamilyOptions() {
+        List<String> options = new ArrayList<>();
+        options.add(DEFAULT_OPTION);
+        options.addAll(FontResources.fontFileNames());
+        return options.toArray(String[]::new);
+    }
+
+    private static void setComboValue(JComboBox<String> comboBox, String value) {
+        comboBox.setSelectedItem(value == null || value.isBlank() ? DEFAULT_OPTION : value);
+    }
+
+    private static String selectedComboValue(JComboBox<String> comboBox) {
+        Object selected = comboBox.isEditable()
+                ? comboBox.getEditor().getItem()
+                : comboBox.getSelectedItem();
+        if (selected == null) {
+            return "";
+        }
+        String stringValue = selected.toString();
+        return DEFAULT_OPTION.equals(stringValue) ? "" : stringValue;
     }
 
     private static String normalizedItemId(String itemId, boolean temporary) {
@@ -1201,8 +1521,10 @@ public final class ScreenDesignerApplication {
 
     static List<String> propertyLabelsFor(NavigationNode navigationNode) {
         return switch (navigationNode.type()) {
-            case SCREEN -> List.of("Screen id", "Title", "Layout type");
-            case BLOCK -> List.of("Block id", "Title", "Layout type", "Parent block");
+            case SCREEN -> List.of("Screen id", "Title", "Layout type", "Font", "Font size", "Font style", "Color", "Background color",
+                    "Border style", "Border corner", "Border thickness", "Border color");
+            case BLOCK -> List.of("Block id", "Title", "Layout type", "Parent block", "Font", "Font size", "Font style", "Color", "Background color",
+                    "Transparency", "Border style", "Border corner", "Border thickness", "Border color");
             case ITEM, TEMPORARY_ITEM -> itemPropertyLabelsFor(ScreenDesignItemType.FIELD);
         };
     }
@@ -1217,9 +1539,9 @@ public final class ScreenDesignerApplication {
             labels.add("Current value");
             labels.add("Editable");
         }
-        labels.addAll(List.of("Font size", "Font style", "Color"));
+        labels.addAll(List.of("Display role", "Font", "Font size", "Font style", "Color", "Background color", "Transparency"));
         if (isFieldType(type)) {
-            labels.addAll(List.of("Label font size", "Label font style", "Label color"));
+            labels.addAll(List.of("Label font", "Label font size", "Label font style", "Label color"));
         }
         return labels;
     }

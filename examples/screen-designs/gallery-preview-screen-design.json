@@ -2,25 +2,53 @@
   "id": "gallery.preview",
   "title": "Location Gallery",
   "layoutType": "PREVIEW_GRID",
-  "metadata": {"description": "Preview-grid sample showing card-like sections"},
+  "metadata": {
+    "description": "Preview-grid sample showing card-like sections",
+    "backgroundColor": "#0f172a",
+    "borderStyle": "solid",
+    "borderCorner": "rounded",
+    "borderThickness": "1",
+    "borderColor": "#4f86c6"
+  },
   "blocks": [
     {
       "id": "harbor",
       "title": "Harbor",
       "styleClass": null,
-      "metadata": {}
+      "metadata": {
+        "backgroundColor": "#17304d",
+        "transparency": "0.08",
+        "borderStyle": "solid",
+        "borderCorner": "rounded",
+        "borderThickness": "1",
+        "borderColor": "#7aa7d9"
+      }
     },
     {
       "id": "market",
       "title": "Night Market",
       "styleClass": null,
-      "metadata": {}
+      "metadata": {
+        "backgroundColor": "#35204f",
+        "transparency": "0.08",
+        "borderStyle": "solid",
+        "borderCorner": "rounded",
+        "borderThickness": "1",
+        "borderColor": "#b08ad6"
+      }
     },
     {
       "id": "observatory",
       "title": "Observatory",
       "styleClass": null,
-      "metadata": {}
+      "metadata": {
+        "backgroundColor": "#20384f",
+        "transparency": "0.08",
+        "borderStyle": "dashed",
+        "borderCorner": "rounded",
+        "borderThickness": "1",
+        "borderColor": "#8abbd6"
+      }
     }
   ],
   "items": [
@@ -33,7 +61,10 @@
       "value": null,
       "defaultValue": null,
       "styleClass": null,
-      "metadata": {}
+      "metadata": {
+        "backgroundColor": "#24354d",
+        "transparency": "0.1"
+      }
     },
     {
       "id": "market.summary",
@@ -44,7 +75,10 @@
       "value": null,
       "defaultValue": null,
       "styleClass": null,
-      "metadata": {}
+      "metadata": {
+        "backgroundColor": "#34264a",
+        "transparency": "0.1"
+      }
     },
     {
       "id": "observatory.summary",
@@ -55,7 +89,10 @@
       "value": null,
       "defaultValue": null,
       "styleClass": null,
-      "metadata": {}
+      "metadata": {
+        "backgroundColor": "#22384b",
+        "transparency": "0.1"
+      }
     }
   ]
 }

@@ -324,16 +324,15 @@ When editing manually:
 - `editable` is only meaningful for field-style items
 - `styleClass` is a stable CSS hook; `metadata` is a string map for extra tool/renderer-owned values
 
-The designer and JSON format currently expose these style-oriented item metadata keys:
+The designer and JSON format currently expose these style-oriented metadata keys:
 
-- `fontSize`
-- `fontStyle`
-- `color`
-- `labelFontSize`
-- `labelFontStyle`
-- `labelColor`
+- screen metadata: `fontFamily`, `fontSize`, `fontStyle`, `color`, `backgroundColor`, `borderStyle`, `borderCorner`, `borderThickness`, `borderColor`
+- block metadata: `fontFamily`, `fontSize`, `fontStyle`, `color`, `backgroundColor`, `transparency`, `borderStyle`, `borderCorner`, `borderThickness`, `borderColor`
+- item metadata: `displayRole`, `fontFamily`, `fontSize`, `fontStyle`, `color`, `backgroundColor`, `transparency`, `labelFontFamily`, `labelFontSize`, `labelFontStyle`, `labelColor`
 
-`fontSize` accepts a number or JavaFX-style size token such as `20`, `20px`, `16pt`, or `1.2em`. `fontStyle` supports `normal`, `bold`, `italic`, and `bold italic`. `color` accepts simple JavaFX color tokens such as hex colors or named colors. The generic layout renderer currently applies `fontSize`, `fontStyle`, and `color` to rendered item lines. Label-specific keys are intended for field-style items, are ignored by non-field items, and are available for future renderer support or application-owned rendering code that wants label-specific styling.
+These keys are string-valued metadata entries in the saved JSON. Leave a key out to inherit the bundled default display configuration from `src/main/resources/com/eb/javafx/ui/display-defaults.json`, or from any edited preview defaults currently loaded in the screen designer.
+
+`fontSize` accepts a number or JavaFX-style size token such as `20`, `20px`, `16pt`, or `1.2em`. `fontStyle` supports `normal`, `bold`, `italic`, and `bold italic`. `color`, `backgroundColor`, and `borderColor` accept simple JavaFX color tokens such as hex colors or named colors. `transparency` is stored as a value from `0` to `1`, where `0` is fully opaque and larger values increase transparency. `borderStyle` supports `solid`, `dashed`, `dotted`, or `none`; `borderCorner` supports `square`, `rounded`, or `pill`; `borderThickness` accepts the same kind of numeric tokens as `fontSize`. The generic layout renderer currently applies supported screen, block, and item metadata consistently in preview/rendered layout output. Label-specific keys are intended for field-style items, are ignored by non-field items, and are available for future renderer support or application-owned rendering code that wants label-specific styling.
 
 To save and load manually-authored screen designs in code, use `ScreenDesignJson.load(path)` and `ScreenDesignJson.save(path, design)`. Save output intentionally excludes temporary preview items, so only the ordered `items` array is persisted in JSON.
 
@@ -350,25 +349,26 @@ The designer opens a Swing editor backed by `ScreenDesignModel` and starts in `e
 - a navigation tree showing the screen root, blocks, saved items, and temporary items
 - a properties panel for the currently selected screen, block, or item
 - a live JSON view showing the current saved document
-- toolbar actions for validation, JavaFX preview, temporary-field creation, and temporary-item promotion
+- toolbar actions for editing default display values, validation, JavaFX preview, temporary-field creation, and temporary-item promotion
 
 Typical designer workflow:
 
 1. Use **File > New**, **Load**, **Save**, or **Save As** to manage the JSON document.
-2. Use **Add Block** to create root or nested blocks.
-3. Select a block, then use **Add Item** for a saved item or **Add Temporary Field** for a preview-only field.
-4. Select a tree node and edit its properties on the right.
-5. Press **Apply Properties** to keep the selection on the current node while applying any renamed ids or moved items/blocks.
-6. Use **Validate** to run the screen design validator.
-7. Use **Open Preview** to render the current design through `ScreenLayoutRenderer` with the engine theme.
-8. Use **Promote Temporary** to convert a temporary field into a saved item when it should be persisted.
+2. Use **Edit Default Values** to adjust the preview-time display defaults loaded from `display-defaults.json`; this is useful for testing inherited screen/block/item styling without changing every document node.
+3. Use **Add Block** to create root or nested blocks.
+4. Select a block, then use **Add Item** for a saved item or **Add Temporary Field** for a preview-only field.
+5. Select a tree node and edit its properties on the right.
+6. Press **Apply Properties** to keep the selection on the current node while applying any renamed ids or moved items/blocks.
+7. Use **Validate** to run the screen design validator.
+8. Use **Open Preview** to render the current design through `ScreenLayoutRenderer` with the engine theme and the currently edited default display values.
+9. Use **Promote Temporary** to convert a temporary field into a saved item when it should be persisted.
 
 The property editor adapts to the selected item type:
 
-- screen nodes expose screen id, title, and layout type
-- block nodes expose block id, title, layout type, and parent block
-- field-style items expose label, current value, editable, item font size/style/color, and label font size/style/color
-- non-field items hide label/editable controls and only expose the applicable content plus item font size/style/color
+- screen nodes expose screen id, title, layout type, font family, font size/style, text color, background color, and border attributes
+- block nodes expose block id, title, layout type, parent block, font family, font size/style, text color, background color, transparency, and border attributes
+- field-style items expose label, current value, editable, display role, item font family/size/style/color/background/transparency, and label font family/size/style/color
+- non-field items hide label/editable controls and only expose the applicable content plus display role and item font family/size/style/color/background/transparency
 - `TEXT_AREA` and `MULTI_LINE_FIELD` use a multiline content editor
 
 Temporary items are preview/test helpers. They render in the preview window and can be moved between blocks like saved items, but normal JSON save output omits them. This is useful for prototyping form rows or validation cases without committing them to the authored document.
