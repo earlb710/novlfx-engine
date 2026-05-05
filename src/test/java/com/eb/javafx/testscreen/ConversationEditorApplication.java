@@ -628,9 +628,6 @@ public final class ConversationEditorApplication {
     private void selectNode(NodeData selectedData) {
         DefaultMutableTreeNode root = (DefaultMutableTreeNode) objectTreeModel.getRoot();
         DefaultMutableTreeNode node = findNode(root, selectedData);
-        if (node == null && root.getChildCount() > 0) {
-            node = (DefaultMutableTreeNode) root.getChildAt(0);
-        }
         if (node == null) {
             node = root;
         }
@@ -688,7 +685,9 @@ public final class ConversationEditorApplication {
         if (text.isBlank()) {
             return List.of();
         }
-        return List.of(text.split("\\R"));
+        return List.of(text.split("\\R")).stream()
+                .filter(condition -> !condition.isBlank())
+                .toList();
     }
 
     private enum NodeType {
