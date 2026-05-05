@@ -1032,7 +1032,7 @@ public final class ConversationEditorApplication {
 
     private List<String> variantConditionValues() {
         return variantConditionRows.stream()
-                .map(ConditionFieldRow::conditionText)
+                .map(ConditionFieldRow::formattedConditionText)
                 .toList();
     }
 
@@ -1169,8 +1169,8 @@ public final class ConversationEditorApplication {
                     valueField);
         }
 
-        String conditionText() {
-            return ConversationEditorApplication.conditionText(
+        String formattedConditionText() {
+            return conditionText(
                     conditionType(),
                     selectedValue(operandField, CONDITION_OPERAND_EQUALS),
                     value());
