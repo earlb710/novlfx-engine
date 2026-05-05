@@ -164,6 +164,43 @@ BootContext context = new BootstrapService(options).boot(primaryStage);
 Use `context.resourceConfig().resolveCategoryCodeTables(context.applicationRoot())` when app-owned content modules need to load generic category JSON during startup.
 Use `context.resourceConfig().resolveResource(context.applicationRoot(), "displayDefinitions")` with `JsonDisplayContentModule` when app-owned display definitions should be loaded during the static content phase, and use named resources such as `sceneDefinitions` to load JSON-authored scene modules from the application side.
 
+The management UI includes a **Default App Values** screen for inspecting these startup defaults and related display resources. The **Application Values** tab presents editable application config fields with local **Save** and **Reset** actions. Beneath those fields, the **Application Variables** block provides a multiline table for app-owned variable notes or future app-specific persistence with four fields: `name`, `type`, `value`, and `description`. The type field is limited to `string`, `number`, or `bool`; use **Add Variable** to append a blank row and **Remove Variable** to delete selected rows, or the last row when nothing is selected.
+
+```json
+{
+  "debug": true,
+  "categoryCodeTablesPath": "config/category-code-tables.en.json",
+  "imageAssetRoot": "game",
+  "resources": {
+    "sceneDefinitions": "content/scene-definitions.json",
+    "displayDefinitions": "content/display-definitions.json",
+    "uiTheme": "src/main/resources/com/eb/javafx/ui/default.css"
+  },
+  "applicationVariables": [
+    {
+      "name": "playerName",
+      "type": "string",
+      "value": "Alex",
+      "description": "Default player display name used by app-owned startup content."
+    },
+    {
+      "name": "startingGold",
+      "type": "number",
+      "value": "100",
+      "description": "Initial currency for a new profile."
+    },
+    {
+      "name": "debugHud",
+      "type": "bool",
+      "value": "false",
+      "description": "Whether the application should show an app-owned debug HUD."
+    }
+  ]
+}
+```
+
+The **Default CSS** tab opens `src/main/resources/com/eb/javafx/ui/default.css` in an editable text area with **Save** and **Reset** buttons below the text field. The save action applies the edited CSS text locally to the management screen session, while reset reloads the bundled CSS resource. The **Layouts** tab shows `src/main/resources/com/eb/javafx/ui/layout-contract.json` as read-only reference data and does not show CSS save/reset actions.
+
 Example/demo code: [`examples/user-manual/04-startup-and-service-wiring/BootstrapDemo.java`](../examples/user-manual/04-startup-and-service-wiring/BootstrapDemo.java)
 
 Additional example/demo code:

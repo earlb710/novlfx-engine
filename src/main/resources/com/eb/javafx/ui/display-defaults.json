@@ -1,14 +1,14 @@
 {
   "screen": {
-    "fontFamily": "OpenDyslexic3-Regular.ttf",
-    "fontSize": "18",
-    "fontStyle": "normal",
-    "color": "#ffffff",
-    "backgroundColor": "#0a1426",
-    "borderStyle": "solid",
-    "borderCorner": "rounded",
-    "borderThickness": "1",
-    "borderColor": "#0099cc"
+    "fontFamily": "",
+    "fontSize": "",
+    "fontStyle": "",
+    "color": "",
+    "backgroundColor": "",
+    "borderStyle": "",
+    "borderCorner": "",
+    "borderThickness": "",
+    "borderColor": ""
   },
   "block": {
     "fontSize": "16",

@@ -180,13 +180,13 @@ final class ScreenDesignModelTest {
     }
 
     @Test
-    void layoutCarriesScreenAndBlockBackgroundDefaults() {
+    void layoutLeavesBlankScreenDefaultsForCssInheritanceAndCarriesBlockDefaults() {
         ScreenDesignModel model = design();
 
         ScreenLayoutModel layout = ScreenDesignLayoutAdapter.toLayoutModel(model);
 
-        assertEquals("#0a1426", layout.metadata().get("backgroundColor"));
-        assertEquals("solid", layout.metadata().get("borderStyle"));
+        assertEquals("", layout.metadata().get("backgroundColor"));
+        assertEquals("", layout.metadata().get("borderStyle"));
         assertEquals("#143869", layout.contentSections().get(0).metadata().get("backgroundColor"));
         assertEquals("0", layout.contentSections().get(0).metadata().get("transparency"));
         assertEquals("solid", layout.contentSections().get(0).metadata().get("borderStyle"));

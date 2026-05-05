@@ -58,10 +58,10 @@ public record DisplayDefaults(
         Map<String, Object> root = JsonData.rootObject(json, sourceName);
         return new DisplayDefaults(
                 JsonData.optionalObject(root, "screen", "display defaults screen")
-                        .map(value -> JsonData.stringMap(value, "display defaults screen"))
+                        .map(value -> stringMapAllowingBlank(value, "display defaults screen"))
                         .orElse(Map.of()),
                 JsonData.optionalObject(root, "block", "display defaults block")
-                        .map(value -> JsonData.stringMap(value, "display defaults block"))
+                        .map(value -> stringMapAllowingBlank(value, "display defaults block"))
                         .orElse(Map.of()),
                 nestedDefaults(root, "items", "display defaults items"),
                 nestedDefaults(root, "labels", "display defaults labels"));
@@ -85,11 +85,22 @@ public record DisplayDefaults(
                     LinkedHashMap<String, Map<String, String>> values = new LinkedHashMap<>();
                     map.forEach((entryKey, entryValue) -> values.put(
                             entryKey,
-                            JsonData.stringMap(JsonData.requireObject(entryValue, description + "." + entryKey),
+                            stringMapAllowingBlank(JsonData.requireObject(entryValue, description + "." + entryKey),
                                     description + "." + entryKey)));
                     return Map.copyOf(values);
                 })
                 .orElse(Map.of());
+    }
+
+    private static Map<String, String> stringMapAllowingBlank(Object value, String description) {
+        LinkedHashMap<String, String> strings = new LinkedHashMap<>();
+        JsonData.requireObject(value, description).forEach((key, entryValue) -> {
+            if (!(entryValue instanceof String stringValue)) {
+                throw new IllegalArgumentException("Expected JSON string for " + description + "." + key + ".");
+            }
+            strings.put(key, stringValue);
+        });
+        return Map.copyOf(strings);
     }
 
     private static Map<String, Map<String, String>> copyNestedMap(

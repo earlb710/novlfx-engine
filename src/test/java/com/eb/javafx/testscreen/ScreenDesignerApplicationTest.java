@@ -345,12 +345,23 @@ final class ScreenDesignerApplicationTest {
                 ScreenDesignerApplication.defaultValueAttributeEditor("fontFamily"));
         assertEquals(ScreenDesignerApplication.DefaultValueAttributeEditor.FONT_STYLE,
                 ScreenDesignerApplication.defaultValueAttributeEditor("fontStyle"));
+        assertEquals(ScreenDesignerApplication.DefaultValueAttributeEditor.BORDER_STYLE,
+                ScreenDesignerApplication.defaultValueAttributeEditor("borderStyle"));
+        assertEquals(ScreenDesignerApplication.DefaultValueAttributeEditor.BORDER_CORNER,
+                ScreenDesignerApplication.defaultValueAttributeEditor("borderCorner"));
         assertEquals(ScreenDesignerApplication.DefaultValueAttributeEditor.COLOR,
                 ScreenDesignerApplication.defaultValueAttributeEditor("backgroundColor"));
         assertEquals(ScreenDesignerApplication.DefaultValueAttributeEditor.COLOR,
                 ScreenDesignerApplication.defaultValueAttributeEditor("borderColor"));
         assertEquals(ScreenDesignerApplication.DefaultValueAttributeEditor.TEXT,
                 ScreenDesignerApplication.defaultValueAttributeEditor("fontSize"));
+        assertEquals("", ScreenDesignerApplication.defaultValueFontFamilyOptions()[0]);
+        assertEquals("", ScreenDesignerApplication.defaultValueFontStyleOptions()[0]);
+        assertEquals("", ScreenDesignerApplication.defaultValueBorderStyleOptions()[0]);
+        assertEquals("", ScreenDesignerApplication.defaultValueBorderCornerOptions()[0]);
+        assertEquals("<inherit from CSS>", ScreenDesignerApplication.defaultValueDisplayText(""));
+        assertEquals("<inherit from CSS>", ScreenDesignerApplication.defaultValueDisplayText(null));
+        assertEquals("bold", ScreenDesignerApplication.defaultValueDisplayText("bold"));
     }
 
     @Test
@@ -359,8 +370,36 @@ final class ScreenDesignerApplicationTest {
 
         assertTrue(options.contains("OpenDyslexic3-Regular.ttf"));
         assertTrue(options.contains("Dialog"));
-        assertEquals(List.of("normal", "bold", "italic", "bold italic"),
+        assertEquals(List.of("", "normal", "bold", "italic", "bold italic"),
                 List.of(ScreenDesignerApplication.defaultValueFontStyleOptions()));
+        assertEquals(List.of("", "solid", "dashed", "dotted", "none"),
+                List.of(ScreenDesignerApplication.defaultValueBorderStyleOptions()));
+        assertEquals(List.of("", "square", "rounded", "pill"),
+                List.of(ScreenDesignerApplication.defaultValueBorderCornerOptions()));
+    }
+
+    @Test
+    void defaultValuesEditorKeepsFontAndBorderAttributesGrouped() {
+        Map<String, String> attributes = new LinkedHashMap<>();
+        attributes.put("borderColor", "#0099cc");
+        attributes.put("backgroundColor", "#0a1426");
+        attributes.put("fontStyle", "bold");
+        attributes.put("borderStyle", "solid");
+        attributes.put("fontSize", "18");
+        attributes.put("borderCorner", "rounded");
+        attributes.put("color", "#ffffff");
+        attributes.put("zCustom", "z");
+        attributes.put("aCustom", "a");
+
+        assertEquals(List.of("fontSize", "fontStyle", "color", "backgroundColor", "borderStyle", "borderCorner", "borderColor",
+                        "aCustom", "zCustom"),
+                ScreenDesignerApplication.orderedDefaultAttributeKeys(attributes));
+    }
+
+    @Test
+    void screenDesignerLaunchedFromManagementDoesNotExitOnClose() {
+        assertTrue(new ScreenDesignerApplication().exitsOnClose());
+        assertFalse(new ScreenDesignerApplication(false).exitsOnClose());
     }
 
     @Test
