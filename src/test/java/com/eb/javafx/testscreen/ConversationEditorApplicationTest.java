@@ -14,6 +14,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 final class ConversationEditorApplicationTest {
@@ -177,5 +178,20 @@ final class ConversationEditorApplicationTest {
         assertEquals(2, added.conversations().get(0).lines().get(0).variants().size());
         assertEquals("", added.conversations().get(0).lines().get(0).variants().get(1).text());
         assertEquals(1.0, added.conversations().get(0).lines().get(0).variants().get(1).weight());
+    }
+
+    @Test
+    void removeLineRemovesSelectedLineWhenConversationHasMultipleLines() {
+        ConversationDefinition removed = ConversationEditorApplication.removeLine(ConversationEditorApplication.sampleConversation(), 0, 0);
+
+        assertEquals(1, removed.conversations().get(0).lines().size());
+        assertEquals("guide", removed.conversations().get(0).lines().get(0).speaker());
+    }
+
+    @Test
+    void removeLineRejectsRemovingOnlyLineInConversation() {
+        ConversationDefinition oneLine = ConversationEditorApplication.removeLine(ConversationEditorApplication.sampleConversation(), 0, 0);
+
+        assertThrows(IllegalArgumentException.class, () -> ConversationEditorApplication.removeLine(oneLine, 0, 0));
     }
 }

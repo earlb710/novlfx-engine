@@ -685,7 +685,8 @@ public final class ConversationEditorApplication {
             int lineIndex,
             String speaker,
             String listener) {
-        return updateLine(document, conversationIndex, lineIndex, speaker, listener, LineType.SAY);
+        return updateLine(document, conversationIndex, lineIndex, speaker, listener,
+                document.conversations().get(conversationIndex).lines().get(lineIndex).type());
     }
 
     static ConversationDefinition updateLine(

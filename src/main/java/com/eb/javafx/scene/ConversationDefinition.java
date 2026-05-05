@@ -61,11 +61,13 @@ public final class ConversationDefinition {
         }
 
         public static LineType fromJson(String value) {
-            String normalized = Validation.requireNonBlank(value, "Conversation line type is required.")
-                    .trim()
-                    .toUpperCase(Locale.ROOT)
-                    .replace('-', '_');
-            return LineType.valueOf(normalized);
+            String checkedValue = Validation.requireNonBlank(value, "Conversation line type is required.").trim();
+            for (LineType type : values()) {
+                if (type.jsonValue.equals(checkedValue)) {
+                    return type;
+                }
+            }
+            throw new IllegalArgumentException("Unknown conversation line type: " + value);
         }
 
         public String formatText(String text) {
