@@ -1579,7 +1579,7 @@ public final class ScreenDesignerApplication {
                 LABEL_FONT_STYLE_KEY,
                 LABEL_COLOR_KEY);
         ArrayList<String> keys = new ArrayList<>(attributes.keySet());
-        keys.sort(Comparator.comparingInt(key -> {
+        keys.sort(Comparator.<String>comparingInt(key -> {
             int index = preferredOrder.indexOf(key);
             return index < 0 ? preferredOrder.size() : index;
         }).thenComparing(Comparator.naturalOrder()));
