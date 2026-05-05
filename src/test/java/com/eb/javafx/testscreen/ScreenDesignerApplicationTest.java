@@ -367,11 +367,11 @@ final class ScreenDesignerApplicationTest {
 
         assertTrue(options.contains("OpenDyslexic3-Regular.ttf"));
         assertTrue(options.contains("Dialog"));
-        assertEquals(List.of("normal", "bold", "italic", "bold italic"),
+        assertEquals(List.of("", "normal", "bold", "italic", "bold italic"),
                 List.of(ScreenDesignerApplication.defaultValueFontStyleOptions()));
-        assertEquals(List.of("solid", "dashed", "dotted", "none"),
+        assertEquals(List.of("", "solid", "dashed", "dotted", "none"),
                 List.of(ScreenDesignerApplication.defaultValueBorderStyleOptions()));
-        assertEquals(List.of("square", "rounded", "pill"),
+        assertEquals(List.of("", "square", "rounded", "pill"),
                 List.of(ScreenDesignerApplication.defaultValueBorderCornerOptions()));
     }
 
