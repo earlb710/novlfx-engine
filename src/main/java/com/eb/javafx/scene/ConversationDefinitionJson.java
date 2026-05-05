@@ -105,8 +105,11 @@ public final class ConversationDefinitionJson {
     }
 
     private static String stringAllowingEmpty(Map<String, Object> object, String key, String description, String defaultValue) {
+        if (!object.containsKey(key)) {
+            return defaultValue;
+        }
         Object value = object.get(key);
-        if (!object.containsKey(key) || value == null) {
+        if (value == null) {
             return defaultValue;
         }
         if (value instanceof String stringValue) {

@@ -406,7 +406,7 @@ public final class ConversationEditorApplication {
         try {
             double weight = Double.parseDouble(variantWeightField.getText().trim());
             if (weight <= 0.0) {
-                throw new IllegalArgumentException("Variant weight must be positive.");
+                throw new IllegalArgumentException("Variant weight must be greater than zero.");
             }
             return weight;
         } catch (NumberFormatException exception) {
@@ -417,9 +417,6 @@ public final class ConversationEditorApplication {
     private void addSelectedLine() {
         NodeData selectedData = selectedData();
         int conversationIndex = selectedConversationIndex(selectedData);
-        if (conversationIndex < 0 && !conversation.conversations().isEmpty()) {
-            conversationIndex = 0;
-        }
         if (conversationIndex < 0) {
             return;
         }
