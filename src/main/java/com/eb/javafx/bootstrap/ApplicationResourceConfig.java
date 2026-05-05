@@ -22,14 +22,21 @@ import java.util.Optional;
  * resolve them relative to an application-chosen base directory.</p>
  */
 public final class ApplicationResourceConfig {
+    private static final boolean DEFAULT_DEBUG = true;
     private static final String DEFAULT_CATEGORY_CODE_TABLES_PATH = "config/category-code-tables.en.json";
     private static final String DEFAULT_IMAGE_ASSET_ROOT = "game";
 
+    private final boolean debug;
     private final String categoryCodeTablesPath;
     private final String imageAssetRoot;
     private final Map<String, String> resources;
 
-    private ApplicationResourceConfig(String categoryCodeTablesPath, String imageAssetRoot, Map<String, String> resources) {
+    private ApplicationResourceConfig(
+            boolean debug,
+            String categoryCodeTablesPath,
+            String imageAssetRoot,
+            Map<String, String> resources) {
+        this.debug = debug;
         this.categoryCodeTablesPath = Validation.requireNonBlank(
                 categoryCodeTablesPath,
                 "Application resource config category code tables path is required.");
@@ -46,13 +53,22 @@ public final class ApplicationResourceConfig {
 
     public static ApplicationResourceConfig defaults() {
         return new ApplicationResourceConfig(
+                DEFAULT_DEBUG,
                 DEFAULT_CATEGORY_CODE_TABLES_PATH,
                 DEFAULT_IMAGE_ASSET_ROOT,
                 Map.of());
     }
 
     public static ApplicationResourceConfig of(String categoryCodeTablesPath, String imageAssetRoot, Map<String, String> resources) {
-        return new ApplicationResourceConfig(categoryCodeTablesPath, imageAssetRoot, resources);
+        return of(DEFAULT_DEBUG, categoryCodeTablesPath, imageAssetRoot, resources);
+    }
+
+    public static ApplicationResourceConfig of(
+            boolean debug,
+            String categoryCodeTablesPath,
+            String imageAssetRoot,
+            Map<String, String> resources) {
+        return new ApplicationResourceConfig(debug, categoryCodeTablesPath, imageAssetRoot, resources);
     }
 
     public static ApplicationResourceConfig load(Path jsonPath) {
@@ -68,6 +84,8 @@ public final class ApplicationResourceConfig {
         Map<String, Object> root = requireObject(SimpleJson.parse(json, sourceName), "root");
         ApplicationResourceConfig defaults = defaults();
         return new ApplicationResourceConfig(
+                optionalBoolean(root, "debug", "root.debug")
+                        .orElse(defaults.debug()),
                 optionalString(root, "categoryCodeTablesPath", "root.categoryCodeTablesPath")
                         .orElse(defaults.categoryCodeTablesPath()),
                 optionalString(root, "imageAssetRoot", "root.imageAssetRoot")
@@ -75,6 +93,10 @@ public final class ApplicationResourceConfig {
                 optionalObject(root, "resources", "root.resources")
                         .map(ApplicationResourceConfig::toStringMap)
                         .orElse(Map.of()));
+    }
+
+    public boolean debug() {
+        return debug;
     }
 
     public String categoryCodeTablesPath() {
@@ -106,18 +128,22 @@ public final class ApplicationResourceConfig {
         return resourcePath(resourceId).map(path -> PathUtils.resolveChild(baseDirectory, path));
     }
 
+    public ApplicationResourceConfig withDebug(boolean debug) {
+        return new ApplicationResourceConfig(debug, categoryCodeTablesPath, imageAssetRoot, resources);
+    }
+
     public ApplicationResourceConfig withCategoryCodeTablesPath(String categoryCodeTablesPath) {
-        return new ApplicationResourceConfig(categoryCodeTablesPath, imageAssetRoot, resources);
+        return new ApplicationResourceConfig(debug, categoryCodeTablesPath, imageAssetRoot, resources);
     }
 
     public ApplicationResourceConfig withImageAssetRoot(String imageAssetRoot) {
-        return new ApplicationResourceConfig(categoryCodeTablesPath, imageAssetRoot, resources);
+        return new ApplicationResourceConfig(debug, categoryCodeTablesPath, imageAssetRoot, resources);
     }
 
     public ApplicationResourceConfig putResource(String resourceId, String resourcePath) {
         LinkedHashMap<String, String> updated = new LinkedHashMap<>(resources);
         updated.put(resourceId, resourcePath);
-        return new ApplicationResourceConfig(categoryCodeTablesPath, imageAssetRoot, updated);
+        return new ApplicationResourceConfig(debug, categoryCodeTablesPath, imageAssetRoot, updated);
     }
 
     public ApplicationResourceConfig removeResource(String resourceId) {
@@ -127,12 +153,13 @@ public final class ApplicationResourceConfig {
         }
         LinkedHashMap<String, String> updated = new LinkedHashMap<>(resources);
         updated.remove(resourceId);
-        return new ApplicationResourceConfig(categoryCodeTablesPath, imageAssetRoot, updated);
+        return new ApplicationResourceConfig(debug, categoryCodeTablesPath, imageAssetRoot, updated);
     }
 
     public String toJson() {
         StringBuilder json = new StringBuilder();
         json.append("{\n")
+                .append("  \"debug\": ").append(debug).append(",\n")
                 .append("  \"categoryCodeTablesPath\": ").append(JsonStrings.quote(categoryCodeTablesPath)).append(",\n")
                 .append("  \"imageAssetRoot\": ").append(JsonStrings.quote(imageAssetRoot)).append(",\n")
                 .append("  \"resources\": {\n");
@@ -185,6 +212,17 @@ public final class ApplicationResourceConfig {
             return Optional.of(Validation.requireNonBlank(stringValue, description + " must not be blank."));
         }
         throw new IllegalArgumentException("Expected JSON string for " + description + ".");
+    }
+
+    private static Optional<Boolean> optionalBoolean(Map<String, Object> object, String key, String description) {
+        if (!object.containsKey(key)) {
+            return Optional.empty();
+        }
+        Object value = object.get(key);
+        if (value instanceof Boolean booleanValue) {
+            return Optional.of(booleanValue);
+        }
+        throw new IllegalArgumentException("Expected JSON boolean for " + description + ".");
     }
 
     private static Optional<Map<String, Object>> optionalObject(Map<String, Object> object, String key, String description) {

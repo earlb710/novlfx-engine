@@ -22,12 +22,16 @@ import javafx.scene.Scene;
 import javafx.stage.Stage;
 
 import javax.swing.JButton;
+import javax.swing.AbstractCellEditor;
+import javax.swing.DefaultCellEditor;
 import javax.swing.JCheckBox;
 import javax.swing.JColorChooser;
 import javax.swing.JComboBox;
+import javax.swing.JDialog;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JList;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
@@ -36,13 +40,20 @@ import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
+import javax.swing.JTable;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
+import javax.swing.ListSelectionModel;
 import javax.swing.SwingUtilities;
+import javax.swing.WindowConstants;
+import javax.swing.table.AbstractTableModel;
+import javax.swing.table.TableCellEditor;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
+import java.awt.Frame;
+import java.awt.GraphicsEnvironment;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.GridLayout;
@@ -54,7 +65,10 @@ import java.awt.event.WindowEvent;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -81,6 +95,8 @@ public final class ScreenDesignerApplication {
     private static final String BORDER_CORNER_KEY = "borderCorner";
     private static final String BORDER_THICKNESS_KEY = "borderThickness";
     private static final String BORDER_COLOR_KEY = "borderColor";
+    private static final String HOVER_BACKGROUND_COLOR_KEY = "hoverBackgroundColor";
+    private static final String PRESSED_BACKGROUND_COLOR_KEY = "pressedBackgroundColor";
     private static final String DISPLAY_ROLE_KEY = "displayRole";
     private static final String LABEL_FONT_FAMILY_KEY = "labelFontFamily";
     private static final String LABEL_FONT_SIZE_KEY = "labelFontSize";
@@ -632,38 +648,66 @@ public final class ScreenDesignerApplication {
     }
 
     private void editDefaultValues() {
-        JTextArea editor = new JTextArea(displayDefaultsJson, 28, 80);
-        editor.setCaretPosition(0);
-        JScrollPane scrollPane = new JScrollPane(editor);
+        List<DefaultValueType> types = defaultValueTypes();
+        Map<DefaultValueType, Map<String, String>> editedValues = editableDefaultValueMaps(displayDefaults, types);
+        JList<DefaultValueType> typeList = new JList<>(types.toArray(DefaultValueType[]::new));
+        typeList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        DefaultAttributesTableModel tableModel = new DefaultAttributesTableModel(editedValues.get(types.get(0)));
+        JTable attributesTable = new DefaultAttributesTable(tableModel);
+        attributesTable.setFillsViewportHeight(true);
+        typeList.addListSelectionListener(event -> {
+            if (event.getValueIsAdjusting()) {
+                return;
+            }
+            if (attributesTable.isEditing()) {
+                attributesTable.getCellEditor().stopCellEditing();
+            }
+            DefaultValueType selectedType = typeList.getSelectedValue();
+            if (selectedType != null) {
+                tableModel.setAttributes(editedValues.get(selectedType));
+            }
+        });
+        typeList.setSelectedIndex(0);
+
         JPanel content = new JPanel(new BorderLayout(8, 8));
         content.add(new JLabel("<html>Edit preview defaults from <code>"
                 + DisplayDefaults.DEFAULT_RESOURCE
                 + "</code>. Changes apply only in the designer preview.</html>"), BorderLayout.NORTH);
-        content.add(scrollPane, BorderLayout.CENTER);
-        while (true) {
-            int result = JOptionPane.showConfirmDialog(
-                    null,
-                    content,
-                    "Edit Default Values",
-                    JOptionPane.OK_CANCEL_OPTION,
-                    JOptionPane.PLAIN_MESSAGE);
-            if (result != JOptionPane.OK_OPTION) {
-                return;
+        JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, new JScrollPane(typeList), new JScrollPane(attributesTable));
+        splitPane.setDividerLocation(180);
+        content.add(splitPane, BorderLayout.CENTER);
+
+        JDialog dialog = new JDialog((Frame) null, "Edit Default Values", true);
+        dialog.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+        JPanel actions = new JPanel(new GridLayout(1, 2, 6, 0));
+        JButton save = new JButton("Save");
+        JButton cancel = new JButton("Cancel");
+        save.addActionListener(event -> {
+            if (attributesTable.isEditing()) {
+                attributesTable.getCellEditor().stopCellEditing();
             }
             try {
-                displayDefaultsJson = editor.getText();
-                displayDefaults = DisplayDefaults.fromJson(displayDefaultsJson, "screen designer default values");
+                displayDefaults = displayDefaultsFromEditedValues(editedValues);
+                displayDefaultsJson = displayDefaultsJson(displayDefaults);
                 statusLabel.setText("Updated default display values for preview.");
                 refreshPreview();
-                return;
+                dialog.dispose();
             } catch (RuntimeException exception) {
                 JOptionPane.showMessageDialog(
-                        null,
+                        dialog,
                         exception.getMessage(),
                         "Default Values Error",
                         JOptionPane.ERROR_MESSAGE);
             }
-        }
+        });
+        cancel.addActionListener(event -> dialog.dispose());
+        actions.add(save);
+        actions.add(cancel);
+        content.add(actions, BorderLayout.SOUTH);
+        dialog.setContentPane(content);
+        dialog.setSize(760, 520);
+        dialog.setLocationRelativeTo(null);
+        dialog.setVisible(true);
     }
 
     private void openPreview() {
@@ -1463,10 +1507,73 @@ public final class ScreenDesignerApplication {
     }
 
     private static String[] fontFamilyOptions() {
-        List<String> options = new ArrayList<>();
+        return defaultValueFontFamilyOptions();
+    }
+
+    static String[] defaultValueFontFamilyOptions() {
+        LinkedHashSet<String> options = new LinkedHashSet<>();
         options.add(DEFAULT_OPTION);
         options.addAll(FontResources.fontFileNames());
+        Arrays.stream(GraphicsEnvironment.getLocalGraphicsEnvironment().getAvailableFontFamilyNames())
+                .sorted(Comparator.naturalOrder())
+                .forEach(options::add);
         return options.toArray(String[]::new);
+    }
+
+    static String[] defaultValueFontStyleOptions() {
+        return Arrays.copyOfRange(FONT_STYLE_OPTIONS, 1, FONT_STYLE_OPTIONS.length);
+    }
+
+    static DefaultValueAttributeEditor defaultValueAttributeEditor(String attributeName) {
+        if (isDefaultValueFontAttribute(attributeName)) {
+            return DefaultValueAttributeEditor.FONT;
+        }
+        if (isDefaultValueFontStyleAttribute(attributeName)) {
+            return DefaultValueAttributeEditor.FONT_STYLE;
+        }
+        if (isDefaultValueColorAttribute(attributeName)) {
+            return DefaultValueAttributeEditor.COLOR;
+        }
+        return DefaultValueAttributeEditor.TEXT;
+    }
+
+    private static boolean isDefaultValueFontAttribute(String attributeName) {
+        return FONT_FAMILY_KEY.equals(attributeName) || attributeName.endsWith("FontFamily");
+    }
+
+    private static boolean isDefaultValueFontStyleAttribute(String attributeName) {
+        return ITEM_FONT_STYLE_KEY.equals(attributeName) || attributeName.endsWith("FontStyle");
+    }
+
+    private static boolean isDefaultValueColorAttribute(String attributeName) {
+        return attributeName.toLowerCase(java.util.Locale.ROOT).contains("color");
+    }
+
+    private static JComboBox<String> defaultValueFontFamilyBox() {
+        JComboBox<String> comboBox = new JComboBox<>(defaultValueFontFamilyOptions());
+        comboBox.setEditable(true);
+        return comboBox;
+    }
+
+    private static JComboBox<String> defaultValueFontStyleBox() {
+        return new JComboBox<>(defaultValueFontStyleOptions());
+    }
+
+    private static TableCellEditor defaultValueCellEditor(String attributeName) {
+        return switch (defaultValueAttributeEditor(attributeName)) {
+            case FONT -> new DefaultCellEditor(defaultValueFontFamilyBox());
+            case FONT_STYLE -> new DefaultCellEditor(defaultValueFontStyleBox());
+            case COLOR -> new ColorValueCellEditor();
+            case TEXT -> new DefaultCellEditor(new JTextField());
+        };
+    }
+
+    private static String selectedColorValue(Component parent, String currentValue) {
+        Color selected = JColorChooser.showDialog(parent, "Choose Color", initialColor(currentValue));
+        if (selected == null) {
+            return currentValue == null ? "" : currentValue;
+        }
+        return "#%02x%02x%02x".formatted(selected.getRed(), selected.getGreen(), selected.getBlue());
     }
 
     private static void setComboValue(JComboBox<String> comboBox, String value) {
@@ -1546,6 +1653,121 @@ public final class ScreenDesignerApplication {
         return labels;
     }
 
+    static List<DefaultValueType> defaultValueTypes() {
+        return List.of(
+                DefaultValueType.screen(),
+                DefaultValueType.block(),
+                DefaultValueType.item(DisplayDefaults.ROLE_TEXT),
+                DefaultValueType.item(DisplayDefaults.ROLE_HEADING),
+                DefaultValueType.item(DisplayDefaults.ROLE_SUBHEADING),
+                DefaultValueType.item(DisplayDefaults.ROLE_FIELD),
+                DefaultValueType.item(DisplayDefaults.ROLE_BUTTON),
+                DefaultValueType.label(DisplayDefaults.ROLE_FIELD_LABEL));
+    }
+
+    static List<String> defaultValueTypeLabels() {
+        return defaultValueTypes().stream().map(DefaultValueType::label).toList();
+    }
+
+    static Map<String, String> defaultValueAttributesFor(DisplayDefaults defaults, DefaultValueType type) {
+        return switch (type.category()) {
+            case SCREEN -> defaults.screen();
+            case BLOCK -> defaults.block();
+            case ITEM -> defaults.itemDefaults(type.role());
+            case LABEL -> defaults.labelDefaults(type.role());
+        };
+    }
+
+    static String displayDefaultsJson(DisplayDefaults defaults) {
+        StringBuilder json = new StringBuilder("{\n");
+        appendStringMap(json, "screen", defaults.screen(), 1, true);
+        appendStringMap(json, "block", defaults.block(), 1, true);
+        appendNestedStringMap(json, "items", defaults.items(), 1, true);
+        appendNestedStringMap(json, "labels", defaults.labels(), 1, false);
+        json.append("}\n");
+        return json.toString();
+    }
+
+    private static Map<DefaultValueType, Map<String, String>> editableDefaultValueMaps(
+            DisplayDefaults defaults,
+            List<DefaultValueType> types) {
+        LinkedHashMap<DefaultValueType, Map<String, String>> editedValues = new LinkedHashMap<>();
+        for (DefaultValueType type : types) {
+            editedValues.put(type, new LinkedHashMap<>(defaultValueAttributesFor(defaults, type)));
+        }
+        return editedValues;
+    }
+
+    private static DisplayDefaults displayDefaultsFromEditedValues(Map<DefaultValueType, Map<String, String>> editedValues) {
+        LinkedHashMap<String, String> screen = new LinkedHashMap<>();
+        LinkedHashMap<String, String> block = new LinkedHashMap<>();
+        LinkedHashMap<String, Map<String, String>> items = new LinkedHashMap<>();
+        LinkedHashMap<String, Map<String, String>> labels = new LinkedHashMap<>();
+        editedValues.forEach((type, attributes) -> {
+            Map<String, String> copy = Map.copyOf(attributes);
+            switch (type.category()) {
+                case SCREEN -> screen.putAll(copy);
+                case BLOCK -> block.putAll(copy);
+                case ITEM -> items.put(type.role(), copy);
+                case LABEL -> labels.put(type.role(), copy);
+            }
+        });
+        return new DisplayDefaults(screen, block, items, labels);
+    }
+
+    private static void appendNestedStringMap(
+            StringBuilder json,
+            String name,
+            Map<String, Map<String, String>> values,
+            int indent,
+            boolean trailingComma) {
+        indent(json, indent).append("\"").append(name).append("\": {\n");
+        int index = 0;
+        for (Map.Entry<String, Map<String, String>> entry : values.entrySet()) {
+            appendStringMap(json, entry.getKey(), entry.getValue(), indent + 1, ++index < values.size());
+        }
+        indent(json, indent).append("}");
+        if (trailingComma) {
+            json.append(",");
+        }
+        json.append("\n");
+    }
+
+    private static void appendStringMap(
+            StringBuilder json,
+            String name,
+            Map<String, String> values,
+            int indent,
+            boolean trailingComma) {
+        indent(json, indent).append("\"").append(escapeJson(name)).append("\": {\n");
+        int index = 0;
+        for (Map.Entry<String, String> entry : values.entrySet()) {
+            indent(json, indent + 1)
+                    .append("\"")
+                    .append(escapeJson(entry.getKey()))
+                    .append("\": \"")
+                    .append(escapeJson(entry.getValue()))
+                    .append("\"");
+            if (++index < values.size()) {
+                json.append(",");
+            }
+            json.append("\n");
+        }
+        indent(json, indent).append("}");
+        if (trailingComma) {
+            json.append(",");
+        }
+        json.append("\n");
+    }
+
+    private static StringBuilder indent(StringBuilder builder, int indent) {
+        return builder.append("  ".repeat(indent));
+    }
+
+    private static String escapeJson(String value) {
+        return value.replace("\\", "\\\\").replace("\"", "\\\"");
+    }
+
     static boolean canAddItemForNode(NavigationNode navigationNode) {
         return navigationNode.type() == NodeType.BLOCK
                 || navigationNode.type() == NodeType.ITEM
@@ -1557,6 +1779,141 @@ public final class ScreenDesignerApplication {
         BLOCK,
         ITEM,
         TEMPORARY_ITEM
+    }
+
+    enum DefaultValueCategory {
+        SCREEN,
+        BLOCK,
+        ITEM,
+        LABEL
+    }
+
+    enum DefaultValueAttributeEditor {
+        TEXT,
+        FONT,
+        FONT_STYLE,
+        COLOR
+    }
+
+    static record DefaultValueType(DefaultValueCategory category, String label, String role) {
+        static DefaultValueType screen() {
+            return new DefaultValueType(DefaultValueCategory.SCREEN, "screen", null);
+        }
+
+        static DefaultValueType block() {
+            return new DefaultValueType(DefaultValueCategory.BLOCK, "block", null);
+        }
+
+        static DefaultValueType item(String itemRole) {
+            return roleBacked(DefaultValueCategory.ITEM, itemRole);
+        }
+
+        static DefaultValueType label(String labelRole) {
+            return roleBacked(DefaultValueCategory.LABEL, labelRole);
+        }
+
+        private static DefaultValueType roleBacked(DefaultValueCategory category, String role) {
+            return new DefaultValueType(category, role, role);
+        }
+
+        @Override
+        public String toString() {
+            return label;
+        }
+    }
+
+    private static final class DefaultAttributesTableModel extends AbstractTableModel {
+        private static final String[] COLUMNS = {"Attribute", "Value"};
+        private Map<String, String> attributes;
+        private List<String> keys;
+
+        private DefaultAttributesTableModel(Map<String, String> attributes) {
+            setAttributes(attributes);
+        }
+
+        private void setAttributes(Map<String, String> attributes) {
+            this.attributes = attributes;
+            this.keys = new ArrayList<>(attributes.keySet());
+            fireTableDataChanged();
+        }
+
+        @Override
+        public int getRowCount() {
+            return keys.size();
+        }
+
+        @Override
+        public int getColumnCount() {
+            return COLUMNS.length;
+        }
+
+        @Override
+        public String getColumnName(int column) {
+            return COLUMNS[column];
+        }
+
+        @Override
+        public Object getValueAt(int rowIndex, int columnIndex) {
+            String key = keys.get(rowIndex);
+            return columnIndex == 0 ? key : attributes.getOrDefault(key, "");
+        }
+
+        @Override
+        public boolean isCellEditable(int rowIndex, int columnIndex) {
+            return columnIndex == 1;
+        }
+
+        @Override
+        public void setValueAt(Object value, int rowIndex, int columnIndex) {
+            if (columnIndex == 1) {
+                attributes.put(keys.get(rowIndex), value == null ? "" : value.toString());
+                fireTableCellUpdated(rowIndex, columnIndex);
+            }
+        }
+    }
+
+    private static final class DefaultAttributesTable extends JTable {
+        private DefaultAttributesTable(DefaultAttributesTableModel model) {
+            super(model);
+        }
+
+        @Override
+        public TableCellEditor getCellEditor(int row, int column) {
+            if (column == 1 && getModel() instanceof DefaultAttributesTableModel model) {
+                return defaultValueCellEditor((String) model.getValueAt(convertRowIndexToModel(row), 0));
+            }
+            return super.getCellEditor(row, column);
+        }
+    }
+
+    private static final class ColorValueCellEditor extends AbstractCellEditor implements TableCellEditor {
+        private final JButton button = new JButton("Choose...");
+        private String value = "";
+
+        private ColorValueCellEditor() {
+            button.addActionListener(event -> {
+                value = selectedColorValue(button, value);
+                fireEditingStopped();
+            });
+        }
+
+        @Override
+        public Object getCellEditorValue() {
+            return value;
+        }
+
+        @Override
+        public Component getTableCellEditorComponent(
+                JTable table,
+                Object value,
+                boolean isSelected,
+                int row,
+                int column) {
+            this.value = value == null ? "" : value.toString();
+            button.setText(this.value.isBlank() ? "Choose..." : this.value);
+            SwingUtilities.invokeLater(button::doClick);
+            return button;
+        }
     }
 
     static record NavigationNode(NodeType type, String label, String id, String blockId) {

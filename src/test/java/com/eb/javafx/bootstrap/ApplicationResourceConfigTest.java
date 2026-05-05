@@ -19,6 +19,7 @@ final class ApplicationResourceConfigTest {
     @Test
     void configRoundTripsThroughJsonAndResolvesNamedResources() throws Exception {
         ApplicationResourceConfig original = ApplicationResourceConfig.defaults()
+                .withDebug(false)
                 .withCategoryCodeTablesPath("data/categories/en.json")
                 .withImageAssetRoot("assets/images")
                 .putResource("backgrounds", "assets/backgrounds")
@@ -28,6 +29,7 @@ final class ApplicationResourceConfigTest {
         original.save(output);
         ApplicationResourceConfig reloaded = ApplicationResourceConfig.load(output);
 
+        assertFalse(reloaded.debug());
         assertEquals("data/categories/en.json", reloaded.categoryCodeTablesPath());
         assertEquals("assets/images", reloaded.imageAssetRoot());
         assertEquals(
@@ -39,6 +41,7 @@ final class ApplicationResourceConfigTest {
         assertEquals(
                 tempDir.resolve("assets/backgrounds").normalize(),
                 reloaded.resolveResource(tempDir, "backgrounds").orElseThrow());
+        assertTrue(Files.readString(output).contains("\"debug\": false"));
         assertTrue(Files.readString(output).contains("\"imageAssetRoot\": \"assets/images\""));
     }
 
@@ -54,9 +57,22 @@ final class ApplicationResourceConfigTest {
 
         assertEquals("config/category-code-tables.en.json", config.categoryCodeTablesPath());
         assertEquals("game", config.imageAssetRoot());
+        assertTrue(config.debug());
         assertTrue(config.resourcePath("backgrounds").isPresent());
         assertFalse(config.removeResource("backgrounds").resourcePath("backgrounds").isPresent());
         assertThrows(IllegalArgumentException.class, () -> config.removeResource("missing"));
+    }
+
+    @Test
+    void configParsesExplicitDebugFlag() {
+        ApplicationResourceConfig config = ApplicationResourceConfig.fromJson("""
+                {
+                  "debug": false
+                }
+                """, "inline");
+
+        assertFalse(config.debug());
+        assertTrue(ApplicationResourceConfig.defaults().debug());
     }
 
     @Test
@@ -67,5 +83,8 @@ final class ApplicationResourceConfigTest {
                 "config.json",
                 "game",
                 Map.of("images", " ")));
+        assertThrows(IllegalArgumentException.class, () -> ApplicationResourceConfig.fromJson(
+                "{\"debug\":\"true\"}",
+                "inline"));
     }
 }

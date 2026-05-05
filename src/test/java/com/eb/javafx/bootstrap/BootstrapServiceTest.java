@@ -75,6 +75,7 @@ final class BootstrapServiceTest {
         assertTrue(context.globalApiAdapter().lastRouteRequest().isEmpty());
         assertEquals("main-menu", context.gameState().startupRoute());
         assertEquals(ApplicationResourceConfig.defaults().imageAssetRoot(), context.resourceConfig().imageAssetRoot());
+        assertTrue(context.resourceConfig().debug());
     }
 
     @Test
@@ -149,6 +150,7 @@ final class BootstrapServiceTest {
         Path configPath = tempDir.resolve("bootstrap-config.json");
         Files.writeString(configPath, """
                 {
+                  "debug": false,
                   "categoryCodeTablesPath": "config/category-code-tables.en.json",
                   "imageAssetRoot": "assets/images",
                   "resources": {
@@ -168,6 +170,7 @@ final class BootstrapServiceTest {
 
         assertTrue(context.bootstrapReport().isComplete());
         assertEquals(tempDir.toAbsolutePath().normalize(), context.applicationRoot());
+        assertFalse(context.resourceConfig().debug());
         assertEquals(displayDefinitions.normalize(), resolvedDisplayDefinitions);
         assertEquals(320, context.imageDisplayRegistry().transform("portrait").fitWidth());
         assertEquals(DisplayLayer.CHARACTER, context.imageDisplayRegistry().image("hero.neutral").layer());

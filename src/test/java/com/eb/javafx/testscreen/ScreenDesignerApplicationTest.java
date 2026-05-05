@@ -312,6 +312,58 @@ final class ScreenDesignerApplicationTest {
     }
 
     @Test
+    void defaultValuesEditorListsTypesAndEditableAttributes() {
+        assertEquals(List.of("screen", "block", "text", "heading", "subheading", "field", "button", "fieldLabel"),
+                ScreenDesignerApplication.defaultValueTypeLabels());
+
+        ScreenDesignerApplication.DefaultValueType buttonType = ScreenDesignerApplication.defaultValueTypes().stream()
+                .filter(type -> "button".equals(type.label()))
+                .findFirst()
+                .orElseThrow();
+        Map<String, String> attributes = ScreenDesignerApplication.defaultValueAttributesFor(
+                com.eb.javafx.ui.DisplayDefaults.defaults(),
+                buttonType);
+
+        assertEquals("#0a1426", attributes.get("backgroundColor"));
+        assertEquals("#143869", attributes.get("hoverBackgroundColor"));
+        assertEquals("#0099cc", attributes.get("pressedBackgroundColor"));
+    }
+
+    @Test
+    void defaultValuesEditorSerializesEditedAttributesAsDisplayDefaultsJson() {
+        String json = ScreenDesignerApplication.displayDefaultsJson(com.eb.javafx.ui.DisplayDefaults.defaults());
+        com.eb.javafx.ui.DisplayDefaults reparsed = com.eb.javafx.ui.DisplayDefaults.fromJson(json, "round trip");
+
+        assertEquals(com.eb.javafx.ui.DisplayDefaults.defaults().screen(), reparsed.screen());
+        assertEquals(com.eb.javafx.ui.DisplayDefaults.defaults().itemDefaults(com.eb.javafx.ui.DisplayDefaults.ROLE_BUTTON),
+                reparsed.itemDefaults(com.eb.javafx.ui.DisplayDefaults.ROLE_BUTTON));
+    }
+
+    @Test
+    void defaultValuesEditorUsesPickerControlsForFontsStylesAndColors() {
+        assertEquals(ScreenDesignerApplication.DefaultValueAttributeEditor.FONT,
+                ScreenDesignerApplication.defaultValueAttributeEditor("fontFamily"));
+        assertEquals(ScreenDesignerApplication.DefaultValueAttributeEditor.FONT_STYLE,
+                ScreenDesignerApplication.defaultValueAttributeEditor("fontStyle"));
+        assertEquals(ScreenDesignerApplication.DefaultValueAttributeEditor.COLOR,
+                ScreenDesignerApplication.defaultValueAttributeEditor("backgroundColor"));
+        assertEquals(ScreenDesignerApplication.DefaultValueAttributeEditor.COLOR,
+                ScreenDesignerApplication.defaultValueAttributeEditor("borderColor"));
+        assertEquals(ScreenDesignerApplication.DefaultValueAttributeEditor.TEXT,
+                ScreenDesignerApplication.defaultValueAttributeEditor("fontSize"));
+    }
+
+    @Test
+    void defaultValuesFontPickerListsPackagedAndAvailableFonts() {
+        List<String> options = List.of(ScreenDesignerApplication.defaultValueFontFamilyOptions());
+
+        assertTrue(options.contains("OpenDyslexic3-Regular.ttf"));
+        assertTrue(options.contains("Dialog"));
+        assertEquals(List.of("normal", "bold", "italic", "bold italic"),
+                List.of(ScreenDesignerApplication.defaultValueFontStyleOptions()));
+    }
+
+    @Test
     void editorPinsPropertyButtonsBelowScrollablePropertiesPanel() throws Exception {
         ScreenDesignerApplication application = new ScreenDesignerApplication();
         invokePrivateMethod(application, "refreshAll");

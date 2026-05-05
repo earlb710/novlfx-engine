@@ -51,7 +51,9 @@
       "fontSize": "18",
       "fontStyle": "bold",
       "color": "#ffffff",
-      "backgroundColor": "transparent",
+      "backgroundColor": "#0a1426",
+      "hoverBackgroundColor": "#143869",
+      "pressedBackgroundColor": "#0099cc",
       "transparency": "0"
     }
   },

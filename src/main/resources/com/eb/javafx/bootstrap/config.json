@@ -1,4 +1,5 @@
 {
+  "debug": true,
   "categoryCodeTablesPath": "config/category-code-tables.en.json",
   "imageAssetRoot": "game",
   "resources": {
