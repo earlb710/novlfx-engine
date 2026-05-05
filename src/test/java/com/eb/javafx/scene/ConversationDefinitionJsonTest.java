@@ -24,12 +24,14 @@ final class ConversationDefinitionJsonTest {
                 ConversationDefinitionJson.toJson(conversation),
                 "roundtrip");
 
-        assertEquals(1, parsed.schemaVersion());
+        assertEquals("Sample Conversation", parsed.name());
         assertEquals("en", parsed.language());
         assertEquals(1, parsed.conversations().size());
         assertEquals("sample.conversation.opening.block_0001", parsed.conversations().get(0).id());
         assertEquals("narrator", parsed.conversations().get(0).lines().get(0).speaker());
+        assertEquals("", parsed.conversations().get(0).lines().get(0).listener());
         assertEquals("Welcome.", parsed.conversations().get(0).lines().get(0).variants().get(0).text());
+        assertEquals(1.0, parsed.conversations().get(0).lines().get(0).variants().get(0).weight());
     }
 
     @Test
@@ -47,7 +49,7 @@ final class ConversationDefinitionJsonTest {
     void readsLr2AltExportedConversationJsonShape() {
         String json = """
                 {
-                  "schemaVersion": 1,
+                  "name": "Save Warning",
                   "language": "en",
                   "conversations": [
                     {
@@ -56,9 +58,12 @@ final class ConversationDefinitionJsonTest {
                       "lines": [
                         {
                           "speaker": "Warning",
+                          "listener": "",
                           "variants": [
                             {
-                              "text": "You are loading a game created by a previous build ([loaded_version])."
+                              "text": "You are loading a game created by a previous build ([loaded_version]).",
+                              "weight": 1.0,
+                              "conditions": ["has_loaded_version"]
                             }
                           ]
                         }
@@ -79,12 +84,12 @@ final class ConversationDefinitionJsonTest {
     void allowsEmptyVariantTextLikeLr2AltExports() {
         String json = """
                 {
-                  "schemaVersion": 1,
+                  "name": "Empty Variant",
                   "language": "en",
                   "conversations": [{
                     "id": "game.debug.empty.block_0001",
                     "description": "Extracted dialogue block.",
-                    "lines": [{"speaker": "string", "variants": [{"text": ""}]}]
+                    "lines": [{"speaker": "string", "listener": "", "variants": [{"text": "", "weight": 1.0, "conditions": []}]}]
                   }]
                 }
                 """;
@@ -98,7 +103,7 @@ final class ConversationDefinitionJsonTest {
     void rejectsMissingLr2AltConversationFields() {
         String json = """
                 {
-                  "schemaVersion": 1,
+                  "name": "Bad Conversation",
                   "language": "en",
                   "conversations": [{"id": "bad"}]
                 }
@@ -129,13 +134,15 @@ final class ConversationDefinitionJsonTest {
 
     private static ConversationDefinition sampleConversation() {
         return new ConversationDefinition(
-                1,
+                "Sample Conversation",
                 "en",
                 List.of(new ConversationBlock(
                         "sample.conversation.opening.block_0001",
                         "Extracted generic conversation block.",
                         List.of(
-                                new ConversationLine("narrator", List.of(new ConversationVariant("Welcome."))),
-                                new ConversationLine("guide", List.of(new ConversationVariant("Choose a path.")))))));
+                                new ConversationLine("narrator", "", List.of(
+                                        new ConversationVariant("Welcome.", 1.0, List.of()))),
+                                new ConversationLine("guide", "", List.of(
+                                        new ConversationVariant("Choose a path.", 1.0, List.of())))))));
     }
 }

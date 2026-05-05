@@ -58,7 +58,7 @@ final class ConversationEditorApplicationTest {
 
         DefaultMutableTreeNode root = ConversationEditorApplication.buildNavigationTree(conversation);
 
-        assertEquals("conversation document: schema 1 / en", root.getUserObject().toString());
+        assertEquals("conversation document: Sample Conversation / en", root.getUserObject().toString());
         DefaultMutableTreeNode block = (DefaultMutableTreeNode) root.getChildAt(0);
         DefaultMutableTreeNode line = (DefaultMutableTreeNode) block.getChildAt(0);
         assertEquals("conversation: sample.conversation.opening.block_0001", block.getUserObject().toString());
@@ -72,10 +72,11 @@ final class ConversationEditorApplicationTest {
         ConversationDefinition conversation = ConversationEditorApplication.sampleConversation();
         ConversationBlock block = conversation.conversations().get(0);
 
-        assertEquals(1, conversation.schemaVersion());
+        assertEquals("Sample Conversation", conversation.name());
         assertEquals("en", conversation.language());
         assertEquals("sample.conversation.opening.block_0001", block.id());
         assertEquals("narrator", block.lines().get(0).speaker());
+        assertEquals("", block.lines().get(0).listener());
     }
 
     @Test
@@ -98,12 +99,12 @@ final class ConversationEditorApplicationTest {
     @Test
     void conversationFieldsCanUpdateDocumentAndSelectedConversation() {
         ConversationDefinition updated = ConversationEditorApplication.updateConversationBlock(
-                ConversationEditorApplication.updateDocument(ConversationEditorApplication.sampleConversation(), 2, "fr"),
+                ConversationEditorApplication.updateDocument(ConversationEditorApplication.sampleConversation(), "French Sample", "fr"),
                 0,
                 "opening.changed",
                 "Changed description");
 
-        assertEquals(2, updated.schemaVersion());
+        assertEquals("French Sample", updated.name());
         assertEquals("fr", updated.language());
         assertEquals("opening.changed", updated.conversations().get(0).id());
         assertEquals("Changed description", updated.conversations().get(0).description());
@@ -116,23 +117,46 @@ final class ConversationEditorApplicationTest {
                 0,
                 0,
                 "hero",
-                List.of("First variant", "Second variant"));
+                "guide");
 
         assertEquals("hero", updated.conversations().get(0).lines().get(0).speaker());
-        assertEquals("First variant", updated.conversations().get(0).lines().get(0).variants().get(0).text());
-        assertEquals("Second variant", updated.conversations().get(0).lines().get(0).variants().get(1).text());
+        assertEquals("guide", updated.conversations().get(0).lines().get(0).listener());
+        assertEquals("A reusable conversation document can hold narration.",
+                updated.conversations().get(0).lines().get(0).variants().get(0).text());
     }
 
     @Test
-    void addAndRemoveLineChangesSelectedConversationLines() {
+    void variantDetailFieldsCanUpdateTextWeightAndConditions() {
+        ConversationDefinition updated = ConversationEditorApplication.updateVariant(
+                ConversationEditorApplication.sampleConversation(),
+                0,
+                0,
+                0,
+                "Updated variant",
+                2.5,
+                List.of("met_guide", "has_key"));
+
+        assertEquals("Updated variant", updated.conversations().get(0).lines().get(0).variants().get(0).text());
+        assertEquals(2.5, updated.conversations().get(0).lines().get(0).variants().get(0).weight());
+        assertEquals(List.of("met_guide", "has_key"),
+                updated.conversations().get(0).lines().get(0).variants().get(0).conditions());
+    }
+
+    @Test
+    void addLineChangesSelectedConversationLines() {
         ConversationDefinition added = ConversationEditorApplication.addLine(ConversationEditorApplication.sampleConversation(), 0);
 
         assertEquals(3, added.conversations().get(0).lines().size());
         assertEquals("speaker", added.conversations().get(0).lines().get(2).speaker());
+        assertEquals("", added.conversations().get(0).lines().get(2).listener());
+    }
 
-        ConversationDefinition removed = ConversationEditorApplication.removeLine(added, 0, 2);
+    @Test
+    void addVariantChangesSelectedLineVariants() {
+        ConversationDefinition added = ConversationEditorApplication.addVariant(ConversationEditorApplication.sampleConversation(), 0, 0);
 
-        assertEquals(2, removed.conversations().get(0).lines().size());
-        assertEquals("narrator", removed.conversations().get(0).lines().get(0).speaker());
+        assertEquals(2, added.conversations().get(0).lines().get(0).variants().size());
+        assertEquals("", added.conversations().get(0).lines().get(0).variants().get(1).text());
+        assertEquals(1.0, added.conversations().get(0).lines().get(0).variants().get(1).weight());
     }
 }

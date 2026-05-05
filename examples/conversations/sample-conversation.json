@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "name": "Sample Conversation",
   "language": "en",
   "conversations": [
     {
@@ -8,17 +8,23 @@
       "lines": [
         {
           "speaker": "narrator",
+          "listener": "",
           "variants": [
             {
-              "text": "A reusable conversation document can hold narration."
+              "text": "A reusable conversation document can hold narration.",
+              "weight": 1.0,
+              "conditions": []
             }
           ]
         },
         {
           "speaker": "guide",
+          "listener": "",
           "variants": [
             {
-              "text": "It can also hold speaker-labelled lines."
+              "text": "It can also hold speaker-labelled lines.",
+              "weight": 1.0,
+              "conditions": []
             }
           ]
         }

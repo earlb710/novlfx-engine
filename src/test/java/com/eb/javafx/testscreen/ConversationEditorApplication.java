@@ -28,6 +28,7 @@ import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreePath;
 import java.awt.BorderLayout;
+import java.awt.CardLayout;
 import java.awt.GridLayout;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
@@ -43,13 +44,17 @@ public final class ConversationEditorApplication {
     private final JTree objectTree = new JTree(objectTreeModel);
     private final JTabbedPane detailTabs = new JTabbedPane();
     private final JTextArea jsonArea = new JTextArea();
-    private final JTextField schemaVersionField = new JTextField();
+    private final CardLayout detailCards = new CardLayout();
+    private final JPanel detailCardPanel = new JPanel(detailCards);
+    private final JTextField documentNameField = new JTextField();
     private final JTextField languageField = new JTextField();
     private final JTextField conversationIdField = new JTextField();
     private final JTextField conversationDescriptionField = new JTextField();
-    private final JLabel lineDetailLabel = new JLabel("Select a line to edit its details.");
     private final JTextField lineSpeakerField = new JTextField();
-    private final JTextArea lineVariantsArea = new JTextArea();
+    private final JTextField lineListenerField = new JTextField();
+    private final JTextArea variantTextArea = new JTextArea();
+    private final JTextField variantWeightField = new JTextField();
+    private final JTextArea variantConditionsArea = new JTextArea();
     private final JLabel statusLabel = new JLabel();
     private Path currentPath;
     private String savedJsonSnapshot = ConversationDefinitionJson.toJson(conversation);
@@ -97,52 +102,73 @@ public final class ConversationEditorApplication {
 
     private JPanel conversationsPanel() {
         JPanel panel = new JPanel(new BorderLayout(6, 6));
-        JPanel fields = new JPanel(new GridLayout(0, 2, 4, 4));
-        fields.setBorder(BorderFactory.createTitledBorder("Conversation"));
-        fields.add(new JLabel("Schema Version"));
-        fields.add(schemaVersionField);
-        fields.add(new JLabel("Language"));
-        fields.add(languageField);
-        fields.add(new JLabel("Conversation Id"));
-        fields.add(conversationIdField);
-        fields.add(new JLabel("Description"));
-        fields.add(conversationDescriptionField);
-        JButton applyConversation = new JButton("Apply Conversation");
-        applyConversation.addActionListener(event -> runSafely("Apply Conversation", this::applyConversationFields));
-        fields.add(new JLabel());
-        fields.add(applyConversation);
-        panel.add(fields, BorderLayout.NORTH);
         panel.add(new JScrollPane(objectTree), BorderLayout.CENTER);
-        panel.add(lineButtons(), BorderLayout.SOUTH);
-        return panel;
-    }
-
-    private JPanel lineButtons() {
-        JPanel panel = new JPanel(new GridLayout(1, 2, 6, 0));
-        JButton addLine = new JButton("Add Line");
-        JButton removeLine = new JButton("Remove Line");
-        addLine.addActionListener(event -> runSafely("Add Line", this::addSelectedLine));
-        removeLine.addActionListener(event -> runSafely("Remove Line", this::removeSelectedLine));
-        panel.add(addLine);
-        panel.add(removeLine);
         return panel;
     }
 
     private JPanel detailPanel() {
+        detailCardPanel.add(documentDetailPanel(), NodeType.DOCUMENT.name());
+        detailCardPanel.add(conversationDetailPanel(), NodeType.CONVERSATION.name());
+        detailCardPanel.add(lineDetailPanel(), NodeType.LINE.name());
+        detailCardPanel.add(variantDetailPanel(), NodeType.VARIANT.name());
+        return detailCardPanel;
+    }
+
+    private JPanel documentDetailPanel() {
+        JPanel fields = new JPanel(new GridLayout(0, 2, 4, 4));
+        fields.setBorder(BorderFactory.createTitledBorder("Conversation Document"));
+        fields.add(new JLabel("Name"));
+        fields.add(documentNameField);
+        fields.add(new JLabel("Language"));
+        fields.add(languageField);
+        return fields;
+    }
+
+    private JPanel conversationDetailPanel() {
+        JPanel panel = new JPanel(new BorderLayout(6, 6));
+        JPanel fields = new JPanel(new GridLayout(0, 2, 4, 4));
+        fields.setBorder(BorderFactory.createTitledBorder("Conversation"));
+        fields.add(new JLabel("Conversation Id"));
+        fields.add(conversationIdField);
+        fields.add(new JLabel("Description"));
+        fields.add(conversationDescriptionField);
+        JButton addLine = new JButton("Add Line");
+        addLine.addActionListener(event -> runSafely("Add Line", this::addSelectedLine));
+        panel.add(fields, BorderLayout.NORTH);
+        panel.add(addLine, BorderLayout.SOUTH);
+        return panel;
+    }
+
+    private JPanel lineDetailPanel() {
         JPanel panel = new JPanel(new BorderLayout(6, 6));
         JPanel fields = new JPanel(new GridLayout(0, 2, 4, 4));
         fields.setBorder(BorderFactory.createTitledBorder("Line Detail"));
         fields.add(new JLabel("Speaker"));
         fields.add(lineSpeakerField);
-        panel.add(lineDetailLabel, BorderLayout.NORTH);
-        panel.add(fields, BorderLayout.CENTER);
-        JPanel variantsPanel = new JPanel(new BorderLayout(4, 4));
-        variantsPanel.setBorder(BorderFactory.createTitledBorder("Variants (one per line)"));
-        variantsPanel.add(new JScrollPane(lineVariantsArea), BorderLayout.CENTER);
-        JButton applyLine = new JButton("Apply Line");
-        applyLine.addActionListener(event -> runSafely("Apply Line", this::applyLineDetails));
-        variantsPanel.add(applyLine, BorderLayout.SOUTH);
-        panel.add(variantsPanel, BorderLayout.SOUTH);
+        fields.add(new JLabel("Listener"));
+        fields.add(lineListenerField);
+        JButton addVariant = new JButton("Add Variant");
+        addVariant.addActionListener(event -> runSafely("Add Variant", this::addSelectedVariant));
+        panel.add(fields, BorderLayout.NORTH);
+        panel.add(addVariant, BorderLayout.SOUTH);
+        return panel;
+    }
+
+    private JPanel variantDetailPanel() {
+        JPanel panel = new JPanel(new BorderLayout(6, 6));
+        JPanel fields = new JPanel(new GridLayout(0, 2, 4, 4));
+        fields.setBorder(BorderFactory.createTitledBorder("Variant Detail"));
+        fields.add(new JLabel("Weight"));
+        fields.add(variantWeightField);
+        panel.add(fields, BorderLayout.NORTH);
+        JPanel textPanel = new JPanel(new BorderLayout(4, 4));
+        textPanel.setBorder(BorderFactory.createTitledBorder("Text"));
+        textPanel.add(new JScrollPane(variantTextArea), BorderLayout.CENTER);
+        panel.add(textPanel, BorderLayout.CENTER);
+        JPanel conditionsPanel = new JPanel(new BorderLayout(4, 4));
+        conditionsPanel.setBorder(BorderFactory.createTitledBorder("Conditions (one per line)"));
+        conditionsPanel.add(new JScrollPane(variantConditionsArea), BorderLayout.CENTER);
+        panel.add(conditionsPanel, BorderLayout.SOUTH);
         return panel;
     }
 
@@ -247,8 +273,7 @@ public final class ConversationEditorApplication {
             applyJson();
             return;
         }
-        applyConversationFields();
-        applyLineDetails();
+        applySelectedDetails();
     }
 
     private void formatJson() {
@@ -285,7 +310,8 @@ public final class ConversationEditorApplication {
             return;
         }
         NodeData selectedData = selectedData();
-        schemaVersionField.setText(Integer.toString(conversation.schemaVersion()));
+        detailCards.show(detailCardPanel, selectedNodeType(selectedData).name());
+        documentNameField.setText(conversation.name());
         languageField.setText(conversation.language());
         int conversationIndex = selectedConversationIndex(selectedData);
         if (conversationIndex >= 0) {
@@ -297,25 +323,44 @@ public final class ConversationEditorApplication {
             conversationDescriptionField.setText("");
         }
         int lineIndex = selectedLineIndex(selectedData);
-        boolean lineSelected = conversationIndex >= 0 && lineIndex >= 0;
-        lineSpeakerField.setEnabled(lineSelected);
-        lineVariantsArea.setEnabled(lineSelected);
-        if (lineSelected) {
+        if (conversationIndex >= 0 && lineIndex >= 0) {
             ConversationLine line = conversation.conversations().get(conversationIndex).lines().get(lineIndex);
-            lineDetailLabel.setText("Editing line " + (lineIndex + 1) + " in " + conversation.conversations().get(conversationIndex).id());
             lineSpeakerField.setText(line.speaker());
-            lineVariantsArea.setText(String.join("\n", line.variants().stream().map(ConversationVariant::text).toList()));
+            lineListenerField.setText(line.listener());
         } else {
-            lineDetailLabel.setText("Select a line to edit its details.");
             lineSpeakerField.setText("");
-            lineVariantsArea.setText("");
+            lineListenerField.setText("");
         }
+        int variantIndex = selectedVariantIndex(selectedData);
+        if (conversationIndex >= 0 && lineIndex >= 0 && variantIndex >= 0) {
+            ConversationVariant variant = conversation.conversations().get(conversationIndex).lines().get(lineIndex).variants().get(variantIndex);
+            variantTextArea.setText(variant.text());
+            variantWeightField.setText(Double.toString(variant.weight()));
+            variantConditionsArea.setText(String.join("\n", variant.conditions()));
+        } else {
+            variantTextArea.setText("");
+            variantWeightField.setText("");
+            variantConditionsArea.setText("");
+        }
+    }
+
+    private void applySelectedDetails() {
+        NodeData selectedData = selectedData();
+        switch (selectedNodeType(selectedData)) {
+            case DOCUMENT -> applyDocumentFields();
+            case CONVERSATION -> applyConversationFields();
+            case LINE -> applyLineDetails();
+            case VARIANT -> applyVariantDetails();
+        }
+    }
+
+    private void applyDocumentFields() {
+        conversation = updateDocument(conversation, documentNameField.getText(), languageField.getText());
+        refreshAll(NodeData.document(""));
     }
 
     private void applyConversationFields() {
         NodeData selectedData = selectedData();
-        int schemaVersion = schemaVersion();
-        conversation = updateDocument(conversation, schemaVersion, languageField.getText());
         int conversationIndex = selectedConversationIndex(selectedData);
         if (conversationIndex >= 0) {
             conversation = updateConversationBlock(
@@ -327,14 +372,6 @@ public final class ConversationEditorApplication {
         refreshAll(selectedData);
     }
 
-    private int schemaVersion() {
-        try {
-            return Integer.parseInt(schemaVersionField.getText().trim());
-        } catch (NumberFormatException exception) {
-            throw new IllegalArgumentException("Schema version must be a valid integer.", exception);
-        }
-    }
-
     private void applyLineDetails() {
         NodeData selectedData = selectedData();
         int conversationIndex = selectedConversationIndex(selectedData);
@@ -342,8 +379,35 @@ public final class ConversationEditorApplication {
         if (conversationIndex < 0 || lineIndex < 0) {
             return;
         }
-        conversation = updateLine(conversation, conversationIndex, lineIndex, lineSpeakerField.getText(), variantTexts(lineVariantsArea.getText()));
+        conversation = updateLine(conversation, conversationIndex, lineIndex, lineSpeakerField.getText(), lineListenerField.getText());
         refreshAll(selectedData);
+    }
+
+    private void applyVariantDetails() {
+        NodeData selectedData = selectedData();
+        int conversationIndex = selectedConversationIndex(selectedData);
+        int lineIndex = selectedLineIndex(selectedData);
+        int variantIndex = selectedVariantIndex(selectedData);
+        if (conversationIndex < 0 || lineIndex < 0 || variantIndex < 0) {
+            return;
+        }
+        conversation = updateVariant(
+                conversation,
+                conversationIndex,
+                lineIndex,
+                variantIndex,
+                variantTextArea.getText(),
+                variantWeight(),
+                conditionTexts(variantConditionsArea.getText()));
+        refreshAll(selectedData);
+    }
+
+    private double variantWeight() {
+        try {
+            return Double.parseDouble(variantWeightField.getText().trim());
+        } catch (NumberFormatException exception) {
+            throw new IllegalArgumentException("Variant weight must be a valid number.", exception);
+        }
     }
 
     private void addSelectedLine() {
@@ -355,21 +419,23 @@ public final class ConversationEditorApplication {
         if (conversationIndex < 0) {
             return;
         }
+        applyConversationFields();
         conversation = addLine(conversation, conversationIndex);
         int lineIndex = conversation.conversations().get(conversationIndex).lines().size() - 1;
         refreshAll(NodeData.line(conversationIndex, lineIndex));
     }
 
-    private void removeSelectedLine() {
+    private void addSelectedVariant() {
         NodeData selectedData = selectedData();
         int conversationIndex = selectedConversationIndex(selectedData);
         int lineIndex = selectedLineIndex(selectedData);
         if (conversationIndex < 0 || lineIndex < 0) {
             return;
         }
-        conversation = removeLine(conversation, conversationIndex, lineIndex);
-        int nextLineIndex = Math.min(lineIndex, conversation.conversations().get(conversationIndex).lines().size() - 1);
-        refreshAll(NodeData.line(conversationIndex, nextLineIndex));
+        applyLineDetails();
+        conversation = addVariant(conversation, conversationIndex, lineIndex);
+        int variantIndex = conversation.conversations().get(conversationIndex).lines().get(lineIndex).variants().size() - 1;
+        refreshAll(NodeData.variant(conversationIndex, lineIndex, variantIndex));
     }
 
     private void runSafely(String label, Runnable action) {
@@ -428,7 +494,7 @@ public final class ConversationEditorApplication {
 
     static DefaultMutableTreeNode buildNavigationTree(ConversationDefinition conversation) {
         DefaultMutableTreeNode root = new DefaultMutableTreeNode(
-                NodeData.document("conversation document: schema " + conversation.schemaVersion() + " / " + conversation.language()));
+                NodeData.document("conversation document: " + conversation.name() + " / " + conversation.language()));
         for (int index = 0; index < conversation.conversations().size(); index++) {
             root.add(conversationNode(conversation.conversations().get(index), index));
         }
@@ -447,9 +513,10 @@ public final class ConversationEditorApplication {
     private static DefaultMutableTreeNode lineNode(ConversationLine line, int conversationIndex, int lineIndex) {
         DefaultMutableTreeNode node = new DefaultMutableTreeNode(
                 NodeData.line(conversationIndex, lineIndex, "line: " + line.speaker()));
-        for (ConversationVariant variant : line.variants()) {
+        for (int index = 0; index < line.variants().size(); index++) {
+            ConversationVariant variant = line.variants().get(index);
             node.add(new DefaultMutableTreeNode(
-                    NodeData.variant(conversationIndex, lineIndex, "variant: " + preview(variant.text()))));
+                    NodeData.variant(conversationIndex, lineIndex, index, "variant: " + preview(variant.text()))));
         }
         return node;
     }
@@ -464,18 +531,20 @@ public final class ConversationEditorApplication {
 
     static ConversationDefinition sampleConversation() {
         return new ConversationDefinition(
-                1,
+                "Sample Conversation",
                 "en",
                 List.of(new ConversationBlock(
                         "sample.conversation.opening.block_0001",
                         "Generic example conversation using the LR2Alt exported conversation JSON schema.",
                         List.of(
-                                new ConversationLine("narrator", List.of(new ConversationVariant("A reusable conversation document can hold narration."))),
-                                new ConversationLine("guide", List.of(new ConversationVariant("It can also hold speaker-labelled lines.")))))));
+                                new ConversationLine("narrator", "", List.of(
+                                        new ConversationVariant("A reusable conversation document can hold narration.", 1.0, List.of()))),
+                                new ConversationLine("guide", "", List.of(
+                                        new ConversationVariant("It can also hold speaker-labelled lines.", 1.0, List.of())))))));
     }
 
-    static ConversationDefinition updateDocument(ConversationDefinition document, int schemaVersion, String language) {
-        return new ConversationDefinition(schemaVersion, language, document.conversations());
+    static ConversationDefinition updateDocument(ConversationDefinition document, String name, String language) {
+        return new ConversationDefinition(name, language, document.conversations());
     }
 
     static ConversationDefinition updateConversationBlock(
@@ -486,7 +555,7 @@ public final class ConversationEditorApplication {
         List<ConversationBlock> blocks = new ArrayList<>(document.conversations());
         ConversationBlock block = blocks.get(conversationIndex);
         blocks.set(conversationIndex, new ConversationBlock(id, description, block.lines()));
-        return new ConversationDefinition(document.schemaVersion(), document.language(), blocks);
+        return new ConversationDefinition(document.name(), document.language(), blocks);
     }
 
     static ConversationDefinition updateLine(
@@ -494,22 +563,54 @@ public final class ConversationEditorApplication {
             int conversationIndex,
             int lineIndex,
             String speaker,
-            List<String> variantTexts) {
+            String listener) {
         List<ConversationBlock> blocks = new ArrayList<>(document.conversations());
         ConversationBlock block = blocks.get(conversationIndex);
         List<ConversationLine> lines = new ArrayList<>(block.lines());
-        lines.set(lineIndex, new ConversationLine(speaker, variantTexts.stream().map(ConversationVariant::new).toList()));
+        ConversationLine line = lines.get(lineIndex);
+        lines.set(lineIndex, new ConversationLine(speaker, listener, line.variants()));
         blocks.set(conversationIndex, new ConversationBlock(block.id(), block.description(), lines));
-        return new ConversationDefinition(document.schemaVersion(), document.language(), blocks);
+        return new ConversationDefinition(document.name(), document.language(), blocks);
+    }
+
+    static ConversationDefinition updateVariant(
+            ConversationDefinition document,
+            int conversationIndex,
+            int lineIndex,
+            int variantIndex,
+            String text,
+            double weight,
+            List<String> conditions) {
+        List<ConversationBlock> blocks = new ArrayList<>(document.conversations());
+        ConversationBlock block = blocks.get(conversationIndex);
+        List<ConversationLine> lines = new ArrayList<>(block.lines());
+        ConversationLine line = lines.get(lineIndex);
+        List<ConversationVariant> variants = new ArrayList<>(line.variants());
+        variants.set(variantIndex, new ConversationVariant(text, weight, conditions));
+        lines.set(lineIndex, new ConversationLine(line.speaker(), line.listener(), variants));
+        blocks.set(conversationIndex, new ConversationBlock(block.id(), block.description(), lines));
+        return new ConversationDefinition(document.name(), document.language(), blocks);
     }
 
     static ConversationDefinition addLine(ConversationDefinition document, int conversationIndex) {
         List<ConversationBlock> blocks = new ArrayList<>(document.conversations());
         ConversationBlock block = blocks.get(conversationIndex);
         List<ConversationLine> lines = new ArrayList<>(block.lines());
-        lines.add(new ConversationLine("speaker", List.of(new ConversationVariant(""))));
+        lines.add(new ConversationLine("speaker", "", List.of(new ConversationVariant("", 1.0, List.of()))));
         blocks.set(conversationIndex, new ConversationBlock(block.id(), block.description(), lines));
-        return new ConversationDefinition(document.schemaVersion(), document.language(), blocks);
+        return new ConversationDefinition(document.name(), document.language(), blocks);
+    }
+
+    static ConversationDefinition addVariant(ConversationDefinition document, int conversationIndex, int lineIndex) {
+        List<ConversationBlock> blocks = new ArrayList<>(document.conversations());
+        ConversationBlock block = blocks.get(conversationIndex);
+        List<ConversationLine> lines = new ArrayList<>(block.lines());
+        ConversationLine line = lines.get(lineIndex);
+        List<ConversationVariant> variants = new ArrayList<>(line.variants());
+        variants.add(new ConversationVariant("", 1.0, List.of()));
+        lines.set(lineIndex, new ConversationLine(line.speaker(), line.listener(), variants));
+        blocks.set(conversationIndex, new ConversationBlock(block.id(), block.description(), lines));
+        return new ConversationDefinition(document.name(), document.language(), blocks);
     }
 
     static ConversationDefinition removeLine(ConversationDefinition document, int conversationIndex, int lineIndex) {
@@ -521,7 +622,7 @@ public final class ConversationEditorApplication {
         List<ConversationLine> lines = new ArrayList<>(block.lines());
         lines.remove(lineIndex);
         blocks.set(conversationIndex, new ConversationBlock(block.id(), block.description(), lines));
-        return new ConversationDefinition(document.schemaVersion(), document.language(), blocks);
+        return new ConversationDefinition(document.name(), document.language(), blocks);
     }
 
     private void selectNode(NodeData selectedData) {
@@ -570,12 +671,23 @@ public final class ConversationEditorApplication {
         return selectedData == null ? -1 : selectedData.lineIndex();
     }
 
+    private static int selectedVariantIndex(NodeData selectedData) {
+        return selectedData == null ? -1 : selectedData.variantIndex();
+    }
+
+    private static NodeType selectedNodeType(NodeData selectedData) {
+        return selectedData == null ? NodeType.DOCUMENT : selectedData.type();
+    }
+
     private String selectedDetailTabName() {
         int index = detailTabs.getSelectedIndex();
         return index < 0 ? "Detail" : detailTabs.getTitleAt(index);
     }
 
-    private static List<String> variantTexts(String text) {
+    private static List<String> conditionTexts(String text) {
+        if (text.isBlank()) {
+            return List.of();
+        }
         return List.of(text.split("\\R"));
     }
 
@@ -586,13 +698,13 @@ public final class ConversationEditorApplication {
         VARIANT
     }
 
-    private record NodeData(NodeType type, int conversationIndex, int lineIndex, String label) {
+    private record NodeData(NodeType type, int conversationIndex, int lineIndex, int variantIndex, String label) {
         static NodeData document(String label) {
-            return new NodeData(NodeType.DOCUMENT, -1, -1, label);
+            return new NodeData(NodeType.DOCUMENT, -1, -1, -1, label);
         }
 
         static NodeData conversation(int conversationIndex, String label) {
-            return new NodeData(NodeType.CONVERSATION, conversationIndex, -1, label);
+            return new NodeData(NodeType.CONVERSATION, conversationIndex, -1, -1, label);
         }
 
         static NodeData line(int conversationIndex, int lineIndex) {
@@ -600,17 +712,22 @@ public final class ConversationEditorApplication {
         }
 
         static NodeData line(int conversationIndex, int lineIndex, String label) {
-            return new NodeData(NodeType.LINE, conversationIndex, lineIndex, label);
+            return new NodeData(NodeType.LINE, conversationIndex, lineIndex, -1, label);
         }
 
-        static NodeData variant(int conversationIndex, int lineIndex, String label) {
-            return new NodeData(NodeType.VARIANT, conversationIndex, lineIndex, label);
+        static NodeData variant(int conversationIndex, int lineIndex, int variantIndex) {
+            return variant(conversationIndex, lineIndex, variantIndex, "");
+        }
+
+        static NodeData variant(int conversationIndex, int lineIndex, int variantIndex, String label) {
+            return new NodeData(NodeType.VARIANT, conversationIndex, lineIndex, variantIndex, label);
         }
 
         boolean matches(NodeData other) {
             return type == other.type
                     && conversationIndex == other.conversationIndex
-                    && lineIndex == other.lineIndex;
+                    && lineIndex == other.lineIndex
+                    && variantIndex == other.variantIndex;
         }
 
         @Override
