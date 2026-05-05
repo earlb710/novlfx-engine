@@ -314,7 +314,7 @@ public final class ConversationEditorApplication {
 
     private void applyConversationFields() {
         NodeData selectedData = selectedData();
-        int schemaVersion = Integer.parseInt(schemaVersionField.getText().trim());
+        int schemaVersion = schemaVersion();
         conversation = updateDocument(conversation, schemaVersion, languageField.getText());
         int conversationIndex = selectedConversationIndex(selectedData);
         if (conversationIndex >= 0) {
@@ -325,6 +325,14 @@ public final class ConversationEditorApplication {
                     conversationDescriptionField.getText());
         }
         refreshAll(selectedData);
+    }
+
+    private int schemaVersion() {
+        try {
+            return Integer.parseInt(schemaVersionField.getText().trim());
+        } catch (NumberFormatException exception) {
+            throw new IllegalArgumentException("Schema version must be a valid integer.", exception);
+        }
     }
 
     private void applyLineDetails() {
@@ -568,7 +576,7 @@ public final class ConversationEditorApplication {
     }
 
     private static List<String> variantTexts(String text) {
-        return List.of(text.split("\\R", -1));
+        return List.of(text.split("\\R"));
     }
 
     private enum NodeType {
