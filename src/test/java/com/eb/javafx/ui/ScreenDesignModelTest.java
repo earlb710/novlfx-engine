@@ -49,6 +49,25 @@ final class ScreenDesignModelTest {
     }
 
     @Test
+    void itemEditableDefaultsToTrueExceptForButtonsAndRoundTripsJson() {
+        assertTrue(new ScreenDesignItem("field", "profile", ScreenDesignItemType.FIELD,
+                "Field", null, null, "value", null, Map.of()).editable());
+        assertFalse(new ScreenDesignItem("button", "profile", ScreenDesignItemType.BUTTON,
+                "Button", null, null, null, null, Map.of()).editable());
+
+        ScreenDesignItem item = new ScreenDesignItem("readonly", "profile", ScreenDesignItemType.FIELD,
+                "Readonly", null, null, "value", false, null, Map.of());
+        ScreenDesignModel model = new ScreenDesignModel("x", "X", ScreenLayoutType.FORM, Map.of(),
+                List.of(new ScreenDesignBlock("profile", "Profile")),
+                List.of(item),
+                List.of());
+
+        ScreenDesignModel roundTripped = ScreenDesignJson.fromJson(ScreenDesignJson.toJson(model), "round-trip");
+
+        assertFalse(roundTripped.items().get(0).editable());
+    }
+
+    @Test
     void addsItemsProgrammaticallyByBlockIdAndRejectsInvalidTargets() {
         ScreenDesignModel updated = ScreenDesignService.addItemToBlock(design(), "summary",
                 new ScreenDesignItem("summary.extra", "ignored", ScreenDesignItemType.TEXT,

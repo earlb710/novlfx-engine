@@ -12,7 +12,6 @@ import com.eb.javafx.ui.ScreenDesignValidationProblem;
 import com.eb.javafx.ui.ScreenDesignValidator;
 import com.eb.javafx.ui.ScreenLayoutModel;
 import com.eb.javafx.ui.ScreenLayoutRenderer;
-import com.eb.javafx.ui.ScreenLayoutSection;
 import com.eb.javafx.ui.ScreenLayoutType;
 import com.eb.javafx.ui.UiTheme;
 import com.eb.javafx.util.HierarchyTraversal;
@@ -21,6 +20,7 @@ import javafx.scene.Scene;
 import javafx.stage.Stage;
 
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
@@ -44,6 +44,8 @@ import java.awt.GridLayout;
 import java.awt.Insets;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -70,6 +72,7 @@ public final class ScreenDesignerApplication {
     private final JButton addItemButton = new JButton("Add Item");
     private final JPanel propertiesPanel = new JPanel(new BorderLayout(8, 8));
     private final JButton applyPropertiesButton = new JButton("Apply Properties");
+    private final JButton resetPropertiesButton = new JButton("Reset Properties");
     private final JTextField screenIdField = new JTextField();
     private final JTextField titleField = new JTextField();
     private final JComboBox<ScreenLayoutType> layoutTypeBox = new JComboBox<>(ScreenLayoutType.values());
@@ -84,10 +87,11 @@ public final class ScreenDesignerApplication {
     private final JTextField itemContentField = new JTextField();
     private final JTextArea itemContentArea = new JTextArea(3, 20);
     private final JTextField itemValueField = new JTextField();
-    private final JTextArea previewArea = new JTextArea();
+    private final JCheckBox itemEditableBox = new JCheckBox();
     private final JTextArea jsonArea = new JTextArea();
     private final JLabel statusLabel = new JLabel();
     private Path currentPath;
+    private String savedJsonSnapshot = ScreenDesignJson.toJson(design);
     private volatile Stage previewStage;
 
     public static void main(String[] args) {
@@ -96,7 +100,13 @@ public final class ScreenDesignerApplication {
 
     private void show() {
         JFrame frame = new JFrame("NovlFX Screen Designer");
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+        frame.addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent event) {
+                closeIfConfirmed(frame);
+            }
+        });
         frame.setJMenuBar(menuBar());
         frame.setContentPane(content());
         frame.setSize(1100, 700);
@@ -184,11 +194,10 @@ public final class ScreenDesignerApplication {
     private JPanel editor() {
         JPanel panel = new JPanel(new BorderLayout(8, 8));
         applyPropertiesButton.addActionListener(event -> runSafely("Apply Properties", this::applySelectedProperties));
-        previewArea.setEditable(false);
+        resetPropertiesButton.addActionListener(event -> resetSelectedProperties());
+        itemTypeBox.addActionListener(event -> refreshItemEditableState());
         jsonArea.setEditable(false);
-        JSplitPane outputSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT, new JScrollPane(previewArea), new JScrollPane(jsonArea));
-        outputSplit.setDividerLocation(300);
-        JSplitPane split = new JSplitPane(JSplitPane.VERTICAL_SPLIT, propertiesPanel, outputSplit);
+        JSplitPane split = new JSplitPane(JSplitPane.VERTICAL_SPLIT, propertiesPanel, new JScrollPane(jsonArea));
         split.setDividerLocation(220);
         panel.add(split, BorderLayout.CENTER);
         return panel;
@@ -202,6 +211,10 @@ public final class ScreenDesignerApplication {
             case ITEM, TEMPORARY_ITEM -> applyItemProperties(navigationNode.id(), navigationNode.type() == NodeType.TEMPORARY_ITEM);
         }
         refreshAll();
+    }
+
+    private void resetSelectedProperties() {
+        refreshPropertiesPanel(selectedNavigationNode().orElseGet(() -> NavigationNode.screen(design.id())));
     }
 
     private void applyScreenProperties() {
@@ -238,6 +251,7 @@ public final class ScreenDesignerApplication {
                 effectiveType == ScreenDesignItemType.TEXT ? content : null,
                 blankToNull(itemValueField.getText()),
                 effectiveType == ScreenDesignItemType.FIELD || effectiveType == ScreenDesignItemType.TEXT_AREA ? content : null,
+                editableSelection(effectiveType, itemEditableBox.isSelected()),
                 existing.styleClass(),
                 existing.metadata()), temporary);
     }
@@ -245,6 +259,7 @@ public final class ScreenDesignerApplication {
     private void newScreen() {
         currentPath = null;
         design = sampleDesign();
+        savedJsonSnapshot = ScreenDesignJson.toJson(design);
         refreshAll();
     }
 
@@ -301,7 +316,13 @@ public final class ScreenDesignerApplication {
         JTextField labelField = new JTextField(existing == null ? "" : nullToBlank(existing.label()));
         JTextField contentField = new JTextField(existing == null ? "" : itemContent(existing));
         JTextField valueField = new JTextField(existing == null ? "" : nullToBlank(existing.value()));
-        JPanel fields = new JPanel(new GridLayout(6, 2, 6, 6));
+        JCheckBox editableBox = new JCheckBox();
+        editableBox.setSelected(existing == null
+                ? ScreenDesignItem.defaultEditable((ScreenDesignItemType) typeBox.getSelectedItem())
+                : existing.editable());
+        typeBox.addActionListener(event -> refreshEditableState(typeBox, editableBox));
+        refreshEditableState(typeBox, editableBox);
+        JPanel fields = new JPanel(new GridLayout(7, 2, 6, 6));
         fields.add(new JLabel("Target block"));
         fields.add(blockBox);
         fields.add(new JLabel("Item id"));
@@ -314,6 +335,8 @@ public final class ScreenDesignerApplication {
         fields.add(contentField);
         fields.add(new JLabel("Current value"));
         fields.add(valueField);
+        fields.add(new JLabel("Editable"));
+        fields.add(editableBox);
         int result = JOptionPane.showConfirmDialog(null, fields, title, JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
         String itemId = itemIdField.getText();
         String blockId = (String) blockBox.getSelectedItem();
@@ -324,14 +347,16 @@ public final class ScreenDesignerApplication {
         String label = blankToNull(labelField.getText());
         String content = blankToNull(contentField.getText());
         String value = blankToNull(valueField.getText());
+        ScreenDesignItemType effectiveType = type == null ? ScreenDesignItemType.TEXT : type;
         return Optional.of(new ScreenDesignItem(
                 temporary && !itemId.startsWith("temp.") ? "temp." + itemId : itemId,
                 blockId,
-                type == null ? ScreenDesignItemType.TEXT : type,
+                effectiveType,
                 label == null ? itemId : label,
-                type == ScreenDesignItemType.TEXT ? content : null,
+                effectiveType == ScreenDesignItemType.TEXT ? content : null,
                 value,
-                type == ScreenDesignItemType.FIELD || type == ScreenDesignItemType.TEXT_AREA ? content : null,
+                effectiveType == ScreenDesignItemType.FIELD || effectiveType == ScreenDesignItemType.TEXT_AREA ? content : null,
+                editableSelection(effectiveType, editableBox.isSelected()),
                 existing == null ? null : existing.styleClass(),
                 existing == null ? Map.of() : existing.metadata()));
     }
@@ -431,6 +456,7 @@ public final class ScreenDesignerApplication {
         if (chooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
             currentPath = chooser.getSelectedFile().toPath();
             design = ScreenDesignJson.load(currentPath);
+            savedJsonSnapshot = ScreenDesignJson.toJson(design);
             refreshAll();
         }
     }
@@ -442,6 +468,7 @@ public final class ScreenDesignerApplication {
             }
         }
         ScreenDesignJson.save(currentPath, design);
+        savedJsonSnapshot = ScreenDesignJson.toJson(design);
         refreshAll();
     }
 
@@ -452,6 +479,7 @@ public final class ScreenDesignerApplication {
             return;
         }
         ScreenDesignJson.save(currentPath, design);
+        savedJsonSnapshot = ScreenDesignJson.toJson(design);
         refreshAll();
     }
 
@@ -494,7 +522,6 @@ public final class ScreenDesignerApplication {
             objectTree.expandRow(row);
         }
         updateSelectedNavigationState();
-        previewArea.setText(previewText(ScreenDesignLayoutAdapter.toLayoutModel(design, true)));
         jsonArea.setText(ScreenDesignJson.toJson(design));
         statusLabel.setText(statusText(currentPath, ScreenDesignValidator.validate(design)));
     }
@@ -580,17 +607,6 @@ public final class ScreenDesignerApplication {
         return List.of("New", "Load", "Save", "Save As");
     }
 
-    private static String previewText(ScreenLayoutModel model) {
-        StringBuilder text = new StringBuilder(model.title()).append('\n');
-        for (ScreenLayoutSection section : model.contentSections()) {
-            text.append("\n[").append(section.id()).append("] ").append(section.title()).append('\n');
-            for (String line : section.lines()) {
-                text.append("  ").append(line).append('\n');
-            }
-        }
-        return text.toString();
-    }
-
     static Path screenDesignExamplesDirectory() {
         Path current = Path.of("").toAbsolutePath().normalize();
         Path search = current;
@@ -615,6 +631,30 @@ public final class ScreenDesignerApplication {
         return problems.stream()
                 .map(problem -> problem.path() + ": " + problem.message())
                 .reduce("Validation issues:\n", (a, b) -> a + b + "\n");
+    }
+
+    private void closeIfConfirmed(JFrame frame) {
+        if (hasUnsavedChanges(savedJsonSnapshot, ScreenDesignJson.toJson(design))
+                && JOptionPane.showConfirmDialog(frame,
+                "There are unsaved changes. Exit without saving?",
+                "Unsaved Changes",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.WARNING_MESSAGE) != JOptionPane.YES_OPTION) {
+            return;
+        }
+        frame.dispose();
+        if (previewStage != null) {
+            Platform.runLater(() -> {
+                if (previewStage != null) {
+                    previewStage.close();
+                }
+            });
+        }
+        System.exit(0);
+    }
+
+    static boolean hasUnsavedChanges(String savedJson, String currentJson) {
+        return !java.util.Objects.equals(savedJson, currentJson);
     }
 
     private void runSafely(String actionName, Runnable action) {
@@ -868,9 +908,16 @@ public final class ScreenDesignerApplication {
         propertiesPanel.removeAll();
         propertiesPanel.add(new JLabel(propertiesTitleFor(navigationNode)), BorderLayout.NORTH);
         propertiesPanel.add(propertiesFieldsFor(navigationNode), BorderLayout.CENTER);
-        propertiesPanel.add(applyPropertiesButton, BorderLayout.SOUTH);
+        propertiesPanel.add(propertyActionPanel(), BorderLayout.SOUTH);
         propertiesPanel.revalidate();
         propertiesPanel.repaint();
+    }
+
+    private JPanel propertyActionPanel() {
+        JPanel actions = new JPanel(new GridLayout(1, 2, 6, 0));
+        actions.add(applyPropertiesButton);
+        actions.add(resetPropertiesButton);
+        return actions;
     }
 
     private JPanel propertiesFieldsFor(NavigationNode navigationNode) {
@@ -919,6 +966,8 @@ public final class ScreenDesignerApplication {
         itemContentArea.setLineWrap(true);
         itemContentArea.setWrapStyleWord(true);
         itemValueField.setText(nullToBlank(item.value()));
+        itemEditableBox.setSelected(item.editable());
+        refreshItemEditableState();
         JPanel fields = propertyGrid(propertyLabelsFor(NavigationNode.item(item.id(), item.blockId(), temporary)).size());
         addPropertyRow(fields, 0, "Target block", itemBlockBox);
         addPropertyRow(fields, 1, "Item id", itemIdField);
@@ -926,6 +975,7 @@ public final class ScreenDesignerApplication {
         addPropertyRow(fields, 3, "Label", itemLabelField);
         addPropertyRow(fields, 4, "Text/default value", itemContentComponent(item.type()));
         addPropertyRow(fields, 5, "Current value", itemValueField);
+        addPropertyRow(fields, 6, "Editable", itemEditableBox);
         return fields;
     }
 
@@ -969,6 +1019,27 @@ public final class ScreenDesignerApplication {
         return type == ScreenDesignItemType.TEXT_AREA;
     }
 
+    private void refreshItemEditableState() {
+        refreshEditableState(itemTypeBox, itemEditableBox);
+    }
+
+    private static void refreshEditableState(JComboBox<ScreenDesignItemType> typeBox, JCheckBox editableBox) {
+        ScreenDesignItemType type = (ScreenDesignItemType) typeBox.getSelectedItem();
+        boolean applicable = isEditableApplicable(type);
+        editableBox.setEnabled(applicable);
+        if (!applicable) {
+            editableBox.setSelected(false);
+        }
+    }
+
+    static boolean isEditableApplicable(ScreenDesignItemType type) {
+        return type != ScreenDesignItemType.BUTTON;
+    }
+
+    static boolean editableSelection(ScreenDesignItemType type, boolean selected) {
+        return isEditableApplicable(type) && selected;
+    }
+
     static ScreenLayoutType defaultLayoutType() {
         return ScreenLayoutType.FORM;
     }
@@ -996,7 +1067,7 @@ public final class ScreenDesignerApplication {
         return switch (navigationNode.type()) {
             case SCREEN -> List.of("Screen id", "Title", "Layout type");
             case BLOCK -> List.of("Block id", "Title", "Layout type", "Parent block");
-            case ITEM, TEMPORARY_ITEM -> List.of("Target block", "Item id", "Type", "Label", "Text/default value", "Current value");
+            case ITEM, TEMPORARY_ITEM -> List.of("Target block", "Item id", "Type", "Label", "Text/default value", "Current value", "Editable");
         };
     }
 

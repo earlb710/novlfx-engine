@@ -209,7 +209,7 @@ final class ScreenDesignerApplicationTest {
                         ScreenDesignerApplication.NavigationNode.block("main")));
         assertEquals("Item Properties", ScreenDesignerApplication.propertiesTitleFor(
                 ScreenDesignerApplication.NavigationNode.item("title.text", "main", false)));
-        assertEquals(List.of("Target block", "Item id", "Type", "Label", "Text/default value", "Current value"),
+        assertEquals(List.of("Target block", "Item id", "Type", "Label", "Text/default value", "Current value", "Editable"),
                 ScreenDesignerApplication.propertyLabelsFor(
                         ScreenDesignerApplication.NavigationNode.item("title.text", "main", false)));
         assertEquals("Item Properties", ScreenDesignerApplication.propertiesTitleFor(
@@ -221,6 +221,20 @@ final class ScreenDesignerApplicationTest {
         assertFalse(ScreenDesignerApplication.usesMultiLineContentEditor(ScreenDesignItemType.TEXT));
         assertFalse(ScreenDesignerApplication.usesMultiLineContentEditor(ScreenDesignItemType.FIELD));
         assertTrue(ScreenDesignerApplication.usesMultiLineContentEditor(ScreenDesignItemType.TEXT_AREA));
+    }
+
+    @Test
+    void editableSelectionIsNotApplicableForButtonItems() {
+        assertTrue(ScreenDesignerApplication.isEditableApplicable(ScreenDesignItemType.TEXT));
+        assertTrue(ScreenDesignerApplication.editableSelection(ScreenDesignItemType.FIELD, true));
+        assertFalse(ScreenDesignerApplication.isEditableApplicable(ScreenDesignItemType.BUTTON));
+        assertFalse(ScreenDesignerApplication.editableSelection(ScreenDesignItemType.BUTTON, true));
+    }
+
+    @Test
+    void dirtyStateComparesSavedAndCurrentJsonSnapshots() {
+        assertFalse(ScreenDesignerApplication.hasUnsavedChanges("{}", "{}"));
+        assertTrue(ScreenDesignerApplication.hasUnsavedChanges("{}", "{\"id\":\"changed\"}"));
     }
 
     @Test
