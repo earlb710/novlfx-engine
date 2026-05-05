@@ -1,10 +1,12 @@
 package com.eb.javafx.ui;
 
 import com.eb.javafx.util.Validation;
+import com.eb.javafx.util.HierarchyTraversal;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.UnaryOperator;
 
 /** Immutable mutation helpers for editable screen designs. */
@@ -22,7 +24,11 @@ public final class ScreenDesignService {
 
     public static ScreenDesignModel removeBlock(ScreenDesignModel design, String blockId) {
         Validation.requireNonBlank(blockId, "Screen design block id is required.");
-        java.util.Set<String> removedBlockIds = descendantBlockIds(design.blocks(), blockId);
+        Set<String> removedBlockIds = HierarchyTraversal.descendantIds(
+                design.blocks(),
+                ScreenDesignBlock::id,
+                ScreenDesignBlock::parentBlockId,
+                blockId);
         ArrayList<ScreenDesignBlock> blocks = new ArrayList<>(design.blocks().stream()
                 .filter(block -> !removedBlockIds.contains(block.id()))
                 .toList());
@@ -155,22 +161,6 @@ public final class ScreenDesignService {
         if (!exists) {
             throw new IllegalArgumentException("Unknown screen design block id: " + blockId);
         }
-    }
-
-    private static java.util.Set<String> descendantBlockIds(List<ScreenDesignBlock> blocks, String rootBlockId) {
-        java.util.LinkedHashSet<String> descendants = new java.util.LinkedHashSet<>();
-        java.util.ArrayDeque<String> pending = new java.util.ArrayDeque<>();
-        descendants.add(rootBlockId);
-        pending.add(rootBlockId);
-        while (!pending.isEmpty()) {
-            String parentId = pending.removeFirst();
-            for (ScreenDesignBlock block : blocks) {
-                if (parentId.equals(block.parentBlockId()) && descendants.add(block.id())) {
-                    pending.addLast(block.id());
-                }
-            }
-        }
-        return descendants;
     }
 
     private static ScreenDesignModel create(

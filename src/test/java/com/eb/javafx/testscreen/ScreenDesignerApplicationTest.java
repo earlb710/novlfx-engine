@@ -196,6 +196,25 @@ final class ScreenDesignerApplicationTest {
     }
 
     @Test
+    void propertyLabelsMatchSelectedNavigationNodeType() {
+        assertEquals("Screen Properties", ScreenDesignerApplication.propertiesTitleFor(
+                ScreenDesignerApplication.NavigationNode.screen("sample.screen")));
+        assertEquals(List.of("Screen id", "Title", "Layout type"),
+                ScreenDesignerApplication.propertyLabelsFor(
+                        ScreenDesignerApplication.NavigationNode.screen("sample.screen")));
+        assertEquals("Block Properties", ScreenDesignerApplication.propertiesTitleFor(
+                ScreenDesignerApplication.NavigationNode.block("main")));
+        assertEquals(List.of("Block id", "Title", "Layout type", "Parent block"),
+                ScreenDesignerApplication.propertyLabelsFor(
+                        ScreenDesignerApplication.NavigationNode.block("main")));
+        assertEquals("Item Properties", ScreenDesignerApplication.propertiesTitleFor(
+                ScreenDesignerApplication.NavigationNode.item("title.text", "main", false)));
+        assertEquals(List.of("Target block", "Item id", "Type", "Label", "Text/default value", "Current value"),
+                ScreenDesignerApplication.propertyLabelsFor(
+                        ScreenDesignerApplication.NavigationNode.item("title.text", "main", false)));
+    }
+
+    @Test
     void fileMenuLabelsContainFileActionsMovedFromToolbar() {
         assertEquals(List.of("New", "Load", "Save", "Save As"),
                 ScreenDesignerApplication.fileMenuActionLabels());
