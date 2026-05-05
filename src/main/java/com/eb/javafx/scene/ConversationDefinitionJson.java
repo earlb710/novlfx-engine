@@ -94,10 +94,10 @@ public final class ConversationDefinitionJson {
     }
 
     private static String requiredStringAllowingEmpty(Map<String, Object> object, String key, String description) {
-        if (!object.containsKey(key) || object.get(key) == null) {
+        Object value = object.get(key);
+        if (!object.containsKey(key) || value == null) {
             throw new IllegalArgumentException("Missing JSON string for " + description + ".");
         }
-        Object value = object.get(key);
         if (value instanceof String stringValue) {
             return stringValue;
         }
