@@ -1218,7 +1218,7 @@ public final class ScreenDesignerApplication {
         JPanel panel = new JPanel(new BorderLayout(6, 0));
         JButton choose = new JButton("Choose...");
         choose.addActionListener(event -> {
-            Color selected = JColorChooser.showDialog(panel, "Choose Font Color", initialColor(colorField.getText()));
+            Color selected = JColorChooser.showDialog(panel, "Choose Color", initialColor(colorField.getText()));
             if (selected != null) {
                 colorField.setText("#%02x%02x%02x".formatted(selected.getRed(), selected.getGreen(), selected.getBlue()));
             }

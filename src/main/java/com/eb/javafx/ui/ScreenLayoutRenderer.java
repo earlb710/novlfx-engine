@@ -25,7 +25,7 @@ public final class ScreenLayoutRenderer {
     private static final double SECTION_SPACING = 8;
     private static final double REGION_SPACING = 12;
     private static final Pattern FONT_SIZE_PATTERN = Pattern.compile("\\d+(\\.\\d+)?(px|pt|em)?");
-    private static final Pattern DECIMAL_PATTERN = Pattern.compile("\\d+(\\.\\d+)?");
+    private static final Pattern DECIMAL_PATTERN = Pattern.compile("\\d*\\.?\\d+");
     private static final Pattern FONT_FAMILY_PATTERN = Pattern.compile("[\\p{Alnum} ._\\-]+");
     private static final Pattern COLOR_PATTERN = Pattern.compile("#[0-9a-fA-F]{3,8}|[a-zA-Z]+");
     private static final Pattern BORDER_STYLE_PATTERN = Pattern.compile("[a-zA-Z\\- ]+");
