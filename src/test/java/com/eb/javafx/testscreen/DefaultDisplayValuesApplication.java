@@ -271,21 +271,15 @@ public final class DefaultDisplayValuesApplication {
 
     static void removeApplicationVariableRows(JTable table) {
         Validation.requireNonNull(table, "Application variables table is required.");
-        if (!(table.getModel() instanceof DefaultTableModel model) || model.getRowCount() == 0) {
-            return;
-        }
-        int[] selectedRows = table.getSelectedRows();
-        if (selectedRows.length == 0) {
-            model.removeRow(model.getRowCount() - 1);
-            return;
-        }
-        for (int index = selectedRows.length - 1; index >= 0; index--) {
-            model.removeRow(table.convertRowIndexToModel(selectedRows[index]));
-        }
+        removeSelectedOrLastRow(table);
     }
 
     static void removeApplicationLoadRows(JTable table) {
         Validation.requireNonNull(table, "Application loads table is required.");
+        removeSelectedOrLastRow(table);
+    }
+
+    private static void removeSelectedOrLastRow(JTable table) {
         if (!(table.getModel() instanceof DefaultTableModel model) || model.getRowCount() == 0) {
             return;
         }
