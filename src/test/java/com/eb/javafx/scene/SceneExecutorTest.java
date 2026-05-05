@@ -143,6 +143,7 @@ final class SceneExecutorTest {
 
         SceneViewModel textViewModel = new ScenePresenter().present(context, executor.advanceUntilPause(context, executor.start("choice")));
         SceneExecutionResult waiting = executor.continueFromText(context, executor.start("choice"));
+        SceneViewModel waitingChoiceViewModel = new ScenePresenter().present(context, waiting);
         SceneViewModel choiceViewModel = new ScenePresenter().present(
                 context,
                 executor.selectChoice(context, waiting.state(), "advance"));
@@ -152,8 +153,8 @@ final class SceneExecutorTest {
         assertEquals("dialogue.ava", textViewModel.dialogueRows().get(0).textDefinition());
         assertEquals("happy", textViewModel.effectPreviews().get(0).value());
         assertEquals("DISPLAYING_TEXT", textViewModel.statusRows().get(0).value());
+        assertEquals("choice.advance.tooltip", waitingChoiceViewModel.choices().get(0).tooltipTextDefinition());
         assertEquals(List.of("advance"), choiceViewModel.selectedChoiceIds());
-        assertEquals("choice.advance.tooltip", choiceViewModel.choices().get(0).tooltipTextDefinition());
         assertTrue(choiceViewModel.statusRows().stream().anyMatch(row ->
                 row.label().equals("Selected choices") && row.value().equals("advance")));
     }
