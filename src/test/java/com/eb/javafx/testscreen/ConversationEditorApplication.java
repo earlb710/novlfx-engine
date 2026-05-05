@@ -47,6 +47,8 @@ import java.util.List;
 
 /** Manual Swing editor for LR2Alt-compatible JSON conversation documents. */
 public final class ConversationEditorApplication {
+    private static final int MAX_CONDITION_FIELDS = 3;
+
     private ConversationDefinition conversation = sampleConversation();
     private final DefaultTreeModel objectTreeModel = new DefaultTreeModel(new DefaultMutableTreeNode());
     private final JTree objectTree = new JTree(objectTreeModel);
@@ -64,7 +66,9 @@ public final class ConversationEditorApplication {
     private final JComboBox<String> lineListenerField = new JComboBox<>();
     private final JTextArea variantTextArea = new JTextArea();
     private final JTextField variantWeightField = new JTextField();
-    private final List<JTextField> variantConditionFields = List.of(new JTextField(), new JTextField(), new JTextField());
+    private final List<JTextField> variantConditionFields = java.util.stream.Stream.generate(JTextField::new)
+            .limit(MAX_CONDITION_FIELDS)
+            .toList();
     private final JLabel statusLabel = new JLabel();
     private Path currentPath;
     private String savedJsonSnapshot = ConversationDefinitionJson.toJson(conversation);
@@ -850,7 +854,7 @@ public final class ConversationEditorApplication {
     static List<String> conditionTexts(List<String> values) {
         return values.stream()
                 .filter(value -> value != null && !value.isBlank())
-                .limit(3)
+                .limit(MAX_CONDITION_FIELDS)
                 .toList();
     }
 
@@ -889,11 +893,10 @@ public final class ConversationEditorApplication {
     }
 
     private static void setComboBoxItems(JComboBox<String> comboBox, List<String> items, String selectedValue) {
+        List<String> itemsWithSelection = new ArrayList<>(items);
+        addChoice(itemsWithSelection, selectedValue);
         comboBox.removeAllItems();
-        items.forEach(comboBox::addItem);
-        if (selectedValue != null && !selectedValue.isBlank() && !items.contains(selectedValue)) {
-            comboBox.addItem(selectedValue);
-        }
+        itemsWithSelection.forEach(comboBox::addItem);
         comboBox.setSelectedItem(selectedValue);
     }
 
