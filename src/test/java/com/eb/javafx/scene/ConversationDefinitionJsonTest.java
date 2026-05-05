@@ -215,6 +215,7 @@ final class ConversationDefinitionJsonTest {
                         choice -> choice.disabled("Needs key.").withIcon("icons/key")));
         SceneChoice changedChoice = conversation.steps().get(4).choices().get(0);
 
+        assertTrue(module.findConversationById("sample.conversation.opening.block_0001").isPresent());
         assertTrue(module.conversationById("sample.conversation.opening.block_0001").isPresent());
         assertFalse(module.conversationById("missing").isPresent());
         assertEquals("Needs key.", changedChoice.disabledReason());
