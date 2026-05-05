@@ -148,7 +148,7 @@ public final class JsonConversationContentModule implements StaticContentModule,
     }
 
     private static String choiceValue(ConversationVariant variant, int variantIndex) {
-        // Empty values intentionally fall back to the zero-based authored variant index.
+        // LR2Alt exports and draft editor rows may omit choice values; use the zero-based JSON variant index so every runtime choice still returns a stable authored value.
         return variant.value().isEmpty() ? Integer.toString(variantIndex) : variant.value();
     }
 

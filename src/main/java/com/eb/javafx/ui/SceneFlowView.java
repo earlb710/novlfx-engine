@@ -47,12 +47,13 @@ public final class SceneFlowView {
      *
      * <p>When called on the JavaFX application thread this method uses a nested event loop so button events can
      * still be processed. Callers must keep the displayed content reachable and should only use this helper for
-     * modal conversation-style flows where waiting for a choice is intentional.</p>
+     * modal conversation-style flows where waiting for a choice is intentional. If there are no selectable choices,
+     * the content is displayed once and {@code null} is returned.</p>
      */
     public static String displayAndWaitForChoice(SceneViewModel viewModel, Consumer<VBox> displayHandler) {
         Validation.requireNonNull(viewModel, "Scene view model is required.");
         Validation.requireNonNull(displayHandler, "Scene display handler is required.");
-        if (viewModel.choices().isEmpty()) {
+        if (viewModel.choices().stream().noneMatch(choice -> choice.available())) {
             displayHandler.accept(createContent(viewModel, null));
             return null;
         }
