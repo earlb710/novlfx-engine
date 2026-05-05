@@ -184,7 +184,7 @@ public final class ScreenDesignerApplication {
         this(true);
     }
 
-    ScreenDesignerApplication(boolean exitOnClose) {
+    public ScreenDesignerApplication(boolean exitOnClose) {
         this.exitOnClose = exitOnClose;
     }
 
