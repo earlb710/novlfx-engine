@@ -22,6 +22,8 @@ import javafx.scene.Scene;
 import javafx.stage.Stage;
 
 import javax.swing.JButton;
+import javax.swing.AbstractCellEditor;
+import javax.swing.DefaultCellEditor;
 import javax.swing.JCheckBox;
 import javax.swing.JColorChooser;
 import javax.swing.JComboBox;
@@ -45,11 +47,13 @@ import javax.swing.ListSelectionModel;
 import javax.swing.SwingUtilities;
 import javax.swing.WindowConstants;
 import javax.swing.table.AbstractTableModel;
+import javax.swing.table.TableCellEditor;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Frame;
+import java.awt.GraphicsEnvironment;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.GridLayout;
@@ -61,7 +65,10 @@ import java.awt.event.WindowEvent;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -646,7 +653,7 @@ public final class ScreenDesignerApplication {
         JList<DefaultValueType> typeList = new JList<>(types.toArray(DefaultValueType[]::new));
         typeList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         DefaultAttributesTableModel tableModel = new DefaultAttributesTableModel(editedValues.get(types.get(0)));
-        JTable attributesTable = new JTable(tableModel);
+        JTable attributesTable = new DefaultAttributesTable(tableModel);
         attributesTable.setFillsViewportHeight(true);
         typeList.addListSelectionListener(event -> {
             if (event.getValueIsAdjusting()) {
@@ -1500,6 +1507,76 @@ public final class ScreenDesignerApplication {
     }
 
     private static String[] fontFamilyOptions() {
+        return defaultValueFontFamilyOptions();
+    }
+
+    static String[] defaultValueFontFamilyOptions() {
+        List<String> options = new ArrayList<>();
+        options.add(DEFAULT_OPTION);
+        options.addAll(FontResources.fontFileNames());
+        Arrays.stream(GraphicsEnvironment.getLocalGraphicsEnvironment().getAvailableFontFamilyNames())
+                .sorted(Comparator.naturalOrder())
+                .forEach(options::add);
+        return new LinkedHashSet<>(options).toArray(String[]::new);
+    }
+
+    static String[] defaultValueFontStyleOptions() {
+        return Arrays.copyOfRange(FONT_STYLE_OPTIONS, 1, FONT_STYLE_OPTIONS.length);
+    }
+
+    static DefaultValueAttributeEditor defaultValueAttributeEditor(String attributeName) {
+        if (isDefaultValueFontAttribute(attributeName)) {
+            return DefaultValueAttributeEditor.FONT;
+        }
+        if (isDefaultValueFontStyleAttribute(attributeName)) {
+            return DefaultValueAttributeEditor.FONT_STYLE;
+        }
+        if (isDefaultValueColorAttribute(attributeName)) {
+            return DefaultValueAttributeEditor.COLOR;
+        }
+        return DefaultValueAttributeEditor.TEXT;
+    }
+
+    private static boolean isDefaultValueFontAttribute(String attributeName) {
+        return FONT_FAMILY_KEY.equals(attributeName) || attributeName.endsWith("FontFamily");
+    }
+
+    private static boolean isDefaultValueFontStyleAttribute(String attributeName) {
+        return ITEM_FONT_STYLE_KEY.equals(attributeName) || attributeName.endsWith("FontStyle");
+    }
+
+    private static boolean isDefaultValueColorAttribute(String attributeName) {
+        return attributeName.toLowerCase(java.util.Locale.ROOT).contains("color");
+    }
+
+    private static JComboBox<String> defaultValueFontFamilyBox() {
+        JComboBox<String> comboBox = new JComboBox<>(defaultValueFontFamilyOptions());
+        comboBox.setEditable(true);
+        return comboBox;
+    }
+
+    private static JComboBox<String> defaultValueFontStyleBox() {
+        return new JComboBox<>(defaultValueFontStyleOptions());
+    }
+
+    private static TableCellEditor defaultValueCellEditor(String attributeName) {
+        return switch (defaultValueAttributeEditor(attributeName)) {
+            case FONT -> new DefaultCellEditor(defaultValueFontFamilyBox());
+            case FONT_STYLE -> new DefaultCellEditor(defaultValueFontStyleBox());
+            case COLOR -> new ColorValueCellEditor();
+            case TEXT -> new DefaultCellEditor(new JTextField());
+        };
+    }
+
+    private static String selectedColorValue(Component parent, String currentValue) {
+        Color selected = JColorChooser.showDialog(parent, "Choose Color", initialColor(currentValue));
+        if (selected == null) {
+            return currentValue == null ? "" : currentValue;
+        }
+        return "#%02x%02x%02x".formatted(selected.getRed(), selected.getGreen(), selected.getBlue());
+    }
+
+    private static String[] legacyFontFamilyOptions() {
         List<String> options = new ArrayList<>();
         options.add(DEFAULT_OPTION);
         options.addAll(FontResources.fontFileNames());
@@ -1718,6 +1795,13 @@ public final class ScreenDesignerApplication {
         LABEL
     }
 
+    enum DefaultValueAttributeEditor {
+        TEXT,
+        FONT,
+        FONT_STYLE,
+        COLOR
+    }
+
     static record DefaultValueType(DefaultValueCategory category, String label, String role) {
         static DefaultValueType screen() {
             return new DefaultValueType(DefaultValueCategory.SCREEN, "screen", null);
@@ -1792,6 +1876,50 @@ public final class ScreenDesignerApplication {
                 attributes.put(keys.get(rowIndex), value == null ? "" : value.toString());
                 fireTableCellUpdated(rowIndex, columnIndex);
             }
+        }
+    }
+
+    private static final class DefaultAttributesTable extends JTable {
+        private DefaultAttributesTable(DefaultAttributesTableModel model) {
+            super(model);
+        }
+
+        @Override
+        public TableCellEditor getCellEditor(int row, int column) {
+            if (column == 1 && getModel() instanceof DefaultAttributesTableModel model) {
+                return defaultValueCellEditor((String) model.getValueAt(convertRowIndexToModel(row), 0));
+            }
+            return super.getCellEditor(row, column);
+        }
+    }
+
+    private static final class ColorValueCellEditor extends AbstractCellEditor implements TableCellEditor {
+        private final JButton button = new JButton("Choose...");
+        private String value = "";
+
+        private ColorValueCellEditor() {
+            button.addActionListener(event -> {
+                value = selectedColorValue(button, value);
+                fireEditingStopped();
+            });
+        }
+
+        @Override
+        public Object getCellEditorValue() {
+            return value;
+        }
+
+        @Override
+        public Component getTableCellEditorComponent(
+                JTable table,
+                Object value,
+                boolean isSelected,
+                int row,
+                int column) {
+            this.value = value == null ? "" : value.toString();
+            button.setText(this.value.isBlank() ? "Choose..." : this.value);
+            SwingUtilities.invokeLater(button::doClick);
+            return button;
         }
     }
 

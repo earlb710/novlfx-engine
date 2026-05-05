@@ -340,6 +340,30 @@ final class ScreenDesignerApplicationTest {
     }
 
     @Test
+    void defaultValuesEditorUsesPickerControlsForFontsStylesAndColors() {
+        assertEquals(ScreenDesignerApplication.DefaultValueAttributeEditor.FONT,
+                ScreenDesignerApplication.defaultValueAttributeEditor("fontFamily"));
+        assertEquals(ScreenDesignerApplication.DefaultValueAttributeEditor.FONT_STYLE,
+                ScreenDesignerApplication.defaultValueAttributeEditor("fontStyle"));
+        assertEquals(ScreenDesignerApplication.DefaultValueAttributeEditor.COLOR,
+                ScreenDesignerApplication.defaultValueAttributeEditor("backgroundColor"));
+        assertEquals(ScreenDesignerApplication.DefaultValueAttributeEditor.COLOR,
+                ScreenDesignerApplication.defaultValueAttributeEditor("borderColor"));
+        assertEquals(ScreenDesignerApplication.DefaultValueAttributeEditor.TEXT,
+                ScreenDesignerApplication.defaultValueAttributeEditor("fontSize"));
+    }
+
+    @Test
+    void defaultValuesFontPickerListsPackagedAndAvailableFonts() {
+        List<String> options = List.of(ScreenDesignerApplication.defaultValueFontFamilyOptions());
+
+        assertTrue(options.contains("OpenDyslexic3-Regular.ttf"));
+        assertTrue(options.contains("Dialog"));
+        assertEquals(List.of("normal", "bold", "italic", "bold italic"),
+                List.of(ScreenDesignerApplication.defaultValueFontStyleOptions()));
+    }
+
+    @Test
     void editorPinsPropertyButtonsBelowScrollablePropertiesPanel() throws Exception {
         ScreenDesignerApplication application = new ScreenDesignerApplication();
         invokePrivateMethod(application, "refreshAll");
