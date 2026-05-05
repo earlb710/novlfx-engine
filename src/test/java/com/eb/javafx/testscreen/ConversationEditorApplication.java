@@ -4,6 +4,7 @@ import com.eb.javafx.scene.ConversationDefinition;
 import com.eb.javafx.scene.ConversationDefinition.ConversationBlock;
 import com.eb.javafx.scene.ConversationDefinition.ConversationLine;
 import com.eb.javafx.scene.ConversationDefinition.ConversationVariant;
+import com.eb.javafx.scene.ConversationDefinition.LineType;
 import com.eb.javafx.scene.ConversationDefinitionJson;
 import com.eb.javafx.util.Validation;
 
@@ -65,6 +66,7 @@ public final class ConversationEditorApplication {
     private final JTextField conversationDescriptionField = new JTextField();
     private final JComboBox<String> lineSpeakerField = new JComboBox<>();
     private final JComboBox<String> lineListenerField = new JComboBox<>();
+    private final JComboBox<LineType> lineTypeField = new JComboBox<>(LineType.values());
     private final JTextArea variantTextArea = new JTextArea();
     private final JTextField variantWeightField = new JTextField();
     private final List<JTextField> variantConditionFields = Stream.generate(JTextField::new)
@@ -155,7 +157,8 @@ public final class ConversationEditorApplication {
         addVariant.addActionListener(event -> runSafely("Add Variant", this::addSelectedVariant));
         panel.add(detailFieldsPanel("Line Detail",
                 formRow("Speaker", lineSpeakerField),
-                formRow("Listener", lineListenerField)), BorderLayout.NORTH);
+                formRow("Listener", lineListenerField),
+                formRow("Line Type", lineTypeField)), BorderLayout.NORTH);
         panel.add(addVariant, BorderLayout.SOUTH);
         return panel;
     }
@@ -256,6 +259,7 @@ public final class ConversationEditorApplication {
         variantConditionFields.forEach(this::installDirtyStateListener);
         lineSpeakerField.addActionListener(event -> refreshEditorState());
         lineListenerField.addActionListener(event -> refreshEditorState());
+        lineTypeField.addActionListener(event -> refreshEditorState());
         detailTabs.addChangeListener(event -> refreshEditorState());
     }
 
@@ -425,9 +429,11 @@ public final class ConversationEditorApplication {
             ConversationLine line = conversation.conversations().get(conversationIndex).lines().get(lineIndex);
             setComboBoxItems(lineSpeakerField, speakerChoices(conversation, line.speaker()), line.speaker());
             setComboBoxItems(lineListenerField, listenerChoices(conversation, line.listener()), line.listener());
+            lineTypeField.setSelectedItem(line.type());
         } else {
             setComboBoxItems(lineSpeakerField, List.of(), "");
             setComboBoxItems(lineListenerField, List.of(""), "");
+            lineTypeField.setSelectedItem(LineType.SAY);
         }
         int variantIndex = selectedVariantIndex(selectedData);
         if (conversationIndex >= 0 && lineIndex >= 0 && variantIndex >= 0) {
@@ -479,7 +485,13 @@ public final class ConversationEditorApplication {
         if (conversationIndex < 0 || lineIndex < 0) {
             return;
         }
-        conversation = updateLine(conversation, conversationIndex, lineIndex, selectedComboBoxValue(lineSpeakerField), selectedComboBoxValue(lineListenerField));
+        conversation = updateLine(
+                conversation,
+                conversationIndex,
+                lineIndex,
+                selectedComboBoxValue(lineSpeakerField),
+                selectedComboBoxValue(lineListenerField),
+                selectedLineType());
         refreshAll(selectedData);
     }
 
@@ -621,7 +633,7 @@ public final class ConversationEditorApplication {
 
     private static DefaultMutableTreeNode lineNode(ConversationLine line, int conversationIndex, int lineIndex) {
         DefaultMutableTreeNode node = new DefaultMutableTreeNode(
-                NodeData.line(conversationIndex, lineIndex, "line: " + line.speaker()));
+                NodeData.line(conversationIndex, lineIndex, "line: " + line.speaker() + " (" + line.type().jsonValue() + ")"));
         for (int index = 0; index < line.variants().size(); index++) {
             ConversationVariant variant = line.variants().get(index);
             node.add(new DefaultMutableTreeNode(
@@ -673,11 +685,21 @@ public final class ConversationEditorApplication {
             int lineIndex,
             String speaker,
             String listener) {
+        return updateLine(document, conversationIndex, lineIndex, speaker, listener, LineType.SAY);
+    }
+
+    static ConversationDefinition updateLine(
+            ConversationDefinition document,
+            int conversationIndex,
+            int lineIndex,
+            String speaker,
+            String listener,
+            LineType type) {
         List<ConversationBlock> blocks = new ArrayList<>(document.conversations());
         ConversationBlock block = blocks.get(conversationIndex);
         List<ConversationLine> lines = new ArrayList<>(block.lines());
         ConversationLine line = lines.get(lineIndex);
-        lines.set(lineIndex, new ConversationLine(speaker, listener, line.variants()));
+        lines.set(lineIndex, new ConversationLine(speaker, listener, type, line.variants()));
         blocks.set(conversationIndex, new ConversationBlock(block.id(), block.description(), lines));
         return new ConversationDefinition(document.name(), document.language(), blocks);
     }
@@ -696,7 +718,7 @@ public final class ConversationEditorApplication {
         ConversationLine line = lines.get(lineIndex);
         List<ConversationVariant> variants = new ArrayList<>(line.variants());
         variants.set(variantIndex, new ConversationVariant(text, weight, conditions));
-        lines.set(lineIndex, new ConversationLine(line.speaker(), line.listener(), variants));
+        lines.set(lineIndex, new ConversationLine(line.speaker(), line.listener(), line.type(), variants));
         blocks.set(conversationIndex, new ConversationBlock(block.id(), block.description(), lines));
         return new ConversationDefinition(document.name(), document.language(), blocks);
     }
@@ -717,7 +739,7 @@ public final class ConversationEditorApplication {
         ConversationLine line = lines.get(lineIndex);
         List<ConversationVariant> variants = new ArrayList<>(line.variants());
         variants.add(new ConversationVariant("", 1.0, List.of()));
-        lines.set(lineIndex, new ConversationLine(line.speaker(), line.listener(), variants));
+        lines.set(lineIndex, new ConversationLine(line.speaker(), line.listener(), line.type(), variants));
         blocks.set(conversationIndex, new ConversationBlock(block.id(), block.description(), lines));
         return new ConversationDefinition(document.name(), document.language(), blocks);
     }
@@ -825,7 +847,8 @@ public final class ConversationEditorApplication {
                     selectedConversationIndex(selectedData),
                     selectedLineIndex(selectedData),
                     selectedComboBoxValue(lineSpeakerField),
-                    selectedComboBoxValue(lineListenerField));
+                    selectedComboBoxValue(lineListenerField),
+                    selectedLineType());
             case VARIANT -> selectedConversationIndex(selectedData) < 0 || selectedLineIndex(selectedData) < 0 || selectedVariantIndex(selectedData) < 0
                     ? conversation
                     : updateVariant(
@@ -847,6 +870,7 @@ public final class ConversationEditorApplication {
                 conversationDescriptionField.getText(),
                 selectedComboBoxValue(lineSpeakerField),
                 selectedComboBoxValue(lineListenerField),
+                selectedLineType().jsonValue(),
                 variantTextArea.getText(),
                 variantWeightField.getText(),
                 String.join("|", variantConditionValues()));
@@ -904,6 +928,11 @@ public final class ConversationEditorApplication {
     private static String selectedComboBoxValue(JComboBox<String> comboBox) {
         Object value = comboBox.getEditor().getItem();
         return value == null ? "" : value.toString();
+    }
+
+    private LineType selectedLineType() {
+        Object value = lineTypeField.getSelectedItem();
+        return value instanceof LineType type ? type : LineType.SAY;
     }
 
     private enum NodeType {

@@ -3,6 +3,7 @@ package com.eb.javafx.scene;
 import com.eb.javafx.util.Validation;
 
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Data-only authored conversation document using the LR2Alt exported JSON shape.
@@ -42,10 +43,49 @@ public final class ConversationDefinition {
         }
     }
 
-    public record ConversationLine(String speaker, String listener, List<ConversationVariant> variants) {
+    public enum LineType {
+        SHOUT("shout"),
+        SAY("say"),
+        WHISPER("whisper"),
+        CHOICE("choice");
+
+        private final String jsonValue;
+
+        LineType(String jsonValue) {
+            this.jsonValue = jsonValue;
+        }
+
+        public String jsonValue() {
+            return jsonValue;
+        }
+
+        public static LineType fromJson(String value) {
+            String normalized = Validation.requireNonBlank(value, "Conversation line type is required.")
+                    .trim()
+                    .toUpperCase(Locale.ROOT)
+                    .replace('-', '_');
+            return LineType.valueOf(normalized);
+        }
+
+        public String formatText(String text) {
+            String checkedText = Validation.requireNonNull(text, "Conversation line text is required.");
+            return switch (this) {
+                case SHOUT -> "<b>" + checkedText.toUpperCase(Locale.ROOT) + "</b>";
+                case SAY, CHOICE -> checkedText;
+                case WHISPER -> "<i>" + checkedText.toLowerCase(Locale.ROOT) + "</i>";
+            };
+        }
+    }
+
+    public record ConversationLine(String speaker, String listener, LineType type, List<ConversationVariant> variants) {
+        public ConversationLine(String speaker, String listener, List<ConversationVariant> variants) {
+            this(speaker, listener, LineType.SAY, variants);
+        }
+
         public ConversationLine {
             speaker = Validation.requireNonBlank(speaker, "Conversation line speaker is required.");
             listener = Validation.requireNonNull(listener, "Conversation line listener is required.");
+            type = Validation.requireNonNull(type, "Conversation line type is required.");
             variants = List.copyOf(Validation.requireNonEmpty(variants, "Conversation line variants are required."));
         }
     }

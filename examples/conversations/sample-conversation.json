@@ -9,6 +9,7 @@
         {
           "speaker": "narrator",
           "listener": "",
+          "type": "say",
           "variants": [
             {
               "text": "A reusable conversation document can hold narration.",
@@ -20,6 +21,7 @@
         {
           "speaker": "guide",
           "listener": "",
+          "type": "say",
           "variants": [
             {
               "text": "It can also hold speaker-labelled lines.",

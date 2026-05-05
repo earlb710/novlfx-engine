@@ -5,6 +5,7 @@ import com.eb.javafx.display.ImageDisplayRegistry;
 import com.eb.javafx.scene.ConversationDefinition.ConversationBlock;
 import com.eb.javafx.scene.ConversationDefinition.ConversationLine;
 import com.eb.javafx.scene.ConversationDefinition.ConversationVariant;
+import com.eb.javafx.scene.ConversationDefinition.LineType;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Files;
@@ -30,6 +31,7 @@ final class ConversationDefinitionJsonTest {
         assertEquals("sample.conversation.opening.block_0001", parsed.conversations().get(0).id());
         assertEquals("narrator", parsed.conversations().get(0).lines().get(0).speaker());
         assertEquals("", parsed.conversations().get(0).lines().get(0).listener());
+        assertEquals(LineType.SAY, parsed.conversations().get(0).lines().get(0).type());
         assertEquals("Welcome.", parsed.conversations().get(0).lines().get(0).variants().get(0).text());
         assertEquals(1.0, parsed.conversations().get(0).lines().get(0).variants().get(0).weight());
     }
@@ -59,6 +61,7 @@ final class ConversationDefinitionJsonTest {
                         {
                           "speaker": "Warning",
                           "listener": "",
+                          "type": "shout",
                           "variants": [
                             {
                               "text": "You are loading a game created by a previous build ([loaded_version]).",
@@ -78,6 +81,26 @@ final class ConversationDefinitionJsonTest {
         assertEquals("game.bugfix_additions.compatibility_fix.check_save_version.block_0001",
                 parsed.conversations().get(0).id());
         assertEquals("Warning", parsed.conversations().get(0).lines().get(0).speaker());
+        assertEquals(LineType.SHOUT, parsed.conversations().get(0).lines().get(0).type());
+    }
+
+    @Test
+    void defaultsMissingLineTypeToSay() {
+        String json = """
+                {
+                  "name": "Default Type",
+                  "language": "en",
+                  "conversations": [{
+                    "id": "game.debug.default_type.block_0001",
+                    "description": "Extracted dialogue block.",
+                    "lines": [{"speaker": "guide", "listener": "", "variants": [{"text": "Hello.", "weight": 1.0, "conditions": []}]}]
+                  }]
+                }
+                """;
+
+        ConversationDefinition parsed = ConversationDefinitionJson.fromJson(json, "default type");
+
+        assertEquals(LineType.SAY, parsed.conversations().get(0).lines().get(0).type());
     }
 
     @Test
@@ -128,6 +151,16 @@ final class ConversationDefinitionJsonTest {
                 contentRegistry.definition("sample.conversation.opening.block_0001.title"));
         assertEquals("Welcome.",
                 contentRegistry.definition("sample.conversation.opening.block_0001.line.0001"));
+        assertEquals("<b>LOUD.</b>",
+                contentRegistry.definition("sample.conversation.opening.block_0001.line.0003"));
+        assertEquals("<i>quiet.</i>",
+                contentRegistry.definition("sample.conversation.opening.block_0001.line.0004"));
+        assertEquals("Left path",
+                contentRegistry.definition("sample.conversation.opening.block_0001.line.0005.choice.0001"));
+        assertEquals(SceneStepType.CHOICE,
+                sceneRegistry.requireScene("sample.conversation.opening.block_0001").steps().get(4).type());
+        assertEquals("has_key",
+                sceneRegistry.requireScene("sample.conversation.opening.block_0001").steps().get(4).choices().get(0).metadata().get("conditions"));
         assertEquals("sample.conversation.opening.block_0001",
                 sceneRegistry.requireScene("sample.conversation.opening.block_0001").id());
     }
@@ -143,6 +176,13 @@ final class ConversationDefinitionJsonTest {
                                 new ConversationLine("narrator", "", List.of(
                                         new ConversationVariant("Welcome.", 1.0, List.of()))),
                                 new ConversationLine("guide", "", List.of(
-                                        new ConversationVariant("Choose a path.", 1.0, List.of())))))));
+                                        new ConversationVariant("Choose a path.", 1.0, List.of()))),
+                                new ConversationLine("guide", "", LineType.SHOUT, List.of(
+                                        new ConversationVariant("Loud.", 1.0, List.of()))),
+                                new ConversationLine("guide", "", LineType.WHISPER, List.of(
+                                        new ConversationVariant("QUIET.", 1.0, List.of()))),
+                                new ConversationLine("guide", "", LineType.CHOICE, List.of(
+                                        new ConversationVariant("Left path", 1.0, List.of("has_key")),
+                                        new ConversationVariant("Right path", 1.0, List.of())))))));
     }
 }

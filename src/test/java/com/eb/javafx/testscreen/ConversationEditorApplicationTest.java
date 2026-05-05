@@ -2,6 +2,7 @@ package com.eb.javafx.testscreen;
 
 import com.eb.javafx.scene.ConversationDefinition;
 import com.eb.javafx.scene.ConversationDefinition.ConversationBlock;
+import com.eb.javafx.scene.ConversationDefinition.LineType;
 import com.eb.javafx.scene.ConversationDefinitionJson;
 import org.junit.jupiter.api.Test;
 
@@ -62,7 +63,7 @@ final class ConversationEditorApplicationTest {
         DefaultMutableTreeNode block = (DefaultMutableTreeNode) root.getChildAt(0);
         DefaultMutableTreeNode line = (DefaultMutableTreeNode) block.getChildAt(0);
         assertEquals("conversation: sample.conversation.opening.block_0001", block.getUserObject().toString());
-        assertEquals("line: narrator", line.getUserObject().toString());
+        assertEquals("line: narrator (say)", line.getUserObject().toString());
         assertEquals("variant: A reusable conversation document can ...",
                 ((DefaultMutableTreeNode) line.getChildAt(0)).getUserObject().toString());
     }
@@ -117,10 +118,12 @@ final class ConversationEditorApplicationTest {
                 0,
                 0,
                 "hero",
-                "guide");
+                "guide",
+                LineType.WHISPER);
 
         assertEquals("hero", updated.conversations().get(0).lines().get(0).speaker());
         assertEquals("guide", updated.conversations().get(0).lines().get(0).listener());
+        assertEquals(LineType.WHISPER, updated.conversations().get(0).lines().get(0).type());
         assertEquals("A reusable conversation document can hold narration.",
                 updated.conversations().get(0).lines().get(0).variants().get(0).text());
     }

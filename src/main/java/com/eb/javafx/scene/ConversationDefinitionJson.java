@@ -3,6 +3,7 @@ package com.eb.javafx.scene;
 import com.eb.javafx.scene.ConversationDefinition.ConversationBlock;
 import com.eb.javafx.scene.ConversationDefinition.ConversationLine;
 import com.eb.javafx.scene.ConversationDefinition.ConversationVariant;
+import com.eb.javafx.scene.ConversationDefinition.LineType;
 import com.eb.javafx.util.JsonData;
 import com.eb.javafx.util.JsonStrings;
 import com.eb.javafx.util.Validation;
@@ -87,7 +88,14 @@ public final class ConversationDefinitionJson {
         return new ConversationLine(
                 JsonData.requiredString(object, "speaker", "conversation line speaker"),
                 stringAllowingEmpty(object, "listener", "conversation line listener", ""),
+                lineType(object),
                 variants);
+    }
+
+    private static LineType lineType(Map<String, Object> object) {
+        return JsonData.optionalString(object, "type", "conversation line type")
+                .map(LineType::fromJson)
+                .orElse(LineType.SAY);
     }
 
     private static ConversationVariant parseVariant(Map<String, Object> object) {
@@ -151,6 +159,7 @@ public final class ConversationDefinitionJson {
         json.append(indent).append("{\n")
                 .append(indent).append("  \"speaker\": ").append(JsonStrings.quote(line.speaker())).append(",\n")
                 .append(indent).append("  \"listener\": ").append(JsonStrings.quote(line.listener())).append(",\n")
+                .append(indent).append("  \"type\": ").append(JsonStrings.quote(line.type().jsonValue())).append(",\n")
                 .append(indent).append("  \"variants\": [");
         for (int index = 0; index < line.variants().size(); index++) {
             if (index > 0) {
