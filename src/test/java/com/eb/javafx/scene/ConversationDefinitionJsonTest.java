@@ -160,6 +160,35 @@ final class ConversationDefinitionJsonTest {
     }
 
     @Test
+    void readsAndWritesChoiceVariantTooltipText() {
+        String json = """
+                {
+                  "name": "Choice Tooltips",
+                  "language": "en",
+                  "conversations": [{
+                    "id": "game.debug.choice_tooltips.block_0001",
+                    "description": "Extracted dialogue block.",
+                    "lines": [{
+                      "speaker": "guide",
+                      "listener": "",
+                      "type": "choice",
+                      "variants": [
+                        {"text": "Left", "tooltipText": "Needs a key", "weight": 1.0, "conditions": []},
+                        {"text": "Right", "tooltipText": "", "weight": 1.0, "conditions": []}
+                      ]
+                    }]
+                  }]
+                }
+                """;
+
+        ConversationDefinition parsed = ConversationDefinitionJson.fromJson(json, "choice tooltips");
+
+        assertEquals("Needs a key", parsed.conversations().get(0).lines().get(0).variants().get(0).tooltipText());
+        assertEquals("", parsed.conversations().get(0).lines().get(0).variants().get(1).tooltipText());
+        assertTrue(ConversationDefinitionJson.toJson(parsed).contains("\"tooltipText\": \"Needs a key\""));
+    }
+
+    @Test
     void rejectsMissingLr2AltConversationFields() {
         String json = """
                 {
@@ -194,12 +223,16 @@ final class ConversationDefinitionJsonTest {
                 contentRegistry.definition("sample.conversation.opening.block_0001.line.0004"));
         assertEquals("Left path",
                 contentRegistry.definition("sample.conversation.opening.block_0001.line.0005.choice.0001"));
+        assertEquals("Needs a key",
+                contentRegistry.definition("sample.conversation.opening.block_0001.line.0005.choice.0001.tooltip"));
         assertEquals(SceneStepType.CHOICE,
                 sceneRegistry.requireScene("sample.conversation.opening.block_0001").steps().get(4).type());
         assertEquals("[\"has_key\"]",
                 sceneRegistry.requireScene("sample.conversation.opening.block_0001").steps().get(4).choices().get(0).metadata().get("conditions"));
         assertEquals("left-path",
                 sceneRegistry.requireScene("sample.conversation.opening.block_0001").steps().get(4).choices().get(0).metadata().get("value"));
+        assertEquals("sample.conversation.opening.block_0001.line.0005.choice.0001.tooltip",
+                sceneRegistry.requireScene("sample.conversation.opening.block_0001").steps().get(4).choices().get(0).tooltipTextDefinition());
         assertEquals("1",
                 sceneRegistry.requireScene("sample.conversation.opening.block_0001").steps().get(4).choices().get(1).metadata().get("value"));
         assertEquals("sample.conversation.opening.block_0001",
@@ -212,7 +245,10 @@ final class ConversationDefinitionJsonTest {
 
         SceneDefinition conversation = module.requireConversationById("sample.conversation.opening.block_0001")
                 .withStep("line-0005", step -> step.withChoice("line-0005-choice-0001",
-                        choice -> choice.disabled("Needs key.").withIcon("icons/key")));
+                        choice -> choice.disabled("Needs key.")
+                                .withIcon("icons/key")
+                                .withText("Take the left path")
+                                .withTooltipText("Key required")));
         SceneChoice changedChoice = conversation.steps().get(4).choices().get(0);
 
         assertTrue(module.findConversationById("sample.conversation.opening.block_0001").isPresent());
@@ -220,6 +256,8 @@ final class ConversationDefinitionJsonTest {
         assertEquals("Needs key.", changedChoice.disabledReason());
         assertEquals("icons/key", changedChoice.metadata().get("icon"));
         assertEquals("icons/key", changedChoice.metadata().get("preview.icon"));
+        assertEquals("Take the left path", changedChoice.textDefinition());
+        assertEquals("Key required", changedChoice.tooltipTextDefinition());
         assertEquals("left-path", changedChoice.metadata().get("value"));
     }
 
@@ -240,7 +278,7 @@ final class ConversationDefinitionJsonTest {
                                 new ConversationLine("guide", "", LineType.WHISPER, List.of(
                                         new ConversationVariant("QUIET.", 1.0, List.of()))),
                                 new ConversationLine("guide", "", LineType.CHOICE, List.of(
-                                        new ConversationVariant("Left path", "left-path", 1.0, List.of("has_key")),
+                                        new ConversationVariant("Left path", "left-path", 1.0, List.of("has_key"), "Needs a key"),
                                         new ConversationVariant("Right path", 1.0, List.of())))))));
     }
 }

@@ -98,7 +98,7 @@ final class SceneExecutorTest {
     void presenterIncludesChoiceAvailabilityForUiAdapters() {
         SceneRegistry registry = new SceneRegistry();
         registry.register(SceneDefinition.of("choice", List.of(SceneStep.choice("choice", List.of(
-                SceneChoice.of("available", "choice.available", SceneTransition.complete()),
+                SceneChoice.of("available", "choice.available", SceneTransition.complete()).withTooltipText("choice.available.tooltip"),
                 new SceneChoice("blocked", "choice.blocked", List.of(context -> RequirementResult.blocked("No.")), List.of(), null, SceneTransition.complete(), Map.of()))))));
         SceneExecutor executor = new SceneExecutor(registry);
         ActionContext context = actionContext();
@@ -109,6 +109,7 @@ final class SceneExecutorTest {
         assertEquals(SceneExecutionStatus.WAITING_FOR_CHOICE, viewModel.status());
         assertEquals(2, viewModel.choices().size());
         assertTrue(viewModel.choices().get(0).available());
+        assertEquals("choice.available.tooltip", viewModel.choices().get(0).tooltipTextDefinition());
         assertFalse(viewModel.choices().get(1).available());
         assertEquals("No.", viewModel.choices().get(1).disabledReason());
     }
@@ -131,6 +132,7 @@ final class SceneExecutorTest {
                         new SceneChoice(
                                 "advance",
                                 "choice.advance",
+                                "choice.advance.tooltip",
                                 List.of(),
                                 List.of(),
                                 null,
@@ -151,6 +153,7 @@ final class SceneExecutorTest {
         assertEquals("happy", textViewModel.effectPreviews().get(0).value());
         assertEquals("DISPLAYING_TEXT", textViewModel.statusRows().get(0).value());
         assertEquals(List.of("advance"), choiceViewModel.selectedChoiceIds());
+        assertEquals("choice.advance.tooltip", choiceViewModel.choices().get(0).tooltipTextDefinition());
         assertTrue(choiceViewModel.statusRows().stream().anyMatch(row ->
                 row.label().equals("Selected choices") && row.value().equals("advance")));
     }

@@ -77,6 +77,7 @@ public final class JsonConversationContentModule implements StaticContentModule,
                     for (int variantIndex = 0; variantIndex < line.variants().size(); variantIndex++) {
                         ConversationVariant variant = line.variants().get(variantIndex);
                         definitions.put(choiceDefinitionId(conversation, index, variantIndex), variant.text());
+                        definitions.put(choiceTooltipDefinitionId(conversation, index, variantIndex), variant.tooltipText());
                     }
                 } else {
                     definitions.put(lineDefinitionId(conversation, index), line.type().formatText(line.variants().get(0).text()));
@@ -155,6 +156,7 @@ public final class JsonConversationContentModule implements StaticContentModule,
         return new SceneChoice(
                 choiceId(lineIndex, variantIndex),
                 choiceDefinitionId(conversation, lineIndex, variantIndex),
+                choiceTooltipDefinitionId(conversation, lineIndex, variantIndex),
                 List.of(),
                 List.of(),
                 null,
@@ -181,6 +183,10 @@ public final class JsonConversationContentModule implements StaticContentModule,
 
     static String choiceDefinitionId(ConversationBlock conversation, int lineIndex, int variantIndex) {
         return lineDefinitionId(conversation, lineIndex) + ".choice." + String.format("%04d", variantIndex + 1);
+    }
+
+    static String choiceTooltipDefinitionId(ConversationBlock conversation, int lineIndex, int variantIndex) {
+        return choiceDefinitionId(conversation, lineIndex, variantIndex) + ".tooltip";
     }
 
     private static String stepId(int lineIndex) {

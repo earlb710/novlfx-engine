@@ -166,6 +166,22 @@ final class ConversationEditorApplicationTest {
     }
 
     @Test
+    void variantDetailFieldsCanUpdateTooltipText() {
+        ConversationDefinition updated = ConversationEditorApplication.updateVariant(
+                ConversationEditorApplication.sampleConversation(),
+                0,
+                0,
+                0,
+                "Updated variant",
+                "Tooltip details",
+                "",
+                1.0,
+                List.of());
+
+        assertEquals("Tooltip details", updated.conversations().get(0).lines().get(0).variants().get(0).tooltipText());
+    }
+
+    @Test
     void conditionTextCombinesTypeOperandAndValue() {
         assertEquals("context=met_guide",
                 ConversationEditorApplication.conditionText("context", "=", " met_guide "));

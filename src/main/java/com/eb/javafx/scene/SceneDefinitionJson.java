@@ -95,6 +95,7 @@ public final class SceneDefinitionJson {
         return new SceneChoice(
                 JsonData.requiredString(object, "id", "scene choice id"),
                 JsonData.requiredString(object, "textDefinition", "scene choice textDefinition"),
+                JsonData.optionalString(object, "tooltipTextDefinition", "scene choice tooltipTextDefinition").orElse(""),
                 List.of(),
                 List.of(),
                 JsonData.optionalString(object, "disabledReason", "scene choice disabledReason").orElse(null),
@@ -171,6 +172,7 @@ public final class SceneDefinitionJson {
         return "{"
                 + "\"id\": " + JsonStrings.quote(choice.id())
                 + ", \"textDefinition\": " + JsonStrings.quote(choice.textDefinition())
+                + ", \"tooltipTextDefinition\": " + JsonStrings.quote(choice.tooltipTextDefinition())
                 + ", \"disabledReason\": " + JsonStrings.nullableQuote(choice.disabledReason())
                 + ", \"transition\": " + transitionJson(choice.transition())
                 + ", \"metadata\": " + stringMapJson(choice.metadata())

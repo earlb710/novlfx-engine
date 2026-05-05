@@ -98,9 +98,9 @@ public final class ConversationDefinition {
         }
     }
 
-    public record ConversationVariant(String text, String value, double weight, List<String> conditions) {
+    public record ConversationVariant(String text, String value, double weight, List<String> conditions, String tooltipText) {
         public ConversationVariant(String text, double weight, List<String> conditions) {
-            this(text, "", weight, conditions);
+            this(text, "", weight, conditions, "");
         }
 
         public ConversationVariant {
@@ -108,6 +108,11 @@ public final class ConversationDefinition {
             value = Validation.requireNonNull(value, "Conversation variant value cannot be null.");
             weight = Validation.requirePositive(weight, "Conversation variant weight must be positive.");
             conditions = List.copyOf(Validation.requireNonNull(conditions, "Conversation variant conditions are required."));
+            tooltipText = Validation.requireNonNull(tooltipText, "Conversation variant tooltip text cannot be null.");
+        }
+
+        public ConversationVariant(String text, String value, double weight, List<String> conditions) {
+            this(text, value, weight, conditions, "");
         }
     }
 }

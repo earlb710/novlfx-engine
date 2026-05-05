@@ -54,6 +54,7 @@ final class ScreenViewModelTest {
                         "continue",
                         "continue-value",
                         "choice.continue",
+                        "choice.continue.tooltip",
                         true,
                         null,
                         true,
@@ -72,6 +73,7 @@ final class ScreenViewModelTest {
         assertEquals(List.of("continue"), viewModel.selectedChoiceIds());
         assertEquals("advance", viewModel.choices().get(0).effectPreviews().get(0).value());
         assertEquals("continue-value", viewModel.choices().get(0).value());
+        assertEquals("choice.continue.tooltip", viewModel.choices().get(0).tooltipTextDefinition());
         assertEquals("advance", viewModel.choices().get(0).metadata().get("preview.effect"));
     }
 }

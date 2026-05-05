@@ -24,6 +24,7 @@ public final class ScenePresenter {
                             choice.id(),
                             choice.metadata().getOrDefault("value", choice.id()),
                             choice.textDefinition(),
+                            choice.tooltipTextDefinition(),
                             availability.isAllowed(),
                             availability.reason(),
                             selectedChoiceIds.contains(choice.id()),
