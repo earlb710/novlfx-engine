@@ -3,26 +3,32 @@ package com.eb.javafx.testscreen;
 import org.junit.jupiter.api.Test;
 
 import javax.swing.JCheckBox;
+import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import java.awt.Component;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 final class DefaultDisplayValuesApplicationTest {
     @Test
-    void displayResourcesExposeDefaultCssAndLayoutContract() {
-        assertEquals(List.of("Default CSS", "Layout Contract"),
+    void displayResourcesExposeEditableDefaultCssAndReadOnlyLayouts() {
+        assertEquals(List.of("Default CSS", "Layouts"),
                 DefaultDisplayValuesApplication.displayResources().stream()
                         .map(DefaultDisplayValuesApplication.DisplayResource::label)
+                        .toList());
+        assertEquals(List.of(true, false),
+                DefaultDisplayValuesApplication.displayResources().stream()
+                        .map(DefaultDisplayValuesApplication.DisplayResource::editable)
                         .toList());
     }
 
     @Test
     void defaultAppValuesTabsStartWithApplicationAndDisplayValues() {
-        assertEquals(List.of("Application Values", "Display Values", "Default CSS", "Layout Contract"),
+        assertEquals(List.of("Application Values", "Display Values", "Default CSS", "Layouts"),
                 DefaultDisplayValuesApplication.tabLabels());
     }
 
@@ -64,6 +70,19 @@ final class DefaultDisplayValuesApplicationTest {
                 .contains(".root"));
         assertTrue(DefaultDisplayValuesApplication.resourceContents("/com/eb/javafx/ui/layout-contract.json")
                 .contains("\"layoutTypes\""));
+    }
+
+    @Test
+    void displayResourceTextAreasFollowResourceEditability() {
+        JTextArea cssArea = DefaultDisplayValuesApplication.resourceTextArea(
+                DefaultDisplayValuesApplication.displayResources().get(0));
+        JTextArea layoutsArea = DefaultDisplayValuesApplication.resourceTextArea(
+                DefaultDisplayValuesApplication.displayResources().get(1));
+
+        assertTrue(cssArea.isEditable());
+        assertTrue(cssArea.getText().contains(".root"));
+        assertFalse(layoutsArea.isEditable());
+        assertTrue(layoutsArea.getText().contains("\"layoutTypes\""));
     }
 
     @Test

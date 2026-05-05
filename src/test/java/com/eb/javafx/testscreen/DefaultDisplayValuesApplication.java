@@ -34,8 +34,8 @@ import java.util.function.Consumer;
 public final class DefaultDisplayValuesApplication {
     static final String APPLICATION_CONFIG_RESOURCE = "/com/eb/javafx/bootstrap/config.json";
     private static final List<DisplayResource> DISPLAY_RESOURCES = List.of(
-            new DisplayResource("Default CSS", "/com/eb/javafx/ui/default.css"),
-            new DisplayResource("Layout Contract", "/com/eb/javafx/ui/layout-contract.json"));
+            new DisplayResource("Default CSS", "/com/eb/javafx/ui/default.css", true),
+            new DisplayResource("Layouts", "/com/eb/javafx/ui/layout-contract.json", false));
     private DisplayDefaults displayDefaults = DisplayDefaults.defaults();
     private List<ApplicationConfigField> editedApplicationConfigFields = applicationConfigFields();
     private final JLabel statusLabel = new JLabel("Editing default app values.");
@@ -74,7 +74,7 @@ public final class DefaultDisplayValuesApplication {
                 "<html>Edit default display values from <code>"
                         + DisplayDefaults.DEFAULT_RESOURCE
                         + "</code>. Changes apply only to this management screen.</html>"));
-        displayResources().forEach(resource -> tabs.addTab(resource.label(), new JScrollPane(textArea(resourceContents(resource.path())))));
+        displayResources().forEach(resource -> tabs.addTab(resource.label(), new JScrollPane(resourceTextArea(resource))));
         root.add(tabs, BorderLayout.CENTER);
         root.add(statusLabel, BorderLayout.SOUTH);
         return root;
@@ -184,9 +184,13 @@ public final class DefaultDisplayValuesApplication {
         return constraints;
     }
 
-    private static JTextArea textArea(String content) {
+    static JTextArea resourceTextArea(DisplayResource resource) {
+        return textArea(resourceContents(resource.path()), resource.editable());
+    }
+
+    private static JTextArea textArea(String content, boolean editable) {
         JTextArea textArea = new JTextArea(content);
-        textArea.setEditable(false);
+        textArea.setEditable(editable);
         textArea.setCaretPosition(0);
         return textArea;
     }
@@ -233,7 +237,7 @@ public final class DefaultDisplayValuesApplication {
         }
     }
 
-    record DisplayResource(String label, String path) {
+    record DisplayResource(String label, String path, boolean editable) {
         DisplayResource {
             label = Validation.requireNonBlank(label, "Display resource label is required.");
             path = Validation.requireNonBlank(path, "Display resource path is required.");
