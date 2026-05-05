@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * Data-only authored conversation document using the LR2Alt exported JSON shape.
+ * Data-only authored conversation document using the AltLife exported JSON shape.
  *
  * <p>The schema mirrors authored conversation files with a top-level {@code name}, {@code language}, and ordered
  * {@code conversations}; each conversation has typed dialogue {@code lines}, and each line has a speaker plus one

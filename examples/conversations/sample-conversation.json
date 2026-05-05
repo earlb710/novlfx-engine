@@ -4,7 +4,7 @@
   "conversations": [
     {
       "id": "sample.conversation.opening.block_0001",
-      "description": "Generic example conversation using the LR2Alt exported conversation JSON schema.",
+      "description": "Generic example conversation using the AltLife exported conversation JSON schema.",
       "lines": [
         {
           "speaker": "narrator",

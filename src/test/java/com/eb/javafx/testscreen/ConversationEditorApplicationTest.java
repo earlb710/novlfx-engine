@@ -63,7 +63,7 @@ final class ConversationEditorApplicationTest {
     }
 
     @Test
-    void navigationTreeShowsLr2AltConversationDocumentBlocksLinesAndVariants() {
+    void navigationTreeShowsAltLifeConversationDocumentBlocksLinesAndVariants() {
         ConversationDefinition conversation = ConversationEditorApplication.sampleConversation();
 
         DefaultMutableTreeNode root = ConversationEditorApplication.buildNavigationTree(conversation);
@@ -78,7 +78,7 @@ final class ConversationEditorApplicationTest {
     }
 
     @Test
-    void sampleConversationUsesLr2AltDocumentSchema() {
+    void sampleConversationUsesAltLifeDocumentSchema() {
         ConversationDefinition conversation = ConversationEditorApplication.sampleConversation();
         ConversationBlock block = conversation.conversations().get(0);
 

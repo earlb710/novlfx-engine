@@ -24,7 +24,7 @@ public final class ManagementApplication {
                     ScreenDesignerApplication::showFromManagement),
             new ManagementAction(
                     "Conversation Editor",
-                    "Open the LR2Alt-compatible conversation JSON editor.",
+                    "Open the AltLife-compatible conversation JSON editor.",
                     () -> ConversationEditorApplication.main(new String[0])),
             new ManagementAction(
                     "Manage Code Tables",

@@ -19,7 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 final class ConversationDefinitionJsonTest {
     @Test
-    void roundTripsLr2AltConversationDocumentShape() {
+    void roundTripsAltLifeConversationDocumentShape() {
         ConversationDefinition conversation = sampleConversation();
 
         ConversationDefinition parsed = ConversationDefinitionJson.fromJson(
@@ -50,7 +50,7 @@ final class ConversationDefinitionJsonTest {
     }
 
     @Test
-    void readsLr2AltExportedConversationJsonShape() {
+    void readsAltLifeExportedConversationJsonShape() {
         String json = """
                 {
                   "name": "Save Warning",
@@ -78,7 +78,7 @@ final class ConversationDefinitionJsonTest {
                 }
                 """;
 
-        ConversationDefinition parsed = ConversationDefinitionJson.fromJson(json, "lr2alt sample");
+        ConversationDefinition parsed = ConversationDefinitionJson.fromJson(json, "altlife sample");
 
         assertEquals("game.bugfix_additions.compatibility_fix.check_save_version.block_0001",
                 parsed.conversations().get(0).id());
@@ -112,7 +112,7 @@ final class ConversationDefinitionJsonTest {
     }
 
     @Test
-    void allowsEmptyVariantTextLikeLr2AltExports() {
+    void allowsEmptyVariantTextLikeAltLifeExports() {
         String json = """
                 {
                   "name": "Empty Variant",
@@ -189,7 +189,7 @@ final class ConversationDefinitionJsonTest {
     }
 
     @Test
-    void rejectsMissingLr2AltConversationFields() {
+    void rejectsMissingAltLifeConversationFields() {
         String json = """
                 {
                   "name": "Bad Conversation",
@@ -202,7 +202,7 @@ final class ConversationDefinitionJsonTest {
     }
 
     @Test
-    void jsonConversationContentModuleProjectsDefinitionsAndScenesFromLr2AltShape() {
+    void jsonConversationContentModuleProjectsDefinitionsAndScenesFromAltLifeShape() {
         JsonConversationContentModule module = new JsonConversationContentModule(sampleConversation());
         ContentRegistry contentRegistry = new ContentRegistry();
         ImageDisplayRegistry imageDisplayRegistry = new ImageDisplayRegistry();

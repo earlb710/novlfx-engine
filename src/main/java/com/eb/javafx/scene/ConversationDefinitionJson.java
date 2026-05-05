@@ -15,7 +15,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 
-/** JSON import/export for LR2Alt-compatible conversation documents. */
+/** JSON import/export for AltLife-compatible conversation documents. */
 public final class ConversationDefinitionJson {
     private ConversationDefinitionJson() {
     }

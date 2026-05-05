@@ -86,7 +86,7 @@ The screen designer starts in `examples/screen-designs`, which now includes seve
 ./gradlew --no-daemon runConversationEditor
 ```
 
-The conversation editor starts in `examples/conversations` and edits LR2Alt-compatible exported conversation JSON with `schemaVersion`, `language`, `conversations`, `lines`, and `variants`.
+The conversation editor starts in `examples/conversations` and edits AltLife-compatible exported conversation JSON with `schemaVersion`, `language`, `conversations`, `lines`, and `variants`.
 
 ## Android Studio
 
