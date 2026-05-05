@@ -98,7 +98,7 @@ final class SceneExecutorTest {
     void presenterIncludesChoiceAvailabilityForUiAdapters() {
         SceneRegistry registry = new SceneRegistry();
         registry.register(SceneDefinition.of("choice", List.of(SceneStep.choice("choice", List.of(
-                SceneChoice.of("available", "choice.available", SceneTransition.complete()),
+                SceneChoice.of("available", "choice.available", SceneTransition.complete()).withTooltipText("choice.available.tooltip"),
                 new SceneChoice("blocked", "choice.blocked", List.of(context -> RequirementResult.blocked("No.")), List.of(), null, SceneTransition.complete(), Map.of()))))));
         SceneExecutor executor = new SceneExecutor(registry);
         ActionContext context = actionContext();
@@ -109,6 +109,7 @@ final class SceneExecutorTest {
         assertEquals(SceneExecutionStatus.WAITING_FOR_CHOICE, viewModel.status());
         assertEquals(2, viewModel.choices().size());
         assertTrue(viewModel.choices().get(0).available());
+        assertEquals("choice.available.tooltip", viewModel.choices().get(0).tooltipTextDefinition());
         assertFalse(viewModel.choices().get(1).available());
         assertEquals("No.", viewModel.choices().get(1).disabledReason());
     }
@@ -131,6 +132,7 @@ final class SceneExecutorTest {
                         new SceneChoice(
                                 "advance",
                                 "choice.advance",
+                                "choice.advance.tooltip",
                                 List.of(),
                                 List.of(),
                                 null,
@@ -141,6 +143,7 @@ final class SceneExecutorTest {
 
         SceneViewModel textViewModel = new ScenePresenter().present(context, executor.advanceUntilPause(context, executor.start("choice")));
         SceneExecutionResult waiting = executor.continueFromText(context, executor.start("choice"));
+        SceneViewModel waitingChoiceViewModel = new ScenePresenter().present(context, waiting);
         SceneViewModel choiceViewModel = new ScenePresenter().present(
                 context,
                 executor.selectChoice(context, waiting.state(), "advance"));
@@ -150,9 +153,31 @@ final class SceneExecutorTest {
         assertEquals("dialogue.ava", textViewModel.dialogueRows().get(0).textDefinition());
         assertEquals("happy", textViewModel.effectPreviews().get(0).value());
         assertEquals("DISPLAYING_TEXT", textViewModel.statusRows().get(0).value());
+        assertEquals("choice.advance.tooltip", waitingChoiceViewModel.choices().get(0).tooltipTextDefinition());
         assertEquals(List.of("advance"), choiceViewModel.selectedChoiceIds());
         assertTrue(choiceViewModel.statusRows().stream().anyMatch(row ->
                 row.label().equals("Selected choices") && row.value().equals("advance")));
+    }
+
+    @Test
+    void conversationFlowHandlerDisplaysConversationObjectAndReturnsInput() {
+        SceneDefinition conversation = SceneDefinition.of("conversation.lookup", List.of(SceneStep.choice("choice", List.of(
+                new SceneChoice(
+                        "continue",
+                        "conversation.continue",
+                        List.of(),
+                        List.of(),
+                        null,
+                        SceneTransition.complete(),
+                        Map.of("value", "continue-value"))))));
+        ConversationFlowHandler handler = new ConversationFlowHandler(actionContext(), viewModel -> {
+            assertEquals("conversation.lookup", viewModel.sceneId());
+            assertEquals(SceneExecutionStatus.WAITING_FOR_CHOICE, viewModel.status());
+            assertEquals("continue-value", viewModel.choices().get(0).value());
+            return viewModel.choices().get(0).value();
+        });
+
+        assertEquals("continue-value", handler.display(conversation));
     }
 
     private ActionContext actionContext() {

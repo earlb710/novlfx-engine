@@ -103,7 +103,8 @@ public final class ConversationDefinitionJson {
                 requiredStringAllowingEmpty(object, "text", "conversation variant text"),
                 stringAllowingEmpty(object, "value", "conversation variant value", ""),
                 JsonData.optionalDouble(object, "weight", 1.0, "conversation variant weight"),
-                JsonData.optionalStringList(object, "conditions", "conversation variant conditions"));
+                JsonData.optionalStringList(object, "conditions", "conversation variant conditions"),
+                stringAllowingEmpty(object, "tooltipText", "conversation variant tooltipText", ""));
     }
 
     private static String requiredStringAllowingEmpty(Map<String, Object> object, String key, String description) {
@@ -176,6 +177,7 @@ public final class ConversationDefinitionJson {
         json.append("{\"text\": ").append(JsonStrings.quote(variant.text()))
                 .append(", \"value\": ").append(JsonStrings.quote(variant.value()))
                 .append(", \"weight\": ").append(variant.weight())
+                .append(", \"tooltipText\": ").append(JsonStrings.quote(variant.tooltipText()))
                 .append(", \"conditions\": [");
         for (int index = 0; index < variant.conditions().size(); index++) {
             if (index > 0) {

@@ -14,6 +14,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /** Registers an LR2Alt-compatible JSON conversation document as content definitions and scene definitions. */
@@ -52,6 +53,20 @@ public final class JsonConversationContentModule implements StaticContentModule,
         return document;
     }
 
+    public Optional<SceneDefinition> findConversationById(String id) {
+        String checkedId = Validation.requireNonBlank(id, "Conversation id is required.");
+        return document.conversations().stream()
+                .filter(conversation -> conversation.id().equals(checkedId))
+                .findFirst()
+                .map(conversation -> SceneDefinition.of(conversation.id(), stepsFor(conversation)));
+    }
+
+    public SceneDefinition requireConversationById(String id) {
+        String checkedId = Validation.requireNonBlank(id, "Conversation id is required.");
+        return findConversationById(checkedId)
+                .orElseThrow(() -> new IllegalArgumentException("Unknown conversation id: " + checkedId));
+    }
+
     Map<String, String> definitions() {
         Map<String, String> definitions = new LinkedHashMap<>();
         document.conversations().forEach(conversation -> {
@@ -62,6 +77,7 @@ public final class JsonConversationContentModule implements StaticContentModule,
                     for (int variantIndex = 0; variantIndex < line.variants().size(); variantIndex++) {
                         ConversationVariant variant = line.variants().get(variantIndex);
                         definitions.put(choiceDefinitionId(conversation, index, variantIndex), variant.text());
+                        definitions.put(choiceTooltipDefinitionId(conversation, index, variantIndex), variant.tooltipText());
                     }
                 } else {
                     definitions.put(lineDefinitionId(conversation, index), line.type().formatText(line.variants().get(0).text()));
@@ -140,6 +156,7 @@ public final class JsonConversationContentModule implements StaticContentModule,
         return new SceneChoice(
                 choiceId(lineIndex, variantIndex),
                 choiceDefinitionId(conversation, lineIndex, variantIndex),
+                choiceTooltipDefinitionId(conversation, lineIndex, variantIndex),
                 List.of(),
                 List.of(),
                 null,
@@ -166,6 +183,10 @@ public final class JsonConversationContentModule implements StaticContentModule,
 
     static String choiceDefinitionId(ConversationBlock conversation, int lineIndex, int variantIndex) {
         return lineDefinitionId(conversation, lineIndex) + ".choice." + String.format("%04d", variantIndex + 1);
+    }
+
+    static String choiceTooltipDefinitionId(ConversationBlock conversation, int lineIndex, int variantIndex) {
+        return choiceDefinitionId(conversation, lineIndex, variantIndex) + ".tooltip";
     }
 
     private static String stepId(int lineIndex) {

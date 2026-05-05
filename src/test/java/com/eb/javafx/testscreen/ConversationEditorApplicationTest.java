@@ -150,7 +150,7 @@ final class ConversationEditorApplicationTest {
 
     @Test
     void variantDetailFieldsCanUpdateTextWeightAndConditions() {
-        ConversationDefinition updated = ConversationEditorApplication.updateVariant(
+        ConversationDefinition updated = ConversationEditorApplication.updateVariantKeepingTooltipAndValue(
                 ConversationEditorApplication.sampleConversation(),
                 0,
                 0,
@@ -163,6 +163,22 @@ final class ConversationEditorApplicationTest {
         assertEquals(2.5, updated.conversations().get(0).lines().get(0).variants().get(0).weight());
         assertEquals(List.of("context=met_guide", "context=has_key"),
                 updated.conversations().get(0).lines().get(0).variants().get(0).conditions());
+    }
+
+    @Test
+    void variantDetailFieldsCanUpdateTooltipText() {
+        ConversationDefinition updated = ConversationEditorApplication.updateVariant(
+                ConversationEditorApplication.sampleConversation(),
+                0,
+                0,
+                0,
+                "Updated variant",
+                "Tooltip details",
+                "",
+                1.0,
+                List.of());
+
+        assertEquals("Tooltip details", updated.conversations().get(0).lines().get(0).variants().get(0).tooltipText());
     }
 
     @Test
@@ -186,7 +202,7 @@ final class ConversationEditorApplicationTest {
 
     @Test
     void conditionValueChoicesIncludeContextAndTimeOfDayValues() {
-        ConversationDefinition conversation = ConversationEditorApplication.updateVariant(
+        ConversationDefinition conversation = ConversationEditorApplication.updateVariantKeepingTooltipAndValue(
                 ConversationEditorApplication.sampleConversation(),
                 0,
                 0,

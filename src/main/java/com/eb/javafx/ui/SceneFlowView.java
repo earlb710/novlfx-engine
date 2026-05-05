@@ -11,6 +11,7 @@ import javafx.geometry.Insets;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.Tooltip;
 import javafx.scene.layout.VBox;
 
 import java.util.Objects;
@@ -120,6 +121,9 @@ public final class SceneFlowView {
             button.setDisable(!choice.available());
             button.setMaxWidth(Double.MAX_VALUE);
             button.setOnAction(event -> choiceHandler.accept(choice.value()));
+            if (!choice.tooltipTextDefinition().isBlank()) {
+                button.setTooltip(new Tooltip(choice.tooltipTextDefinition()));
+            }
             panel.getChildren().add(button);
             if (choice.selected()) {
                 Label selected = new Label("Selected in history");

@@ -8,6 +8,7 @@ import com.eb.javafx.gamesupport.RequirementResult;
 import com.eb.javafx.util.ImmutableCollections;
 import com.eb.javafx.util.Validation;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -21,6 +22,7 @@ import java.util.Objects;
 public final class SceneChoice {
     private final String id;
     private final String textDefinition;
+    private final String tooltipTextDefinition;
     private final List<ActionRequirement> requirements;
     private final List<ActionEffect> effects;
     private final String disabledReason;
@@ -30,6 +32,7 @@ public final class SceneChoice {
     public SceneChoice(
             String id,
             String textDefinition,
+            String tooltipTextDefinition,
             List<ActionRequirement> requirements,
             List<ActionEffect> effects,
             String disabledReason,
@@ -37,6 +40,7 @@ public final class SceneChoice {
             Map<String, String> metadata) {
         this.id = Validation.requireNonBlank(id, "Scene choice id is required.");
         this.textDefinition = Validation.requireNonBlank(textDefinition, "Scene choice text definition is required.");
+        this.tooltipTextDefinition = Validation.requireNonNull(tooltipTextDefinition, "Scene choice tooltip text definition is required.");
         this.requirements = List.copyOf(Objects.requireNonNull(requirements, "requirements"));
         this.effects = List.copyOf(Objects.requireNonNull(effects, "effects"));
         this.disabledReason = disabledReason;
@@ -44,8 +48,19 @@ public final class SceneChoice {
         this.metadata = ImmutableCollections.copyMap(metadata);
     }
 
+    public SceneChoice(
+            String id,
+            String textDefinition,
+            List<ActionRequirement> requirements,
+            List<ActionEffect> effects,
+            String disabledReason,
+            SceneTransition transition,
+            Map<String, String> metadata) {
+        this(id, textDefinition, "", requirements, effects, disabledReason, transition, metadata);
+    }
+
     public static SceneChoice of(String id, String textDefinition, SceneTransition transition) {
-        return new SceneChoice(id, textDefinition, List.of(), List.of(), null, transition, Map.of());
+        return new SceneChoice(id, textDefinition, "", List.of(), List.of(), null, transition, Map.of());
     }
 
     public String id() {
@@ -54,6 +69,10 @@ public final class SceneChoice {
 
     public String textDefinition() {
         return textDefinition;
+    }
+
+    public String tooltipTextDefinition() {
+        return tooltipTextDefinition;
     }
 
     public List<ActionRequirement> requirements() {
@@ -74,6 +93,50 @@ public final class SceneChoice {
 
     public Map<String, String> metadata() {
         return metadata;
+    }
+
+    public SceneChoice withTextDefinition(String textDefinition) {
+        return new SceneChoice(id, textDefinition, tooltipTextDefinition, requirements, effects, disabledReason, transition, metadata);
+    }
+
+    public SceneChoice withText(String textDefinition) {
+        return withTextDefinition(textDefinition);
+    }
+
+    public SceneChoice withTooltipTextDefinition(String tooltipTextDefinition) {
+        return new SceneChoice(id, textDefinition, tooltipTextDefinition, requirements, effects, disabledReason, transition, metadata);
+    }
+
+    public SceneChoice withTooltipText(String tooltipTextDefinition) {
+        return withTooltipTextDefinition(tooltipTextDefinition);
+    }
+
+    public SceneChoice withRequirements(List<ActionRequirement> requirements, String disabledReason) {
+        return new SceneChoice(id, textDefinition, tooltipTextDefinition, requirements, effects, disabledReason, transition, metadata);
+    }
+
+    public SceneChoice disabled(String reason) {
+        String checkedReason = Validation.requireNonBlank(reason, "Scene choice disabled reason is required.");
+        return withRequirements(List.of(context -> RequirementResult.blocked(checkedReason)), checkedReason);
+    }
+
+    public SceneChoice withMetadata(Map<String, String> metadata) {
+        return new SceneChoice(id, textDefinition, tooltipTextDefinition, requirements, effects, disabledReason, transition, metadata);
+    }
+
+    public SceneChoice withMetadataValue(String key, String value) {
+        String checkedKey = Validation.requireNonBlank(key, "Scene choice metadata key is required.");
+        Map<String, String> updatedMetadata = new LinkedHashMap<>(metadata);
+        updatedMetadata.put(checkedKey, Validation.requireNonNull(value, "Scene choice metadata value is required."));
+        return withMetadata(updatedMetadata);
+    }
+
+    public SceneChoice withIcon(String iconId) {
+        String checkedIconId = Validation.requireNonBlank(iconId, "Scene choice icon id is required.");
+        Map<String, String> updatedMetadata = new LinkedHashMap<>(metadata);
+        updatedMetadata.put("icon", checkedIconId);
+        updatedMetadata.put("preview.icon", checkedIconId);
+        return withMetadata(updatedMetadata);
     }
 
     public RequirementResult availability(ActionContext context) {

@@ -82,6 +82,7 @@ public final class ConversationEditorApplication {
     private final JComboBox<LineType> lineTypeField = new JComboBox<>(LineType.values());
     private final JTextField variantValueField = new JTextField();
     private final JTextArea variantTextArea = new JTextArea();
+    private final JTextArea variantTooltipTextArea = new JTextArea();
     private final JTextField variantWeightField = new JTextField();
     private final List<ConditionFieldRow> variantConditionRows = Stream.generate(ConditionFieldRow::create)
             .limit(MAX_VISIBLE_CONDITION_ROWS)
@@ -196,10 +197,16 @@ public final class ConversationEditorApplication {
         panel.add(detailFieldsPanel("Variant Detail",
                 formRow("Value", variantValueField),
                 formRow("Weight", variantWeightField)), BorderLayout.NORTH);
+        JPanel textPanels = new JPanel(new GridLayout(2, 1, 0, 6));
         JPanel textPanel = new JPanel(new BorderLayout(4, 4));
         textPanel.setBorder(BorderFactory.createTitledBorder("Text"));
         textPanel.add(new JScrollPane(variantTextArea), BorderLayout.CENTER);
-        panel.add(textPanel, BorderLayout.CENTER);
+        JPanel tooltipTextPanel = new JPanel(new BorderLayout(4, 4));
+        tooltipTextPanel.setBorder(BorderFactory.createTitledBorder("Tooltip Text"));
+        tooltipTextPanel.add(new JScrollPane(variantTooltipTextArea), BorderLayout.CENTER);
+        textPanels.add(textPanel);
+        textPanels.add(tooltipTextPanel);
+        panel.add(textPanels, BorderLayout.CENTER);
         JPanel conditionsPanel = new JPanel(new BorderLayout(4, 4));
         conditionsPanel.setBorder(BorderFactory.createTitledBorder("Conditions"));
         conditionsPanel.add(conditionFieldsPanel(), BorderLayout.NORTH);
@@ -306,6 +313,7 @@ public final class ConversationEditorApplication {
         installDirtyStateListener(conversationIdField);
         installDirtyStateListener(conversationDescriptionField);
         installDirtyStateListener(variantTextArea);
+        installDirtyStateListener(variantTooltipTextArea);
         installDirtyStateListener(variantValueField);
         installDirtyStateListener(variantWeightField);
         variantConditionRows.forEach(row -> {
@@ -556,11 +564,13 @@ public final class ConversationEditorApplication {
         if (conversationIndex >= 0 && lineIndex >= 0 && variantIndex >= 0) {
             ConversationVariant variant = conversation.conversations().get(conversationIndex).lines().get(lineIndex).variants().get(variantIndex);
             variantTextArea.setText(variant.text());
+            variantTooltipTextArea.setText(variant.tooltipText());
             variantValueField.setText(variant.value());
             variantWeightField.setText(Double.toString(variant.weight()));
             setConditionFields(variant.conditions());
         } else {
             variantTextArea.setText("");
+            variantTooltipTextArea.setText("");
             variantValueField.setText("");
             variantWeightField.setText("");
             setConditionFields(List.of());
@@ -628,6 +638,7 @@ public final class ConversationEditorApplication {
                 lineIndex,
                 variantIndex,
                 variantTextArea.getText(),
+                variantTooltipTextArea.getText(),
                 variantValueField.getText(),
                 variantWeight(),
                 conditionTexts(variantConditionValues()));
@@ -849,6 +860,7 @@ public final class ConversationEditorApplication {
             int lineIndex,
             int variantIndex,
             String text,
+            String tooltipText,
             String value,
             double weight,
             List<String> conditions) {
@@ -857,7 +869,7 @@ public final class ConversationEditorApplication {
         List<ConversationLine> lines = new ArrayList<>(block.lines());
         ConversationLine line = lines.get(lineIndex);
         List<ConversationVariant> variants = new ArrayList<>(line.variants());
-        variants.set(variantIndex, new ConversationVariant(text, value, weight, conditions));
+        variants.set(variantIndex, new ConversationVariant(text, value, weight, conditions, tooltipText));
         lines.set(lineIndex, new ConversationLine(line.speaker(), line.listener(), line.type(), variants));
         blocks.set(conversationIndex, new ConversationBlock(block.id(), block.description(), lines));
         return new ConversationDefinition(document.name(), document.language(), blocks);
@@ -869,10 +881,23 @@ public final class ConversationEditorApplication {
             int lineIndex,
             int variantIndex,
             String text,
+            String value,
             double weight,
             List<String> conditions) {
         ConversationVariant variant = document.conversations().get(conversationIndex).lines().get(lineIndex).variants().get(variantIndex);
-        return updateVariant(document, conversationIndex, lineIndex, variantIndex, text, variant.value(), weight, conditions);
+        return updateVariant(document, conversationIndex, lineIndex, variantIndex, text, variant.tooltipText(), value, weight, conditions);
+    }
+
+    static ConversationDefinition updateVariantKeepingTooltipAndValue(
+            ConversationDefinition document,
+            int conversationIndex,
+            int lineIndex,
+            int variantIndex,
+            String text,
+            double weight,
+            List<String> conditions) {
+        ConversationVariant variant = document.conversations().get(conversationIndex).lines().get(lineIndex).variants().get(variantIndex);
+        return updateVariant(document, conversationIndex, lineIndex, variantIndex, text, variant.tooltipText(), variant.value(), weight, conditions);
     }
 
     static ConversationDefinition addLine(ConversationDefinition document, int conversationIndex) {
@@ -1009,6 +1034,7 @@ public final class ConversationEditorApplication {
                     selectedLineIndex(selectedData),
                     selectedVariantIndex(selectedData),
                     variantTextArea.getText(),
+                    variantTooltipTextArea.getText(),
                     variantValueField.getText(),
                     variantWeight(),
                     conditionTexts(variantConditionValues()));
@@ -1025,6 +1051,7 @@ public final class ConversationEditorApplication {
                 selectedComboBoxValue(lineListenerField),
                 selectedLineType().jsonValue(),
                 variantTextArea.getText(),
+                variantTooltipTextArea.getText(),
                 variantValueField.getText(),
                 variantWeightField.getText(),
                 variantConditionFieldState());

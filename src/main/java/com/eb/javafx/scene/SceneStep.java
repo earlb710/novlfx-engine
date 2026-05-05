@@ -5,8 +5,10 @@ import com.eb.javafx.util.ImmutableCollections;
 import com.eb.javafx.util.Validation;
 
 import java.util.List;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.UnaryOperator;
 
 /**
  * One typed command in a structured reusable scene definition.
@@ -121,6 +123,33 @@ public final class SceneStep {
 
     public Map<String, String> metadata() {
         return metadata;
+    }
+
+    public SceneStep withChoices(List<SceneChoice> choices) {
+        return new SceneStep(id, type, speakerId, textDefinition, displayReference, choices, effects, transition, metadata);
+    }
+
+    public SceneStep withChoice(String choiceId, UnaryOperator<SceneChoice> mutator) {
+        String checkedChoiceId = Validation.requireNonBlank(choiceId, "Scene choice id is required.");
+        Objects.requireNonNull(mutator, "mutator");
+        return withChoices(choices.stream()
+                .map(choice -> choice.id().equals(checkedChoiceId) ? mutator.apply(choice) : choice)
+                .toList());
+    }
+
+    public SceneStep withDisplayReference(String displayReference) {
+        return new SceneStep(id, type, speakerId, textDefinition, displayReference, choices, effects, transition, metadata);
+    }
+
+    public SceneStep withMetadata(Map<String, String> metadata) {
+        return new SceneStep(id, type, speakerId, textDefinition, displayReference, choices, effects, transition, metadata);
+    }
+
+    public SceneStep withMetadataValue(String key, String value) {
+        String checkedKey = Validation.requireNonBlank(key, "Scene metadata key is required.");
+        Map<String, String> updatedMetadata = new LinkedHashMap<>(metadata);
+        updatedMetadata.put(checkedKey, Validation.requireNonNull(value, "Scene metadata value is required."));
+        return withMetadata(updatedMetadata);
     }
 
     private void validateShape() {

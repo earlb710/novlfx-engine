@@ -35,6 +35,7 @@ final class SceneDefinitionJsonTest {
         assertEquals("one", scene.metadata().get("chapter"));
         assertEquals(SceneStepType.DIALOGUE, scene.steps().get(0).type());
         assertEquals("continue", scene.steps().get(1).choices().get(0).id());
+        assertEquals("", scene.steps().get(1).choices().get(0).tooltipTextDefinition());
         assertEquals(SceneTransitionType.COMPLETE, scene.steps().get(1).choices().get(0).transition().type());
     }
 
@@ -49,6 +50,18 @@ final class SceneDefinitionJsonTest {
         assertEquals("intro", roundTrip.get(0).id());
         assertEquals("plain", roundTrip.get(0).steps().get(0).metadata().get("tone"));
         assertEquals(SceneTransitionType.COMPLETE, roundTrip.get(0).steps().get(0).transition().type());
+    }
+
+    @Test
+    void exportsAndImportsChoiceTooltipDefinitions() {
+        SceneDefinition scene = SceneDefinition.of("intro", List.of(
+                SceneStep.choice("choice", List.of(
+                        SceneChoice.of("continue", "intro.continue", SceneTransition.complete())
+                                .withTooltipTextDefinition("intro.continue.tooltip")))));
+
+        List<SceneDefinition> roundTrip = SceneDefinitionJson.fromJson(SceneDefinitionJson.toJson(scene), "round-trip");
+
+        assertEquals("intro.continue.tooltip", roundTrip.get(0).steps().get(0).choices().get(0).tooltipTextDefinition());
     }
 
     @Test
