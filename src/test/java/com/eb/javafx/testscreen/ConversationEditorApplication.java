@@ -9,6 +9,7 @@ import com.eb.javafx.util.Validation;
 
 import javax.swing.JButton;
 import javax.swing.BorderFactory;
+import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
@@ -25,6 +26,9 @@ import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.JTree;
 import javax.swing.SwingUtilities;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
+import javax.swing.text.JTextComponent;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreePath;
@@ -50,15 +54,17 @@ public final class ConversationEditorApplication {
     private final JTextArea jsonArea = new JTextArea();
     private final CardLayout detailCards = new CardLayout();
     private final JPanel detailCardPanel = new JPanel(detailCards);
+    private final JButton saveButton = new JButton("Save");
+    private final JButton resetButton = new JButton("Reset");
     private final JTextField documentNameField = new JTextField();
     private final JTextField languageField = new JTextField();
     private final JTextField conversationIdField = new JTextField();
     private final JTextField conversationDescriptionField = new JTextField();
-    private final JTextField lineSpeakerField = new JTextField();
-    private final JTextField lineListenerField = new JTextField();
+    private final JComboBox<String> lineSpeakerField = new JComboBox<>();
+    private final JComboBox<String> lineListenerField = new JComboBox<>();
     private final JTextArea variantTextArea = new JTextArea();
     private final JTextField variantWeightField = new JTextField();
-    private final JTextArea variantConditionsArea = new JTextArea();
+    private final List<JTextField> variantConditionFields = List.of(new JTextField(), new JTextField(), new JTextField());
     private final JLabel statusLabel = new JLabel();
     private Path currentPath;
     private String savedJsonSnapshot = ConversationDefinitionJson.toJson(conversation);
@@ -69,6 +75,7 @@ public final class ConversationEditorApplication {
     }
 
     private void show() {
+        configureEditors();
         JFrame frame = new JFrame("NovlFX Conversation Editor");
         frame.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
         frame.addWindowListener(new WindowAdapter() {
@@ -87,10 +94,9 @@ public final class ConversationEditorApplication {
 
     private JPanel content() {
         JPanel root = new JPanel(new BorderLayout(8, 8));
-        root.add(toolbar(), BorderLayout.NORTH);
         objectTree.addTreeSelectionListener(event -> refreshEditorFieldsFromSelection());
         detailTabs.addTab("Detail", detailPanel());
-        detailTabs.addTab("JSON", new JScrollPane(jsonArea));
+        detailTabs.addTab("JSON", jsonPanel());
         JSplitPane split = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, conversationTabs(), detailTabs);
         split.setDividerLocation(360);
         root.add(split, BorderLayout.CENTER);
@@ -107,6 +113,7 @@ public final class ConversationEditorApplication {
     private JPanel conversationsPanel() {
         JPanel panel = new JPanel(new BorderLayout(6, 6));
         panel.add(new JScrollPane(objectTree), BorderLayout.CENTER);
+        panel.add(treeButtonsPanel(), BorderLayout.SOUTH);
         return panel;
     }
 
@@ -157,9 +164,50 @@ public final class ConversationEditorApplication {
         textPanel.add(new JScrollPane(variantTextArea), BorderLayout.CENTER);
         panel.add(textPanel, BorderLayout.CENTER);
         JPanel conditionsPanel = new JPanel(new BorderLayout(4, 4));
-        conditionsPanel.setBorder(BorderFactory.createTitledBorder("Conditions (one per line)"));
-        conditionsPanel.add(new JScrollPane(variantConditionsArea), BorderLayout.CENTER);
+        conditionsPanel.setBorder(BorderFactory.createTitledBorder("Conditions"));
+        conditionsPanel.add(conditionFieldsPanel(), BorderLayout.NORTH);
         panel.add(conditionsPanel, BorderLayout.SOUTH);
+        return panel;
+    }
+
+    private JPanel jsonPanel() {
+        JPanel panel = new JPanel(new BorderLayout(6, 6));
+        panel.add(new JScrollPane(jsonArea), BorderLayout.CENTER);
+        JPanel actions = new JPanel(new GridLayout(1, 3, 6, 0));
+        JButton applyJson = new JButton("Apply JSON");
+        JButton format = new JButton("Format JSON");
+        JButton validate = new JButton("Validate");
+        applyJson.addActionListener(event -> runSafely("Apply JSON", this::applyJson));
+        format.addActionListener(event -> runSafely("Format JSON", this::formatJson));
+        validate.addActionListener(event -> runSafely("Validate", this::showValidation));
+        actions.add(applyJson);
+        actions.add(format);
+        actions.add(validate);
+        panel.add(actions, BorderLayout.SOUTH);
+        return panel;
+    }
+
+    private JPanel treeButtonsPanel() {
+        JPanel panel = new JPanel(new GridLayout(1, 2, 6, 0));
+        saveButton.addActionListener(event -> runSafely("Save", this::saveJson));
+        resetButton.addActionListener(event -> runSafely("Reset", this::resetChanges));
+        panel.add(saveButton);
+        panel.add(resetButton);
+        return panel;
+    }
+
+    private JPanel conditionFieldsPanel() {
+        JPanel panel = new JPanel(new GridBagLayout());
+        GridBagConstraints constraints = new GridBagConstraints();
+        constraints.gridx = 0;
+        constraints.gridy = 0;
+        constraints.weightx = 1.0;
+        constraints.fill = GridBagConstraints.HORIZONTAL;
+        constraints.insets = new Insets(2, 2, 2, 2);
+        for (JTextField field : variantConditionFields) {
+            panel.add(field, constraints);
+            constraints.gridy++;
+        }
         return panel;
     }
 
@@ -190,6 +238,41 @@ public final class ConversationEditorApplication {
         return new FormRow(label, field);
     }
 
+    private void configureEditors() {
+        lineSpeakerField.setEditable(true);
+        lineListenerField.setEditable(true);
+        installDirtyStateListener(jsonArea);
+        installDirtyStateListener(documentNameField);
+        installDirtyStateListener(languageField);
+        installDirtyStateListener(conversationIdField);
+        installDirtyStateListener(conversationDescriptionField);
+        installDirtyStateListener(variantTextArea);
+        installDirtyStateListener(variantWeightField);
+        variantConditionFields.forEach(this::installDirtyStateListener);
+        lineSpeakerField.addActionListener(event -> refreshEditorState());
+        lineListenerField.addActionListener(event -> refreshEditorState());
+        detailTabs.addChangeListener(event -> refreshEditorState());
+    }
+
+    private void installDirtyStateListener(JTextComponent textComponent) {
+        textComponent.getDocument().addDocumentListener(new DocumentListener() {
+            @Override
+            public void insertUpdate(DocumentEvent event) {
+                refreshEditorState();
+            }
+
+            @Override
+            public void removeUpdate(DocumentEvent event) {
+                refreshEditorState();
+            }
+
+            @Override
+            public void changedUpdate(DocumentEvent event) {
+                refreshEditorState();
+            }
+        });
+    }
+
     private JMenuBar menuBar() {
         JMenuBar menuBar = new JMenuBar();
         JMenu file = new JMenu("File");
@@ -211,20 +294,6 @@ public final class ConversationEditorApplication {
         JMenuItem item = new JMenuItem(label);
         item.addActionListener(event -> runSafely(label, action));
         return item;
-    }
-
-    private JPanel toolbar() {
-        JPanel panel = new JPanel(new GridLayout(1, 3, 6, 0));
-        JButton applyJson = new JButton("Apply JSON");
-        JButton format = new JButton("Format JSON");
-        JButton validate = new JButton("Validate");
-        applyJson.addActionListener(event -> runSafely("Apply JSON", this::applyJson));
-        format.addActionListener(event -> runSafely("Format JSON", this::formatJson));
-        validate.addActionListener(event -> runSafely("Validate", this::showValidation));
-        panel.add(applyJson);
-        panel.add(format);
-        panel.add(validate);
-        return panel;
     }
 
     private void newConversation() {
@@ -299,6 +368,11 @@ public final class ConversationEditorApplication {
         jsonArea.setText(ConversationDefinitionJson.toJson(conversation));
     }
 
+    private void resetChanges() {
+        conversation = ConversationDefinitionJson.fromJson(savedJsonSnapshot, currentPath == null ? "saved conversation" : currentPath.toString());
+        refreshAll();
+    }
+
     private void showValidation() {
         List<String> problems = validationProblems(conversation);
         JOptionPane.showMessageDialog(null,
@@ -318,15 +392,16 @@ public final class ConversationEditorApplication {
         objectTree.expandRow(0);
         selectNode(selectedData);
         jsonArea.setText(ConversationDefinitionJson.toJson(conversation));
-        statusLabel.setText(statusText(currentPath, validationProblems(conversation)));
         refreshing = false;
         refreshEditorFieldsFromSelection();
+        refreshEditorState();
     }
 
     private void refreshEditorFieldsFromSelection() {
         if (refreshing) {
             return;
         }
+        refreshing = true;
         NodeData selectedData = selectedData();
         detailCards.show(detailCardPanel, selectedNodeType(selectedData).name());
         documentNameField.setText(conversation.name());
@@ -343,23 +418,25 @@ public final class ConversationEditorApplication {
         int lineIndex = selectedLineIndex(selectedData);
         if (conversationIndex >= 0 && lineIndex >= 0) {
             ConversationLine line = conversation.conversations().get(conversationIndex).lines().get(lineIndex);
-            lineSpeakerField.setText(line.speaker());
-            lineListenerField.setText(line.listener());
+            setComboBoxItems(lineSpeakerField, speakerChoices(conversation, line.speaker()), line.speaker());
+            setComboBoxItems(lineListenerField, listenerChoices(conversation, line.listener()), line.listener());
         } else {
-            lineSpeakerField.setText("");
-            lineListenerField.setText("");
+            setComboBoxItems(lineSpeakerField, List.of(), "");
+            setComboBoxItems(lineListenerField, List.of(""), "");
         }
         int variantIndex = selectedVariantIndex(selectedData);
         if (conversationIndex >= 0 && lineIndex >= 0 && variantIndex >= 0) {
             ConversationVariant variant = conversation.conversations().get(conversationIndex).lines().get(lineIndex).variants().get(variantIndex);
             variantTextArea.setText(variant.text());
             variantWeightField.setText(Double.toString(variant.weight()));
-            variantConditionsArea.setText(String.join("\n", variant.conditions()));
+            setConditionFields(variant.conditions());
         } else {
             variantTextArea.setText("");
             variantWeightField.setText("");
-            variantConditionsArea.setText("");
+            setConditionFields(List.of());
         }
+        refreshing = false;
+        refreshEditorState();
     }
 
     private void applySelectedDetails() {
@@ -397,7 +474,7 @@ public final class ConversationEditorApplication {
         if (conversationIndex < 0 || lineIndex < 0) {
             return;
         }
-        conversation = updateLine(conversation, conversationIndex, lineIndex, lineSpeakerField.getText(), lineListenerField.getText());
+        conversation = updateLine(conversation, conversationIndex, lineIndex, selectedComboBoxValue(lineSpeakerField), selectedComboBoxValue(lineListenerField));
         refreshAll(selectedData);
     }
 
@@ -416,7 +493,7 @@ public final class ConversationEditorApplication {
                 variantIndex,
                 variantTextArea.getText(),
                 variantWeight(),
-                conditionTexts(variantConditionsArea.getText()));
+                conditionTexts(variantConditionValues()));
         refreshAll(selectedData);
     }
 
@@ -466,7 +543,7 @@ public final class ConversationEditorApplication {
     }
 
     private void closeIfConfirmed(JFrame frame) {
-        if (hasUnsavedChanges(savedJsonSnapshot, ConversationDefinitionJson.toJson(conversation))) {
+        if (hasUnsavedChanges(savedJsonSnapshot, currentEditorSnapshot())) {
             int result = JOptionPane.showConfirmDialog(frame, "Discard unsaved conversation changes?", "Close", JOptionPane.OK_CANCEL_OPTION);
             if (result != JOptionPane.OK_OPTION) {
                 return;
@@ -496,6 +573,14 @@ public final class ConversationEditorApplication {
 
     static List<String> detailTabLabels() {
         return List.of("Detail", "JSON");
+    }
+
+    static List<String> speakerChoices(ConversationDefinition conversation, String currentSpeaker) {
+        return roleChoices(conversation, currentSpeaker, false);
+    }
+
+    static List<String> listenerChoices(ConversationDefinition conversation, String currentListener) {
+        return roleChoices(conversation, currentListener, true);
     }
 
     static boolean hasUnsavedChanges(String savedJsonSnapshot, String currentJson) {
@@ -700,13 +785,121 @@ public final class ConversationEditorApplication {
         return index < 0 ? "Detail" : detailTabs.getTitleAt(index);
     }
 
-    private static List<String> conditionTexts(String text) {
-        if (text.isBlank()) {
-            return List.of();
+    private void refreshEditorState() {
+        if (refreshing) {
+            return;
         }
-        return List.of(text.split("\\R")).stream()
-                .filter(condition -> !condition.isBlank())
+        boolean dirty = hasUnsavedChanges(savedJsonSnapshot, currentEditorSnapshot());
+        saveButton.setEnabled(dirty);
+        resetButton.setEnabled(dirty);
+        statusLabel.setText(statusText(currentPath, validationProblems(conversation)));
+    }
+
+    private String currentEditorSnapshot() {
+        if (selectedDetailTabName().equals("JSON")) {
+            return jsonArea.getText();
+        }
+        try {
+            return ConversationDefinitionJson.toJson(editedConversationSnapshot());
+        } catch (RuntimeException exception) {
+            return "INVALID|" + selectedNodeType(selectedData()) + "|" + currentFieldState();
+        }
+    }
+
+    private ConversationDefinition editedConversationSnapshot() {
+        NodeData selectedData = selectedData();
+        return switch (selectedNodeType(selectedData)) {
+            case DOCUMENT -> updateDocument(conversation, documentNameField.getText(), languageField.getText());
+            case CONVERSATION -> selectedConversationIndex(selectedData) < 0 ? conversation : updateConversationBlock(
+                    conversation,
+                    selectedConversationIndex(selectedData),
+                    conversationIdField.getText(),
+                    conversationDescriptionField.getText());
+            case LINE -> selectedConversationIndex(selectedData) < 0 || selectedLineIndex(selectedData) < 0 ? conversation : updateLine(
+                    conversation,
+                    selectedConversationIndex(selectedData),
+                    selectedLineIndex(selectedData),
+                    selectedComboBoxValue(lineSpeakerField),
+                    selectedComboBoxValue(lineListenerField));
+            case VARIANT -> selectedConversationIndex(selectedData) < 0 || selectedLineIndex(selectedData) < 0 || selectedVariantIndex(selectedData) < 0
+                    ? conversation
+                    : updateVariant(
+                    conversation,
+                    selectedConversationIndex(selectedData),
+                    selectedLineIndex(selectedData),
+                    selectedVariantIndex(selectedData),
+                    variantTextArea.getText(),
+                    variantWeight(),
+                    conditionTexts(variantConditionValues()));
+        };
+    }
+
+    private String currentFieldState() {
+        return String.join("|",
+                documentNameField.getText(),
+                languageField.getText(),
+                conversationIdField.getText(),
+                conversationDescriptionField.getText(),
+                selectedComboBoxValue(lineSpeakerField),
+                selectedComboBoxValue(lineListenerField),
+                variantTextArea.getText(),
+                variantWeightField.getText(),
+                String.join("|", variantConditionValues()));
+    }
+
+    static List<String> conditionTexts(List<String> values) {
+        return values.stream()
+                .filter(value -> value != null && !value.isBlank())
+                .limit(3)
                 .toList();
+    }
+
+    private List<String> variantConditionValues() {
+        return variantConditionFields.stream()
+                .map(JTextField::getText)
+                .toList();
+    }
+
+    private void setConditionFields(List<String> conditions) {
+        for (int index = 0; index < variantConditionFields.size(); index++) {
+            variantConditionFields.get(index).setText(index < conditions.size() ? conditions.get(index) : "");
+        }
+    }
+
+    private static List<String> roleChoices(ConversationDefinition conversation, String currentValue, boolean includeBlank) {
+        List<String> choices = new ArrayList<>();
+        if (includeBlank) {
+            choices.add("");
+        }
+        for (ConversationBlock block : conversation.conversations()) {
+            for (ConversationLine line : block.lines()) {
+                addChoice(choices, line.speaker());
+                addChoice(choices, line.listener());
+            }
+        }
+        addChoice(choices, currentValue);
+        return List.copyOf(choices);
+    }
+
+    private static void addChoice(List<String> choices, String value) {
+        if (value == null || value.isBlank() || choices.contains(value)) {
+            return;
+        }
+        choices.add(value);
+    }
+
+    private static void setComboBoxItems(JComboBox<String> comboBox, List<String> items, String selectedValue) {
+        comboBox.removeAllItems();
+        items.forEach(comboBox::addItem);
+        if (selectedValue != null && !selectedValue.isBlank() && !items.contains(selectedValue)) {
+            comboBox.addItem(selectedValue);
+        }
+        comboBox.setSelectedItem(selectedValue);
+    }
+
+    private static String selectedComboBoxValue(JComboBox<String> comboBox) {
+        Object value = comboBox.getEditor().getItem();
+        return value == null ? "" : value.toString();
     }
 
     private enum NodeType {

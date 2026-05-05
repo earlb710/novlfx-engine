@@ -126,6 +126,16 @@ final class ConversationEditorApplicationTest {
     }
 
     @Test
+    void speakerAndListenerChoicesIncludeKnownParticipantsAndCurrentValue() {
+        ConversationDefinition conversation = ConversationEditorApplication.sampleConversation();
+
+        assertEquals(List.of("narrator", "guide", "hero"),
+                ConversationEditorApplication.speakerChoices(conversation, "hero"));
+        assertEquals(List.of("", "narrator", "guide", "hero"),
+                ConversationEditorApplication.listenerChoices(conversation, "hero"));
+    }
+
+    @Test
     void variantDetailFieldsCanUpdateTextWeightAndConditions() {
         ConversationDefinition updated = ConversationEditorApplication.updateVariant(
                 ConversationEditorApplication.sampleConversation(),
@@ -140,6 +150,12 @@ final class ConversationEditorApplicationTest {
         assertEquals(2.5, updated.conversations().get(0).lines().get(0).variants().get(0).weight());
         assertEquals(List.of("met_guide", "has_key"),
                 updated.conversations().get(0).lines().get(0).variants().get(0).conditions());
+    }
+
+    @Test
+    void conditionTextsOmitBlankValuesAndKeepOnlyThreeLines() {
+        assertEquals(List.of("first", "second", "third"),
+                ConversationEditorApplication.conditionTexts(List.of("first", "", "second", " ", "third", "fourth")));
     }
 
     @Test
