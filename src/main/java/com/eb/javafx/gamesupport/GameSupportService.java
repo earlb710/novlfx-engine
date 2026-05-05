@@ -11,11 +11,16 @@ package com.eb.javafx.gamesupport;
 public final class GameSupportService {
     private final ActionRegistry actionRegistry = new ActionRegistry();
     private final LocationRegistry locationRegistry = new LocationRegistry();
+    private final CodeTableRegistry codeTableRegistry = new CodeTableRegistry();
     private final GameClock gameClock = new GameClock();
     private boolean initialized;
 
     /** Marks the support systems ready for access by bootstrap-created controllers. */
     public void initialize() {
+        if (initialized) {
+            return;
+        }
+        codeTableRegistry.registerAll(SystemCodeTables.defaultDefinition());
         initialized = true;
     }
 
@@ -39,6 +44,12 @@ public final class GameSupportService {
     public LocationRegistry locationRegistry() {
         ensureInitialized();
         return locationRegistry;
+    }
+
+    /** Returns the initialized code table registry, including always-loaded engine system tables. */
+    public CodeTableRegistry codeTableRegistry() {
+        ensureInitialized();
+        return codeTableRegistry;
     }
 
     private void ensureInitialized() {

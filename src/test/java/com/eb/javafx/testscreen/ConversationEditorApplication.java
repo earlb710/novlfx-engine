@@ -6,6 +6,7 @@ import com.eb.javafx.scene.ConversationDefinition.ConversationLine;
 import com.eb.javafx.scene.ConversationDefinition.ConversationVariant;
 import com.eb.javafx.scene.ConversationDefinition.LineType;
 import com.eb.javafx.scene.ConversationDefinitionJson;
+import com.eb.javafx.gamesupport.SystemCodeTables;
 import com.eb.javafx.util.Validation;
 
 import javax.swing.JButton;
@@ -56,11 +57,11 @@ import java.util.stream.Stream;
 /** Manual Swing editor for LR2Alt-compatible JSON conversation documents. */
 public final class ConversationEditorApplication {
     private static final int MAX_VISIBLE_CONDITION_ROWS = 3;
-    private static final String CONDITION_TYPE_CONTEXT = "context";
-    private static final String CONDITION_TYPE_TIME_OF_DAY = "time of day";
+    private static final String CONDITION_TYPE_CONTEXT = SystemCodeTables.CONDITION_TYPE_CONTEXT;
+    private static final String CONDITION_TYPE_TIME_OF_DAY = SystemCodeTables.CONDITION_TYPE_TIME_OF_DAY;
     private static final String CONDITION_OPERAND_EQUALS = "=";
-    private static final List<String> CONDITION_TYPES = List.of(CONDITION_TYPE_CONTEXT, CONDITION_TYPE_TIME_OF_DAY);
-    private static final List<String> DEFAULT_TIME_OF_DAY_VALUES = List.of("morning", "afternoon", "evening", "night");
+    private static final List<String> CONDITION_TYPES = SystemCodeTables.defaultCodeIds(SystemCodeTables.CONDITION_TYPES_TABLE_ID);
+    private static final List<String> DEFAULT_TIME_OF_DAY_VALUES = SystemCodeTables.defaultCodeIds(SystemCodeTables.TIME_OF_DAY_TABLE_ID);
 
     private ConversationDefinition conversation = sampleConversation();
     private final DefaultListModel<ConversationFile> fileListModel = new DefaultListModel<>();

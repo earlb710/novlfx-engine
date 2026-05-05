@@ -1,0 +1,239 @@
+{
+  "language": "en",
+  "tables": [
+    {
+      "id": "condition-types",
+      "title": "Condition Types",
+      "codes": [
+        {
+          "id": "context",
+          "title": "Context",
+          "sortOrder": 10,
+          "tags": ["conversation", "condition"]
+        },
+        {
+          "id": "time of day",
+          "title": "Time of Day",
+          "sortOrder": 20,
+          "tags": ["conversation", "condition", "time"]
+        }
+      ]
+    },
+    {
+      "id": "time-of-day",
+      "title": "Time of Day",
+      "codes": [
+        {
+          "id": "morning",
+          "title": "Morning",
+          "sortOrder": 10,
+          "tags": ["time"]
+        },
+        {
+          "id": "afternoon",
+          "title": "Afternoon",
+          "sortOrder": 20,
+          "tags": ["time"]
+        },
+        {
+          "id": "evening",
+          "title": "Evening",
+          "sortOrder": 30,
+          "tags": ["time"]
+        },
+        {
+          "id": "night",
+          "title": "Night",
+          "sortOrder": 40,
+          "tags": ["time"]
+        }
+      ]
+    },
+    {
+      "id": "conversation-line-types",
+      "title": "Conversation Line Types",
+      "codes": [
+        {
+          "id": "shout",
+          "title": "Shout",
+          "sortOrder": 10,
+          "tags": ["conversation"]
+        },
+        {
+          "id": "say",
+          "title": "Say",
+          "sortOrder": 20,
+          "tags": ["conversation"]
+        },
+        {
+          "id": "whisper",
+          "title": "Whisper",
+          "sortOrder": 30,
+          "tags": ["conversation"]
+        },
+        {
+          "id": "choice",
+          "title": "Choice",
+          "sortOrder": 40,
+          "tags": ["conversation"]
+        }
+      ]
+    },
+    {
+      "id": "scene-step-types",
+      "title": "Scene Step Types",
+      "codes": [
+        {
+          "id": "dialogue",
+          "title": "Dialogue",
+          "sortOrder": 10,
+          "tags": ["scene"]
+        },
+        {
+          "id": "narration",
+          "title": "Narration",
+          "sortOrder": 20,
+          "tags": ["scene"]
+        },
+        {
+          "id": "choice",
+          "title": "Choice",
+          "sortOrder": 30,
+          "tags": ["scene"]
+        },
+        {
+          "id": "action",
+          "title": "Action",
+          "sortOrder": 40,
+          "tags": ["scene"]
+        },
+        {
+          "id": "transition",
+          "title": "Transition",
+          "sortOrder": 50,
+          "tags": ["scene"]
+        }
+      ]
+    },
+    {
+      "id": "scene-transition-types",
+      "title": "Scene Transition Types",
+      "codes": [
+        {
+          "id": "next",
+          "title": "Next",
+          "sortOrder": 10,
+          "tags": ["scene", "transition"]
+        },
+        {
+          "id": "jump",
+          "title": "Jump",
+          "sortOrder": 20,
+          "tags": ["scene", "transition"]
+        },
+        {
+          "id": "call",
+          "title": "Call",
+          "sortOrder": 30,
+          "tags": ["scene", "transition"]
+        },
+        {
+          "id": "return",
+          "title": "Return",
+          "sortOrder": 40,
+          "tags": ["scene", "transition"]
+        },
+        {
+          "id": "complete",
+          "title": "Complete",
+          "sortOrder": 50,
+          "tags": ["scene", "transition"]
+        },
+        {
+          "id": "fail",
+          "title": "Fail",
+          "sortOrder": 60,
+          "tags": ["scene", "transition"]
+        }
+      ]
+    },
+    {
+      "id": "route-categories",
+      "title": "Route Categories",
+      "codes": [
+        {
+          "id": "menu",
+          "title": "Menu",
+          "sortOrder": 10,
+          "tags": ["route"]
+        },
+        {
+          "id": "settings",
+          "title": "Settings",
+          "sortOrder": 20,
+          "tags": ["route"]
+        },
+        {
+          "id": "save_load",
+          "title": "Save/Load",
+          "sortOrder": 30,
+          "tags": ["route"]
+        },
+        {
+          "id": "dialogue",
+          "title": "Dialogue",
+          "sortOrder": 40,
+          "tags": ["route"]
+        },
+        {
+          "id": "hud",
+          "title": "HUD",
+          "sortOrder": 50,
+          "tags": ["route"]
+        },
+        {
+          "id": "overlay",
+          "title": "Overlay",
+          "sortOrder": 60,
+          "tags": ["route"]
+        },
+        {
+          "id": "tooltip",
+          "title": "Tooltip",
+          "sortOrder": 70,
+          "tags": ["route"]
+        }
+      ]
+    },
+    {
+      "id": "setting-types",
+      "title": "Setting Types",
+      "codes": [
+        {
+          "id": "boolean",
+          "title": "Boolean",
+          "sortOrder": 10,
+          "tags": ["settings"]
+        },
+        {
+          "id": "integer",
+          "title": "Integer",
+          "sortOrder": 20,
+          "tags": ["settings"]
+        },
+        {
+          "id": "decimal",
+          "title": "Decimal",
+          "sortOrder": 30,
+          "tags": ["settings"]
+        },
+        {
+          "id": "text",
+          "title": "Text",
+          "sortOrder": 40,
+          "tags": ["settings"]
+        }
+      ]
+    }
+  ]
+}
