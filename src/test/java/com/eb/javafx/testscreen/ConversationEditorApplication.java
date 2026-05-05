@@ -507,7 +507,7 @@ public final class ConversationEditorApplication {
     static ConversationDefinition removeLine(ConversationDefinition document, int conversationIndex, int lineIndex) {
         ConversationBlock block = document.conversations().get(conversationIndex);
         if (block.lines().size() == 1) {
-            throw new IllegalArgumentException("Cannot remove the only line in a conversation.");
+            throw new IllegalArgumentException("Cannot remove the only line in a conversation. Add another line before removing this one.");
         }
         List<ConversationBlock> blocks = new ArrayList<>(document.conversations());
         List<ConversationLine> lines = new ArrayList<>(block.lines());
@@ -568,11 +568,7 @@ public final class ConversationEditorApplication {
     }
 
     private static List<String> variantTexts(String text) {
-        String[] lines = text.split("\\R", -1);
-        if (lines.length == 0) {
-            return List.of("");
-        }
-        return List.of(lines);
+        return List.of(text.split("\\R", -1));
     }
 
     private enum NodeType {
