@@ -9,6 +9,7 @@ import com.eb.javafx.util.Validation;
 
 import javax.swing.JButton;
 import javax.swing.BorderFactory;
+import javax.swing.JComponent;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -29,7 +30,11 @@ import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreePath;
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
+import java.awt.Component;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
 import java.awt.GridLayout;
+import java.awt.Insets;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.nio.file.Files;
@@ -115,52 +120,39 @@ public final class ConversationEditorApplication {
     }
 
     private JPanel documentDetailPanel() {
-        JPanel fields = new JPanel(new GridLayout(0, 2, 4, 4));
-        fields.setBorder(BorderFactory.createTitledBorder("Conversation Document"));
-        fields.add(new JLabel("Name"));
-        fields.add(documentNameField);
-        fields.add(new JLabel("Language"));
-        fields.add(languageField);
-        return fields;
+        JPanel panel = new JPanel(new BorderLayout(6, 6));
+        panel.add(detailFieldsPanel("Conversation Document",
+                formRow("Name", documentNameField),
+                formRow("Language", languageField)), BorderLayout.NORTH);
+        return panel;
     }
 
     private JPanel conversationDetailPanel() {
         JPanel panel = new JPanel(new BorderLayout(6, 6));
-        JPanel fields = new JPanel(new GridLayout(0, 2, 4, 4));
-        fields.setBorder(BorderFactory.createTitledBorder("Conversation"));
-        fields.add(new JLabel("Conversation Id"));
-        fields.add(conversationIdField);
-        fields.add(new JLabel("Description"));
-        fields.add(conversationDescriptionField);
         JButton addLine = new JButton("Add Line");
         addLine.addActionListener(event -> runSafely("Add Line", this::addSelectedLine));
-        panel.add(fields, BorderLayout.NORTH);
+        panel.add(detailFieldsPanel("Conversation",
+                formRow("Conversation Id", conversationIdField),
+                formRow("Description", conversationDescriptionField)), BorderLayout.NORTH);
         panel.add(addLine, BorderLayout.SOUTH);
         return panel;
     }
 
     private JPanel lineDetailPanel() {
         JPanel panel = new JPanel(new BorderLayout(6, 6));
-        JPanel fields = new JPanel(new GridLayout(0, 2, 4, 4));
-        fields.setBorder(BorderFactory.createTitledBorder("Line Detail"));
-        fields.add(new JLabel("Speaker"));
-        fields.add(lineSpeakerField);
-        fields.add(new JLabel("Listener"));
-        fields.add(lineListenerField);
         JButton addVariant = new JButton("Add Variant");
         addVariant.addActionListener(event -> runSafely("Add Variant", this::addSelectedVariant));
-        panel.add(fields, BorderLayout.NORTH);
+        panel.add(detailFieldsPanel("Line Detail",
+                formRow("Speaker", lineSpeakerField),
+                formRow("Listener", lineListenerField)), BorderLayout.NORTH);
         panel.add(addVariant, BorderLayout.SOUTH);
         return panel;
     }
 
     private JPanel variantDetailPanel() {
         JPanel panel = new JPanel(new BorderLayout(6, 6));
-        JPanel fields = new JPanel(new GridLayout(0, 2, 4, 4));
-        fields.setBorder(BorderFactory.createTitledBorder("Variant Detail"));
-        fields.add(new JLabel("Weight"));
-        fields.add(variantWeightField);
-        panel.add(fields, BorderLayout.NORTH);
+        panel.add(detailFieldsPanel("Variant Detail",
+                formRow("Weight", variantWeightField)), BorderLayout.NORTH);
         JPanel textPanel = new JPanel(new BorderLayout(4, 4));
         textPanel.setBorder(BorderFactory.createTitledBorder("Text"));
         textPanel.add(new JScrollPane(variantTextArea), BorderLayout.CENTER);
@@ -170,6 +162,38 @@ public final class ConversationEditorApplication {
         conditionsPanel.add(new JScrollPane(variantConditionsArea), BorderLayout.CENTER);
         panel.add(conditionsPanel, BorderLayout.SOUTH);
         return panel;
+    }
+
+    private JPanel detailFieldsPanel(String title, FormRow... rows) {
+        JPanel panel = new JPanel(new GridBagLayout());
+        panel.setBorder(BorderFactory.createTitledBorder(title));
+        GridBagConstraints constraints = new GridBagConstraints();
+        constraints.gridx = 0;
+        constraints.gridy = 0;
+        constraints.insets = new Insets(2, 2, 2, 2);
+        constraints.anchor = GridBagConstraints.WEST;
+        for (FormRow row : rows) {
+            constraints.gridx = 0;
+            constraints.weightx = 0.0;
+            constraints.fill = GridBagConstraints.NONE;
+            panel.add(new JLabel(row.label()), constraints);
+
+            constraints.gridx = 1;
+            constraints.weightx = 1.0;
+            constraints.fill = GridBagConstraints.HORIZONTAL;
+            panel.add(sizedSingleLineField(row.field()), constraints);
+            constraints.gridy++;
+        }
+        return panel;
+    }
+
+    private static Component sizedSingleLineField(JComponent field) {
+        field.setMaximumSize(field.getPreferredSize());
+        return field;
+    }
+
+    private static FormRow formRow(String label, JComponent field) {
+        return new FormRow(label, field);
     }
 
     private JMenuBar menuBar() {
@@ -696,6 +720,9 @@ public final class ConversationEditorApplication {
         CONVERSATION,
         LINE,
         VARIANT
+    }
+
+    private record FormRow(String label, JComponent field) {
     }
 
     private record NodeData(NodeType type, int conversationIndex, int lineIndex, int variantIndex, String label) {
