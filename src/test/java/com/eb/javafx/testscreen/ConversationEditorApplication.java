@@ -1077,9 +1077,7 @@ public final class ConversationEditorApplication {
             return CONDITION_TYPE_CONTEXT;
         }
         String checkedType = conditionType.trim();
-        if (checkedType.equalsIgnoreCase("timeofday")
-                || checkedType.equalsIgnoreCase("time_of_day")
-                || checkedType.equalsIgnoreCase("time-of-day")) {
+        if (checkedType.equalsIgnoreCase(CONDITION_TYPE_TIME_OF_DAY)) {
             return CONDITION_TYPE_TIME_OF_DAY;
         }
         return checkedType;
