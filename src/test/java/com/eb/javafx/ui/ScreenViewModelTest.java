@@ -52,6 +52,7 @@ final class ScreenViewModelTest {
                 "ava/happy",
                 List.of(new SceneChoiceViewModel(
                         "continue",
+                        "continue-value",
                         "choice.continue",
                         true,
                         null,
@@ -70,6 +71,7 @@ final class ScreenViewModelTest {
         assertEquals(1, viewModel.effectPreviews().size());
         assertEquals(List.of("continue"), viewModel.selectedChoiceIds());
         assertEquals("advance", viewModel.choices().get(0).effectPreviews().get(0).value());
+        assertEquals("continue-value", viewModel.choices().get(0).value());
         assertEquals("advance", viewModel.choices().get(0).metadata().get("preview.effect"));
     }
 }

@@ -14,6 +14,7 @@ import java.util.Map;
  */
 public final class SceneChoiceViewModel {
     private final String id;
+    private final String value;
     private final String textDefinition;
     private final boolean available;
     private final String disabledReason;
@@ -33,7 +34,20 @@ public final class SceneChoiceViewModel {
             boolean selected,
             Map<String, String> metadata,
             List<SceneEffectPreviewViewModel> effectPreviews) {
+        this(id, id, textDefinition, available, disabledReason, selected, metadata, effectPreviews);
+    }
+
+    public SceneChoiceViewModel(
+            String id,
+            String value,
+            String textDefinition,
+            boolean available,
+            String disabledReason,
+            boolean selected,
+            Map<String, String> metadata,
+            List<SceneEffectPreviewViewModel> effectPreviews) {
         this.id = Validation.requireNonBlank(id, "Scene choice id is required.");
+        this.value = Validation.requireNonNull(value, "Scene choice value is required.");
         this.textDefinition = Validation.requireNonBlank(textDefinition, "Scene choice text definition is required.");
         this.available = available;
         this.disabledReason = disabledReason;
@@ -44,6 +58,10 @@ public final class SceneChoiceViewModel {
 
     public String id() {
         return id;
+    }
+
+    public String value() {
+        return value;
     }
 
     public String textDefinition() {

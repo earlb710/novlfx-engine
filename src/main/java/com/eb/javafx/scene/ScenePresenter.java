@@ -22,6 +22,7 @@ public final class ScenePresenter {
                     RequirementResult availability = choice.availability(context);
                     return new SceneChoiceViewModel(
                             choice.id(),
+                            choice.metadata().getOrDefault("value", choice.id()),
                             choice.textDefinition(),
                             availability.isAllowed(),
                             availability.reason(),

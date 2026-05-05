@@ -132,9 +132,11 @@ public final class JsonConversationContentModule implements StaticContentModule,
     }
 
     private static SceneChoice choiceFor(ConversationBlock conversation, int lineIndex, int variantIndex, ConversationVariant variant) {
-        Map<String, String> metadata = variant.conditions().isEmpty()
-                ? Map.of()
-                : Map.of("conditions", conditionsJson(variant.conditions()));
+        Map<String, String> metadata = new LinkedHashMap<>();
+        metadata.put("value", choiceValue(variant, variantIndex));
+        if (!variant.conditions().isEmpty()) {
+            metadata.put("conditions", conditionsJson(variant.conditions()));
+        }
         return new SceneChoice(
                 choiceId(lineIndex, variantIndex),
                 choiceDefinitionId(conversation, lineIndex, variantIndex),
@@ -143,6 +145,10 @@ public final class JsonConversationContentModule implements StaticContentModule,
                 null,
                 SceneTransition.next(),
                 metadata);
+    }
+
+    private static String choiceValue(ConversationVariant variant, int variantIndex) {
+        return variant.value().isEmpty() ? Integer.toString(variantIndex) : variant.value();
     }
 
     private static SceneTransition transitionFor(ConversationBlock conversation, int lineIndex) {

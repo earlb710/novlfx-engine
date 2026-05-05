@@ -6,6 +6,7 @@ import com.eb.javafx.scene.SceneEffectPreviewViewModel;
 import com.eb.javafx.scene.SceneStatusRowViewModel;
 import com.eb.javafx.scene.SceneViewModel;
 import com.eb.javafx.util.Validation;
+import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
@@ -13,6 +14,8 @@ import javafx.scene.control.Label;
 import javafx.scene.layout.VBox;
 
 import java.util.Objects;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 /**
@@ -37,6 +40,36 @@ public final class SceneFlowView {
         }
         content.getChildren().add(choicePanel(viewModel, effectiveChoiceHandler));
         return content;
+    }
+
+    public static String displayAndWaitForChoice(SceneViewModel viewModel, Consumer<VBox> displayHandler) {
+        Validation.requireNonNull(viewModel, "Scene view model is required.");
+        Validation.requireNonNull(displayHandler, "Scene display handler is required.");
+        if (viewModel.choices().isEmpty()) {
+            displayHandler.accept(createContent(viewModel, null));
+            return null;
+        }
+        if (Platform.isFxApplicationThread()) {
+            Object nestedLoopKey = new Object();
+            VBox content = createContent(viewModel, value -> Platform.exitNestedEventLoop(nestedLoopKey, value));
+            displayHandler.accept(content);
+            Object selectedValue = Platform.enterNestedEventLoop(nestedLoopKey);
+            return selectedValue == null ? null : selectedValue.toString();
+        }
+        CountDownLatch selected = new CountDownLatch(1);
+        AtomicReference<String> selectedValue = new AtomicReference<>();
+        VBox content = createContent(viewModel, value -> {
+            selectedValue.set(value);
+            selected.countDown();
+        });
+        displayHandler.accept(content);
+        try {
+            selected.await();
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("Interrupted while waiting for a scene choice.", exception);
+        }
+        return selectedValue.get();
     }
 
     private static Node statusPanel(SceneViewModel viewModel) {
@@ -78,7 +111,7 @@ public final class SceneFlowView {
             button.getStyleClass().add("scene-choice-button");
             button.setDisable(!choice.available());
             button.setMaxWidth(Double.MAX_VALUE);
-            button.setOnAction(event -> choiceHandler.accept(choice.id()));
+            button.setOnAction(event -> choiceHandler.accept(choice.value()));
             panel.getChildren().add(button);
             if (choice.selected()) {
                 Label selected = new Label("Selected in history");

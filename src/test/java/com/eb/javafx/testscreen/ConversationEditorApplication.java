@@ -80,6 +80,7 @@ public final class ConversationEditorApplication {
     private final JComboBox<String> lineSpeakerField = new JComboBox<>();
     private final JComboBox<String> lineListenerField = new JComboBox<>();
     private final JComboBox<LineType> lineTypeField = new JComboBox<>(LineType.values());
+    private final JTextField variantValueField = new JTextField();
     private final JTextArea variantTextArea = new JTextArea();
     private final JTextField variantWeightField = new JTextField();
     private final List<ConditionFieldRow> variantConditionRows = Stream.generate(ConditionFieldRow::create)
@@ -193,6 +194,7 @@ public final class ConversationEditorApplication {
     private JPanel variantDetailPanel() {
         JPanel panel = new JPanel(new BorderLayout(6, 6));
         panel.add(detailFieldsPanel("Variant Detail",
+                formRow("Value", variantValueField),
                 formRow("Weight", variantWeightField)), BorderLayout.NORTH);
         JPanel textPanel = new JPanel(new BorderLayout(4, 4));
         textPanel.setBorder(BorderFactory.createTitledBorder("Text"));
@@ -304,6 +306,7 @@ public final class ConversationEditorApplication {
         installDirtyStateListener(conversationIdField);
         installDirtyStateListener(conversationDescriptionField);
         installDirtyStateListener(variantTextArea);
+        installDirtyStateListener(variantValueField);
         installDirtyStateListener(variantWeightField);
         variantConditionRows.forEach(row -> {
             row.typeField().addActionListener(event -> {
@@ -553,10 +556,12 @@ public final class ConversationEditorApplication {
         if (conversationIndex >= 0 && lineIndex >= 0 && variantIndex >= 0) {
             ConversationVariant variant = conversation.conversations().get(conversationIndex).lines().get(lineIndex).variants().get(variantIndex);
             variantTextArea.setText(variant.text());
+            variantValueField.setText(variant.value());
             variantWeightField.setText(Double.toString(variant.weight()));
             setConditionFields(variant.conditions());
         } else {
             variantTextArea.setText("");
+            variantValueField.setText("");
             variantWeightField.setText("");
             setConditionFields(List.of());
         }
@@ -623,6 +628,7 @@ public final class ConversationEditorApplication {
                 lineIndex,
                 variantIndex,
                 variantTextArea.getText(),
+                variantValueField.getText(),
                 variantWeight(),
                 conditionTexts(variantConditionValues()));
         refreshAll(selectedData);
@@ -843,6 +849,7 @@ public final class ConversationEditorApplication {
             int lineIndex,
             int variantIndex,
             String text,
+            String value,
             double weight,
             List<String> conditions) {
         List<ConversationBlock> blocks = new ArrayList<>(document.conversations());
@@ -850,7 +857,7 @@ public final class ConversationEditorApplication {
         List<ConversationLine> lines = new ArrayList<>(block.lines());
         ConversationLine line = lines.get(lineIndex);
         List<ConversationVariant> variants = new ArrayList<>(line.variants());
-        variants.set(variantIndex, new ConversationVariant(text, weight, conditions));
+        variants.set(variantIndex, new ConversationVariant(text, value, weight, conditions));
         lines.set(lineIndex, new ConversationLine(line.speaker(), line.listener(), line.type(), variants));
         blocks.set(conversationIndex, new ConversationBlock(block.id(), block.description(), lines));
         return new ConversationDefinition(document.name(), document.language(), blocks);

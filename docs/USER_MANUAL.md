@@ -67,7 +67,7 @@ Each line has `speaker`, `listener`, optional `type`, and one or more `variants`
 - `say`: normal dialogue text.
 - `shout`: converts the selected variant text to uppercase, escapes authored text, and wraps it in `<b></b>`.
 - `whisper`: converts the selected variant text to lowercase, escapes authored text, and wraps it in `<i></i>`.
-- `choice`: treats each variant as a player-selectable choice. Each choice variant can carry its own `conditions` array; the editor builds each condition from a condition type such as `context` or `time of day`, the `=` operand, and a selected value, then stores it as a compact string such as `context=has_key` or `time of day=evening`. The runtime projection stores those conditions with the generated scene choice metadata.
+- `choice`: treats each variant as a player-selectable choice. Each choice variant can carry its own `value`; if `value` is empty or omitted, the runtime projection uses the zero-based variant index as the choice value. A variant can also carry its own `conditions` array; the editor builds each condition from a condition type such as `context` or `time of day`, the `=` operand, and a selected value, then stores it as a compact string such as `context=has_key` or `time of day=evening`. The runtime projection stores the choice value and those conditions with the generated scene choice metadata.
 
 Example choice line:
 
@@ -77,8 +77,8 @@ Example choice line:
   "listener": "",
   "type": "choice",
   "variants": [
-    {"text": "Take the left path.", "weight": 1.0, "conditions": ["context=has_key", "time of day=evening"]},
-    {"text": "Take the right path.", "weight": 1.0, "conditions": []}
+    {"text": "Take the left path.", "value": "left", "weight": 1.0, "conditions": ["context=has_key", "time of day=evening"]},
+    {"text": "Take the right path.", "value": "", "weight": 1.0, "conditions": []}
   ]
 }
 ```
@@ -261,7 +261,7 @@ The `ui` package provides reusable JavaFX surfaces and helpers:
 - `ScreenBackgroundFit` names reusable background sizing modes: stretch or center-crop.
 - `ScreenLayoutType`, `ScreenLayoutModel`, and `ScreenLayoutSection` define reusable screen layout intent without JavaFX control state. Use them when a screen needs a stable general structure such as a titled panel, two-column layout, sidebar/content layout, HUD/status overlay, dialogue surface, menu/action list, form, or preview/card grid.
 - `ScreenDesignModel`, `ScreenDesignBlock`, and `ScreenDesignItem` define editable JSON-backed screen designs with stable screen, block, and item ids. Use `ScreenDesignService.addItemToBlock(...)` or `addTemporaryItemToBlock(...)` when code needs to target a block id directly; temporary items render in preview/test mode but `ScreenDesignJson.save(...)` excludes them from persisted JSON. `ScreenDesignJson` saves/loads documents with top-level `id`, `title`, `layoutType`, `metadata`, ordered `blocks`, and ordered saved `items`. Each block carries `id`, optional `title`, optional `styleClass`, and `metadata`; each item carries `id`, `blockId`, `type`, optional `label`, `text`, `value`, `defaultValue`, `styleClass`, and `metadata`.
-- `ConversationDefinition`, `ConversationDefinitionJson`, and `JsonConversationContentModule` define JSON-backed conversation documents for authored visual-novel content using the LR2Alt exported shape. A conversation file has top-level `name`, `language`, and ordered `conversations`; each conversation carries `id`, `description`, and typed `lines`. Line `type` supports `say` by default, `shout` for uppercase bold text, `whisper` for lowercase italic text, and `choice` for player-selectable variants with per-choice conditions. `JsonConversationContentModule` projects that document into reusable content definitions and scene definitions when runtime registration is needed.
+- `ConversationDefinition`, `ConversationDefinitionJson`, and `JsonConversationContentModule` define JSON-backed conversation documents for authored visual-novel content using the LR2Alt exported shape. A conversation file has top-level `name`, `language`, and ordered `conversations`; each conversation carries `id`, `description`, and typed `lines`. Line `type` supports `say` by default, `shout` for uppercase bold text, `whisper` for lowercase italic text, and `choice` for player-selectable variants with per-choice values and conditions. `JsonConversationContentModule` projects that document into reusable content definitions and scene definitions when runtime registration is needed.
 - `ScreenLayoutContract` loads the machine-readable layout contract from `src/main/resources/com/eb/javafx/ui/layout-contract.json`, which lists engine-provided layout types, the default stylesheet, and stable CSS style hooks applications can target.
 - `ScreenInventory`, `ScreenInventoryItem`, `ScreenInventorySource`, `ScreenInventoryScanner`, and `ScreenInventoryAssignmentCategory` provide content-neutral inventory models for application-owned screen/style/control migration scanners. Use them to classify source artifacts as route-backed, reusable-control-backed, deferred, deprecated, excluded, or app-owned without hard-coding source-engine names in the engine.
 - `ViewModelScreen` renders a `ScreenViewModel` with generic labels and navigation buttons.

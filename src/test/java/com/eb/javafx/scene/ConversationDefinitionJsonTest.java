@@ -33,6 +33,7 @@ final class ConversationDefinitionJsonTest {
         assertEquals("", parsed.conversations().get(0).lines().get(0).listener());
         assertEquals(LineType.SAY, parsed.conversations().get(0).lines().get(0).type());
         assertEquals("Welcome.", parsed.conversations().get(0).lines().get(0).variants().get(0).text());
+        assertEquals("", parsed.conversations().get(0).lines().get(0).variants().get(0).value());
         assertEquals(1.0, parsed.conversations().get(0).lines().get(0).variants().get(0).weight());
     }
 
@@ -129,6 +130,35 @@ final class ConversationDefinitionJsonTest {
     }
 
     @Test
+    void readsAndWritesChoiceVariantValues() {
+        String json = """
+                {
+                  "name": "Choice Values",
+                  "language": "en",
+                  "conversations": [{
+                    "id": "game.debug.choice_values.block_0001",
+                    "description": "Extracted dialogue block.",
+                    "lines": [{
+                      "speaker": "guide",
+                      "listener": "",
+                      "type": "choice",
+                      "variants": [
+                        {"text": "Left", "value": "left-path", "weight": 1.0, "conditions": []},
+                        {"text": "Right", "value": "", "weight": 1.0, "conditions": []}
+                      ]
+                    }]
+                  }]
+                }
+                """;
+
+        ConversationDefinition parsed = ConversationDefinitionJson.fromJson(json, "choice values");
+
+        assertEquals("left-path", parsed.conversations().get(0).lines().get(0).variants().get(0).value());
+        assertEquals("", parsed.conversations().get(0).lines().get(0).variants().get(1).value());
+        assertTrue(ConversationDefinitionJson.toJson(parsed).contains("\"value\": \"left-path\""));
+    }
+
+    @Test
     void rejectsMissingLr2AltConversationFields() {
         String json = """
                 {
@@ -167,6 +197,10 @@ final class ConversationDefinitionJsonTest {
                 sceneRegistry.requireScene("sample.conversation.opening.block_0001").steps().get(4).type());
         assertEquals("[\"has_key\"]",
                 sceneRegistry.requireScene("sample.conversation.opening.block_0001").steps().get(4).choices().get(0).metadata().get("conditions"));
+        assertEquals("left-path",
+                sceneRegistry.requireScene("sample.conversation.opening.block_0001").steps().get(4).choices().get(0).metadata().get("value"));
+        assertEquals("1",
+                sceneRegistry.requireScene("sample.conversation.opening.block_0001").steps().get(4).choices().get(1).metadata().get("value"));
         assertEquals("sample.conversation.opening.block_0001",
                 sceneRegistry.requireScene("sample.conversation.opening.block_0001").id());
     }
@@ -188,7 +222,7 @@ final class ConversationDefinitionJsonTest {
                                 new ConversationLine("guide", "", LineType.WHISPER, List.of(
                                         new ConversationVariant("QUIET.", 1.0, List.of()))),
                                 new ConversationLine("guide", "", LineType.CHOICE, List.of(
-                                        new ConversationVariant("Left path", 1.0, List.of("has_key")),
+                                        new ConversationVariant("Left path", "left-path", 1.0, List.of("has_key")),
                                         new ConversationVariant("Right path", 1.0, List.of())))))));
     }
 }

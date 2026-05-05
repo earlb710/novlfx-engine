@@ -101,6 +101,7 @@ public final class ConversationDefinitionJson {
     private static ConversationVariant parseVariant(Map<String, Object> object) {
         return new ConversationVariant(
                 requiredStringAllowingEmpty(object, "text", "conversation variant text"),
+                stringAllowingEmpty(object, "value", "conversation variant value", ""),
                 JsonData.optionalDouble(object, "weight", 1.0, "conversation variant weight"),
                 JsonData.optionalStringList(object, "conditions", "conversation variant conditions"));
     }
@@ -173,6 +174,7 @@ public final class ConversationDefinitionJson {
 
     private static void appendVariant(StringBuilder json, ConversationVariant variant) {
         json.append("{\"text\": ").append(JsonStrings.quote(variant.text()))
+                .append(", \"value\": ").append(JsonStrings.quote(variant.value()))
                 .append(", \"weight\": ").append(variant.weight())
                 .append(", \"conditions\": [");
         for (int index = 0; index < variant.conditions().size(); index++) {
