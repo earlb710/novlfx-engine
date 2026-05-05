@@ -4,19 +4,25 @@ import com.eb.javafx.util.Validation;
 import com.eb.javafx.ui.DisplayDefaults;
 import com.eb.javafx.util.JsonData;
 
+import javax.swing.BorderFactory;
+import javax.swing.DefaultCellEditor;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
+import javax.swing.JComboBox;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
+import javax.swing.JTable;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
+import javax.swing.table.DefaultTableModel;
 import java.awt.BorderLayout;
 import java.awt.Component;
+import java.awt.Dimension;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.GridLayout;
@@ -74,7 +80,9 @@ public final class DefaultDisplayValuesApplication {
                 "<html>Edit default display values from <code>"
                         + DisplayDefaults.DEFAULT_RESOURCE
                         + "</code>. Changes apply only to this management screen.</html>"));
-        displayResources().forEach(resource -> tabs.addTab(resource.label(), new JScrollPane(resourceTextArea(resource))));
+        displayResources().forEach(resource -> tabs.addTab(resource.label(), resourcePanel(resource, content -> {
+            statusLabel.setText("Updated " + resource.label() + " for this management screen.");
+        })));
         root.add(tabs, BorderLayout.CENTER);
         root.add(statusLabel, BorderLayout.SOUTH);
         return root;
@@ -102,9 +110,17 @@ public final class DefaultDisplayValuesApplication {
             editors.put(field, editor);
             fieldPanel.add(editor, fieldConstraints(row, 1, 1.0));
         }
+        GridBagConstraints variablesConstraints = new GridBagConstraints();
+        variablesConstraints.gridx = 0;
+        variablesConstraints.gridy = fields.size();
+        variablesConstraints.gridwidth = 2;
+        variablesConstraints.weightx = 1.0;
+        variablesConstraints.fill = GridBagConstraints.BOTH;
+        variablesConstraints.insets = new Insets(8, 3, 3, 3);
+        fieldPanel.add(applicationVariablesPanel(applicationVariables()), variablesConstraints);
         GridBagConstraints filler = new GridBagConstraints();
         filler.gridx = 0;
-        filler.gridy = fields.size();
+        filler.gridy = fields.size() + 1;
         filler.gridwidth = 2;
         filler.weighty = 1.0;
         filler.fill = GridBagConstraints.VERTICAL;
@@ -133,6 +149,42 @@ public final class DefaultDisplayValuesApplication {
 
     static List<String> applicationValueActionLabels() {
         return List.of("Save", "Reset");
+    }
+
+    static List<String> applicationVariableFieldLabels() {
+        return List.of("Name", "Type", "Value", "Description");
+    }
+
+    static List<String> applicationVariableTypeOptions() {
+        return List.of("string", "number", "bool");
+    }
+
+    static List<ApplicationVariable> applicationVariables() {
+        return List.of(new ApplicationVariable("", applicationVariableTypeOptions().get(0), "", ""));
+    }
+
+    static JPanel applicationVariablesPanel(List<ApplicationVariable> variables) {
+        Validation.requireNonNull(variables, "Application variables are required.");
+        JPanel panel = new JPanel(new BorderLayout(6, 6));
+        panel.setBorder(BorderFactory.createTitledBorder("Application Variables"));
+        JTable table = new JTable(applicationVariablesTableModel(variables));
+        table.getColumnModel().getColumn(1).setCellEditor(new DefaultCellEditor(
+                new JComboBox<>(applicationVariableTypeOptions().toArray(String[]::new))));
+        table.setFillsViewportHeight(true);
+        table.setPreferredScrollableViewportSize(new Dimension(640, 96));
+        panel.add(new JScrollPane(table), BorderLayout.CENTER);
+        return panel;
+    }
+
+    static DefaultTableModel applicationVariablesTableModel(List<ApplicationVariable> variables) {
+        Validation.requireNonNull(variables, "Application variables are required.");
+        DefaultTableModel model = new DefaultTableModel(applicationVariableFieldLabels().toArray(String[]::new), 0);
+        variables.forEach(variable -> model.addRow(new Object[]{
+                variable.name(),
+                variable.type(),
+                variable.value(),
+                variable.description()}));
+        return model;
     }
 
     static Component editableField(ApplicationConfigField field) {
@@ -185,6 +237,31 @@ public final class DefaultDisplayValuesApplication {
 
     static JTextArea resourceTextArea(DisplayResource resource) {
         return textArea(resourceContents(resource.path()), resource.editable());
+    }
+
+    static JPanel resourcePanel(DisplayResource resource, Consumer<String> saveAction) {
+        Validation.requireNonNull(saveAction, "Display resource save action is required.");
+        JPanel panel = new JPanel(new BorderLayout(6, 6));
+        JTextArea textArea = resourceTextArea(resource);
+        panel.add(new JScrollPane(textArea), BorderLayout.CENTER);
+        if (resource.editable()) {
+            JPanel actions = new JPanel(new GridLayout(1, 2, 6, 0));
+            JButton save = new JButton(resourceActionLabels().get(0));
+            JButton reset = new JButton(resourceActionLabels().get(1));
+            save.addActionListener(event -> saveAction.accept(textArea.getText()));
+            reset.addActionListener(event -> {
+                textArea.setText(resourceContents(resource.path()));
+                textArea.setCaretPosition(0);
+            });
+            actions.add(save);
+            actions.add(reset);
+            panel.add(actions, BorderLayout.SOUTH);
+        }
+        return panel;
+    }
+
+    static List<String> resourceActionLabels() {
+        return List.of("Save", "Reset");
     }
 
     private static JTextArea textArea(String content, boolean editable) {
@@ -240,6 +317,18 @@ public final class DefaultDisplayValuesApplication {
         DisplayResource {
             label = Validation.requireNonBlank(label, "Display resource label is required.");
             path = Validation.requireNonBlank(path, "Display resource path is required.");
+        }
+    }
+
+    record ApplicationVariable(String name, String type, String value, String description) {
+        ApplicationVariable {
+            name = Validation.requireNonNull(name, "Application variable name is required.");
+            type = Validation.requireNonBlank(type, "Application variable type is required.");
+            value = Validation.requireNonNull(value, "Application variable value is required.");
+            description = Validation.requireNonNull(description, "Application variable description is required.");
+            if (!applicationVariableTypeOptions().contains(type)) {
+                throw new IllegalArgumentException("Unsupported application variable type: " + type);
+            }
         }
     }
 
