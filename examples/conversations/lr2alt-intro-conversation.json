@@ -1,0 +1,57 @@
+{
+  "id": "lr2alt.intro",
+  "titleDefinition": "lr2alt.scene.tutorial.title",
+  "metadata": {"source": "Lr2Alt JavaFX scene content module"},
+  "definitions": {
+    "lr2alt.scene.tutorial.title": "Tutorial Background",
+    "lr2alt.scene.tutorial.choice.lr1": "I have played Lab Rats 1 Before",
+    "lr2alt.scene.tutorial.choice.new": "I am new to Lab Rats",
+    "lr2alt.scene.tutorial.lr1.line": "It has been a year since the end of your summer job at the university lab.",
+    "lr2alt.scene.tutorial.new.line": "A year ago you were a chemical engineering student, getting ready to graduate soon and looking for something to do over the summer.",
+    "lr2alt.scene.tutorial.end.line": "Your university lab experience was fun, but in the end the summer work was temporary."
+  },
+  "scenes": [
+    {
+      "id": "lr2alt.scene.tutorial.start",
+      "metadata": {"conversation": "lr2alt.intro"},
+      "steps": [
+        {
+          "id": "tutorial-background",
+          "type": "CHOICE",
+          "speakerId": null,
+          "textDefinition": null,
+          "displayReference": null,
+          "transition": {"type": "NEXT", "targetSceneId": null},
+          "metadata": {"kind": "branch"},
+          "choices": [
+            {"id": "played-lr1", "textDefinition": "lr2alt.scene.tutorial.choice.lr1", "disabledReason": null, "transition": {"type": "JUMP", "targetSceneId": "lr2alt.scene.tutorial.lr1"}, "metadata": {}},
+            {"id": "new-to-lr", "textDefinition": "lr2alt.scene.tutorial.choice.new", "disabledReason": null, "transition": {"type": "JUMP", "targetSceneId": "lr2alt.scene.tutorial.new"}, "metadata": {}}
+          ]
+        }
+      ]
+    },
+    {
+      "id": "lr2alt.scene.tutorial.lr1",
+      "metadata": {"conversation": "lr2alt.intro"},
+      "steps": [
+        {"id": "lr1-background", "type": "NARRATION", "speakerId": null, "textDefinition": "lr2alt.scene.tutorial.lr1.line", "displayReference": null, "transition": {"type": "NEXT", "targetSceneId": null}, "metadata": {}, "choices": []},
+        {"id": "tutorial-end", "type": "TRANSITION", "speakerId": null, "textDefinition": null, "displayReference": null, "transition": {"type": "JUMP", "targetSceneId": "lr2alt.scene.tutorial.end"}, "metadata": {}, "choices": []}
+      ]
+    },
+    {
+      "id": "lr2alt.scene.tutorial.new",
+      "metadata": {"conversation": "lr2alt.intro"},
+      "steps": [
+        {"id": "new-background", "type": "NARRATION", "speakerId": null, "textDefinition": "lr2alt.scene.tutorial.new.line", "displayReference": null, "transition": {"type": "NEXT", "targetSceneId": null}, "metadata": {}, "choices": []},
+        {"id": "tutorial-end", "type": "TRANSITION", "speakerId": null, "textDefinition": null, "displayReference": null, "transition": {"type": "JUMP", "targetSceneId": "lr2alt.scene.tutorial.end"}, "metadata": {}, "choices": []}
+      ]
+    },
+    {
+      "id": "lr2alt.scene.tutorial.end",
+      "metadata": {"conversation": "lr2alt.intro"},
+      "steps": [
+        {"id": "tutorial-end-line", "type": "NARRATION", "speakerId": null, "textDefinition": "lr2alt.scene.tutorial.end.line", "displayReference": null, "transition": {"type": "COMPLETE", "targetSceneId": null}, "metadata": {}, "choices": []}
+      ]
+    }
+  ]
+}

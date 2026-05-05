@@ -72,6 +72,14 @@ See [docs/USER_MANUAL.md](docs/USER_MANUAL.md) for setup, package responsibiliti
 
 The screen designer starts in `examples/screen-designs`, which now includes several sample JSON screen designs and a JavaFX preview button for the current design.
 
+## Launch the conversation editor
+
+```bash
+./gradlew --no-daemon runConversationEditor
+```
+
+The conversation editor starts in `examples/conversations` and edits JSON bundles that pair content definitions with scene-flow definitions, matching the storage shape used by the LR2Alt JavaFX port.
+
 ## Android Studio
 
 - Open the repository root as a Gradle project in Android Studio.
