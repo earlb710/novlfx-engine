@@ -42,6 +42,13 @@ public final class SceneFlowView {
         return content;
     }
 
+    /**
+     * Displays scene-flow content and blocks until an enabled choice button sends its value.
+     *
+     * <p>When called on the JavaFX application thread this method uses a nested event loop so button events can
+     * still be processed. Callers must keep the displayed content reachable and should only use this helper for
+     * modal conversation-style flows where waiting for a choice is intentional.</p>
+     */
     public static String displayAndWaitForChoice(SceneViewModel viewModel, Consumer<VBox> displayHandler) {
         Validation.requireNonNull(viewModel, "Scene view model is required.");
         Validation.requireNonNull(displayHandler, "Scene display handler is required.");

@@ -105,7 +105,7 @@ public final class ConversationDefinition {
 
         public ConversationVariant {
             text = Validation.requireNonNull(text, "Conversation variant text is required.");
-            value = Validation.requireNonNull(value, "Conversation variant value is required.");
+            value = Validation.requireNonNull(value, "Conversation variant value cannot be null.");
             weight = Validation.requirePositive(weight, "Conversation variant weight must be positive.");
             conditions = List.copyOf(Validation.requireNonNull(conditions, "Conversation variant conditions are required."));
         }

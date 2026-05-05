@@ -148,6 +148,7 @@ public final class JsonConversationContentModule implements StaticContentModule,
     }
 
     private static String choiceValue(ConversationVariant variant, int variantIndex) {
+        // Empty values intentionally fall back to the zero-based authored variant index.
         return variant.value().isEmpty() ? Integer.toString(variantIndex) : variant.value();
     }
 
