@@ -6,6 +6,7 @@ import com.eb.javafx.display.ImageDisplayRegistry;
 import com.eb.javafx.scene.ConversationDefinition.ConversationBlock;
 import com.eb.javafx.scene.ConversationDefinition.ConversationLine;
 import com.eb.javafx.scene.ConversationDefinition.ConversationVariant;
+import com.eb.javafx.util.JsonStrings;
 import com.eb.javafx.util.Validation;
 
 import java.nio.file.Path;
@@ -132,7 +133,7 @@ public final class JsonConversationContentModule implements StaticContentModule,
     private static SceneChoice choiceFor(ConversationBlock conversation, int lineIndex, int variantIndex, ConversationVariant variant) {
         Map<String, String> metadata = variant.conditions().isEmpty()
                 ? Map.of()
-                : Map.of("conditions", String.join(",", variant.conditions()));
+                : Map.of("conditions", conditionsJson(variant.conditions()));
         return new SceneChoice(
                 choiceId(lineIndex, variantIndex),
                 choiceDefinitionId(conversation, lineIndex, variantIndex),
@@ -165,5 +166,17 @@ public final class JsonConversationContentModule implements StaticContentModule,
 
     private static String choiceId(int lineIndex, int variantIndex) {
         return stepId(lineIndex) + "-choice-" + String.format("%04d", variantIndex + 1);
+    }
+
+    private static String conditionsJson(List<String> conditions) {
+        StringBuilder json = new StringBuilder("[");
+        for (int index = 0; index < conditions.size(); index++) {
+            if (index > 0) {
+                json.append(", ");
+            }
+            json.append(JsonStrings.quote(conditions.get(index)));
+        }
+        json.append(']');
+        return json.toString();
     }
 }

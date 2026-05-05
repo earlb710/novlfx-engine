@@ -727,7 +727,7 @@ public final class ConversationEditorApplication {
         List<ConversationBlock> blocks = new ArrayList<>(document.conversations());
         ConversationBlock block = blocks.get(conversationIndex);
         List<ConversationLine> lines = new ArrayList<>(block.lines());
-        lines.add(new ConversationLine("speaker", "", List.of(new ConversationVariant("", 1.0, List.of()))));
+        lines.add(new ConversationLine("new_speaker", "", List.of(new ConversationVariant("", 1.0, List.of()))));
         blocks.set(conversationIndex, new ConversationBlock(block.id(), block.description(), lines));
         return new ConversationDefinition(document.name(), document.language(), blocks);
     }

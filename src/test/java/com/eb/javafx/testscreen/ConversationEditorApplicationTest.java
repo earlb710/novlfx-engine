@@ -166,7 +166,7 @@ final class ConversationEditorApplicationTest {
         ConversationDefinition added = ConversationEditorApplication.addLine(ConversationEditorApplication.sampleConversation(), 0);
 
         assertEquals(3, added.conversations().get(0).lines().size());
-        assertEquals("speaker", added.conversations().get(0).lines().get(2).speaker());
+        assertEquals("new_speaker", added.conversations().get(0).lines().get(2).speaker());
         assertEquals("", added.conversations().get(0).lines().get(2).listener());
     }
 

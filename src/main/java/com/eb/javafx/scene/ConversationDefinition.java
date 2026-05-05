@@ -1,6 +1,7 @@
 package com.eb.javafx.scene;
 
 import com.eb.javafx.util.Validation;
+import com.eb.javafx.util.UtilString;
 
 import java.util.List;
 import java.util.Locale;
@@ -70,10 +71,15 @@ public final class ConversationDefinition {
         public String formatText(String text) {
             String checkedText = Validation.requireNonNull(text, "Conversation line text is required.");
             return switch (this) {
-                case SHOUT -> "<b>" + checkedText.toUpperCase(Locale.ROOT) + "</b>";
-                case SAY, CHOICE -> checkedText;
-                case WHISPER -> "<i>" + checkedText.toLowerCase(Locale.ROOT) + "</i>";
+                case SHOUT -> "<b>" + UtilString.escapeXML(checkedText.toUpperCase(Locale.ROOT)) + "</b>";
+                case SAY, CHOICE -> UtilString.escapeXML(checkedText);
+                case WHISPER -> "<i>" + UtilString.escapeXML(checkedText.toLowerCase(Locale.ROOT)) + "</i>";
             };
+        }
+
+        @Override
+        public String toString() {
+            return jsonValue;
         }
     }
 

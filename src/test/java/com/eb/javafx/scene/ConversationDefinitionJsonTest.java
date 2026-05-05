@@ -104,6 +104,12 @@ final class ConversationDefinitionJsonTest {
     }
 
     @Test
+    void lineTypeFormattingEscapesTextBeforeAddingMarkup() {
+        assertEquals("<b>&lt;LOOK &amp; LISTEN&gt;</b>", LineType.SHOUT.formatText("<look & listen>"));
+        assertEquals("<i>&lt;quiet &amp; careful&gt;</i>", LineType.WHISPER.formatText("<QUIET & CAREFUL>"));
+    }
+
+    @Test
     void allowsEmptyVariantTextLikeLr2AltExports() {
         String json = """
                 {
@@ -159,7 +165,7 @@ final class ConversationDefinitionJsonTest {
                 contentRegistry.definition("sample.conversation.opening.block_0001.line.0005.choice.0001"));
         assertEquals(SceneStepType.CHOICE,
                 sceneRegistry.requireScene("sample.conversation.opening.block_0001").steps().get(4).type());
-        assertEquals("has_key",
+        assertEquals("[\"has_key\"]",
                 sceneRegistry.requireScene("sample.conversation.opening.block_0001").steps().get(4).choices().get(0).metadata().get("conditions"));
         assertEquals("sample.conversation.opening.block_0001",
                 sceneRegistry.requireScene("sample.conversation.opening.block_0001").id());
