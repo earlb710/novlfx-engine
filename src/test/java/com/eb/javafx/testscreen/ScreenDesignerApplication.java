@@ -802,7 +802,9 @@ public final class ScreenDesignerApplication {
     }
 
     static boolean canAddItemForNode(NavigationNode navigationNode) {
-        return navigationNode.type() != NodeType.SCREEN;
+        return navigationNode.type() == NodeType.BLOCK
+                || navigationNode.type() == NodeType.ITEM
+                || navigationNode.type() == NodeType.TEMPORARY_ITEM;
     }
 
     private static java.util.Set<String> descendantBlockIds(List<ScreenDesignBlock> blocks, String rootBlockId) {

@@ -18,7 +18,7 @@ public record ScreenDesignBlock(
             throw new IllegalArgumentException("Screen design block title cannot be blank.");
         }
         if (parentBlockId != null && parentBlockId.isBlank()) {
-            throw new IllegalArgumentException("Screen design block parent block id cannot be blank.");
+            throw new IllegalArgumentException("Screen design block parentBlockId cannot be blank.");
         }
         if (styleClass != null && styleClass.isBlank()) {
             throw new IllegalArgumentException("Screen design block style class cannot be blank.");
