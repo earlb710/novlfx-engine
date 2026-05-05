@@ -18,8 +18,9 @@ public final class TextTagParser {
      * Parses text into styled text, pause, and paragraph tokens.
      *
      * <p>Supported tags include bold, italic, color, font, wait, paragraph,
-     * gradient, kinetic, and glitch markers. Unknown tags are emitted as literal
-     * text, while malformed wait durations throw an {@link IllegalArgumentException}.</p>
+     * inline icon, gradient, kinetic, and glitch markers. Unknown tags are
+     * emitted as literal text, while malformed wait durations throw an
+     * {@link IllegalArgumentException}.</p>
      */
     public List<TextToken> parse(String source) {
         if (source == null || source.isEmpty()) {
@@ -106,6 +107,14 @@ public final class TextTagParser {
                     flushText(tokens, text, state);
                     tokens.add(TextToken.pause(parseDuration(tag.substring("w=".length()))));
                     return true;
+                }
+                if (tag.startsWith("icon=")) {
+                    String iconId = tag.substring("icon=".length()).trim();
+                    if (!iconId.isEmpty()) {
+                        flushText(tokens, text, state);
+                        tokens.add(TextToken.icon(iconId));
+                        return true;
+                    }
                 }
                 if (tag.startsWith("gradient=") || tag.startsWith("kinetic=") || tag.startsWith("glitch=")) {
                     flushText(tokens, text, state);

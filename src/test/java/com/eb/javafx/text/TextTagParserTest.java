@@ -40,4 +40,19 @@ final class TextTagParserTest {
         assertFalse(tokens.get(0).style().bold());
         assertThrows(IllegalArgumentException.class, () -> parser.parse("{w=bad}"));
     }
+
+    @Test
+    void parsesInlineIconsAndPreservesBlankIconTagsAsLiteralText() {
+        TextTagParser parser = new TextTagParser();
+
+        List<TextToken> tokens = parser.parse("Hi {icon=ui.star}{b}there{/b}{icon= }!");
+
+        assertEquals(4, tokens.size());
+        assertEquals("Hi ", tokens.get(0).text());
+        assertEquals(TextTokenType.ICON, tokens.get(1).type());
+        assertEquals("ui.star", tokens.get(1).iconId());
+        assertEquals("there", tokens.get(2).text());
+        assertTrue(tokens.get(2).style().bold());
+        assertEquals("{icon= }!", tokens.get(3).text());
+    }
 }

@@ -162,6 +162,8 @@ public final class ConversationHistoryScreen {
         for (TextToken token : tokens) {
             if (token.type() == TextTokenType.TEXT) {
                 text.append(token.text());
+            } else if (token.type() == TextTokenType.ICON) {
+                // Inline icons are omitted when building compact plain-text history labels.
             } else if (token.type() == TextTokenType.PARAGRAPH) {
                 text.append(" ");
             }
