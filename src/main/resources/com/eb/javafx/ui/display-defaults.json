@@ -4,36 +4,55 @@
     "fontSize": "18",
     "fontStyle": "normal",
     "color": "#ffffff",
-    "backgroundColor": "#0a1426"
+    "backgroundColor": "#0a1426",
+    "borderStyle": "solid",
+    "borderCorner": "rounded",
+    "borderThickness": "1",
+    "borderColor": "#0099cc"
   },
   "block": {
     "fontSize": "16",
     "color": "#ffffff",
-    "backgroundColor": "#143869"
+    "backgroundColor": "#143869",
+    "transparency": "0",
+    "borderStyle": "solid",
+    "borderCorner": "rounded",
+    "borderThickness": "1",
+    "borderColor": "#143869"
   },
   "items": {
     "text": {
       "fontSize": "18",
-      "color": "#ffffff"
+      "color": "#ffffff",
+      "backgroundColor": "transparent",
+      "transparency": "0"
     },
     "heading": {
       "fontSize": "28",
       "fontStyle": "bold",
-      "color": "#ffff66"
+      "color": "#ffff66",
+      "backgroundColor": "transparent",
+      "transparency": "0"
     },
     "subheading": {
       "fontSize": "22",
       "fontStyle": "bold",
-      "color": "#66c1e0"
+      "color": "#66c1e0",
+      "backgroundColor": "transparent",
+      "transparency": "0"
     },
     "field": {
       "fontSize": "18",
-      "color": "#ffffff"
+      "color": "#ffffff",
+      "backgroundColor": "transparent",
+      "transparency": "0"
     },
     "button": {
       "fontSize": "18",
       "fontStyle": "bold",
-      "color": "#ffffff"
+      "color": "#ffffff",
+      "backgroundColor": "transparent",
+      "transparency": "0"
     }
   },
   "labels": {

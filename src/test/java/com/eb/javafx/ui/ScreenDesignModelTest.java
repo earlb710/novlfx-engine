@@ -175,6 +175,8 @@ final class ScreenDesignModelTest {
         assertEquals("28", metadata.get("fontSize"));
         assertEquals("bold", metadata.get("fontStyle"));
         assertEquals("#ffff66", metadata.get("color"));
+        assertEquals("transparent", metadata.get("backgroundColor"));
+        assertEquals("0", metadata.get("transparency"));
     }
 
     @Test
@@ -184,7 +186,28 @@ final class ScreenDesignModelTest {
         ScreenLayoutModel layout = ScreenDesignLayoutAdapter.toLayoutModel(model);
 
         assertEquals("#0a1426", layout.metadata().get("backgroundColor"));
+        assertEquals("solid", layout.metadata().get("borderStyle"));
         assertEquals("#143869", layout.contentSections().get(0).metadata().get("backgroundColor"));
+        assertEquals("0", layout.contentSections().get(0).metadata().get("transparency"));
+        assertEquals("solid", layout.contentSections().get(0).metadata().get("borderStyle"));
+    }
+
+    @Test
+    void itemBackgroundDefaultsDoNotInheritContainerBackgroundOverrides() {
+        ScreenDesignModel model = new ScreenDesignModel("x", "X", ScreenLayoutType.FORM, Map.of("backgroundColor", "#111111"),
+                List.of(new ScreenDesignBlock("profile", "Profile", ScreenLayoutType.FORM, null, null,
+                        Map.of("backgroundColor", "#222222"))),
+                List.of(new ScreenDesignItem("display", "profile", ScreenDesignItemType.TEXT,
+                        "Ignored", "Display text", null, null, null, Map.of())),
+                List.of());
+
+        Map<String, String> metadata = ScreenDesignLayoutAdapter.toLayoutModel(model)
+                .contentSections().get(0)
+                .lineMetadata().get(0);
+
+        assertEquals("transparent", metadata.get("backgroundColor"));
+        assertEquals("0", metadata.get("transparency"));
+        assertEquals("#ffffff", metadata.get("color"));
     }
 
     @Test

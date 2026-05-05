@@ -199,25 +199,27 @@ final class ScreenDesignerApplicationTest {
     void propertyLabelsMatchSelectedNavigationNodeType() {
         assertEquals("Screen Properties", ScreenDesignerApplication.propertiesTitleFor(
                 ScreenDesignerApplication.NavigationNode.screen("sample.screen")));
-        assertEquals(List.of("Screen id", "Title", "Layout type", "Font", "Font size", "Font style", "Color", "Background color"),
+        assertEquals(List.of("Screen id", "Title", "Layout type", "Font", "Font size", "Font style", "Color", "Background color",
+                        "Border style", "Border corner", "Border thickness", "Border color"),
                 ScreenDesignerApplication.propertyLabelsFor(
                         ScreenDesignerApplication.NavigationNode.screen("sample.screen")));
         assertEquals("Block Properties", ScreenDesignerApplication.propertiesTitleFor(
                 ScreenDesignerApplication.NavigationNode.block("main")));
         assertEquals(List.of("Block id", "Title", "Layout type", "Parent block",
-                        "Font", "Font size", "Font style", "Color", "Background color"),
+                        "Font", "Font size", "Font style", "Color", "Background color",
+                        "Transparency", "Border style", "Border corner", "Border thickness", "Border color"),
                 ScreenDesignerApplication.propertyLabelsFor(
                         ScreenDesignerApplication.NavigationNode.block("main")));
         assertEquals("Item Properties", ScreenDesignerApplication.propertiesTitleFor(
                 ScreenDesignerApplication.NavigationNode.item("title.text", "main", false)));
         assertEquals(List.of("Target block", "Item id", "Type", "Label",
                         "Text/default value", "Current value", "Editable", "Display role",
-                        "Font", "Font size", "Font style", "Color", "Label font",
+                        "Font", "Font size", "Font style", "Color", "Background color", "Transparency", "Label font",
                         "Label font size", "Label font style", "Label color"),
                 ScreenDesignerApplication.propertyLabelsFor(
                         ScreenDesignerApplication.NavigationNode.item("title.text", "main", false)));
         assertEquals(List.of("Target block", "Item id", "Type", "Text/default value", "Display role",
-                        "Font", "Font size", "Font style", "Color"),
+                        "Font", "Font size", "Font style", "Color", "Background color", "Transparency"),
                 ScreenDesignerApplication.itemPropertyLabelsFor(ScreenDesignItemType.TEXT));
         assertEquals("Item Properties", ScreenDesignerApplication.propertiesTitleFor(
                 ScreenDesignerApplication.NavigationNode.item("temp.field", "main", true)));

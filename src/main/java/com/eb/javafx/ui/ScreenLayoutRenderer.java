@@ -25,8 +25,10 @@ public final class ScreenLayoutRenderer {
     private static final double SECTION_SPACING = 8;
     private static final double REGION_SPACING = 12;
     private static final Pattern FONT_SIZE_PATTERN = Pattern.compile("\\d+(\\.\\d+)?(px|pt|em)?");
+    private static final Pattern DECIMAL_PATTERN = Pattern.compile("\\d+(\\.\\d+)?");
     private static final Pattern FONT_FAMILY_PATTERN = Pattern.compile("[\\p{Alnum} ._\\-]+");
     private static final Pattern COLOR_PATTERN = Pattern.compile("#[0-9a-fA-F]{3,8}|[a-zA-Z]+");
+    private static final Pattern BORDER_STYLE_PATTERN = Pattern.compile("[a-zA-Z\\- ]+");
     private static final Map<String, String> FONT_FAMILY_CACHE = new ConcurrentHashMap<>();
 
     private ScreenLayoutRenderer() {
@@ -164,12 +166,19 @@ public final class ScreenLayoutRenderer {
         appendFontSize(style, metadata.get("fontSize"));
         appendFontStyle(style, metadata.get("fontStyle"));
         appendColor(style, metadata.get("color"));
+        appendBackgroundColor(style, metadata.get("backgroundColor"));
+        appendOpacity(style, metadata.get("transparency"));
         return style.toString();
     }
 
     static String containerStyle(Map<String, String> metadata) {
         StringBuilder style = new StringBuilder();
         appendBackgroundColor(style, metadata.get("backgroundColor"));
+        appendOpacity(style, metadata.get("transparency"));
+        appendBorderStyle(style, metadata.get("borderStyle"));
+        appendBorderRadius(style, metadata.get("borderCorner"));
+        appendBorderThickness(style, metadata.get("borderThickness"));
+        appendBorderColor(style, metadata.get("borderColor"));
         return style.toString();
     }
 
@@ -212,6 +221,44 @@ public final class ScreenLayoutRenderer {
         }
     }
 
+    private static void appendOpacity(StringBuilder style, String transparency) {
+        Double opacity = opacityFromTransparency(transparency);
+        if (opacity != null && opacity < 1.0) {
+            style.append("-fx-opacity: ").append(trimmedDecimal(opacity)).append("; ");
+        }
+    }
+
+    private static void appendBorderStyle(StringBuilder style, String value) {
+        if (value != null && BORDER_STYLE_PATTERN.matcher(value).matches()) {
+            style.append("-fx-border-style: ").append(value.toLowerCase()).append("; ");
+        }
+    }
+
+    private static void appendBorderRadius(StringBuilder style, String value) {
+        String radius = switch (value == null ? "" : value.toLowerCase()) {
+            case "square" -> "0px";
+            case "rounded" -> "6px";
+            case "pill" -> "999px";
+            default -> null;
+        };
+        if (radius != null) {
+            style.append("-fx-border-radius: ").append(radius).append("; ");
+            style.append("-fx-background-radius: ").append(radius).append("; ");
+        }
+    }
+
+    private static void appendBorderThickness(StringBuilder style, String value) {
+        if (value != null && FONT_SIZE_PATTERN.matcher(value).matches()) {
+            style.append("-fx-border-width: ").append(value.matches("\\d+(\\.\\d+)?") ? value + "px" : value).append("; ");
+        }
+    }
+
+    private static void appendBorderColor(StringBuilder style, String value) {
+        if (value != null && COLOR_PATTERN.matcher(value).matches()) {
+            style.append("-fx-border-color: ").append(value).append("; ");
+        }
+    }
+
     private static String fontFamily(String value) {
         if (value == null || !FONT_FAMILY_PATTERN.matcher(value).matches()) {
             return null;
@@ -232,6 +279,25 @@ public final class ScreenLayoutRenderer {
 
     private static String cssQuoted(String value) {
         return value.replace("\\", "\\\\").replace("\"", "\\\"");
+    }
+
+    private static Double opacityFromTransparency(String value) {
+        if (value == null || !DECIMAL_PATTERN.matcher(value).matches()) {
+            return null;
+        }
+        try {
+            double transparency = Double.parseDouble(value);
+            if (transparency < 0.0 || transparency > 1.0) {
+                return null;
+            }
+            return 1.0 - transparency;
+        } catch (NumberFormatException exception) {
+            return null;
+        }
+    }
+
+    private static String trimmedDecimal(double value) {
+        return value == Math.rint(value) ? Integer.toString((int) value) : Double.toString(value);
     }
 
     private static void addActions(VBox parent, RouteContext context, Iterable<ScreenActionViewModel> actions, String actionStyleClass) {

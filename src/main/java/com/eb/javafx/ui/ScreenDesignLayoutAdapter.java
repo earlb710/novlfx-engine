@@ -16,6 +16,11 @@ public final class ScreenDesignLayoutAdapter {
     static final String FONT_STYLE_KEY = "fontStyle";
     static final String COLOR_KEY = "color";
     static final String BACKGROUND_COLOR_KEY = "backgroundColor";
+    static final String TRANSPARENCY_KEY = "transparency";
+    static final String BORDER_STYLE_KEY = "borderStyle";
+    static final String BORDER_CORNER_KEY = "borderCorner";
+    static final String BORDER_THICKNESS_KEY = "borderThickness";
+    static final String BORDER_COLOR_KEY = "borderColor";
     static final String DISPLAY_ROLE_KEY = "displayRole";
 
     private ScreenDesignLayoutAdapter() {
@@ -79,11 +84,27 @@ public final class ScreenDesignLayoutAdapter {
                 mergedMetadata(
                         mergedMetadata(
                                 mergedMetadata(
-                                        mergedMetadata(defaults.screen(), defaults.block()),
+                                        mergedMetadata(textStyleMetadata(defaults.screen()), textStyleMetadata(defaults.block())),
                                         defaults.itemDefaults(itemRole(item))),
-                                screenOverrides),
-                        blockOverrides),
+                                textStyleMetadata(screenOverrides)),
+                        textStyleMetadata(blockOverrides)),
                 item.metadata());
+    }
+
+    private static Map<String, String> textStyleMetadata(Map<String, String> metadata) {
+        LinkedHashMap<String, String> filtered = new LinkedHashMap<>();
+        copyIfPresent(metadata, filtered, FONT_FAMILY_KEY);
+        copyIfPresent(metadata, filtered, FONT_SIZE_KEY);
+        copyIfPresent(metadata, filtered, FONT_STYLE_KEY);
+        copyIfPresent(metadata, filtered, COLOR_KEY);
+        return Map.copyOf(filtered);
+    }
+
+    private static void copyIfPresent(Map<String, String> metadata, Map<String, String> target, String key) {
+        String value = metadata.get(key);
+        if (value != null && !value.isBlank()) {
+            target.put(key, value);
+        }
     }
 
     static String itemRole(ScreenDesignItem item) {
