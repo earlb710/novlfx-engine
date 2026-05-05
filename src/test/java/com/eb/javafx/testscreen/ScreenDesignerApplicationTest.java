@@ -381,8 +381,11 @@ final class ScreenDesignerApplicationTest {
         attributes.put("fontSize", "18");
         attributes.put("borderCorner", "rounded");
         attributes.put("color", "#ffffff");
+        attributes.put("zCustom", "z");
+        attributes.put("aCustom", "a");
 
-        assertEquals(List.of("fontSize", "fontStyle", "color", "backgroundColor", "borderStyle", "borderCorner", "borderColor"),
+        assertEquals(List.of("fontSize", "fontStyle", "color", "backgroundColor", "borderStyle", "borderCorner", "borderColor",
+                        "aCustom", "zCustom"),
                 ScreenDesignerApplication.orderedDefaultAttributeKeys(attributes));
     }
 
