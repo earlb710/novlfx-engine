@@ -45,6 +45,14 @@ final class ConversationEditorApplicationTest {
     }
 
     @Test
+    void conversationJsonFilesListsJsonFilesByName() {
+        List<Path> jsonFiles = ConversationEditorApplication.conversationJsonFiles(
+                ConversationEditorApplication.conversationExamplesDirectory());
+
+        assertEquals(List.of(ConversationEditorApplication.conversationExamplesDirectory().resolve("sample-conversation.json")), jsonFiles);
+    }
+
+    @Test
     void statusTextNamesSavedOrUnsavedConversationsAndValidationState() {
         assertEquals("Unsaved conversation | Conversation JSON is valid.",
                 ConversationEditorApplication.statusText(null, List.of()));
@@ -94,6 +102,7 @@ final class ConversationEditorApplicationTest {
 
     @Test
     void editorTabsExposeConversationDetailAndJsonAreas() {
+        assertEquals(List.of("Files", "Conversations", "Detail"), ConversationEditorApplication.editorBlockLabels());
         assertEquals(List.of("Conversations"), ConversationEditorApplication.conversationTabLabels());
         assertEquals(List.of("Detail", "JSON"), ConversationEditorApplication.detailTabLabels());
     }

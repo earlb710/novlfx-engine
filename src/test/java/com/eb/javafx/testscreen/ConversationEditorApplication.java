@@ -15,6 +15,7 @@ import javax.swing.JComponent;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JList;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
@@ -27,6 +28,7 @@ import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.JTree;
 import javax.swing.SwingUtilities;
+import javax.swing.DefaultListModel;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.text.JTextComponent;
@@ -39,11 +41,14 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.GridLayout;
 import java.awt.Insets;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -52,6 +57,8 @@ public final class ConversationEditorApplication {
     private static final int MAX_CONDITION_FIELDS = 3;
 
     private ConversationDefinition conversation = sampleConversation();
+    private final DefaultListModel<ConversationFile> fileListModel = new DefaultListModel<>();
+    private final JList<ConversationFile> fileList = new JList<>(fileListModel);
     private final DefaultTreeModel objectTreeModel = new DefaultTreeModel(new DefaultMutableTreeNode());
     private final JTree objectTree = new JTree(objectTreeModel);
     private final JTabbedPane detailTabs = new JTabbedPane();
@@ -73,6 +80,7 @@ public final class ConversationEditorApplication {
             .limit(MAX_CONDITION_FIELDS)
             .toList();
     private final JLabel statusLabel = new JLabel();
+    private Path currentFolder = conversationExamplesDirectory();
     private Path currentPath;
     private String savedJsonSnapshot = ConversationDefinitionJson.toJson(conversation);
     private boolean refreshing;
@@ -95,6 +103,7 @@ public final class ConversationEditorApplication {
         frame.setContentPane(content());
         frame.setSize(1100, 700);
         frame.setLocationByPlatform(true);
+        refreshFileList();
         refreshAll();
         frame.setVisible(true);
     }
@@ -104,11 +113,23 @@ public final class ConversationEditorApplication {
         objectTree.addTreeSelectionListener(event -> refreshEditorFieldsFromSelection());
         detailTabs.addTab("Detail", detailPanel());
         detailTabs.addTab("JSON", jsonPanel());
-        JSplitPane split = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, conversationTabs(), detailTabs);
-        split.setDividerLocation(360);
-        root.add(split, BorderLayout.CENTER);
+        JSplitPane conversationAndDetail = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, conversationTabs(), detailTabs);
+        conversationAndDetail.setDividerLocation(360);
+        JSplitPane fileConversationAndDetail = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, fileListPanel(), conversationAndDetail);
+        fileConversationAndDetail.setDividerLocation(220);
+        root.add(fileConversationAndDetail, BorderLayout.CENTER);
         root.add(statusLabel, BorderLayout.SOUTH);
         return root;
+    }
+
+    private JPanel fileListPanel() {
+        JPanel panel = new JPanel(new BorderLayout(6, 6));
+        panel.setBorder(BorderFactory.createTitledBorder("Files"));
+        JButton openFolder = new JButton("Open Folder");
+        openFolder.addActionListener(event -> runSafely("Open Folder", this::openFolder));
+        panel.add(openFolder, BorderLayout.NORTH);
+        panel.add(new JScrollPane(fileList), BorderLayout.CENTER);
+        return panel;
     }
 
     private JTabbedPane conversationTabs() {
@@ -249,6 +270,14 @@ public final class ConversationEditorApplication {
     private void configureEditors() {
         lineSpeakerField.setEditable(true);
         lineListenerField.setEditable(true);
+        fileList.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent event) {
+                if (event.getClickCount() == 2) {
+                    runSafely("Open Conversation", ConversationEditorApplication.this::openSelectedConversationFile);
+                }
+            }
+        });
         installDirtyStateListener(jsonArea);
         installDirtyStateListener(documentNameField);
         installDirtyStateListener(languageField);
@@ -315,11 +344,20 @@ public final class ConversationEditorApplication {
     private void loadJson() {
         JFileChooser chooser = jsonChooser();
         if (chooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
-            currentPath = chooser.getSelectedFile().toPath();
-            conversation = ConversationDefinitionJson.load(currentPath);
-            savedJsonSnapshot = ConversationDefinitionJson.toJson(conversation);
-            refreshAll();
+            loadJson(chooser.getSelectedFile().toPath());
         }
+    }
+
+    private void loadJson(Path jsonPath) {
+        currentPath = jsonPath;
+        Path parent = jsonPath.getParent();
+        if (parent != null) {
+            currentFolder = parent;
+        }
+        conversation = ConversationDefinitionJson.load(currentPath);
+        savedJsonSnapshot = ConversationDefinitionJson.toJson(conversation);
+        refreshFileList();
+        refreshAll();
     }
 
     private void saveJson() {
@@ -329,6 +367,8 @@ public final class ConversationEditorApplication {
         }
         ConversationDefinitionJson.save(currentPath, conversation);
         savedJsonSnapshot = ConversationDefinitionJson.toJson(conversation);
+        refreshCurrentFolderFromPath();
+        refreshFileList();
         refreshAll();
     }
 
@@ -341,6 +381,8 @@ public final class ConversationEditorApplication {
         }
         ConversationDefinitionJson.save(currentPath, conversation);
         savedJsonSnapshot = ConversationDefinitionJson.toJson(conversation);
+        refreshCurrentFolderFromPath();
+        refreshFileList();
         refreshAll();
     }
 
@@ -354,9 +396,53 @@ public final class ConversationEditorApplication {
     }
 
     private JFileChooser jsonChooser() {
-        JFileChooser chooser = new JFileChooser(conversationExamplesDirectory().toFile());
+        JFileChooser chooser = new JFileChooser(currentFolder.toFile());
         chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
         return chooser;
+    }
+
+    private void openFolder() {
+        JFileChooser chooser = new JFileChooser(currentFolder.toFile());
+        chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+        if (chooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
+            currentFolder = chooser.getSelectedFile().toPath();
+            refreshFileList();
+        }
+    }
+
+    private void openSelectedConversationFile() {
+        ConversationFile selectedFile = fileList.getSelectedValue();
+        if (selectedFile != null) {
+            loadJson(selectedFile.path());
+        }
+    }
+
+    private void refreshCurrentFolderFromPath() {
+        if (currentPath != null && currentPath.getParent() != null) {
+            currentFolder = currentPath.getParent();
+        }
+    }
+
+    private void refreshFileList() {
+        fileListModel.clear();
+        conversationJsonFiles(currentFolder).stream()
+                .map(ConversationFile::new)
+                .forEach(fileListModel::addElement);
+        selectCurrentFileInList();
+    }
+
+    private void selectCurrentFileInList() {
+        if (currentPath == null) {
+            return;
+        }
+        Path selectedPath = currentPath.toAbsolutePath().normalize();
+        for (int index = 0; index < fileListModel.size(); index++) {
+            if (fileListModel.get(index).path().toAbsolutePath().normalize().equals(selectedPath)) {
+                fileList.setSelectedIndex(index);
+                fileList.ensureIndexIsVisible(index);
+                return;
+            }
+        }
     }
 
     private void applyJson() {
@@ -580,12 +666,30 @@ public final class ConversationEditorApplication {
                 .orElse(cwd.resolve("examples/conversations"));
     }
 
+    static List<Path> conversationJsonFiles(Path folder) {
+        if (folder == null || !Files.isDirectory(folder)) {
+            return List.of();
+        }
+        try (Stream<Path> paths = Files.list(folder)) {
+            return paths
+                    .filter(path -> path.getFileName().toString().endsWith(".json"))
+                    .sorted(Comparator.comparing(path -> path.getFileName().toString()))
+                    .toList();
+        } catch (Exception exception) {
+            throw new IllegalArgumentException("Unable to list conversation JSON files in: " + folder, exception);
+        }
+    }
+
     static List<String> fileMenuActionLabels() {
         return List.of("New", "Load", "Save", "Save As");
     }
 
     static List<String> conversationTabLabels() {
         return List.of("Conversations");
+    }
+
+    static List<String> editorBlockLabels() {
+        return List.of("Files", "Conversations", "Detail");
     }
 
     static List<String> detailTabLabels() {
@@ -944,6 +1048,18 @@ public final class ConversationEditorApplication {
     }
 
     private record FormRow(String label, JComponent field) {
+    }
+
+    private record ConversationFile(Path path) {
+        private ConversationFile {
+            path = Validation.requireNonNull(path, "Conversation file path is required.");
+        }
+
+        @Override
+        public String toString() {
+            Path fileName = path.getFileName();
+            return fileName == null ? path.toString() : fileName.toString();
+        }
     }
 
     private record NodeData(NodeType type, int conversationIndex, int lineIndex, int variantIndex, String label) {
