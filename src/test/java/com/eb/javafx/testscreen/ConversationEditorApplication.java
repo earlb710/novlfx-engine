@@ -44,6 +44,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Stream;
 
 /** Manual Swing editor for LR2Alt-compatible JSON conversation documents. */
 public final class ConversationEditorApplication {
@@ -66,7 +67,7 @@ public final class ConversationEditorApplication {
     private final JComboBox<String> lineListenerField = new JComboBox<>();
     private final JTextArea variantTextArea = new JTextArea();
     private final JTextField variantWeightField = new JTextField();
-    private final List<JTextField> variantConditionFields = java.util.stream.Stream.generate(JTextField::new)
+    private final List<JTextField> variantConditionFields = Stream.generate(JTextField::new)
             .limit(MAX_CONDITION_FIELDS)
             .toList();
     private final JLabel statusLabel = new JLabel();

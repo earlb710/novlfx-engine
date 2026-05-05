@@ -101,11 +101,7 @@ public final class ConversationDefinitionJson {
         if (!object.containsKey(key)) {
             throw new IllegalArgumentException("Missing JSON string for " + description + ".");
         }
-        String value = stringAllowingEmpty(object.get(key), description, null);
-        if (value == null) {
-            throw new IllegalArgumentException("Missing JSON string for " + description + ".");
-        }
-        return value;
+        return requiredStringAllowingEmpty(object.get(key), description);
     }
 
     private static String stringAllowingEmpty(Map<String, Object> object, String key, String description, String defaultValue) {
@@ -118,6 +114,16 @@ public final class ConversationDefinitionJson {
     private static String stringAllowingEmpty(Object value, String description, String defaultValue) {
         if (value == null) {
             return defaultValue;
+        }
+        if (value instanceof String stringValue) {
+            return stringValue;
+        }
+        throw new IllegalArgumentException("Expected JSON string for " + description + ".");
+    }
+
+    private static String requiredStringAllowingEmpty(Object value, String description) {
+        if (value == null) {
+            throw new IllegalArgumentException("Missing JSON string for " + description + ".");
         }
         if (value instanceof String stringValue) {
             return stringValue;
