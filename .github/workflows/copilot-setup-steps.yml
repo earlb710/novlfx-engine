@@ -31,9 +31,9 @@ jobs:
           umask 077
           git_config="${HOME}/.gitconfig"
           touch "${git_config}"
-          if ! grep -Eq '^[[:space:]]*insteadOf[[:space:]]*=[[:space:]]*https://github.com/earlb710/AltLife.git$' "${git_config}"; then
+          if ! grep -Eq '^[[:space:]]*insteadOf[[:space:]]*=[[:space:]]*https://github.com/earlb710/AltLife$' "${git_config}"; then
             {
-              printf '[url "https://x-access-token:%s@github.com/earlb710/AltLife.git"]\n' "${ALTLIFE_TOKEN}"
-              printf '    insteadOf = https://github.com/earlb710/AltLife.git\n'
+              printf '[url "https://x-access-token:%s@github.com/earlb710/AltLife"]\n' "${ALTLIFE_TOKEN}"
+              printf '    insteadOf = https://github.com/earlb710/AltLife\n'
             } >> "${git_config}"
           fi
