@@ -173,7 +173,7 @@ final class DefaultDisplayValuesApplicationTest {
     void applicationVariableActionsAddDefaultRowsAndRemoveSelectedRows() {
         JPanel panel = DefaultDisplayValuesApplication.applicationVariablesPanel(
                 DefaultDisplayValuesApplication.applicationVariables());
-        JTable table = applicationVariablesTable(panel);
+        JTable table = tableFromPanel(panel);
         JPanel actions = (JPanel) ((BorderLayout) panel.getLayout()).getLayoutComponent(BorderLayout.SOUTH);
         DefaultTableModel model = (DefaultTableModel) table.getModel();
 
@@ -191,7 +191,7 @@ final class DefaultDisplayValuesApplicationTest {
     void loadFileActionsAddDefaultRowsAndRemoveSelectedRows() {
         JPanel panel = DefaultDisplayValuesApplication.loadFilesPanel(
                 DefaultDisplayValuesApplication.applicationLoads());
-        JTable table = loadFilesTable(panel);
+        JTable table = tableFromPanel(panel);
         JPanel actions = (JPanel) ((BorderLayout) panel.getLayout()).getLayoutComponent(BorderLayout.SOUTH);
         DefaultTableModel model = (DefaultTableModel) table.getModel();
 
@@ -318,13 +318,7 @@ final class DefaultDisplayValuesApplicationTest {
         return (JTextArea) viewport.getView();
     }
 
-    private static JTable applicationVariablesTable(JPanel panel) {
-        JScrollPane scrollPane = (JScrollPane) ((BorderLayout) panel.getLayout()).getLayoutComponent(BorderLayout.CENTER);
-        JViewport viewport = scrollPane.getViewport();
-        return (JTable) viewport.getView();
-    }
-
-    private static JTable loadFilesTable(JPanel panel) {
+    private static JTable tableFromPanel(JPanel panel) {
         JScrollPane scrollPane = (JScrollPane) ((BorderLayout) panel.getLayout()).getLayoutComponent(BorderLayout.CENTER);
         JViewport viewport = scrollPane.getViewport();
         return (JTable) viewport.getView();
