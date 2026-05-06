@@ -46,12 +46,7 @@ public final class ScenePresenter {
         boolean rollbackAvailable = checkpointLog != null && checkpointLog.rollbackAllowed();
         boolean rollForwardAvailable = checkpointLog != null && checkpointLog.rollForwardAllowed();
         boolean rollbackFixed = checkpointLog != null && checkpointLog.rollbackFixed();
-        String rollbackBlockedReason = checkpointLog == null
-                || checkpointLog.currentCheckpoint() == null
-                || rollbackAvailable
-                || !checkpointLog.currentCheckpoint().rollbackBlocked()
-                ? null
-                : "Rollback is blocked at this checkpoint.";
+        String rollbackBlockedReason = rollbackBlockedReason(checkpointLog, rollbackAvailable);
         return new SceneViewModel(
                 result.status(),
                 result.state().activeSceneId(),
@@ -69,6 +64,17 @@ public final class ScenePresenter {
                 rollForwardAvailable,
                 rollbackFixed,
                 rollbackBlockedReason);
+    }
+
+    private String rollbackBlockedReason(SceneCheckpointLog checkpointLog, boolean rollbackAvailable) {
+        if (checkpointLog == null || rollbackAvailable) {
+            return null;
+        }
+        SceneCheckpoint currentCheckpoint = checkpointLog.currentCheckpoint();
+        if (currentCheckpoint == null || !currentCheckpoint.rollbackBlocked()) {
+            return null;
+        }
+        return "Rollback is blocked at this checkpoint.";
     }
 
     private List<SceneStatusRowViewModel> statusRows(SceneExecutionResult result, SceneStep step, List<String> selectedChoiceIds) {

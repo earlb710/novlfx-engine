@@ -45,31 +45,34 @@ public final class SceneFlowScreen {
         ScenePresenter presenter = new ScenePresenter();
         VBox content = new VBox(ScreenShell.BODY_SPACING);
         Button mainMenu = ScreenNavigation.button(context, "Back to main menu", SceneRouter.MAIN_MENU_ROUTE);
-        Runnable[] render = new Runnable[1];
-        Runnable backward = () -> {
+        renderCheckpointScene(actionContext, session, presenter, content, mainMenu);
+        return context.themedScene(ScreenShell.titled(context.contentRegistry().definition(titleDefinition), content));
+    }
+
+    private static void renderCheckpointScene(
+            ActionContext actionContext,
+            SceneCheckpointSession session,
+            ScenePresenter presenter,
+            VBox content,
+            Button mainMenu) {
+        SceneViewModel viewModel = presenter.present(actionContext, session.currentResult(), session.checkpointLog());
+        VBox sceneContent = SceneFlowView.createContent(viewModel, choiceId -> {
+            session.selectChoice(choiceId);
+            renderCheckpointScene(actionContext, session, presenter, content, mainMenu);
+        }, () -> {
             if (session.rollbackAllowed()) {
                 session.rollbackOneCheckpoint();
-                render[0].run();
+                renderCheckpointScene(actionContext, session, presenter, content, mainMenu);
             }
-        };
-        Runnable forward = () -> {
+        }, () -> {
             SceneExecutionResult current = session.currentResult();
             if (session.rollForwardAllowed()) {
                 session.rollForwardUsingStoredCheckpointData();
             } else if (current != null && current.status() == SceneExecutionStatus.DISPLAYING_TEXT) {
                 session.continueFromText();
             }
-            render[0].run();
-        };
-        render[0] = () -> {
-            SceneViewModel viewModel = presenter.present(actionContext, session.currentResult(), session.checkpointLog());
-            VBox sceneContent = SceneFlowView.createContent(viewModel, choiceId -> {
-                session.selectChoice(choiceId);
-                render[0].run();
-            }, backward, forward);
-            content.getChildren().setAll(sceneContent, mainMenu);
-        };
-        render[0].run();
-        return context.themedScene(ScreenShell.titled(context.contentRegistry().definition(titleDefinition), content));
+            renderCheckpointScene(actionContext, session, presenter, content, mainMenu);
+        });
+        content.getChildren().setAll(sceneContent, mainMenu);
     }
 }
