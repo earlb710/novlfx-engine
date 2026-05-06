@@ -63,7 +63,7 @@ public final class ComplexFooterBarTestScreen {
                 ScreenShell.SCENE_CHOICES_PANEL_STYLE_CLASS,
                 new Label("Choice options"),
                 choicesPanel);
-        Button closeButton = new Button("Back to main menu");
+        Button closeButton = ButtonVisuals.apply(new Button("Back to main menu"));
         closeButton.setOnAction(event -> closeAction.run());
 
         VBox content = new VBox(
@@ -155,8 +155,7 @@ public final class ComplexFooterBarTestScreen {
             Runnable refresh) {
         choicesPanel.getChildren().clear();
         for (TestConversationChoice choice : model.currentChoices()) {
-            Button choiceButton = new Button(choice.text());
-            choiceButton.setMaxWidth(Double.MAX_VALUE);
+            Button choiceButton = ButtonVisuals.apply(new Button(choice.text()));
             choiceButton.setDisable(choice.id().equals(model.selectedChoiceId()));
             choiceButton.setOnAction(event -> {
                 model.selectChoice(choice.id());

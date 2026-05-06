@@ -129,6 +129,20 @@ final class ScreenShellTest {
     }
 
     @Test
+    void defaultStylesMakeButtonsBoldLabelSizedAndSvgShaped() throws Exception {
+        String css = Files.readString(Path.of("src/main/resources/com/eb/javafx/ui/default.css"));
+        String svg = Files.readString(Path.of("src/main/resources/com/eb/javafx/images/svg/button-pill.svg"));
+
+        assertTrue(css.contains("-fx-font-size: 20px;"));
+        assertTrue(css.contains("-fx-font-weight: bold;"));
+        assertTrue(css.contains("-fx-padding: 8px 18px;"));
+        assertTrue(css.contains("-fx-shape: \"" + ButtonVisuals.buttonShapePath() + "\";"));
+        assertTrue(svg.contains("id=\"button-shape\""));
+        assertEquals("M 24 0 H 156 Q 180 0 180 24 Q 180 48 156 48 H 24 Q 0 48 0 24 Q 0 0 24 0 Z",
+                ButtonVisuals.buttonShapePath());
+    }
+
+    @Test
     void footerOptionTextsExposeRequestedIconShortcuts() {
         ScreenShell.FooterOption back = ScreenShell.defaultFooterOptions().get(0);
 

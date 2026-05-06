@@ -137,15 +137,24 @@
 }
 
 .button {
+    -fx-font-size: 20px;
+    -fx-font-weight: bold;
+    -fx-padding: 8px 18px;
     -fx-background-color: #0a1426;
-    -fx-text-fill: #dddddd;
+    -fx-text-fill: #ffffff;
     -fx-border-color: #143869;
+    -fx-border-width: 1px;
+    -fx-background-insets: 0;
+    -fx-border-insets: 0;
+    -fx-shape: "M 24 0 H 156 Q 180 0 180 24 Q 180 48 156 48 H 24 Q 0 48 0 24 Q 0 0 24 0 Z";
 }
 
 .button:hover {
     -fx-background-color: #143869;
+    -fx-border-color: #0099cc;
 }
 
 .button:pressed {
     -fx-background-color: #0099cc;
+    -fx-border-color: #66c1e0;
 }

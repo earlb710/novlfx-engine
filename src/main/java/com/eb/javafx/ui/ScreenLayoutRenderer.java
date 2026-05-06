@@ -313,9 +313,9 @@ public final class ScreenLayoutRenderer {
         Button button = context == null
                 ? new Button(action.label())
                 : ScreenNavigation.button(context, action.label(), action.routeId());
+        ButtonVisuals.apply(button);
         button.getStyleClass().add(styleClass);
         button.setDisable(!action.enabled());
-        button.setMaxWidth(Double.MAX_VALUE);
         return button;
     }
 

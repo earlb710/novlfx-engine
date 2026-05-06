@@ -48,13 +48,13 @@ public final class CaptureTestScreen {
         Label capturedOutput = new Label(model.summary());
         capturedOutput.setWrapText(true);
 
-        Button captureButton = new Button("Capture fields");
+        Button captureButton = ButtonVisuals.apply(new Button("Capture fields"));
         captureButton.setOnAction(event -> {
             model.capture(characterField.getText(), locationField.getText(), noteField.getText());
             capturedOutput.setText(model.summary());
         });
 
-        Button clearButton = new Button("Clear fields");
+        Button clearButton = ButtonVisuals.apply(new Button("Clear fields"));
         clearButton.setOnAction(event -> {
             characterField.clear();
             locationField.clear();
@@ -63,7 +63,7 @@ public final class CaptureTestScreen {
             capturedOutput.setText(model.summary());
         });
 
-        Button backButton = new Button("Back to main menu");
+        Button backButton = ButtonVisuals.apply(new Button("Back to main menu"));
         backButton.setOnAction(event -> backAction.run());
 
         HBox actions = new HBox(8, captureButton, clearButton, backButton);
