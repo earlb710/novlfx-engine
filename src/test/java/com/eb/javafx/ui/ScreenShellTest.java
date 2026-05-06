@@ -20,6 +20,7 @@ import javafx.scene.layout.BorderStrokeStyle;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
+import javafx.scene.image.ImageView;
 import javafx.scene.shape.SVGPath;
 import org.junit.jupiter.api.Test;
 
@@ -209,6 +210,16 @@ final class ScreenShellTest {
         }
         assertTrue(VectorImage.isSvgPath(Path.of(
                 "src/main/resources/com/eb/javafx/images/icons/icons-10x10.svg")));
+    }
+
+    @Test
+    void footerOptionsRenderSlightlyLargerSvgIcons() {
+        ImageView graphic = ScreenShell.footerGraphic(ScreenShell.defaultFooterOptions().get(0));
+
+        assertNotNull(graphic);
+        assertEquals(14.0, graphic.getFitWidth());
+        assertEquals(14.0, graphic.getFitHeight());
+        assertTrue(graphic.isPreserveRatio());
     }
 
     @Test

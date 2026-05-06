@@ -90,7 +90,7 @@ public final class ScreenShell {
             OUTER_INSETS.getLeft());
     private static final double FOOTER_SPACING = 8;
     private static final double COMPACT_FOOTER_SPACING = 4;
-    private static final int FOOTER_ICON_SIZE = 12;
+    private static final int FOOTER_ICON_SIZE = 14;
     private static final double DEFAULT_FOOTER_BACKGROUND_TRANSPARENCY = 0.5;
     private static final Color DEFAULT_FOOTER_BACKGROUND_COLOR = Color.rgb(10, 20, 38);
     private static final Color DEFAULT_FOOTER_BORDER_COLOR = Color.web("#143869");
@@ -564,7 +564,7 @@ public final class ScreenShell {
         installFooterTooltip(label, tooltipText);
     }
 
-    private static ImageView footerGraphic(FooterOption option) {
+    static ImageView footerGraphic(FooterOption option) {
         if (option.iconResourcePath().isBlank()) {
             return null;
         }
