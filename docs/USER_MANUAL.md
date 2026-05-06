@@ -309,7 +309,7 @@ The `ui` package provides reusable JavaFX surfaces and helpers:
 - `ScreenInventory`, `ScreenInventoryItem`, `ScreenInventorySource`, `ScreenInventoryScanner`, and `ScreenInventoryAssignmentCategory` provide content-neutral inventory models for application-owned screen/style/control migration scanners. Use them to classify source artifacts as route-backed, reusable-control-backed, deferred, deprecated, excluded, or app-owned without hard-coding source-engine names in the engine.
 - `ViewModelScreen` renders a `ScreenViewModel` with generic labels and navigation buttons.
 - `ScreenLayoutRenderer` renders a `ScreenLayoutModel` into JavaFX nodes. It keeps route screens thin by letting them gather data, build a UI-neutral model, and delegate JavaFX node creation plus style-class assignment to the shared renderer.
-- `ScreenShell` wraps screen content in a consistent shell.
+- `ScreenShell` wraps screen content in a consistent shell. Its reusable footer bar is shown by default on titled shells and exposes helpers for visibility, transparency, compact/mobile presentation, icon-only label mode, localized labels/tooltips, and per-option enabled state. Use `FooterOption` ids such as `back`, `history`, `save`, `quick-save`, and `preferences` when application state, localization bundles, or preferences need to customize a specific footer control. Default footer functions also expose standalone SVG icon resources under `src/main/resources/com/eb/javafx/images/icons/` using names like `footer-back.svg`, `footer-save.svg`, and `footer-preferences.svg`; `icons-10x10.svg` remains available in the same directory as the source icon sheet/reference.
 - `ScreenNavigation` centralizes navigation callbacks.
 - `PreviewSummaryView` creates simple titled preview panels for display, scene, and snapshot summaries.
 - `MainMenuScreen`, `SceneFlowScreen`, `DisplayBindingsScreen`, `HudSummaryScreen`, `SaveLoadSummaryScreen`, `PreferencesSummaryScreen`, and `ConversationHistoryScreen` provide generic reusable screens or screen models.
@@ -594,7 +594,7 @@ Use `ReusableGameplaySnapshot` and `ReusableGameplaySnapshotDocuments` for the r
 
 ### Preferences
 
-Use `PreferencesService` for user preferences such as window size, fullscreen state, and master volume. Load preferences before services that depend on them, especially UI theme/window behavior and audio master volume. `PreferencesSummaryScreen` builds a `PreferencesSummaryViewModel` with `PreferencesSummaryRowViewModel` entries so reusable diagnostics can present startup preference state as labeled values instead of raw strings.
+Use `PreferencesService` for user preferences such as window size, fullscreen state, footer label visibility, and master volume. Load preferences before services that depend on them, especially UI theme/window behavior and audio master volume. `PreferencesSummaryScreen` builds a `PreferencesSummaryViewModel` with `PreferencesSummaryRowViewModel` entries so reusable diagnostics can present startup preference state as labeled values instead of raw strings. Call `ScreenShell.applyFooterPreferences(...)` when a screen footer should honor the user's icon-only footer preference.
 
 ### Random
 

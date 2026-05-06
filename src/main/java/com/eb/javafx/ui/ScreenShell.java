@@ -1,9 +1,14 @@
 package com.eb.javafx.ui;
 
+import com.eb.javafx.localization.LocalizationService;
+import com.eb.javafx.prefs.PreferencesService;
+import com.eb.javafx.state.GameState;
 import com.eb.javafx.util.Validation;
+import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
+import javafx.scene.control.Tooltip;
 import javafx.scene.image.Image;
 import javafx.scene.layout.Background;
 import javafx.scene.layout.BackgroundImage;
@@ -11,8 +16,11 @@ import javafx.scene.layout.BackgroundPosition;
 import javafx.scene.layout.BackgroundRepeat;
 import javafx.scene.layout.BackgroundSize;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
+
+import java.util.List;
 
 /**
  * Shared layout for reusable screen content with JavaFX frames.
@@ -25,6 +33,11 @@ public final class ScreenShell {
     public static final String SCREEN_ROOT_STYLE_CLASS = "screen-root";
     public static final String SCREEN_TITLE_STYLE_CLASS = "screen-title";
     public static final String SCREEN_PANEL_STYLE_CLASS = "screen-panel";
+    public static final String SCREEN_FOOTER_BAR_STYLE_CLASS = "screen-footer-bar";
+    public static final String SCREEN_FOOTER_OPTION_STYLE_CLASS = "screen-footer-option";
+    public static final String SCREEN_FOOTER_OPTION_DISABLED_STYLE_CLASS = "screen-footer-option-disabled";
+    public static final String SCREEN_FOOTER_COMPACT_STYLE_CLASS = "screen-footer-compact";
+    public static final String DEFAULT_FOOTER_ICON_RESOURCE_DIRECTORY = "com/eb/javafx/images/icons";
     public static final String SCENE_STATUS_PANEL_STYLE_CLASS = "scene-status-panel";
     public static final String SCENE_DIALOGUE_PANEL_STYLE_CLASS = "scene-dialogue-panel";
     public static final String SCENE_CHOICES_PANEL_STYLE_CLASS = "scene-choices-panel";
@@ -54,6 +67,22 @@ public final class ScreenShell {
     public static final double BODY_SPACING = 12;
     public static final Insets OUTER_INSETS = new Insets(16);
     public static final Insets PANEL_INSETS = new Insets(16);
+    private static final Insets OUTER_INSETS_WITHOUT_BOTTOM = new Insets(
+            OUTER_INSETS.getTop(),
+            OUTER_INSETS.getRight(),
+            0,
+            OUTER_INSETS.getLeft());
+    private static final double FOOTER_SPACING = 8;
+    private static final double COMPACT_FOOTER_SPACING = 4;
+    private static final List<FooterOption> FOOTER_OPTIONS = List.of(
+            new FooterOption("back", "‹", "Back", "Backspace", "Return to the previous screen."),
+            new FooterOption("history", "◷", "History", "Ctrl+H", "Open conversation history."),
+            new FooterOption("skip-mode", "⇥", "Skip mode", "Tab", "Toggle skip mode."),
+            new FooterOption("load", "⇩", "Load", "Ctrl+L", "Open the load screen."),
+            new FooterOption("save", "▣", "Save", "Ctrl+S", "Open the save screen."),
+            new FooterOption("quick-save", "⚡", "Quick save", "Ctrl+Q", "Save to the quick-save slot."),
+            new FooterOption("preferences", "⚙", "Preferences", "Ctrl+P", "Open preferences."),
+            new FooterOption("forward", "›", "Forward", "Space", "Advance the scene."));
 
     private ScreenShell() {
     }
@@ -65,6 +94,17 @@ public final class ScreenShell {
      * @param content JavaFX node placed in the central panel
      */
     public static BorderPane titled(String title, Node content) {
+        return titled(title, content, FOOTER_OPTIONS);
+    }
+
+    /**
+     * Builds a titled panel with caller-supplied footer options.
+     *
+     * @param title screen title text shown above the content panel
+     * @param content JavaFX node placed in the central panel
+     * @param footerOptions footer options to show, or an empty list to omit the footer
+     */
+    public static BorderPane titled(String title, Node content, List<FooterOption> footerOptions) {
         Label header = new Label(title);
         header.getStyleClass().add(SCREEN_TITLE_STYLE_CLASS);
 
@@ -74,9 +114,174 @@ public final class ScreenShell {
         root.getStyleClass().add(SCREEN_ROOT_STYLE_CLASS);
         root.setTop(header);
         root.setCenter(body);
-        BorderPane.setMargin(header, new Insets(OUTER_INSETS.getTop(), OUTER_INSETS.getRight(), 0, OUTER_INSETS.getLeft()));
-        BorderPane.setMargin(body, OUTER_INSETS);
+        if (footerOptions != null && !footerOptions.isEmpty()) {
+            root.setBottom(footerBar(footerOptions));
+            BorderPane.setMargin(root.getBottom(), OUTER_INSETS);
+        }
+        BorderPane.setMargin(header, OUTER_INSETS_WITHOUT_BOTTOM);
+        BorderPane.setMargin(body, OUTER_INSETS_WITHOUT_BOTTOM);
         return root;
+    }
+
+    /**
+     * Creates a footer bar node for one screen shell.
+     *
+     * <p>A fresh JavaFX node is returned for every shell because JavaFX nodes cannot be shared
+     * across multiple parents.</p>
+     */
+    public static HBox footerBar() {
+        return footerBar(FOOTER_OPTIONS);
+    }
+
+    /**
+     * Creates a footer bar node from caller-supplied footer options.
+     *
+     * @param footerOptions options to render left-to-right in the footer
+     */
+    public static HBox footerBar(List<FooterOption> footerOptions) {
+        Validation.requireNonNull(footerOptions, "Footer options are required.");
+        HBox footer = new HBox(FOOTER_SPACING);
+        footer.getStyleClass().add(SCREEN_FOOTER_BAR_STYLE_CLASS);
+        for (FooterOption option : footerOptions) {
+            Validation.requireNonNull(option, "Footer option is required.");
+            Label label = new Label();
+            label.setUserData(option);
+            label.getStyleClass().add(SCREEN_FOOTER_OPTION_STYLE_CLASS);
+            applyFooterOption(label, option, true);
+            installFooterTooltip(label, option.tooltip());
+            footer.getChildren().add(label);
+        }
+        return footer;
+    }
+
+    /** Shows or hides the footer node while keeping layout management in sync. */
+    public static void setFooterVisible(Node footer, boolean visible) {
+        Validation.requireNonNull(footer, "Footer node is required.");
+        footer.setVisible(visible);
+        footer.setManaged(visible);
+    }
+
+    /** Shows or hides the footer attached to the supplied screen shell, when present. */
+    public static void setFooterVisible(BorderPane screen, boolean visible) {
+        Validation.requireNonNull(screen, "Screen shell is required.");
+        if (screen.getBottom() != null) {
+            setFooterVisible(screen.getBottom(), visible);
+        }
+    }
+
+    /** Sets footer transparency where {@code 0.0} is fully opaque and {@code 1.0} is invisible. */
+    public static void setFooterTransparency(Node footer, double transparency) {
+        Validation.requireNonNull(footer, "Footer node is required.");
+        footer.setOpacity(1.0 - Validation.requireUnitInterval(
+                transparency,
+                "Footer transparency must be between 0.0 and 1.0."));
+    }
+
+    /** Sets transparency on the footer attached to the supplied screen shell, when present. */
+    public static void setFooterTransparency(BorderPane screen, double transparency) {
+        Validation.requireNonNull(screen, "Screen shell is required.");
+        if (screen.getBottom() != null) {
+            setFooterTransparency(screen.getBottom(), transparency);
+        }
+    }
+
+    /** Applies compact mobile footer presentation, including icon-only labels and tighter spacing. */
+    public static void setFooterCompact(Node footer, boolean compact) {
+        Validation.requireNonNull(footer, "Footer node is required.");
+        if (compact) {
+            if (!footer.getStyleClass().contains(SCREEN_FOOTER_COMPACT_STYLE_CLASS)) {
+                footer.getStyleClass().add(SCREEN_FOOTER_COMPACT_STYLE_CLASS);
+            }
+        } else {
+            footer.getStyleClass().remove(SCREEN_FOOTER_COMPACT_STYLE_CLASS);
+        }
+        if (footer instanceof HBox footerBox) {
+            footerBox.setSpacing(compact ? COMPACT_FOOTER_SPACING : FOOTER_SPACING);
+        }
+        setFooterLabelsVisible(footer, !compact);
+    }
+
+    /** Switches footer labels between full text and icon-only presentation. */
+    public static void setFooterLabelsVisible(Node footer, boolean labelsVisible) {
+        Validation.requireNonNull(footer, "Footer node is required.");
+        if (footer instanceof HBox footerBox) {
+            footerBox.getChildren().forEach(child -> {
+                if (child instanceof Label label && label.getUserData() instanceof FooterOption option) {
+                    applyFooterOption(label, option, labelsVisible);
+                }
+            });
+        }
+    }
+
+    /** Applies the persisted user preference for showing footer labels. */
+    public static void applyFooterPreferences(Node footer, PreferencesService preferencesService) {
+        Validation.requireNonNull(preferencesService, "Preferences service is required.");
+        setFooterLabelsVisible(footer, preferencesService.footerLabelsVisible());
+    }
+
+    /** Adds responsive compact/mobile footer behavior based on the screen width. */
+    public static void configureResponsiveFooter(BorderPane screen, double compactWidth) {
+        Validation.requireNonNull(screen, "Screen shell is required.");
+        Validation.requirePositive(compactWidth, "Compact footer width must be positive.");
+        Node footer = screen.getBottom();
+        if (footer == null) {
+            return;
+        }
+        setFooterCompact(footer, isCompactFooterWidth(screen.getWidth(), compactWidth));
+        screen.widthProperty().addListener((observable, oldWidth, newWidth) ->
+                setFooterCompact(footer, isCompactFooterWidth(newWidth.doubleValue(), compactWidth)));
+    }
+
+    public static List<FooterOption> defaultFooterOptions() {
+        return FOOTER_OPTIONS;
+    }
+
+    public static List<FooterOption> changeFooterIcon(List<FooterOption> options, String id, String icon) {
+        return replaceFooterOption(options, id, option -> option.withIcon(icon));
+    }
+
+    public static List<FooterOption> changeFooterIconResourcePath(
+            List<FooterOption> options,
+            String id,
+            String iconResourcePath) {
+        return replaceFooterOption(options, id, option -> option.withIconResourcePath(iconResourcePath));
+    }
+
+    public static List<FooterOption> changeFooterLabel(List<FooterOption> options, String id, String label) {
+        return replaceFooterOption(options, id, option -> option.withLabel(label));
+    }
+
+    public static List<FooterOption> changeFooterShortcut(List<FooterOption> options, String id, String shortcut) {
+        return replaceFooterOption(options, id, option -> option.withShortcut(shortcut));
+    }
+
+    public static List<FooterOption> changeFooterTooltip(List<FooterOption> options, String id, String tooltip) {
+        return replaceFooterOption(options, id, option -> option.withTooltip(tooltip));
+    }
+
+    public static List<FooterOption> changeFooterEnabled(List<FooterOption> options, String id, boolean enabled) {
+        return replaceFooterOption(options, id, option -> option.withEnabled(enabled));
+    }
+
+    public static List<FooterOption> footerOptionsForGameState(GameState gameState) {
+        boolean historyAvailable = gameState != null && !gameState.conversationHistory().entries().isEmpty();
+        return changeFooterEnabled(FOOTER_OPTIONS, "history", historyAvailable);
+    }
+
+    public static List<FooterOption> localizeFooterOptions(
+            List<FooterOption> options,
+            LocalizationService localizationService) {
+        Validation.requireNonNull(options, "Footer options are required.");
+        Validation.requireNonNull(localizationService, "Localization service is required.");
+        return options.stream()
+                .map(option -> {
+                    Validation.requireNonNull(option, "Footer option is required.");
+                    String prefix = "ui.footer." + option.id();
+                    return option
+                            .withLabel(localizationService.text(prefix + ".label").orElse(option.label()))
+                            .withTooltip(localizationService.text(prefix + ".tooltip").orElse(option.tooltip()));
+                })
+                .toList();
     }
 
     public static VBox styledPanel(String styleClass, Node... children) {
@@ -125,5 +330,121 @@ public final class ScreenShell {
                     BackgroundPosition.CENTER,
                     new BackgroundSize(0, 0, false, false, false, true));
         };
+    }
+
+    private static List<FooterOption> replaceFooterOption(
+            List<FooterOption> options,
+            String id,
+            java.util.function.UnaryOperator<FooterOption> replacement) {
+        Validation.requireNonNull(options, "Footer options are required.");
+        String normalizedId = Validation.requireNonBlank(id, "Footer option id is required.");
+        Validation.requireNonNull(replacement, "Footer option replacement is required.");
+        return options.stream()
+                .map(option -> {
+                    Validation.requireNonNull(option, "Footer option is required.");
+                    return option.id().equals(normalizedId) ? replacement.apply(option) : option;
+                })
+                .toList();
+    }
+
+    private static void applyFooterOption(Label label, FooterOption option, boolean labelsVisible) {
+        label.setText(option.displayText(labelsVisible));
+        label.setAccessibleText(option.accessibleText());
+        label.setDisable(!option.enabled());
+        if (option.enabled()) {
+            label.getStyleClass().remove(SCREEN_FOOTER_OPTION_DISABLED_STYLE_CLASS);
+        } else if (!label.getStyleClass().contains(SCREEN_FOOTER_OPTION_DISABLED_STYLE_CLASS)) {
+            label.getStyleClass().add(SCREEN_FOOTER_OPTION_DISABLED_STYLE_CLASS);
+        }
+    }
+
+    private static void installFooterTooltip(Label label, String tooltip) {
+        if (tooltip == null || tooltip.isBlank()) {
+            return;
+        }
+        label.setAccessibleHelp(tooltip);
+        if (Platform.isFxApplicationThread()) {
+            label.setTooltip(new Tooltip(tooltip));
+        } else {
+            try {
+                Platform.runLater(() -> label.setTooltip(new Tooltip(tooltip)));
+            } catch (IllegalStateException exception) {
+                label.setAccessibleText(label.getAccessibleText() + " - " + tooltip);
+            }
+        }
+    }
+
+    private static boolean isCompactFooterWidth(double width, double compactWidth) {
+        return width > 0.0 && width <= compactWidth;
+    }
+
+    public static String defaultFooterIconResourcePath(String id) {
+        String checkedId = Validation.requireNonBlank(id, "Footer option id is required.");
+        return DEFAULT_FOOTER_ICON_RESOURCE_DIRECTORY + "/footer-" + checkedId + ".svg";
+    }
+
+    public record FooterOption(
+            String id,
+            String icon,
+            String label,
+            String shortcut,
+            String tooltip,
+            boolean enabled,
+            String iconResourcePath) {
+        public FooterOption(String id, String icon, String label, String shortcut, String tooltip) {
+            this(id, icon, label, shortcut, tooltip, true);
+        }
+
+        public FooterOption(String id, String icon, String label, String shortcut, String tooltip, boolean enabled) {
+            this(id, icon, label, shortcut, tooltip, enabled, defaultFooterIconResourcePath(id));
+        }
+
+        public FooterOption {
+            id = Validation.requireNonBlank(id, "Footer option id is required.");
+            icon = Validation.requireNonBlank(icon, "Footer option icon is required.");
+            label = Validation.requireNonBlank(label, "Footer option label is required.");
+            shortcut = Validation.requireNonBlank(shortcut, "Footer option shortcut is required.");
+            tooltip = tooltip == null ? "" : tooltip;
+            iconResourcePath = iconResourcePath == null ? "" : iconResourcePath;
+        }
+
+        public String displayText() {
+            return displayText(true);
+        }
+
+        public String displayText(boolean labelsVisible) {
+            if (!labelsVisible) {
+                return icon;
+            }
+            return icon + " " + label + " (" + shortcut + ")";
+        }
+
+        public String accessibleText() {
+            return label + " - Keyboard shortcut: " + shortcut;
+        }
+
+        public FooterOption withIcon(String icon) {
+            return new FooterOption(id, icon, label, shortcut, tooltip, enabled, iconResourcePath);
+        }
+
+        public FooterOption withIconResourcePath(String iconResourcePath) {
+            return new FooterOption(id, icon, label, shortcut, tooltip, enabled, iconResourcePath);
+        }
+
+        public FooterOption withLabel(String label) {
+            return new FooterOption(id, icon, label, shortcut, tooltip, enabled, iconResourcePath);
+        }
+
+        public FooterOption withShortcut(String shortcut) {
+            return new FooterOption(id, icon, label, shortcut, tooltip, enabled, iconResourcePath);
+        }
+
+        public FooterOption withTooltip(String tooltip) {
+            return new FooterOption(id, icon, label, shortcut, tooltip, enabled, iconResourcePath);
+        }
+
+        public FooterOption withEnabled(boolean enabled) {
+            return new FooterOption(id, icon, label, shortcut, tooltip, enabled, iconResourcePath);
+        }
     }
 }

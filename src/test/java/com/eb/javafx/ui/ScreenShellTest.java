@@ -1,5 +1,11 @@
 package com.eb.javafx.ui;
 
+import com.eb.javafx.gamesupport.GameDateTime;
+import com.eb.javafx.localization.LocalizationService;
+import com.eb.javafx.localization.LocalizedTextBundle;
+import com.eb.javafx.prefs.PreferencesService;
+import com.eb.javafx.state.GameState;
+import com.eb.javafx.util.VectorImage;
 import javafx.scene.image.Image;
 import javafx.scene.image.WritableImage;
 import javafx.scene.layout.BackgroundImage;
@@ -7,8 +13,14 @@ import javafx.scene.layout.BackgroundPosition;
 import javafx.scene.layout.BackgroundRepeat;
 import javafx.scene.layout.BackgroundSize;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import org.junit.jupiter.api.Test;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -85,5 +97,190 @@ final class ScreenShellTest {
         assertTrue(panel.getStyleClass().contains(ScreenShell.SCENE_DIALOGUE_PANEL_STYLE_CLASS));
         assertEquals(ScreenShell.BODY_SPACING, panel.getSpacing());
         assertEquals(ScreenShell.PANEL_INSETS, panel.getPadding());
+    }
+
+    @Test
+    void footerOptionTextsExposeRequestedIconShortcuts() {
+        assertEquals(List.of(
+                "‹ Back (Backspace)",
+                "◷ History (Ctrl+H)",
+                "⇥ Skip mode (Tab)",
+                "⇩ Load (Ctrl+L)",
+                "▣ Save (Ctrl+S)",
+                "⚡ Quick save (Ctrl+Q)",
+                "⚙ Preferences (Ctrl+P)",
+                "› Forward (Space)"), ScreenShell.defaultFooterOptions().stream()
+                .map(ScreenShell.FooterOption::displayText)
+                .toList());
+        assertEquals(List.of(
+                "Back - Keyboard shortcut: Backspace",
+                "History - Keyboard shortcut: Ctrl+H",
+                "Skip mode - Keyboard shortcut: Tab",
+                "Load - Keyboard shortcut: Ctrl+L",
+                "Save - Keyboard shortcut: Ctrl+S",
+                "Quick save - Keyboard shortcut: Ctrl+Q",
+                "Preferences - Keyboard shortcut: Ctrl+P",
+                "Forward - Keyboard shortcut: Space"), ScreenShell.defaultFooterOptions().stream()
+                .map(ScreenShell.FooterOption::accessibleText)
+                .toList());
+        assertEquals("screen-footer-bar", ScreenShell.SCREEN_FOOTER_BAR_STYLE_CLASS);
+        assertEquals("screen-footer-option", ScreenShell.SCREEN_FOOTER_OPTION_STYLE_CLASS);
+    }
+
+    @Test
+    void footerOptionsExposeDefaultIconResources() throws Exception {
+        assertEquals(List.of(
+                "com/eb/javafx/images/icons/footer-back.svg",
+                "com/eb/javafx/images/icons/footer-history.svg",
+                "com/eb/javafx/images/icons/footer-skip-mode.svg",
+                "com/eb/javafx/images/icons/footer-load.svg",
+                "com/eb/javafx/images/icons/footer-save.svg",
+                "com/eb/javafx/images/icons/footer-quick-save.svg",
+                "com/eb/javafx/images/icons/footer-preferences.svg",
+                "com/eb/javafx/images/icons/footer-forward.svg"), ScreenShell.defaultFooterOptions().stream()
+                .map(ScreenShell.FooterOption::iconResourcePath)
+                .toList());
+
+        for (ScreenShell.FooterOption option : ScreenShell.defaultFooterOptions()) {
+            Path resourcePath = Path.of("src/main/resources").resolve(option.iconResourcePath());
+
+            assertTrue(Files.isRegularFile(resourcePath), option.id() + " icon resource should exist.");
+            assertTrue(VectorImage.isSvgPath(resourcePath), option.id() + " icon resource should be valid SVG.");
+        }
+        assertTrue(VectorImage.isSvgPath(Path.of(
+                "src/main/resources/com/eb/javafx/images/icons/icons-10x10.svg")));
+    }
+
+    @Test
+    void footerOptionsCanBeCustomizedWithoutChangingDefaults() {
+        List<ScreenShell.FooterOption> customized = ScreenShell.changeFooterTooltip(
+                ScreenShell.changeFooterIconResourcePath(
+                        ScreenShell.changeFooterIcon(
+                        ScreenShell.changeFooterLabel(
+                                ScreenShell.changeFooterShortcut(
+                                        ScreenShell.defaultFooterOptions(),
+                                        "quick-save",
+                                        "Ctrl+Shift+S"),
+                                "quick-save",
+                                 "Quicksave"),
+                         "quick-save",
+                         "💾"),
+                        "quick-save",
+                        "com/example/quicksave.svg"),
+                "quick-save",
+                "Immediately write a quick save.");
+
+        ScreenShell.FooterOption quickSave = customized.stream()
+                .filter(option -> option.id().equals("quick-save"))
+                .findFirst()
+                .orElseThrow();
+
+        assertEquals("💾 Quicksave (Ctrl+Shift+S)", quickSave.displayText());
+        assertEquals("com/example/quicksave.svg", quickSave.iconResourcePath());
+        assertEquals("Quicksave - Keyboard shortcut: Ctrl+Shift+S", quickSave.accessibleText());
+        assertEquals("Immediately write a quick save.", quickSave.tooltip());
+        assertEquals("⚡ Quick save (Ctrl+Q)", ScreenShell.defaultFooterOptions().get(5).displayText());
+    }
+
+    @Test
+    void footerVisibilityAndTransparencyHelpersUpdateFooterNodes() {
+        HBox footer = new HBox();
+        BorderPane screen = new BorderPane();
+        screen.setBottom(footer);
+
+        ScreenShell.setFooterVisible(screen, false);
+
+        assertFalse(footer.isVisible());
+        assertFalse(footer.isManaged());
+
+        ScreenShell.setFooterVisible(footer, true);
+        ScreenShell.setFooterTransparency(screen, 0.35);
+
+        assertTrue(footer.isVisible());
+        assertTrue(footer.isManaged());
+        assertEquals(0.65, footer.getOpacity());
+    }
+
+    @Test
+    void footerOptionsCanBeDisabledFromGameState() {
+        List<ScreenShell.FooterOption> withoutHistory = ScreenShell.footerOptionsForGameState(new GameState("start"));
+
+        assertFalse(withoutHistory.stream()
+                .filter(option -> option.id().equals("history"))
+                .findFirst()
+                .orElseThrow()
+                .enabled());
+
+        GameState gameState = new GameState("start");
+        gameState.conversationHistory().beginDialog("intro", new GameDateTime(1, "morning"));
+
+        List<ScreenShell.FooterOption> withHistory = ScreenShell.footerOptionsForGameState(gameState);
+
+        assertTrue(withHistory.stream()
+                .filter(option -> option.id().equals("history"))
+                .findFirst()
+                .orElseThrow()
+                .enabled());
+    }
+
+    @Test
+    void footerCanSwitchToCompactOrIconOnlyLayout() {
+        HBox footer = new HBox();
+        ScreenShell.FooterOption firstOption = ScreenShell.defaultFooterOptions().get(0);
+
+        ScreenShell.setFooterCompact(footer, true);
+
+        assertTrue(footer.getStyleClass().contains(ScreenShell.SCREEN_FOOTER_COMPACT_STYLE_CLASS));
+        assertEquals("‹", firstOption.displayText(false));
+        assertEquals(4.0, footer.getSpacing());
+
+        ScreenShell.setFooterCompact(footer, false);
+        ScreenShell.setFooterLabelsVisible(footer, false);
+
+        assertFalse(footer.getStyleClass().contains(ScreenShell.SCREEN_FOOTER_COMPACT_STYLE_CLASS));
+        assertEquals("‹ Back (Backspace)", firstOption.displayText());
+    }
+
+    @Test
+    void footerLabelsFollowUserPreference() {
+        HBox footer = new HBox();
+        PreferencesService preferencesService = new PreferencesService();
+        preferencesService.load();
+        preferencesService.saveFooterLabelsVisible(false);
+
+        ScreenShell.applyFooterPreferences(footer, preferencesService);
+
+        assertFalse(preferencesService.footerLabelsVisible());
+    }
+
+    @Test
+    void footerLabelsAndTooltipsCanBeLocalized() {
+        LocalizationService localizationService = new LocalizationService();
+        localizationService.registerBundle(new LocalizedTextBundle("pirate", Map.of(
+                "ui.footer.back.label", "Avast",
+                "ui.footer.back.tooltip", "Sail back.")));
+
+        List<ScreenShell.FooterOption> localized = ScreenShell.localizeFooterOptions(
+                ScreenShell.defaultFooterOptions(),
+                localizationService);
+        ScreenShell.FooterOption back = localized.get(0);
+
+        assertEquals("‹ Avast (Backspace)", back.displayText());
+        assertEquals("Sail back.", back.tooltip());
+        assertEquals("History", localized.get(1).label());
+    }
+
+    @Test
+    void footerHelpersValidateRequiredArguments() {
+        HBox footer = new HBox();
+
+        assertThrows(IllegalArgumentException.class, () ->
+                ScreenShell.setFooterVisible((javafx.scene.Node) null, true));
+        assertThrows(IllegalArgumentException.class, () ->
+                ScreenShell.setFooterTransparency(footer, -0.1));
+        assertThrows(IllegalArgumentException.class, () ->
+                ScreenShell.changeFooterIcon(ScreenShell.defaultFooterOptions(), "quick-save", ""));
+        assertThrows(IllegalArgumentException.class, () ->
+                new ScreenShell.FooterOption("", "?", "Help", "F1", "Help tooltip"));
     }
 }
