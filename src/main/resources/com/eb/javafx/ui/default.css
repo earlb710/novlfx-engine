@@ -24,6 +24,7 @@
     -fx-alignment: center;
     -fx-background-color: rgba(10, 20, 38, 0.85);
     -fx-border-color: #143869;
+    /* Large radii make the footer read as a pill at any supported height. */
     -fx-border-radius: 999px;
     -fx-background-radius: 999px;
     -fx-padding: 8px 12px;
