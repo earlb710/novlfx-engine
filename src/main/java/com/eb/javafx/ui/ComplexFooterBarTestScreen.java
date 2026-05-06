@@ -61,8 +61,7 @@ public final class ComplexFooterBarTestScreen {
         BorderPane root = ScreenShell.titled(title, content, model.footerOptions());
         HBox footer = (HBox) root.getBottom();
 
-        Runnable[] refresh = new Runnable[1];
-        refresh[0] = () -> {
+        Runnable refresh = () -> {
             position.setText(model.positionText());
             speaker.setText(model.currentSpeakerLabel());
             line.setText(model.currentText());
@@ -71,10 +70,9 @@ public final class ComplexFooterBarTestScreen {
             historyPanel.setManaged(model.historyVisible());
             refreshHistory(historyContent, model.historyViewModel());
             refreshFooter(footer, model.footerOptions());
-            wireFooter(footer, model, refresh[0]);
         };
-        wireFooter(footer, model, refresh[0]);
-        refresh[0].run();
+        wireFooter(footer, model, refresh);
+        refresh.run();
 
         Scene scene = new Scene(root, preferencesService.windowWidth(), preferencesService.windowHeight());
         scene.getStylesheets().add(uiTheme.stylesheet());
@@ -96,9 +94,9 @@ public final class ComplexFooterBarTestScreen {
 
     private static void wireFooter(HBox footer, TestConversationModel model, Runnable refresh) {
         for (Node child : footer.getChildren()) {
-            if (child instanceof Label label && label.getUserData() instanceof ScreenShell.FooterOption option) {
+            if (child instanceof Label label) {
                 label.setOnMouseClicked(event -> {
-                    if (label.isDisabled()) {
+                    if (label.isDisabled() || !(label.getUserData() instanceof ScreenShell.FooterOption option)) {
                         return;
                     }
                     switch (option.id()) {

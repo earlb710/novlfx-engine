@@ -51,9 +51,8 @@ final class ComplexFooterBarTestScreenTest {
         model.back();
         model.forward();
 
-        ConversationHistoryViewModel history = model.historyViewModel();
-
         assertTrue(model.historyVisible());
+        ConversationHistoryViewModel history = model.historyViewModel();
         assertEquals(1, history.entries().size());
         assertEquals("complex-footer-bar-test", history.entries().get(0).dialogId());
         assertEquals(3, history.entries().get(0).rows().size());
