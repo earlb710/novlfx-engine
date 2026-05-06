@@ -101,13 +101,19 @@ public final class ScreenShell {
         HBox footer = new HBox(FOOTER_SPACING);
         footer.getStyleClass().add(SCREEN_FOOTER_BAR_STYLE_CLASS);
         footer.setAlignment(Pos.CENTER);
-        for (FooterOption option : FOOTER_OPTIONS) {
-            Label label = new Label(option.displayText());
+        for (String optionText : footerOptionTexts()) {
+            Label label = new Label(optionText);
             label.getStyleClass().add(SCREEN_FOOTER_OPTION_STYLE_CLASS);
-            label.setAccessibleText(option.label() + " shortcut " + option.shortcut());
+            label.setAccessibleText(optionText);
             footer.getChildren().add(label);
         }
         return footer;
+    }
+
+    public static List<String> footerOptionTexts() {
+        return FOOTER_OPTIONS.stream()
+                .map(FooterOption::displayText)
+                .toList();
     }
 
     public static VBox styledPanel(String styleClass, Node... children) {

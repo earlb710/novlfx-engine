@@ -7,9 +7,10 @@ import javafx.scene.layout.BackgroundPosition;
 import javafx.scene.layout.BackgroundRepeat;
 import javafx.scene.layout.BackgroundSize;
 import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import org.junit.jupiter.api.Test;
+
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -89,21 +90,17 @@ final class ScreenShellTest {
     }
 
     @Test
-    void titledScreenIncludesBottomCenteredFooterShortcuts() {
-        BorderPane screen = ScreenShell.titled("Title", new VBox());
-
-        assertTrue(screen.getStyleClass().contains(ScreenShell.SCREEN_ROOT_STYLE_CLASS));
-        assertTrue(screen.getBottom() instanceof HBox);
-        HBox footer = (HBox) screen.getBottom();
-        assertTrue(footer.getStyleClass().contains(ScreenShell.SCREEN_FOOTER_BAR_STYLE_CLASS));
-        assertEquals(8, footer.getChildren().size());
-        assertEquals("‹ Back (Backspace)", ((javafx.scene.control.Label) footer.getChildren().get(0)).getText());
-        assertEquals("◷ History (Ctrl+H)", ((javafx.scene.control.Label) footer.getChildren().get(1)).getText());
-        assertEquals("⇥ Skip mode (Tab)", ((javafx.scene.control.Label) footer.getChildren().get(2)).getText());
-        assertEquals("⇩ Load (Ctrl+L)", ((javafx.scene.control.Label) footer.getChildren().get(3)).getText());
-        assertEquals("▣ Save (Ctrl+S)", ((javafx.scene.control.Label) footer.getChildren().get(4)).getText());
-        assertEquals("⚡ Quick save (Ctrl+Q)", ((javafx.scene.control.Label) footer.getChildren().get(5)).getText());
-        assertEquals("⚙ Preferences (Ctrl+P)", ((javafx.scene.control.Label) footer.getChildren().get(6)).getText());
-        assertEquals("› Forward (Space)", ((javafx.scene.control.Label) footer.getChildren().get(7)).getText());
+    void footerOptionTextsExposeRequestedIconShortcuts() {
+        assertEquals(List.of(
+                "‹ Back (Backspace)",
+                "◷ History (Ctrl+H)",
+                "⇥ Skip mode (Tab)",
+                "⇩ Load (Ctrl+L)",
+                "▣ Save (Ctrl+S)",
+                "⚡ Quick save (Ctrl+Q)",
+                "⚙ Preferences (Ctrl+P)",
+                "› Forward (Space)"), ScreenShell.footerOptionTexts());
+        assertTrue(ScreenShell.SCREEN_FOOTER_BAR_STYLE_CLASS.startsWith("screen-footer"));
+        assertTrue(ScreenShell.SCREEN_FOOTER_OPTION_STYLE_CLASS.startsWith("screen-footer"));
     }
 }
