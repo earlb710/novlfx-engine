@@ -162,7 +162,12 @@ public final class PreferencesService {
         this.logStatChanges = logStatChanges;
     }
 
-    /** Persists whether reusable footer buttons should show labels or icons only. */
+    /**
+     * Persists the legacy footer label preference and mirrors it to the current shortcut display mode.
+     *
+     * <p>The legacy key is retained so older callers that still save this boolean do not lose their selected
+     * behavior while newer code reads {@link #footerShortcutDisplay()}.</p>
+     */
     public void saveFooterLabelsVisible(boolean footerLabelsVisible) {
         preferences.putBoolean(FOOTER_LABELS_VISIBLE_KEY, footerLabelsVisible);
         saveFooterShortcutDisplay(footerLabelsVisible ? FooterShortcutDisplay.DISPLAY : FooterShortcutDisplay.HIDE);
@@ -176,7 +181,7 @@ public final class PreferencesService {
         preferences.put(FOOTER_SHORTCUT_DISPLAY_KEY, this.footerShortcutDisplay.preferenceValue());
     }
 
-    /** Persists how reusable footer buttons should show keyboard shortcuts. */
+    /** Persists a validated footer shortcut display value, falling back to tooltip-only for unknown strings. */
     public void saveFooterShortcutDisplay(String footerShortcutDisplay) {
         saveFooterShortcutDisplay(validatedFooterShortcutDisplay(footerShortcutDisplay));
     }

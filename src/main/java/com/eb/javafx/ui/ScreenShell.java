@@ -536,13 +536,7 @@ public final class ScreenShell {
 
     private static void applyFooterOption(Label label, FooterOption option, boolean labelsVisible) {
         label.setText(option.displayText(labelsVisible));
-        label.setAccessibleText(option.accessibleText());
-        label.setDisable(!option.enabled());
-        if (option.enabled()) {
-            label.getStyleClass().remove(SCREEN_FOOTER_OPTION_DISABLED_STYLE_CLASS);
-        } else if (!label.getStyleClass().contains(SCREEN_FOOTER_OPTION_DISABLED_STYLE_CLASS)) {
-            label.getStyleClass().add(SCREEN_FOOTER_OPTION_DISABLED_STYLE_CLASS);
-        }
+        applyFooterOptionState(label, option);
         installFooterTooltip(label, option.tooltip());
     }
 
@@ -554,6 +548,11 @@ public final class ScreenShell {
                 : shortcutDisplay;
         label.setUserData(option);
         label.setText(option.displayText(checkedDisplay));
+        applyFooterOptionState(label, option);
+        installFooterTooltip(label, option.tooltipText(checkedDisplay));
+    }
+
+    private static void applyFooterOptionState(Label label, FooterOption option) {
         label.setAccessibleText(option.accessibleText());
         label.setDisable(!option.enabled());
         if (option.enabled()) {
@@ -561,7 +560,6 @@ public final class ScreenShell {
         } else if (!label.getStyleClass().contains(SCREEN_FOOTER_OPTION_DISABLED_STYLE_CLASS)) {
             label.getStyleClass().add(SCREEN_FOOTER_OPTION_DISABLED_STYLE_CLASS);
         }
-        installFooterTooltip(label, option.tooltipText(checkedDisplay));
     }
 
     private static void installFooterTooltip(Label label, String tooltip) {
