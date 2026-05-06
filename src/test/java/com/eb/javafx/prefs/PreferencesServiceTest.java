@@ -28,6 +28,7 @@ final class PreferencesServiceTest {
         preferences.putBoolean("ui.showPortrait", false);
         preferences.putBoolean("ui.cheatsVisible", false);
         preferences.putBoolean("ui.logStatChanges", true);
+        preferences.putBoolean("ui.footerLabelsVisible", false);
         preferences.put("ui.fontFamily", "Test Font");
         preferences.putDouble("ui.fontScale", 9.0);
         preferences.putBoolean("accessibility.highContrast", true);
@@ -45,6 +46,7 @@ final class PreferencesServiceTest {
         assertFalse(service.showPortrait());
         assertFalse(service.cheatsVisible());
         assertTrue(service.logStatChanges());
+        assertFalse(service.footerLabelsVisible());
         assertEquals("Test Font", service.fontFamily());
         assertEquals(2.0, service.fontScale());
         assertTrue(service.highContrast());
@@ -85,10 +87,12 @@ final class PreferencesServiceTest {
         service.saveAccessibilityPreferences(true, true);
         service.saveInputMode("invalid");
         service.saveMasterVolume(2.0);
+        service.saveFooterLabelsVisible(false);
 
         assertFalse(service.showPortrait());
         assertFalse(service.cheatsVisible());
         assertTrue(service.logStatChanges());
+        assertFalse(service.footerLabelsVisible());
         assertEquals(1.0, service.hudAlpha());
         assertEquals(0.0, service.sayWindowAlpha());
         assertEquals("System", service.fontFamily());

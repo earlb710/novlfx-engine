@@ -35,6 +35,14 @@
     -fx-font-size: 13px;
 }
 
+.screen-footer-option-disabled {
+    -fx-opacity: 0.45;
+}
+
+.screen-footer-compact {
+    -fx-padding: 6px 10px;
+}
+
 .scene-status-panel,
 .scene-dialogue-panel,
 .scene-choices-panel,

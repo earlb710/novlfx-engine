@@ -47,6 +47,8 @@ final class ContentRegistryTest {
         assertEquals("Main Menu", registry.definition("ui.mainMenu.title"));
         assertEquals("Tooltip", registry.definition("ui.tooltip.title"));
         assertEquals("Display Bindings Preview", registry.definition("ui.displayBindings.title"));
+        assertEquals("Back", registry.definition("ui.footer.back.label"));
+        assertEquals("Open conversation history.", registry.definition("ui.footer.history.tooltip"));
         assertEquals("Reusable JavaFX engine shell is ready.", registry.definition("ui.mainMenu.status"));
         assertFalse(registry.definitions().containsKey("migration.slice"));
         assertFalse(registry.definitions().values().stream().anyMatch(value ->

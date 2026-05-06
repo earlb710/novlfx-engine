@@ -1,6 +1,10 @@
 package com.eb.javafx.ui;
 
+import com.eb.javafx.localization.LocalizationService;
+import com.eb.javafx.prefs.PreferencesService;
+import com.eb.javafx.state.GameState;
 import com.eb.javafx.util.Validation;
+import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
@@ -31,6 +35,8 @@ public final class ScreenShell {
     public static final String SCREEN_PANEL_STYLE_CLASS = "screen-panel";
     public static final String SCREEN_FOOTER_BAR_STYLE_CLASS = "screen-footer-bar";
     public static final String SCREEN_FOOTER_OPTION_STYLE_CLASS = "screen-footer-option";
+    public static final String SCREEN_FOOTER_OPTION_DISABLED_STYLE_CLASS = "screen-footer-option-disabled";
+    public static final String SCREEN_FOOTER_COMPACT_STYLE_CLASS = "screen-footer-compact";
     public static final String SCENE_STATUS_PANEL_STYLE_CLASS = "scene-status-panel";
     public static final String SCENE_DIALOGUE_PANEL_STYLE_CLASS = "scene-dialogue-panel";
     public static final String SCENE_CHOICES_PANEL_STYLE_CLASS = "scene-choices-panel";
@@ -66,6 +72,7 @@ public final class ScreenShell {
             0,
             OUTER_INSETS.getLeft());
     private static final double FOOTER_SPACING = 8;
+    private static final double COMPACT_FOOTER_SPACING = 4;
     private static final List<FooterOption> FOOTER_OPTIONS = List.of(
             new FooterOption("back", "‹", "Back", "Backspace", "Return to the previous screen."),
             new FooterOption("history", "◷", "History", "Ctrl+H", "Open conversation history."),
@@ -136,12 +143,11 @@ public final class ScreenShell {
         footer.getStyleClass().add(SCREEN_FOOTER_BAR_STYLE_CLASS);
         for (FooterOption option : footerOptions) {
             Validation.requireNonNull(option, "Footer option is required.");
-            Label label = new Label(option.displayText());
+            Label label = new Label();
+            label.setUserData(option);
             label.getStyleClass().add(SCREEN_FOOTER_OPTION_STYLE_CLASS);
-            label.setAccessibleText(option.accessibleText());
-            if (option.tooltip() != null && !option.tooltip().isBlank()) {
-                label.setTooltip(new Tooltip(option.tooltip()));
-            }
+            applyFooterOption(label, option, true);
+            installFooterTooltip(label, option.tooltip());
             footer.getChildren().add(label);
         }
         return footer;
@@ -178,6 +184,53 @@ public final class ScreenShell {
         }
     }
 
+    /** Applies compact mobile footer presentation, including icon-only labels and tighter spacing. */
+    public static void setFooterCompact(Node footer, boolean compact) {
+        Validation.requireNonNull(footer, "Footer node is required.");
+        if (compact) {
+            if (!footer.getStyleClass().contains(SCREEN_FOOTER_COMPACT_STYLE_CLASS)) {
+                footer.getStyleClass().add(SCREEN_FOOTER_COMPACT_STYLE_CLASS);
+            }
+        } else {
+            footer.getStyleClass().remove(SCREEN_FOOTER_COMPACT_STYLE_CLASS);
+        }
+        if (footer instanceof HBox footerBox) {
+            footerBox.setSpacing(compact ? COMPACT_FOOTER_SPACING : FOOTER_SPACING);
+        }
+        setFooterLabelsVisible(footer, !compact);
+    }
+
+    /** Switches footer labels between full text and icon-only presentation. */
+    public static void setFooterLabelsVisible(Node footer, boolean labelsVisible) {
+        Validation.requireNonNull(footer, "Footer node is required.");
+        if (footer instanceof HBox footerBox) {
+            footerBox.getChildren().forEach(child -> {
+                if (child instanceof Label label && label.getUserData() instanceof FooterOption option) {
+                    applyFooterOption(label, option, labelsVisible);
+                }
+            });
+        }
+    }
+
+    /** Applies the persisted user preference for showing footer labels. */
+    public static void applyFooterPreferences(Node footer, PreferencesService preferencesService) {
+        Validation.requireNonNull(preferencesService, "Preferences service is required.");
+        setFooterLabelsVisible(footer, preferencesService.footerLabelsVisible());
+    }
+
+    /** Adds responsive compact/mobile footer behavior based on the screen width. */
+    public static void configureResponsiveFooter(BorderPane screen, double compactWidth) {
+        Validation.requireNonNull(screen, "Screen shell is required.");
+        Validation.requirePositive(compactWidth, "Compact footer width must be positive.");
+        Node footer = screen.getBottom();
+        if (footer == null) {
+            return;
+        }
+        setFooterCompact(footer, screen.getWidth() > 0.0 && screen.getWidth() <= compactWidth);
+        screen.widthProperty().addListener((observable, oldWidth, newWidth) ->
+                setFooterCompact(footer, newWidth.doubleValue() > 0.0 && newWidth.doubleValue() <= compactWidth));
+    }
+
     public static List<FooterOption> defaultFooterOptions() {
         return FOOTER_OPTIONS;
     }
@@ -196,6 +249,31 @@ public final class ScreenShell {
 
     public static List<FooterOption> changeFooterTooltip(List<FooterOption> options, String id, String tooltip) {
         return replaceFooterOption(options, id, option -> option.withTooltip(tooltip));
+    }
+
+    public static List<FooterOption> changeFooterEnabled(List<FooterOption> options, String id, boolean enabled) {
+        return replaceFooterOption(options, id, option -> option.withEnabled(enabled));
+    }
+
+    public static List<FooterOption> footerOptionsForGameState(GameState gameState) {
+        boolean historyAvailable = gameState != null && !gameState.conversationHistory().entries().isEmpty();
+        return changeFooterEnabled(FOOTER_OPTIONS, "history", historyAvailable);
+    }
+
+    public static List<FooterOption> localizeFooterOptions(
+            List<FooterOption> options,
+            LocalizationService localizationService) {
+        Validation.requireNonNull(options, "Footer options are required.");
+        Validation.requireNonNull(localizationService, "Localization service is required.");
+        return options.stream()
+                .map(option -> {
+                    Validation.requireNonNull(option, "Footer option is required.");
+                    String prefix = "ui.footer." + option.id();
+                    return option
+                            .withLabel(localizationService.text(prefix + ".label").orElse(option.label()))
+                            .withTooltip(localizationService.text(prefix + ".tooltip").orElse(option.tooltip()));
+                })
+                .toList();
     }
 
     public static VBox styledPanel(String styleClass, Node... children) {
@@ -261,7 +339,31 @@ public final class ScreenShell {
                 .toList();
     }
 
-    public record FooterOption(String id, String icon, String label, String shortcut, String tooltip) {
+    private static void applyFooterOption(Label label, FooterOption option, boolean labelsVisible) {
+        label.setText(option.displayText(labelsVisible));
+        label.setAccessibleText(option.accessibleText());
+        label.setDisable(!option.enabled());
+        if (option.enabled()) {
+            label.getStyleClass().remove(SCREEN_FOOTER_OPTION_DISABLED_STYLE_CLASS);
+        } else if (!label.getStyleClass().contains(SCREEN_FOOTER_OPTION_DISABLED_STYLE_CLASS)) {
+            label.getStyleClass().add(SCREEN_FOOTER_OPTION_DISABLED_STYLE_CLASS);
+        }
+    }
+
+    private static void installFooterTooltip(Label label, String tooltip) {
+        if (tooltip == null || tooltip.isBlank()) {
+            return;
+        }
+        if (Platform.isFxApplicationThread()) {
+            label.setTooltip(new Tooltip(tooltip));
+        }
+    }
+
+    public record FooterOption(String id, String icon, String label, String shortcut, String tooltip, boolean enabled) {
+        public FooterOption(String id, String icon, String label, String shortcut, String tooltip) {
+            this(id, icon, label, shortcut, tooltip, true);
+        }
+
         public FooterOption {
             id = Validation.requireNonBlank(id, "Footer option id is required.");
             icon = Validation.requireNonBlank(icon, "Footer option icon is required.");
@@ -271,6 +373,13 @@ public final class ScreenShell {
         }
 
         public String displayText() {
+            return displayText(true);
+        }
+
+        public String displayText(boolean labelsVisible) {
+            if (!labelsVisible) {
+                return icon;
+            }
             return icon + " " + label + " (" + shortcut + ")";
         }
 
@@ -279,19 +388,23 @@ public final class ScreenShell {
         }
 
         public FooterOption withIcon(String icon) {
-            return new FooterOption(id, icon, label, shortcut, tooltip);
+            return new FooterOption(id, icon, label, shortcut, tooltip, enabled);
         }
 
         public FooterOption withLabel(String label) {
-            return new FooterOption(id, icon, label, shortcut, tooltip);
+            return new FooterOption(id, icon, label, shortcut, tooltip, enabled);
         }
 
         public FooterOption withShortcut(String shortcut) {
-            return new FooterOption(id, icon, label, shortcut, tooltip);
+            return new FooterOption(id, icon, label, shortcut, tooltip, enabled);
         }
 
         public FooterOption withTooltip(String tooltip) {
-            return new FooterOption(id, icon, label, shortcut, tooltip);
+            return new FooterOption(id, icon, label, shortcut, tooltip, enabled);
+        }
+
+        public FooterOption withEnabled(boolean enabled) {
+            return new FooterOption(id, icon, label, shortcut, tooltip, enabled);
         }
     }
 }

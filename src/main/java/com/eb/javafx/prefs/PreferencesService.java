@@ -18,6 +18,7 @@ public final class PreferencesService {
     private static final String SHOW_PORTRAIT_KEY = "ui.showPortrait";
     private static final String CHEATS_VISIBLE_KEY = "ui.cheatsVisible";
     private static final String LOG_STAT_CHANGES_KEY = "ui.logStatChanges";
+    private static final String FOOTER_LABELS_VISIBLE_KEY = "ui.footerLabelsVisible";
     private static final String FONT_FAMILY_KEY = "ui.fontFamily";
     private static final String FONT_SCALE_KEY = "ui.fontScale";
     private static final String HIGH_CONTRAST_KEY = "accessibility.highContrast";
@@ -33,6 +34,7 @@ public final class PreferencesService {
     private boolean showPortrait;
     private boolean cheatsVisible;
     private boolean logStatChanges;
+    private boolean footerLabelsVisible;
     private String fontFamily;
     private double fontScale;
     private boolean highContrast;
@@ -54,6 +56,7 @@ public final class PreferencesService {
         showPortrait = preferences.getBoolean(SHOW_PORTRAIT_KEY, true);
         cheatsVisible = preferences.getBoolean(CHEATS_VISIBLE_KEY, true);
         logStatChanges = preferences.getBoolean(LOG_STAT_CHANGES_KEY, false);
+        footerLabelsVisible = preferences.getBoolean(FOOTER_LABELS_VISIBLE_KEY, true);
         fontFamily = preferences.get(FONT_FAMILY_KEY, "System");
         fontScale = clamp(preferences.getDouble(FONT_SCALE_KEY, 1.0), 0.75, 2.0);
         highContrast = preferences.getBoolean(HIGH_CONTRAST_KEY, false);
@@ -102,6 +105,11 @@ public final class PreferencesService {
         return logStatChanges;
     }
 
+    /** Returns whether footer buttons should show labels and shortcuts in addition to icons. */
+    public boolean footerLabelsVisible() {
+        return footerLabelsVisible;
+    }
+
     /** Returns the preferred JavaFX font family for migrated UI controls. */
     public String fontFamily() {
         return fontFamily;
@@ -146,6 +154,12 @@ public final class PreferencesService {
         this.showPortrait = showPortrait;
         this.cheatsVisible = cheatsVisible;
         this.logStatChanges = logStatChanges;
+    }
+
+    /** Persists whether reusable footer buttons should show labels or icons only. */
+    public void saveFooterLabelsVisible(boolean footerLabelsVisible) {
+        preferences.putBoolean(FOOTER_LABELS_VISIBLE_KEY, footerLabelsVisible);
+        this.footerLabelsVisible = footerLabelsVisible;
     }
 
     /** Persists dialogue/HUD opacity preferences and updates the loaded model. */

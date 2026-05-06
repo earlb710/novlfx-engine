@@ -1,5 +1,10 @@
 package com.eb.javafx.ui;
 
+import com.eb.javafx.gamesupport.GameDateTime;
+import com.eb.javafx.localization.LocalizationService;
+import com.eb.javafx.localization.LocalizedTextBundle;
+import com.eb.javafx.prefs.PreferencesService;
+import com.eb.javafx.state.GameState;
 import javafx.scene.image.Image;
 import javafx.scene.image.WritableImage;
 import javafx.scene.layout.BackgroundImage;
@@ -12,6 +17,7 @@ import javafx.scene.layout.VBox;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -162,6 +168,75 @@ final class ScreenShellTest {
         assertTrue(footer.isVisible());
         assertTrue(footer.isManaged());
         assertEquals(0.65, footer.getOpacity());
+    }
+
+    @Test
+    void footerOptionsCanBeDisabledFromGameState() {
+        List<ScreenShell.FooterOption> withoutHistory = ScreenShell.footerOptionsForGameState(new GameState("start"));
+
+        assertFalse(withoutHistory.stream()
+                .filter(option -> option.id().equals("history"))
+                .findFirst()
+                .orElseThrow()
+                .enabled());
+
+        GameState gameState = new GameState("start");
+        gameState.conversationHistory().beginDialog("intro", new GameDateTime(1, "morning"));
+
+        List<ScreenShell.FooterOption> withHistory = ScreenShell.footerOptionsForGameState(gameState);
+
+        assertTrue(withHistory.stream()
+                .filter(option -> option.id().equals("history"))
+                .findFirst()
+                .orElseThrow()
+                .enabled());
+    }
+
+    @Test
+    void footerCanSwitchToCompactOrIconOnlyLayout() {
+        HBox footer = new HBox();
+        ScreenShell.FooterOption firstOption = ScreenShell.defaultFooterOptions().get(0);
+
+        ScreenShell.setFooterCompact(footer, true);
+
+        assertTrue(footer.getStyleClass().contains(ScreenShell.SCREEN_FOOTER_COMPACT_STYLE_CLASS));
+        assertEquals("‹", firstOption.displayText(false));
+        assertEquals(4.0, footer.getSpacing());
+
+        ScreenShell.setFooterCompact(footer, false);
+        ScreenShell.setFooterLabelsVisible(footer, false);
+
+        assertFalse(footer.getStyleClass().contains(ScreenShell.SCREEN_FOOTER_COMPACT_STYLE_CLASS));
+        assertEquals("‹ Back (Backspace)", firstOption.displayText());
+    }
+
+    @Test
+    void footerLabelsFollowUserPreference() {
+        HBox footer = new HBox();
+        PreferencesService preferencesService = new PreferencesService();
+        preferencesService.load();
+        preferencesService.saveFooterLabelsVisible(false);
+
+        ScreenShell.applyFooterPreferences(footer, preferencesService);
+
+        assertFalse(preferencesService.footerLabelsVisible());
+    }
+
+    @Test
+    void footerLabelsAndTooltipsCanBeLocalized() {
+        LocalizationService localizationService = new LocalizationService();
+        localizationService.registerBundle(new LocalizedTextBundle("pirate", Map.of(
+                "ui.footer.back.label", "Avast",
+                "ui.footer.back.tooltip", "Sail back.")));
+
+        List<ScreenShell.FooterOption> localized = ScreenShell.localizeFooterOptions(
+                ScreenShell.defaultFooterOptions(),
+                localizationService);
+        ScreenShell.FooterOption back = localized.get(0);
+
+        assertEquals("‹ Avast (Backspace)", back.displayText());
+        assertEquals("Sail back.", back.tooltip());
+        assertEquals("History", localized.get(1).label());
     }
 
     @Test

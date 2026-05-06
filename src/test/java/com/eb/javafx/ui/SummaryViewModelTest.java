@@ -27,7 +27,7 @@ final class SummaryViewModelTest {
         assertEquals("Window", viewModel.rows().get(0).label());
         assertEquals("HUD alpha", viewModel.rows().get(1).label());
         assertEquals("0.42", viewModel.rows().get(1).value());
-        assertEquals(12, viewModel.rows().size());
+        assertEquals(13, viewModel.rows().size());
         assertEquals("HUD alpha: 0.42", viewModel.screenViewModel().lines().get(1));
         assertEquals("Back to main menu", viewModel.actions().get(0).label());
     }
