@@ -88,7 +88,7 @@ final class ConversationHistoryScreenTest {
                 .entries()
                 .get(0);
 
-        assertEquals("Ava", ConversationHistoryScreen.historySpeakerText(entry.rows().get(0)));
+        assertEquals("Ava:", ConversationHistoryScreen.historySpeakerText(entry.rows().get(0)));
         assertEquals("Meet me by the docks.", ConversationHistoryScreen.historyMessageText(entry.rows().get(0)));
         assertEquals("", ConversationHistoryScreen.historySpeakerText(entry.rows().get(1)));
         assertEquals("note: A folded map changes hands.", ConversationHistoryScreen.historyMessageText(entry.rows().get(1)));

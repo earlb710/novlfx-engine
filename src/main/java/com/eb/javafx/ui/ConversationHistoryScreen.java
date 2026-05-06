@@ -133,7 +133,7 @@ public final class ConversationHistoryScreen {
     }
 
     static String historySpeakerText(ConversationHistoryRowViewModel row) {
-        return row.speakerLabel() == null ? "" : row.speakerLabel();
+        return row.speakerLabel() == null || row.speakerLabel().isBlank() ? "" : row.speakerLabel() + ":";
     }
 
     static String historyMessageText(ConversationHistoryRowViewModel row) {

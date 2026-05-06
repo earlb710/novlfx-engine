@@ -13,6 +13,14 @@ import javafx.scene.layout.VBox;
  * Small manual test route that showcases buttons using the shared button-pill SVG shape.
  */
 public final class ButtonPillSvgTestScreen {
+    static final String DESCRIPTION_TEXT =
+            "Use this screen to confirm the shared button-pill.svg shape is visibly applied.";
+    static final String DETAIL_TEXT =
+            "All buttons below should render with the same pill silhouette from the packaged SVG resource.";
+    static final String PRIMARY_LABEL = "Primary action";
+    static final String SECONDARY_LABEL = "Secondary action";
+    static final String BACK_LABEL = "Back to main menu";
+
     private ButtonPillSvgTestScreen() {
     }
 
@@ -21,15 +29,15 @@ public final class ButtonPillSvgTestScreen {
             PreferencesService preferencesService,
             UiTheme uiTheme,
             Runnable backAction) {
-        Button primary = ButtonVisuals.apply(new Button("Primary action"));
-        Button secondary = ButtonVisuals.apply(new Button("Secondary action"));
-        Button back = ButtonVisuals.apply(new Button("Back to main menu"));
+        Button primary = ButtonVisuals.apply(new Button(PRIMARY_LABEL));
+        Button secondary = ButtonVisuals.apply(new Button(SECONDARY_LABEL));
+        Button back = ButtonVisuals.apply(new Button(BACK_LABEL));
         back.setOnAction(event -> backAction.run());
 
         HBox actionRow = new HBox(10, primary, secondary, back);
         VBox content = new VBox(10,
-                new Label("Use this screen to confirm the shared button-pill.svg shape is visibly applied."),
-                new Label("All buttons below should render with the same pill silhouette from the packaged SVG resource."),
+                new Label(DESCRIPTION_TEXT),
+                new Label(DETAIL_TEXT),
                 actionRow);
         content.setPadding(new Insets(4));
 

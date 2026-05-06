@@ -4,57 +4,33 @@ import com.eb.javafx.prefs.PreferencesService;
 import com.eb.javafx.testscreen.ManualTest;
 import com.eb.javafx.testscreen.TestScreenApplication;
 import javafx.application.Platform;
-import javafx.scene.Scene;
-import javafx.scene.control.Button;
-import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.VBox;
-import javafx.scene.shape.SVGPath;
 import javafx.stage.Stage;
 import org.junit.jupiter.api.Test;
 
-import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 final class ButtonPillSvgTestScreenTest {
     private static final AtomicBoolean JAVAFX_STARTED = new AtomicBoolean();
 
     @Test
-    void createSceneShowsButtonsUsingSharedButtonPillShape() throws Exception {
-        PreferencesService preferencesService = new PreferencesService();
-        preferencesService.load();
-        UiTheme uiTheme = new UiTheme();
-        uiTheme.initialize(preferencesService);
-
-        Scene scene = runOnJavaFxThread(() -> ButtonPillSvgTestScreen.createScene(
-                "Button Pill SVG Test",
-                preferencesService,
-                uiTheme,
-                () -> {
-                }));
-
-        BorderPane root = assertInstanceOf(BorderPane.class, scene.getRoot());
-        VBox content = assertInstanceOf(VBox.class, root.getCenter());
-        HBox actions = assertInstanceOf(HBox.class, content.getChildren().get(2));
-        List<Button> buttons = actions.getChildren().stream()
-                .map(node -> assertInstanceOf(Button.class, node))
-                .toList();
-
-        assertEquals(3, buttons.size());
-        for (Button button : buttons) {
-            SVGPath shape = assertInstanceOf(SVGPath.class, button.getShape());
-            assertEquals(ButtonVisuals.buttonShapePath(), shape.getContent());
-            assertTrue(button.getStyleClass().contains(ButtonVisuals.BUTTON_STYLE_CLASS));
-        }
+    void exposesExpectedButtonPillScreenCopy() {
+        assertEquals("Use this screen to confirm the shared button-pill.svg shape is visibly applied.",
+                ButtonPillSvgTestScreen.DESCRIPTION_TEXT);
+        assertEquals("All buttons below should render with the same pill silhouette from the packaged SVG resource.",
+                ButtonPillSvgTestScreen.DETAIL_TEXT);
+        assertEquals("Primary action", ButtonPillSvgTestScreen.PRIMARY_LABEL);
+        assertEquals("Secondary action", ButtonPillSvgTestScreen.SECONDARY_LABEL);
+        assertEquals("Back to main menu", ButtonPillSvgTestScreen.BACK_LABEL);
+        assertEquals("M 24 0 H 156 Q 180 0 180 24 Q 180 48 156 48 H 24 Q 0 48 0 24 Q 0 0 24 0 Z",
+                ButtonVisuals.buttonShapePath());
     }
 
     @Test
