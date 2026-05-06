@@ -115,6 +115,37 @@ final class AuthoredDisplayAnimationParserTest {
     }
 
     @Test
+    void parsesClipViewportAndEffectCommands() {
+        AuthoredDisplayAnimation animation = AuthoredDisplayAnimationParser.parseAnimation(
+                "speaker.fx",
+                List.of(
+                        "clip 50 x 1 y 2 width 30 height 40 linear",
+                        "viewport 60 x 5 y 6 width 70 height 80 ease_in",
+                        "blur 70 radius 8 ease_out",
+                        "dropShadow 80 radius 5 offsetX 2 offsetY -3 ease_both",
+                        "colorAdjust 90 hue 0.1 saturation 0.2 brightness -0.1 contrast 0.3 linear",
+                        "step 100 clipX 3 clipY 4 clipWidth 32 clipHeight 42 viewportX 7 viewportY 8 viewportWidth 72 viewportHeight 82 blurRadius 4 shadowRadius 6 shadowOffsetX -1 shadowOffsetY 3 hue 0.2 saturation 0.3 brightness 0.1 contrast 0.4 discrete"),
+                "display.json",
+                11,
+                1,
+                false);
+
+        DisplayAnimation compiled = animation.compile();
+        assertEquals(6, compiled.steps().size());
+        assertEquals(30.0, compiled.steps().get(0).targetClipBounds().width());
+        assertEquals(5.0, compiled.steps().get(1).targetViewportBounds().x());
+        assertEquals(8.0, compiled.steps().get(2).targetEffects().blurRadius());
+        assertEquals(-3.0, compiled.steps().get(3).targetEffects().dropShadowOffsetY());
+        assertEquals(0.3, compiled.steps().get(4).targetEffects().colorAdjustContrast());
+        assertEquals(32.0, compiled.steps().get(5).targetClipBounds().width());
+        assertEquals(82.0, compiled.steps().get(5).targetViewportBounds().height());
+        assertEquals(4.0, compiled.steps().get(5).targetEffects().blurRadius());
+        assertEquals(6.0, compiled.steps().get(5).targetEffects().dropShadowRadius());
+        assertEquals(0.4, compiled.steps().get(5).targetEffects().colorAdjustContrast());
+        assertEquals(DisplayInterpolation.DISCRETE, compiled.steps().get(5).interpolation());
+    }
+
+    @Test
     void rejectsDuplicateIdsAndEmptyAnimations() {
         IllegalArgumentException duplicate = assertThrows(IllegalArgumentException.class, () ->
                 AuthoredDisplayAnimationParser.parseDocument("""

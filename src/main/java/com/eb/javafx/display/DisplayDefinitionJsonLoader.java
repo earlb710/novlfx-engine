@@ -130,10 +130,65 @@ public final class DisplayDefinitionJsonLoader {
                 JsonData.optionalDouble(object, "targetTranslateX", 0.0, "display animation step targetTranslateX"),
                 JsonData.optionalDouble(object, "targetTranslateY", 0.0, "display animation step targetTranslateY"),
                 JsonData.optionalDouble(object, "targetRotate", 0.0, "display animation step targetRotate"),
+                optionalBounds(object, "targetClip", "display animation step targetClip"),
+                optionalBounds(object, "targetViewport", "display animation step targetViewport"),
+                optionalEffects(object),
                 JsonData.enumValue(DisplayInterpolation.class,
                         JsonData.optionalString(object, "interpolation", "display animation step interpolation")
                                 .orElse(DisplayInterpolation.LINEAR.name()),
                         "display animation interpolation"));
+    }
+
+    private static DisplayRectangleBounds optionalBounds(Map<String, Object> object, String prefix, String description) {
+        String xKey = prefix + "X";
+        String yKey = prefix + "Y";
+        String widthKey = prefix + "Width";
+        String heightKey = prefix + "Height";
+        if (!hasAny(object, xKey, yKey, widthKey, heightKey)) {
+            return null;
+        }
+        if (!hasAny(object, xKey) || !hasAny(object, yKey) || !hasAny(object, widthKey) || !hasAny(object, heightKey)) {
+            throw new IllegalArgumentException(description + " requires X, Y, Width, and Height.");
+        }
+        return new DisplayRectangleBounds(
+                JsonData.optionalDouble(object, xKey, 0.0, description + "X"),
+                JsonData.optionalDouble(object, yKey, 0.0, description + "Y"),
+                JsonData.optionalDouble(object, widthKey, 0.0, description + "Width"),
+                JsonData.optionalDouble(object, heightKey, 0.0, description + "Height"));
+    }
+
+    private static DisplayEffectTargets optionalEffects(Map<String, Object> object) {
+        boolean blurEnabled = hasAny(object, "targetBlurRadius");
+        boolean dropShadowEnabled = hasAny(object, "targetDropShadowRadius", "targetDropShadowOffsetX", "targetDropShadowOffsetY");
+        boolean colorAdjustEnabled = hasAny(object,
+                "targetColorAdjustHue",
+                "targetColorAdjustSaturation",
+                "targetColorAdjustBrightness",
+                "targetColorAdjustContrast");
+        if (!blurEnabled && !dropShadowEnabled && !colorAdjustEnabled) {
+            return DisplayEffectTargets.NONE;
+        }
+        return new DisplayEffectTargets(
+                blurEnabled,
+                JsonData.optionalDouble(object, "targetBlurRadius", 0.0, "display animation step targetBlurRadius"),
+                dropShadowEnabled,
+                JsonData.optionalDouble(object, "targetDropShadowRadius", 0.0, "display animation step targetDropShadowRadius"),
+                JsonData.optionalDouble(object, "targetDropShadowOffsetX", 0.0, "display animation step targetDropShadowOffsetX"),
+                JsonData.optionalDouble(object, "targetDropShadowOffsetY", 0.0, "display animation step targetDropShadowOffsetY"),
+                colorAdjustEnabled,
+                JsonData.optionalDouble(object, "targetColorAdjustHue", 0.0, "display animation step targetColorAdjustHue"),
+                JsonData.optionalDouble(object, "targetColorAdjustSaturation", 0.0, "display animation step targetColorAdjustSaturation"),
+                JsonData.optionalDouble(object, "targetColorAdjustBrightness", 0.0, "display animation step targetColorAdjustBrightness"),
+                JsonData.optionalDouble(object, "targetColorAdjustContrast", 0.0, "display animation step targetColorAdjustContrast"));
+    }
+
+    private static boolean hasAny(Map<String, Object> object, String... keys) {
+        for (String key : keys) {
+            if (object.containsKey(key) && object.get(key) != null) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static int optionalRepeatCount(Map<String, Object> object, String key, int defaultValue, String description) {

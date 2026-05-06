@@ -123,6 +123,11 @@ public final class AuthoredDisplayAnimationParser {
             case "move" -> parseMove(builder, tokens, sourceName, lineNumber);
             case "scale" -> parseScale(builder, tokens, sourceName, lineNumber);
             case "rotate" -> parseRotate(builder, tokens, sourceName, lineNumber);
+            case "clip" -> parseRectangleBounds(builder, tokens, sourceName, lineNumber, "clip");
+            case "viewport" -> parseRectangleBounds(builder, tokens, sourceName, lineNumber, "viewport");
+            case "blur" -> parseBlur(builder, tokens, sourceName, lineNumber);
+            case "dropshadow" -> parseDropShadow(builder, tokens, sourceName, lineNumber);
+            case "coloradjust" -> parseColorAdjust(builder, tokens, sourceName, lineNumber);
             case "step" -> parseStep(builder, tokens, sourceName, lineNumber);
             default -> throw error(sourceName, lineNumber, "unknown authored animation command: " + tokens.get(0));
         }
@@ -244,6 +249,125 @@ public final class AuthoredDisplayAnimationParser {
         builder.addStep(lineNumber, durationMillis, 0L, parseInterpolation(tokens, valueIndex + 1, sourceName, lineNumber));
     }
 
+    private static void parseRectangleBounds(Builder builder, List<String> tokens, String sourceName, int lineNumber, String command) {
+        if (tokens.size() < 10 || tokens.size() > 11) {
+            throw error(sourceName, lineNumber, command + " syntax is: " + command + " <durationMillis> x <x> y <y> width <width> height <height> [interpolation].");
+        }
+        long durationMillis = parseZeroOrPositiveLong(tokens.get(1), sourceName, lineNumber, command + " duration");
+        int endExclusive = isInterpolation(tokens.get(tokens.size() - 1)) ? tokens.size() - 1 : tokens.size();
+        DisplayRectangleBounds bounds = parseBounds(new PropertyCursor(tokens, 2, endExclusive), sourceName, lineNumber, command);
+        if ("clip".equals(command)) {
+            builder.clipBounds = bounds;
+        } else {
+            builder.viewportBounds = bounds;
+        }
+        builder.addStep(lineNumber, durationMillis, 0L, parseInterpolation(tokens, endExclusive, sourceName, lineNumber));
+    }
+
+    private static DisplayRectangleBounds parseBounds(PropertyCursor cursor, String sourceName, int lineNumber, String command) {
+        Double x = null;
+        Double y = null;
+        Double width = null;
+        Double height = null;
+        while (cursor.hasNext()) {
+            String property = cursor.next();
+            String value = cursor.nextValue(sourceName, lineNumber, property);
+            switch (property.toLowerCase(Locale.ROOT)) {
+                case "x" -> x = parseDouble(value, sourceName, lineNumber, command + " x");
+                case "y" -> y = parseDouble(value, sourceName, lineNumber, command + " y");
+                case "width" -> width = parseDouble(value, sourceName, lineNumber, command + " width");
+                case "height" -> height = parseDouble(value, sourceName, lineNumber, command + " height");
+                default -> throw error(sourceName, lineNumber, "unsupported " + command + " property: " + property);
+            }
+        }
+        if (x == null || y == null || width == null || height == null) {
+            throw error(sourceName, lineNumber, command + " command requires x, y, width, and height.");
+        }
+        return new DisplayRectangleBounds(x, y, width, height);
+    }
+
+    private static void parseBlur(Builder builder, List<String> tokens, String sourceName, int lineNumber) {
+        if (tokens.size() < 3 || tokens.size() > 5) {
+            throw error(sourceName, lineNumber, "blur syntax is: blur <durationMillis> <radius> [interpolation] or blur <durationMillis> radius <radius> [interpolation].");
+        }
+        long durationMillis = parseZeroOrPositiveLong(tokens.get(1), sourceName, lineNumber, "blur duration");
+        int valueIndex = 2;
+        if ("radius".equalsIgnoreCase(tokens.get(2))) {
+            if (tokens.size() < 4) {
+                throw error(sourceName, lineNumber, "blur command requires a radius value.");
+            }
+            valueIndex = 3;
+        } else if (tokens.size() > 4) {
+            throw error(sourceName, lineNumber, "blur syntax is: blur <durationMillis> <radius> [interpolation] or blur <durationMillis> radius <radius> [interpolation].");
+        }
+        builder.blurEnabled = true;
+        builder.blurRadius = parseDouble(tokens.get(valueIndex), sourceName, lineNumber, "blur radius");
+        builder.addStep(lineNumber, durationMillis, 0L, parseInterpolation(tokens, valueIndex + 1, sourceName, lineNumber));
+    }
+
+    private static void parseDropShadow(Builder builder, List<String> tokens, String sourceName, int lineNumber) {
+        if (tokens.size() < 8 || tokens.size() > 9) {
+            throw error(sourceName, lineNumber, "dropShadow syntax is: dropShadow <durationMillis> radius <radius> offsetX <x> offsetY <y> [interpolation].");
+        }
+        long durationMillis = parseZeroOrPositiveLong(tokens.get(1), sourceName, lineNumber, "dropShadow duration");
+        int endExclusive = isInterpolation(tokens.get(tokens.size() - 1)) ? tokens.size() - 1 : tokens.size();
+        PropertyCursor cursor = new PropertyCursor(tokens, 2, endExclusive);
+        boolean sawRadius = false;
+        boolean sawOffsetX = false;
+        boolean sawOffsetY = false;
+        while (cursor.hasNext()) {
+            String property = cursor.next();
+            String value = cursor.nextValue(sourceName, lineNumber, property);
+            switch (property.toLowerCase(Locale.ROOT)) {
+                case "radius" -> {
+                    builder.dropShadowRadius = parseDouble(value, sourceName, lineNumber, "dropShadow radius");
+                    sawRadius = true;
+                }
+                case "offsetx" -> {
+                    builder.dropShadowOffsetX = parseDouble(value, sourceName, lineNumber, "dropShadow offsetX");
+                    sawOffsetX = true;
+                }
+                case "offsety" -> {
+                    builder.dropShadowOffsetY = parseDouble(value, sourceName, lineNumber, "dropShadow offsetY");
+                    sawOffsetY = true;
+                }
+                default -> throw error(sourceName, lineNumber, "unsupported dropShadow property: " + property);
+            }
+        }
+        if (!sawRadius || !sawOffsetX || !sawOffsetY) {
+            throw error(sourceName, lineNumber, "dropShadow command requires radius, offsetX, and offsetY.");
+        }
+        builder.dropShadowEnabled = true;
+        builder.addStep(lineNumber, durationMillis, 0L, parseInterpolation(tokens, endExclusive, sourceName, lineNumber));
+    }
+
+    private static void parseColorAdjust(Builder builder, List<String> tokens, String sourceName, int lineNumber) {
+        if (tokens.size() < 4 || tokens.size() > 11) {
+            throw error(sourceName, lineNumber, "colorAdjust syntax is: colorAdjust <durationMillis> [hue <h>] [saturation <s>] [brightness <b>] [contrast <c>] [interpolation].");
+        }
+        long durationMillis = parseZeroOrPositiveLong(tokens.get(1), sourceName, lineNumber, "colorAdjust duration");
+        int endExclusive = isInterpolation(tokens.get(tokens.size() - 1)) ? tokens.size() - 1 : tokens.size();
+        PropertyCursor cursor = new PropertyCursor(tokens, 2, endExclusive);
+        boolean sawProperty = false;
+        while (cursor.hasNext()) {
+            String property = cursor.next();
+            String value = cursor.nextValue(sourceName, lineNumber, property);
+            switch (property.toLowerCase(Locale.ROOT)) {
+                case "hue" -> builder.colorAdjustHue = parseDouble(value, sourceName, lineNumber, "colorAdjust hue");
+                case "saturation" -> builder.colorAdjustSaturation = parseDouble(value, sourceName, lineNumber, "colorAdjust saturation");
+                case "brightness" -> builder.colorAdjustBrightness = parseDouble(value, sourceName, lineNumber, "colorAdjust brightness");
+                case "contrast" -> builder.colorAdjustContrast = parseDouble(value, sourceName, lineNumber, "colorAdjust contrast");
+                default -> throw error(sourceName, lineNumber, "unsupported colorAdjust property: " + property);
+            }
+            sawProperty = true;
+        }
+        if (!sawProperty) {
+            throw error(sourceName, lineNumber, "colorAdjust command requires at least one property.");
+        }
+        builder.colorAdjustEnabled = true;
+        builder.addStep(lineNumber, durationMillis, 0L, parseInterpolation(tokens, endExclusive, sourceName, lineNumber));
+    }
+
     private static void parseStep(Builder builder, List<String> tokens, String sourceName, int lineNumber) {
         if (tokens.size() < 2) {
             throw error(sourceName, lineNumber, "step syntax is: step <durationMillis> [property value ...] [interpolation].");
@@ -269,11 +393,72 @@ public final class AuthoredDisplayAnimationParser {
                 case "translatex" -> builder.translateX = parseDouble(value, sourceName, lineNumber, "translateX");
                 case "translatey" -> builder.translateY = parseDouble(value, sourceName, lineNumber, "translateY");
                 case "rotate", "rotation" -> builder.rotate = parseDouble(value, sourceName, lineNumber, "rotate");
+                case "clipx" -> builder.clipBounds = stepBounds(value, builder.clipBounds, sourceName, lineNumber, "clip", "x");
+                case "clipy" -> builder.clipBounds = stepBounds(value, builder.clipBounds, sourceName, lineNumber, "clip", "y");
+                case "clipwidth" -> builder.clipBounds = stepBounds(value, builder.clipBounds, sourceName, lineNumber, "clip", "width");
+                case "clipheight" -> builder.clipBounds = stepBounds(value, builder.clipBounds, sourceName, lineNumber, "clip", "height");
+                case "viewportx" -> builder.viewportBounds = stepBounds(value, builder.viewportBounds, sourceName, lineNumber, "viewport", "x");
+                case "viewporty" -> builder.viewportBounds = stepBounds(value, builder.viewportBounds, sourceName, lineNumber, "viewport", "y");
+                case "viewportwidth" -> builder.viewportBounds = stepBounds(value, builder.viewportBounds, sourceName, lineNumber, "viewport", "width");
+                case "viewportheight" -> builder.viewportBounds = stepBounds(value, builder.viewportBounds, sourceName, lineNumber, "viewport", "height");
+                case "blurradius" -> {
+                    builder.blurEnabled = true;
+                    builder.blurRadius = parseDouble(value, sourceName, lineNumber, "blur radius");
+                }
+                case "dropshadowradius", "shadowradius" -> {
+                    builder.dropShadowEnabled = true;
+                    builder.dropShadowRadius = parseDouble(value, sourceName, lineNumber, "dropShadow radius");
+                }
+                case "dropshadowoffsetx", "shadowoffsetx" -> {
+                    builder.dropShadowEnabled = true;
+                    builder.dropShadowOffsetX = parseDouble(value, sourceName, lineNumber, "dropShadow offsetX");
+                }
+                case "dropshadowoffsety", "shadowoffsety" -> {
+                    builder.dropShadowEnabled = true;
+                    builder.dropShadowOffsetY = parseDouble(value, sourceName, lineNumber, "dropShadow offsetY");
+                }
+                case "colorhue", "coloradjusthue", "hue" -> {
+                    builder.colorAdjustEnabled = true;
+                    builder.colorAdjustHue = parseDouble(value, sourceName, lineNumber, "colorAdjust hue");
+                }
+                case "colorsaturation", "coloradjustsaturation", "saturation" -> {
+                    builder.colorAdjustEnabled = true;
+                    builder.colorAdjustSaturation = parseDouble(value, sourceName, lineNumber, "colorAdjust saturation");
+                }
+                case "colorbrightness", "coloradjustbrightness", "brightness" -> {
+                    builder.colorAdjustEnabled = true;
+                    builder.colorAdjustBrightness = parseDouble(value, sourceName, lineNumber, "colorAdjust brightness");
+                }
+                case "colorcontrast", "coloradjustcontrast", "contrast" -> {
+                    builder.colorAdjustEnabled = true;
+                    builder.colorAdjustContrast = parseDouble(value, sourceName, lineNumber, "colorAdjust contrast");
+                }
                 case "interpolation" -> interpolation = parseInterpolation(value, sourceName, lineNumber);
                 default -> throw error(sourceName, lineNumber, "unsupported step property: " + property);
             }
         }
         builder.addStep(lineNumber, durationMillis, pauseBeforeMillis, interpolation);
+    }
+
+    private static DisplayRectangleBounds stepBounds(
+            String value,
+            DisplayRectangleBounds current,
+            String sourceName,
+            int lineNumber,
+            String description,
+            String property) {
+        double x = current == null ? 0.0 : current.x();
+        double y = current == null ? 0.0 : current.y();
+        double width = current == null ? 0.0 : current.width();
+        double height = current == null ? 0.0 : current.height();
+        double parsed = parseDouble(value, sourceName, lineNumber, description + " " + property);
+        return switch (property) {
+            case "x" -> new DisplayRectangleBounds(parsed, y, width, height);
+            case "y" -> new DisplayRectangleBounds(x, parsed, width, height);
+            case "width" -> new DisplayRectangleBounds(x, y, parsed, height);
+            case "height" -> new DisplayRectangleBounds(x, y, width, parsed);
+            default -> throw error(sourceName, lineNumber, "unsupported " + description + " property: " + property);
+        };
     }
 
     private static DisplayInterpolation parseInterpolation(List<String> tokens, int index, String sourceName, int lineNumber) {
@@ -386,6 +571,19 @@ public final class AuthoredDisplayAnimationParser {
         private double translateX = 0.0;
         private double translateY = 0.0;
         private double rotate = 0.0;
+        private DisplayRectangleBounds clipBounds;
+        private DisplayRectangleBounds viewportBounds;
+        private boolean blurEnabled;
+        private double blurRadius;
+        private boolean dropShadowEnabled;
+        private double dropShadowRadius;
+        private double dropShadowOffsetX;
+        private double dropShadowOffsetY;
+        private boolean colorAdjustEnabled;
+        private double colorAdjustHue;
+        private double colorAdjustSaturation;
+        private double colorAdjustBrightness;
+        private double colorAdjustContrast;
 
         private Builder(String id, String sourceName, int lineNumber, int repeatCount, boolean autoReverse) {
             this.id = Validation.requireNonBlank(id, "Authored animation id is required.");
@@ -405,7 +603,28 @@ public final class AuthoredDisplayAnimationParser {
                     translateX,
                     translateY,
                     rotate,
+                    clipBounds,
+                    viewportBounds,
+                    effectTargets(),
                     interpolation)));
+        }
+
+        private DisplayEffectTargets effectTargets() {
+            if (!blurEnabled && !dropShadowEnabled && !colorAdjustEnabled) {
+                return DisplayEffectTargets.NONE;
+            }
+            return new DisplayEffectTargets(
+                    blurEnabled,
+                    blurRadius,
+                    dropShadowEnabled,
+                    dropShadowRadius,
+                    dropShadowOffsetX,
+                    dropShadowOffsetY,
+                    colorAdjustEnabled,
+                    colorAdjustHue,
+                    colorAdjustSaturation,
+                    colorAdjustBrightness,
+                    colorAdjustContrast);
         }
 
         private AuthoredDisplayAnimation build() {

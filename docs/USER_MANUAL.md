@@ -488,9 +488,15 @@ Authored animations can be loaded from display JSON through the `animations` roo
 - `scale <durationMillis> scaleX <x> scaleY <y> [interpolation]`
 - `rotate <durationMillis> <degrees> [interpolation]`
 - `rotate <durationMillis> rotate <degrees> [interpolation]`
-- `step <durationMillis> [pauseBefore <millis>] [opacity <0..1>] [scaleX <x>] [scaleY <y>] [translateX <x>] [translateY <y>] [rotate <degrees>] [interpolation]`
+- `clip <durationMillis> x <x> y <y> width <width> height <height> [interpolation]`
+- `viewport <durationMillis> x <x> y <y> width <width> height <height> [interpolation]` for `ImageView` nodes
+- `blur <durationMillis> <radius> [interpolation]`
+- `blur <durationMillis> radius <radius> [interpolation]`
+- `dropShadow <durationMillis> radius <radius> offsetX <x> offsetY <y> [interpolation]`
+- `colorAdjust <durationMillis> [hue <-1..1>] [saturation <-1..1>] [brightness <-1..1>] [contrast <-1..1>] [interpolation]`
+- `step <durationMillis> [pauseBefore <millis>] [opacity <0..1>] [scaleX <x>] [scaleY <y>] [translateX <x>] [translateY <y>] [rotate <degrees>] [clipX <x>] [clipY <y>] [clipWidth <width>] [clipHeight <height>] [viewportX <x>] [viewportY <y>] [viewportWidth <width>] [viewportHeight <height>] [blurRadius <radius>] [shadowRadius <radius>] [shadowOffsetX <x>] [shadowOffsetY <y>] [hue <-1..1>] [saturation <-1..1>] [brightness <-1..1>] [contrast <-1..1>] [interpolation]`
 
-Standalone script resources can also be supplied through `animationScripts`, where each block starts with `animation <id>`, can include `repeat <count|indefinite>` and `autoreverse <true|false>`, and ends with `end`. The reusable JavaFX player also has room for capabilities that are not exposed in this ATL subset yet, including effect parameters such as blur/drop shadow/color adjustment, clipping and viewport changes, blend modes, cache/rendering hints, transform origins/pivots, 3D rotation axes and depth transforms, path motion, custom timelines, and event/callback hooks. Advanced Ren'Py ATL features such as arbitrary Python expressions, conditional blocks, events, callbacks, parallel composition, anchor math, and custom warpers are intentionally outside this reusable engine boundary for now.
+Standalone script resources can also be supplied through `animationScripts`, where each block starts with `animation <id>`, can include `repeat <count|indefinite>` and `autoreverse <true|false>`, and ends with `end`. The reusable JavaFX player also has room for capabilities that are not exposed in this ATL subset yet, including blend modes, cache/rendering hints, transform origins/pivots, 3D rotation axes and depth transforms, path motion, custom timelines, and event/callback hooks. Advanced Ren'Py ATL features such as arbitrary Python expressions, conditional blocks, events, callbacks, parallel composition, anchor math, and custom warpers are intentionally outside this reusable engine boundary for now.
 
 The registry can resolve image paths from a checked-out game tree through `GameAssetLocator`, but concrete image assets remain application-owned.
 

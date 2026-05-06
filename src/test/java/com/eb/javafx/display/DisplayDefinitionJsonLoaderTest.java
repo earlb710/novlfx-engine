@@ -63,6 +63,22 @@ final class DisplayDefinitionJsonLoaderTest {
                           "targetTranslateX": 4,
                           "targetTranslateY": -2,
                           "targetRotate": 30,
+                          "targetClipX": 1,
+                          "targetClipY": 2,
+                          "targetClipWidth": 30,
+                          "targetClipHeight": 40,
+                          "targetViewportX": 5,
+                          "targetViewportY": 6,
+                          "targetViewportWidth": 70,
+                          "targetViewportHeight": 80,
+                          "targetBlurRadius": 8,
+                          "targetDropShadowRadius": 5,
+                          "targetDropShadowOffsetX": 2,
+                          "targetDropShadowOffsetY": -3,
+                          "targetColorAdjustHue": 0.1,
+                          "targetColorAdjustSaturation": 0.2,
+                          "targetColorAdjustBrightness": -0.1,
+                          "targetColorAdjustContrast": 0.3,
                           "interpolation": "ease_both"
                         }
                       ]
@@ -81,6 +97,11 @@ final class DisplayDefinitionJsonLoaderTest {
         assertEquals(0.5, registry.animation("speaker.fade").steps().get(1).targetOpacity());
         assertEquals(25, registry.animation("speaker.step").steps().get(0).pauseBeforeMillis());
         assertEquals(30.0, registry.animation("speaker.step").steps().get(0).targetRotate());
+        assertEquals(30.0, registry.animation("speaker.step").steps().get(0).targetClipBounds().width());
+        assertEquals(80.0, registry.animation("speaker.step").steps().get(0).targetViewportBounds().height());
+        assertEquals(8.0, registry.animation("speaker.step").steps().get(0).targetEffects().blurRadius());
+        assertEquals(-3.0, registry.animation("speaker.step").steps().get(0).targetEffects().dropShadowOffsetY());
+        assertEquals(0.3, registry.animation("speaker.step").steps().get(0).targetEffects().colorAdjustContrast());
         assertEquals(DisplayInterpolation.EASE_BOTH, registry.animation("speaker.step").steps().get(0).interpolation());
         assertEquals(8.0, registry.animation("speaker.slide").steps().get(0).targetTranslateX());
     }
