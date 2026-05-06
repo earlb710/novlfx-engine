@@ -162,17 +162,19 @@ public final class ScreenShell {
         }
     }
 
-    /** Sets footer transparency where {@code 0.0} is invisible and {@code 1.0} is fully opaque. */
-    public static void setFooterTransparency(Node footer, double opacity) {
+    /** Sets footer transparency where {@code 0.0} is fully opaque and {@code 1.0} is invisible. */
+    public static void setFooterTransparency(Node footer, double transparency) {
         Validation.requireNonNull(footer, "Footer node is required.");
-        footer.setOpacity(Validation.requireUnitInterval(opacity, "Footer transparency must be between 0.0 and 1.0."));
+        footer.setOpacity(1.0 - Validation.requireUnitInterval(
+                transparency,
+                "Footer transparency must be between 0.0 and 1.0."));
     }
 
     /** Sets transparency on the footer attached to the supplied screen shell, when present. */
-    public static void setFooterTransparency(BorderPane screen, double opacity) {
+    public static void setFooterTransparency(BorderPane screen, double transparency) {
         Validation.requireNonNull(screen, "Screen shell is required.");
         if (screen.getBottom() != null) {
-            setFooterTransparency(screen.getBottom(), opacity);
+            setFooterTransparency(screen.getBottom(), transparency);
         }
     }
 

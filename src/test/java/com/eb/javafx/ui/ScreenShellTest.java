@@ -161,7 +161,7 @@ final class ScreenShellTest {
 
         assertTrue(footer.isVisible());
         assertTrue(footer.isManaged());
-        assertEquals(0.35, footer.getOpacity());
+        assertEquals(0.65, footer.getOpacity());
     }
 
     @Test
