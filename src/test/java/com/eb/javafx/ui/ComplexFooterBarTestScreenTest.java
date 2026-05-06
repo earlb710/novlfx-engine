@@ -5,6 +5,7 @@ import com.eb.javafx.testscreen.ManualTest;
 import com.eb.javafx.testscreen.TestScreenApplication;
 import javafx.application.Platform;
 import javafx.geometry.Pos;
+import javafx.scene.input.KeyCode;
 import javafx.scene.layout.BackgroundFill;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.StackPane;
@@ -86,8 +87,14 @@ final class ComplexFooterBarTestScreenTest {
                 new ComplexFooterBarTestScreen.TestConversationModel();
 
         assertFalse(option(model, "back").enabled());
-        assertTrue(option(model, "forward").enabled());
+        assertFalse(option(model, "forward").enabled());
         assertEquals("Hide history", option(model, "history").label());
+
+        model.toggleHistory();
+
+        assertFalse(option(model, "back").enabled());
+        assertTrue(option(model, "forward").enabled());
+        assertEquals("Show history", option(model, "history").label());
 
         model.forward();
         model.forward();
@@ -100,9 +107,9 @@ final class ComplexFooterBarTestScreenTest {
         assertEquals("Line 4 of 5", model.positionText());
         model.toggleHistory();
 
-        assertTrue(option(model, "back").enabled());
-        assertTrue(option(model, "forward").enabled());
-        assertEquals("Show history", option(model, "history").label());
+        assertFalse(option(model, "back").enabled());
+        assertFalse(option(model, "forward").enabled());
+        assertEquals("Hide history", option(model, "history").label());
     }
 
     @Test
@@ -120,7 +127,55 @@ final class ComplexFooterBarTestScreenTest {
     }
 
     @Test
-    void historyDisplayOverlaysSceneAboveFooterWithTransparentBlackBackground() {
+    void backRemovesCurrentStepFromHistory() {
+        ComplexFooterBarTestScreen.TestConversationModel model =
+                new ComplexFooterBarTestScreen.TestConversationModel();
+
+        model.forward();
+        model.forward();
+        model.selectChoice("patient");
+
+        assertEquals(5, model.historyViewModel().entries().get(0).rows().size());
+
+        model.back();
+
+        assertEquals("Line 3 of 5", model.positionText());
+        assertEquals(List.of(
+                        "Welcome to the complex footer bar test.",
+                        "Forward advances this test conversation.",
+                        "Choose a route. Selecting a choice advances automatically.",
+                        "Choice selected: Ask for details"),
+                model.historyViewModel().entries().get(0).rows().stream()
+                        .map(ConversationHistoryRowViewModel::text)
+                        .toList());
+
+        model.back();
+
+        assertEquals("Line 2 of 5", model.positionText());
+        assertEquals(List.of(
+                        "Welcome to the complex footer bar test.",
+                        "Forward advances this test conversation."),
+                model.historyViewModel().entries().get(0).rows().stream()
+                        .map(ConversationHistoryRowViewModel::text)
+                        .toList());
+    }
+
+    @Test
+    void spaceShortcutMatchesForwardOnlyAfterHistoryIsClosed() {
+        ComplexFooterBarTestScreen.TestConversationModel model =
+                new ComplexFooterBarTestScreen.TestConversationModel();
+
+        assertTrue(ComplexFooterBarTestScreen.handleShortcut(KeyCode.SPACE, model));
+        assertEquals("Line 1 of 5", model.positionText());
+
+        model.toggleHistory();
+
+        assertTrue(ComplexFooterBarTestScreen.handleShortcut(KeyCode.SPACE, model));
+        assertEquals("Line 2 of 5", model.positionText());
+    }
+
+    @Test
+    void historyDisplayOverlaysSceneAboveFooterWithThirtyPercentTransparentBlackBackground() {
         BorderPane root = new BorderPane();
         VBox header = new VBox();
         VBox body = new VBox();
@@ -145,7 +200,7 @@ final class ComplexFooterBarTestScreenTest {
         assertSame(historyOverlay, sceneArea.getChildren().get(1));
 
         BackgroundFill fill = historyOverlay.getBackground().getFills().get(0);
-        assertEquals(Color.rgb(0, 0, 0, 0.60), fill.getFill());
+        assertEquals(Color.rgb(0, 0, 0, 0.70), fill.getFill());
         assertEquals(ScreenShell.PANEL_INSETS, historyOverlay.getPadding());
         assertEquals(Double.MAX_VALUE, historyOverlay.getMaxWidth());
         assertEquals(Double.MAX_VALUE, historyOverlay.getMaxHeight());

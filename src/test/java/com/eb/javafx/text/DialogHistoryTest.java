@@ -63,6 +63,32 @@ final class DialogHistoryTest {
     }
 
     @Test
+    void removesLastMessageFromOpenDialog() {
+        DialogHistory history = new DialogHistory();
+        DialogSpeaker speaker = DialogSpeaker.text("speaker", "Speaker");
+
+        history.beginDialog("rewind", new GameDateTime(1, "default"));
+        history.addMessage(speaker, "First");
+        history.addMessage(speaker, "Second");
+
+        assertTrue(history.removeLastMessage().isPresent());
+
+        DialogHistoryEntry entry = history.openDialog().orElseThrow();
+        assertEquals(1, entry.messages().size());
+        assertEquals("First", entry.messages().get(0).columns().get(1).tokens().get(0).text());
+    }
+
+    @Test
+    void removingLastMessageFromEmptyOpenDialogDoesNothing() {
+        DialogHistory history = new DialogHistory();
+
+        history.beginDialog("empty", new GameDateTime(1, "default"));
+
+        assertFalse(history.removeLastMessage().isPresent());
+        assertTrue(history.openDialog().orElseThrow().messages().isEmpty());
+    }
+
+    @Test
     void exposesImmutableHistoryCollections() {
         DialogHistory history = new DialogHistory();
         history.beginDialog("immutable", new GameDateTime(1, "default"));

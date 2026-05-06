@@ -7,11 +7,12 @@ import com.eb.javafx.state.GameState;
 import com.eb.javafx.text.DialogSpeaker;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.input.KeyCode;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.Background;
 import javafx.scene.layout.BackgroundFill;
 import javafx.scene.layout.BorderPane;
@@ -34,7 +35,7 @@ public final class ComplexFooterBarTestScreen {
     private static final String HISTORY_ID = "history";
     private static final String FORWARD_ID = "forward";
     private static final Background HISTORY_OVERLAY_BACKGROUND = new Background(
-            new BackgroundFill(Color.rgb(0, 0, 0, 0.60), CornerRadii.EMPTY, Insets.EMPTY));
+            new BackgroundFill(Color.rgb(0, 0, 0, 0.70), CornerRadii.EMPTY, Insets.EMPTY));
 
     private ComplexFooterBarTestScreen() {
     }
@@ -96,19 +97,30 @@ public final class ComplexFooterBarTestScreen {
         refresh.run();
 
         Scene scene = new Scene(root, preferencesService.windowWidth(), preferencesService.windowHeight());
-        scene.setOnKeyPressed(event -> {
-            if (event.getCode() == KeyCode.SPACE) {
-                model.forward();
-                refresh.run();
-                event.consume();
-            } else if (event.getCode() == KeyCode.BACK_SPACE) {
-                model.back();
+        scene.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
+            if (handleShortcut(event.getCode(), model)) {
                 refresh.run();
                 event.consume();
             }
         });
         scene.getStylesheets().add(uiTheme.stylesheet());
         return scene;
+    }
+
+    static boolean handleShortcut(KeyCode keyCode, TestConversationModel model) {
+        if (keyCode == KeyCode.SPACE) {
+            if (!model.historyVisible()) {
+                model.forward();
+            }
+            return true;
+        }
+        if (keyCode == KeyCode.BACK_SPACE) {
+            if (!model.historyVisible()) {
+                model.back();
+            }
+            return true;
+        }
+        return false;
     }
 
     static StackPane historyOverlay(VBox historyContent) {
@@ -294,6 +306,7 @@ public final class ComplexFooterBarTestScreen {
 
         public void back() {
             if (canBack()) {
+                rollbackCurrentStepFromHistory();
                 index--;
             }
         }
@@ -333,13 +346,18 @@ public final class ComplexFooterBarTestScreen {
 
         public List<ScreenShell.FooterOption> footerOptions() {
             return ScreenShell.defaultFooterOptions().stream()
-                    .map(option -> switch (option.id()) {
-                        case BACK_ID -> option.withEnabled(canBack());
-                        case HISTORY_ID -> option
-                                .withLabel(historyVisible ? "Hide history" : "Show history")
-                                .withTooltip(historyVisible ? "Hide the history display." : "Show the history display.");
-                        case FORWARD_ID -> option.withEnabled(canForward());
-                        default -> option.withEnabled(false);
+                    .map(option -> {
+                        if (historyVisible && !HISTORY_ID.equals(option.id())) {
+                            return option.withEnabled(false);
+                        }
+                        return switch (option.id()) {
+                            case BACK_ID -> option.withEnabled(canBack());
+                            case HISTORY_ID -> option
+                                    .withLabel(historyVisible ? "Hide history" : "Show history")
+                                    .withTooltip(historyVisible ? "Hide the history display." : "Show the history display.");
+                            case FORWARD_ID -> option.withEnabled(canForward());
+                            default -> option.withEnabled(false);
+                        };
                     })
                     .toList();
         }
@@ -353,6 +371,18 @@ public final class ComplexFooterBarTestScreen {
                 TestConversationLine line = currentLine();
                 gameState.conversationHistory().addMessage(line.speaker(), line.text());
                 recorded[index] = true;
+            }
+        }
+
+        private void rollbackCurrentStepFromHistory() {
+            if (hasChoices() && choiceRecorded) {
+                gameState.conversationHistory().removeLastMessage();
+                selectedChoiceId = null;
+                choiceRecorded = false;
+            }
+            if (recorded[index]) {
+                gameState.conversationHistory().removeLastMessage();
+                recorded[index] = false;
             }
         }
 
