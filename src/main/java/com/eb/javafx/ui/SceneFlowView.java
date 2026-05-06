@@ -3,6 +3,7 @@ package com.eb.javafx.ui;
 import com.eb.javafx.scene.SceneChoiceViewModel;
 import com.eb.javafx.scene.SceneDialogueRowViewModel;
 import com.eb.javafx.scene.SceneEffectPreviewViewModel;
+import com.eb.javafx.scene.SceneExecutionStatus;
 import com.eb.javafx.scene.SceneStatusRowViewModel;
 import com.eb.javafx.scene.SceneViewModel;
 import com.eb.javafx.util.Validation;
@@ -12,6 +13,7 @@ import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.Tooltip;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 
 import java.util.Objects;
@@ -27,11 +29,20 @@ public final class SceneFlowView {
     }
 
     public static VBox createContent(SceneViewModel viewModel, Consumer<String> choiceHandler) {
+        return createContent(viewModel, choiceHandler, null, null);
+    }
+
+    public static VBox createContent(
+            SceneViewModel viewModel,
+            Consumer<String> choiceHandler,
+            Runnable backwardHandler,
+            Runnable forwardHandler) {
         Validation.requireNonNull(viewModel, "Scene view model is required.");
         Consumer<String> effectiveChoiceHandler = Objects.requireNonNullElse(choiceHandler, id -> {
         });
 
         VBox content = new VBox(ScreenShell.BODY_SPACING);
+        content.getChildren().add(checkpointNavigationPanel(viewModel, backwardHandler, forwardHandler));
         content.getChildren().add(statusPanel(viewModel));
         if (!viewModel.dialogueRows().isEmpty()) {
             content.getChildren().add(dialoguePanel(viewModel));
@@ -85,6 +96,31 @@ public final class SceneFlowView {
         VBox panel = ScreenShell.styledPanel(ScreenShell.SCENE_STATUS_PANEL_STYLE_CLASS);
         for (SceneStatusRowViewModel row : viewModel.statusRows()) {
             panel.getChildren().add(new Label(row.label() + ": " + row.value()));
+        }
+        return panel;
+    }
+
+    private static Node checkpointNavigationPanel(SceneViewModel viewModel, Runnable backwardHandler, Runnable forwardHandler) {
+        HBox panel = new HBox(ScreenShell.BODY_SPACING);
+        Button back = new Button("Back");
+        back.getStyleClass().add("scene-checkpoint-back-button");
+        back.setDisable(!viewModel.rollbackAvailable() || backwardHandler == null);
+        if (backwardHandler != null) {
+            back.setOnAction(event -> backwardHandler.run());
+        }
+        Button forward = new Button(viewModel.rollForwardAvailable() ? "Forward" : "Continue");
+        forward.getStyleClass().add("scene-checkpoint-forward-button");
+        boolean forwardAvailable = viewModel.rollForwardAvailable()
+                || viewModel.status() == SceneExecutionStatus.DISPLAYING_TEXT;
+        forward.setDisable(!forwardAvailable || forwardHandler == null);
+        if (forwardHandler != null) {
+            forward.setOnAction(event -> forwardHandler.run());
+        }
+        panel.getChildren().addAll(back, forward);
+        if (viewModel.rollbackBlockedReason() != null && !viewModel.rollbackBlockedReason().isBlank()) {
+            Label blocked = new Label(viewModel.rollbackBlockedReason());
+            blocked.getStyleClass().add("scene-choice-state");
+            panel.getChildren().add(blocked);
         }
         return panel;
     }

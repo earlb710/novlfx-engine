@@ -50,7 +50,7 @@ public final class SceneCheckpointLog {
     }
 
     public boolean rollbackAllowed() {
-        return cursor > rollbackBarrierIndex;
+        return cursor > Math.max(rollbackBarrierIndex, 0);
     }
 
     public boolean rollForwardAllowed() {

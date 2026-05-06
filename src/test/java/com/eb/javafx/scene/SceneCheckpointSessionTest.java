@@ -27,11 +27,13 @@ final class SceneCheckpointSessionTest {
         assertEquals(SceneExecutionStatus.DISPLAYING_TEXT, text.status());
         assertEquals(1, session.checkpointLog().checkpoints().size());
         assertEquals("line", session.checkpointLog().currentCheckpoint().stepId());
+        assertFalse(session.rollbackAllowed());
 
         SceneExecutionResult choice = session.continueFromText();
         assertEquals(SceneExecutionStatus.WAITING_FOR_CHOICE, choice.status());
         assertEquals(2, session.checkpointLog().checkpoints().size());
         assertEquals(SceneCheckpointPayloadKind.TEXT_CONTINUATION, session.checkpointLog().checkpoints().get(0).payload().kind());
+        assertTrue(session.rollbackAllowed());
 
         SceneExecutionResult after = session.selectChoice("advance");
         assertEquals(SceneExecutionStatus.DISPLAYING_TEXT, after.status());
