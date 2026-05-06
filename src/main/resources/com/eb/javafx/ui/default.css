@@ -157,3 +157,9 @@
     -fx-background-color: #0099cc;
     -fx-border-color: #66c1e0;
 }
+
+.svg-button-artwork-text {
+    -fx-fill: #ffffff;
+    -fx-font-size: 20px;
+    -fx-font-weight: bold;
+}

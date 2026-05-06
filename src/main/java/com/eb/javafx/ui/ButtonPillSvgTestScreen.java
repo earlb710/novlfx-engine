@@ -29,9 +29,9 @@ public final class ButtonPillSvgTestScreen {
             PreferencesService preferencesService,
             UiTheme uiTheme,
             Runnable backAction) {
-        Button primary = ButtonVisuals.apply(new Button(PRIMARY_LABEL));
-        Button secondary = ButtonVisuals.apply(new Button(SECONDARY_LABEL));
-        Button back = ButtonVisuals.apply(new Button(BACK_LABEL));
+        Button primary = ButtonVisuals.applySvgArtwork(new Button(PRIMARY_LABEL));
+        Button secondary = ButtonVisuals.applySvgArtwork(new Button(SECONDARY_LABEL));
+        Button back = ButtonVisuals.applySvgArtwork(new Button(BACK_LABEL));
         back.setOnAction(event -> backAction.run());
 
         HBox actionRow = new HBox(10, primary, secondary, back);

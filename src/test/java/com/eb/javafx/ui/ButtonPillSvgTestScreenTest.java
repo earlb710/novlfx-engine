@@ -4,6 +4,10 @@ import com.eb.javafx.prefs.PreferencesService;
 import com.eb.javafx.testscreen.ManualTest;
 import com.eb.javafx.testscreen.TestScreenApplication;
 import javafx.application.Platform;
+import javafx.scene.Node;
+import javafx.scene.layout.StackPane;
+import javafx.scene.shape.SVGPath;
+import javafx.scene.text.Text;
 import javafx.stage.Stage;
 import org.junit.jupiter.api.Test;
 
@@ -31,6 +35,26 @@ final class ButtonPillSvgTestScreenTest {
         assertEquals("Back to main menu", ButtonPillSvgTestScreen.BACK_LABEL);
         assertEquals("M 24 0 H 156 Q 180 0 180 24 Q 180 48 156 48 H 24 Q 0 48 0 24 Q 0 0 24 0 Z",
                 ButtonVisuals.buttonShapePath());
+    }
+
+    @Test
+    void buttonPillArtworkIsBuiltFromPackagedSvg() {
+        Node graphic = ButtonVisuals.createArtworkGraphic(ButtonPillSvgTestScreen.PRIMARY_LABEL);
+
+        assertTrue(graphic instanceof StackPane);
+        StackPane stack = (StackPane) graphic;
+        assertTrue(stack.getStyleClass().contains(ButtonVisuals.BUTTON_ARTWORK_STYLE_CLASS));
+        assertEquals(2, stack.getChildren().size());
+
+        assertTrue(stack.getChildren().get(0) instanceof SVGPath);
+        SVGPath artwork = (SVGPath) stack.getChildren().get(0);
+        assertEquals(ButtonVisuals.buttonShapePath(), artwork.getContent());
+        assertEquals(1.0, artwork.getStrokeWidth());
+
+        assertTrue(stack.getChildren().get(1) instanceof Text);
+        Text label = (Text) stack.getChildren().get(1);
+        assertEquals(ButtonPillSvgTestScreen.PRIMARY_LABEL, label.getText());
+        assertTrue(label.getStyleClass().contains(ButtonVisuals.BUTTON_ARTWORK_TEXT_STYLE_CLASS));
     }
 
     @Test
