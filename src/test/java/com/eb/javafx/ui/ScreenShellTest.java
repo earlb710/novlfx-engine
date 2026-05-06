@@ -7,6 +7,7 @@ import javafx.scene.layout.BackgroundPosition;
 import javafx.scene.layout.BackgroundRepeat;
 import javafx.scene.layout.BackgroundSize;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import org.junit.jupiter.api.Test;
 
@@ -99,7 +100,9 @@ final class ScreenShellTest {
                 "▣ Save (Ctrl+S)",
                 "⚡ Quick save (Ctrl+Q)",
                 "⚙ Preferences (Ctrl+P)",
-                "› Forward (Space)"), ScreenShell.footerOptionTexts());
+                "› Forward (Space)"), ScreenShell.defaultFooterOptions().stream()
+                .map(ScreenShell.FooterOption::displayText)
+                .toList());
         assertEquals(List.of(
                 "Back - Keyboard shortcut: Backspace",
                 "History - Keyboard shortcut: Ctrl+H",
@@ -108,8 +111,70 @@ final class ScreenShellTest {
                 "Save - Keyboard shortcut: Ctrl+S",
                 "Quick save - Keyboard shortcut: Ctrl+Q",
                 "Preferences - Keyboard shortcut: Ctrl+P",
-                "Forward - Keyboard shortcut: Space"), ScreenShell.footerOptionAccessibleTexts());
+                "Forward - Keyboard shortcut: Space"), ScreenShell.defaultFooterOptions().stream()
+                .map(ScreenShell.FooterOption::accessibleText)
+                .toList());
         assertEquals("screen-footer-bar", ScreenShell.SCREEN_FOOTER_BAR_STYLE_CLASS);
         assertEquals("screen-footer-option", ScreenShell.SCREEN_FOOTER_OPTION_STYLE_CLASS);
+    }
+
+    @Test
+    void footerOptionsCanBeCustomizedWithoutChangingDefaults() {
+        List<ScreenShell.FooterOption> customized = ScreenShell.changeFooterTooltip(
+                ScreenShell.changeFooterIcon(
+                        ScreenShell.changeFooterLabel(
+                                ScreenShell.changeFooterShortcut(
+                                        ScreenShell.defaultFooterOptions(),
+                                        "quick-save",
+                                        "Ctrl+Shift+S"),
+                                "quick-save",
+                                "Quicksave"),
+                        "quick-save",
+                        "💾"),
+                "quick-save",
+                "Immediately write a quick save.");
+
+        ScreenShell.FooterOption quickSave = customized.stream()
+                .filter(option -> option.id().equals("quick-save"))
+                .findFirst()
+                .orElseThrow();
+
+        assertEquals("💾 Quicksave (Ctrl+Shift+S)", quickSave.displayText());
+        assertEquals("Quicksave - Keyboard shortcut: Ctrl+Shift+S", quickSave.accessibleText());
+        assertEquals("Immediately write a quick save.", quickSave.tooltip());
+        assertEquals("⚡ Quick save (Ctrl+Q)", ScreenShell.defaultFooterOptions().get(5).displayText());
+    }
+
+    @Test
+    void footerVisibilityAndTransparencyHelpersUpdateFooterNodes() {
+        HBox footer = new HBox();
+        BorderPane screen = new BorderPane();
+        screen.setBottom(footer);
+
+        ScreenShell.setFooterVisible(screen, false);
+
+        assertFalse(footer.isVisible());
+        assertFalse(footer.isManaged());
+
+        ScreenShell.setFooterVisible(footer, true);
+        ScreenShell.setFooterTransparency(screen, 0.35);
+
+        assertTrue(footer.isVisible());
+        assertTrue(footer.isManaged());
+        assertEquals(0.35, footer.getOpacity());
+    }
+
+    @Test
+    void footerHelpersValidateRequiredArguments() {
+        HBox footer = new HBox();
+
+        assertThrows(IllegalArgumentException.class, () ->
+                ScreenShell.setFooterVisible((javafx.scene.Node) null, true));
+        assertThrows(IllegalArgumentException.class, () ->
+                ScreenShell.setFooterTransparency(footer, -0.1));
+        assertThrows(IllegalArgumentException.class, () ->
+                ScreenShell.changeFooterIcon(ScreenShell.defaultFooterOptions(), "quick-save", ""));
+        assertThrows(IllegalArgumentException.class, () ->
+                new ScreenShell.FooterOption("", "?", "Help", "F1", "Help tooltip"));
     }
 }

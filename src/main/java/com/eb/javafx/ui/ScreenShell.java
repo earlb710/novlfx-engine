@@ -4,6 +4,7 @@ import com.eb.javafx.util.Validation;
 import javafx.geometry.Insets;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
+import javafx.scene.control.Tooltip;
 import javafx.scene.image.Image;
 import javafx.scene.layout.Background;
 import javafx.scene.layout.BackgroundImage;
@@ -66,20 +67,14 @@ public final class ScreenShell {
             OUTER_INSETS.getLeft());
     private static final double FOOTER_SPACING = 8;
     private static final List<FooterOption> FOOTER_OPTIONS = List.of(
-            new FooterOption("‹", "Back", "Backspace"),
-            new FooterOption("◷", "History", "Ctrl+H"),
-            new FooterOption("⇥", "Skip mode", "Tab"),
-            new FooterOption("⇩", "Load", "Ctrl+L"),
-            new FooterOption("▣", "Save", "Ctrl+S"),
-            new FooterOption("⚡", "Quick save", "Ctrl+Q"),
-            new FooterOption("⚙", "Preferences", "Ctrl+P"),
-            new FooterOption("›", "Forward", "Space"));
-    private static final List<String> FOOTER_OPTION_TEXTS = FOOTER_OPTIONS.stream()
-            .map(FooterOption::displayText)
-            .toList();
-    private static final List<String> FOOTER_OPTION_ACCESSIBLE_TEXTS = FOOTER_OPTIONS.stream()
-            .map(FooterOption::accessibleText)
-            .toList();
+            new FooterOption("back", "‹", "Back", "Backspace", "Return to the previous screen."),
+            new FooterOption("history", "◷", "History", "Ctrl+H", "Open conversation history."),
+            new FooterOption("skip-mode", "⇥", "Skip mode", "Tab", "Toggle skip mode."),
+            new FooterOption("load", "⇩", "Load", "Ctrl+L", "Open the load screen."),
+            new FooterOption("save", "▣", "Save", "Ctrl+S", "Open the save screen."),
+            new FooterOption("quick-save", "⚡", "Quick save", "Ctrl+Q", "Save to the quick-save slot."),
+            new FooterOption("preferences", "⚙", "Preferences", "Ctrl+P", "Open preferences."),
+            new FooterOption("forward", "›", "Forward", "Space", "Advance the scene."));
 
     private ScreenShell() {
     }
@@ -91,6 +86,17 @@ public final class ScreenShell {
      * @param content JavaFX node placed in the central panel
      */
     public static BorderPane titled(String title, Node content) {
+        return titled(title, content, FOOTER_OPTIONS);
+    }
+
+    /**
+     * Builds a titled panel with caller-supplied footer options.
+     *
+     * @param title screen title text shown above the content panel
+     * @param content JavaFX node placed in the central panel
+     * @param footerOptions footer options to show, or an empty list to omit the footer
+     */
+    public static BorderPane titled(String title, Node content, List<FooterOption> footerOptions) {
         Label header = new Label(title);
         header.getStyleClass().add(SCREEN_TITLE_STYLE_CLASS);
 
@@ -100,10 +106,12 @@ public final class ScreenShell {
         root.getStyleClass().add(SCREEN_ROOT_STYLE_CLASS);
         root.setTop(header);
         root.setCenter(body);
-        root.setBottom(footerBar());
+        if (footerOptions != null && !footerOptions.isEmpty()) {
+            root.setBottom(footerBar(footerOptions));
+            BorderPane.setMargin(root.getBottom(), OUTER_INSETS);
+        }
         BorderPane.setMargin(header, OUTER_INSETS_WITHOUT_BOTTOM);
         BorderPane.setMargin(body, OUTER_INSETS_WITHOUT_BOTTOM);
-        BorderPane.setMargin(root.getBottom(), OUTER_INSETS);
         return root;
     }
 
@@ -114,23 +122,78 @@ public final class ScreenShell {
      * across multiple parents.</p>
      */
     public static HBox footerBar() {
+        return footerBar(FOOTER_OPTIONS);
+    }
+
+    /**
+     * Creates a footer bar node from caller-supplied footer options.
+     *
+     * @param footerOptions options to render left-to-right in the footer
+     */
+    public static HBox footerBar(List<FooterOption> footerOptions) {
+        Validation.requireNonNull(footerOptions, "Footer options are required.");
         HBox footer = new HBox(FOOTER_SPACING);
         footer.getStyleClass().add(SCREEN_FOOTER_BAR_STYLE_CLASS);
-        for (FooterOption option : FOOTER_OPTIONS) {
+        for (FooterOption option : footerOptions) {
+            Validation.requireNonNull(option, "Footer option is required.");
             Label label = new Label(option.displayText());
             label.getStyleClass().add(SCREEN_FOOTER_OPTION_STYLE_CLASS);
             label.setAccessibleText(option.accessibleText());
+            if (option.tooltip() != null && !option.tooltip().isBlank()) {
+                label.setTooltip(new Tooltip(option.tooltip()));
+            }
             footer.getChildren().add(label);
         }
         return footer;
     }
 
-    static List<String> footerOptionTexts() {
-        return FOOTER_OPTION_TEXTS;
+    /** Shows or hides the footer node while keeping layout management in sync. */
+    public static void setFooterVisible(Node footer, boolean visible) {
+        Validation.requireNonNull(footer, "Footer node is required.");
+        footer.setVisible(visible);
+        footer.setManaged(visible);
     }
 
-    static List<String> footerOptionAccessibleTexts() {
-        return FOOTER_OPTION_ACCESSIBLE_TEXTS;
+    /** Shows or hides the footer attached to the supplied screen shell, when present. */
+    public static void setFooterVisible(BorderPane screen, boolean visible) {
+        Validation.requireNonNull(screen, "Screen shell is required.");
+        if (screen.getBottom() != null) {
+            setFooterVisible(screen.getBottom(), visible);
+        }
+    }
+
+    /** Sets footer transparency where {@code 0.0} is invisible and {@code 1.0} is fully opaque. */
+    public static void setFooterTransparency(Node footer, double opacity) {
+        Validation.requireNonNull(footer, "Footer node is required.");
+        footer.setOpacity(Validation.requireUnitInterval(opacity, "Footer transparency must be between 0.0 and 1.0."));
+    }
+
+    /** Sets transparency on the footer attached to the supplied screen shell, when present. */
+    public static void setFooterTransparency(BorderPane screen, double opacity) {
+        Validation.requireNonNull(screen, "Screen shell is required.");
+        if (screen.getBottom() != null) {
+            setFooterTransparency(screen.getBottom(), opacity);
+        }
+    }
+
+    public static List<FooterOption> defaultFooterOptions() {
+        return FOOTER_OPTIONS;
+    }
+
+    public static List<FooterOption> changeFooterIcon(List<FooterOption> options, String id, String icon) {
+        return replaceFooterOption(options, id, option -> option.withIcon(icon));
+    }
+
+    public static List<FooterOption> changeFooterLabel(List<FooterOption> options, String id, String label) {
+        return replaceFooterOption(options, id, option -> option.withLabel(label));
+    }
+
+    public static List<FooterOption> changeFooterShortcut(List<FooterOption> options, String id, String shortcut) {
+        return replaceFooterOption(options, id, option -> option.withShortcut(shortcut));
+    }
+
+    public static List<FooterOption> changeFooterTooltip(List<FooterOption> options, String id, String tooltip) {
+        return replaceFooterOption(options, id, option -> option.withTooltip(tooltip));
     }
 
     public static VBox styledPanel(String styleClass, Node... children) {
@@ -181,13 +244,53 @@ public final class ScreenShell {
         };
     }
 
-    private record FooterOption(String icon, String label, String shortcut) {
-        private String displayText() {
+    private static List<FooterOption> replaceFooterOption(
+            List<FooterOption> options,
+            String id,
+            java.util.function.UnaryOperator<FooterOption> replacement) {
+        Validation.requireNonNull(options, "Footer options are required.");
+        String normalizedId = Validation.requireNonBlank(id, "Footer option id is required.");
+        Validation.requireNonNull(replacement, "Footer option replacement is required.");
+        return options.stream()
+                .map(option -> {
+                    Validation.requireNonNull(option, "Footer option is required.");
+                    return option.id().equals(normalizedId) ? replacement.apply(option) : option;
+                })
+                .toList();
+    }
+
+    public record FooterOption(String id, String icon, String label, String shortcut, String tooltip) {
+        public FooterOption {
+            id = Validation.requireNonBlank(id, "Footer option id is required.");
+            icon = Validation.requireNonBlank(icon, "Footer option icon is required.");
+            label = Validation.requireNonBlank(label, "Footer option label is required.");
+            shortcut = Validation.requireNonBlank(shortcut, "Footer option shortcut is required.");
+            tooltip = tooltip == null ? "" : tooltip;
+        }
+
+        public String displayText() {
             return icon + " " + label + " (" + shortcut + ")";
         }
 
-        private String accessibleText() {
+        public String accessibleText() {
             return label + " - Keyboard shortcut: " + shortcut;
         }
+
+        public FooterOption withIcon(String icon) {
+            return new FooterOption(id, icon, label, shortcut, tooltip);
+        }
+
+        public FooterOption withLabel(String label) {
+            return new FooterOption(id, icon, label, shortcut, tooltip);
+        }
+
+        public FooterOption withShortcut(String shortcut) {
+            return new FooterOption(id, icon, label, shortcut, tooltip);
+        }
+
+        public FooterOption withTooltip(String tooltip) {
+            return new FooterOption(id, icon, label, shortcut, tooltip);
+        }
+
     }
 }
