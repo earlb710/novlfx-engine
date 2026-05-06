@@ -291,7 +291,7 @@ public final class ScreenShell {
         if (footer instanceof HBox footerBox) {
             footerBox.getChildren().forEach(child -> {
                 if (child instanceof Label label && label.getUserData() instanceof FooterOption option) {
-                    applyFooterOption(label, option, labelsVisible);
+                    applyFooterOption(label, option, option.displayText(labelsVisible), option.tooltip());
                 }
             });
         }
@@ -534,22 +534,22 @@ public final class ScreenShell {
         return type.isInstance(value) ? type.cast(value) : defaultValue;
     }
 
-    private static void applyFooterOption(Label label, FooterOption option, boolean labelsVisible) {
-        label.setText(option.displayText(labelsVisible));
-        applyFooterOptionState(label, option);
-        installFooterTooltip(label, option.tooltip());
-    }
-
-    public static void applyFooterOption(Label label, FooterOption option, FooterShortcutDisplay shortcutDisplay) {
+    static void applyFooterOption(Label label, FooterOption option, FooterShortcutDisplay shortcutDisplay) {
         Validation.requireNonNull(label, "Footer label is required.");
         Validation.requireNonNull(option, "Footer option is required.");
         FooterShortcutDisplay checkedDisplay = shortcutDisplay == null
                 ? DEFAULT_FOOTER_SHORTCUT_DISPLAY
                 : shortcutDisplay;
+        applyFooterOption(label, option, option.displayText(checkedDisplay), option.tooltipText(checkedDisplay));
+    }
+
+    private static void applyFooterOption(Label label, FooterOption option, String displayText, String tooltipText) {
+        Validation.requireNonNull(label, "Footer label is required.");
+        Validation.requireNonNull(option, "Footer option is required.");
         label.setUserData(option);
-        label.setText(option.displayText(checkedDisplay));
+        label.setText(displayText);
         applyFooterOptionState(label, option);
-        installFooterTooltip(label, option.tooltipText(checkedDisplay));
+        installFooterTooltip(label, tooltipText);
     }
 
     private static void applyFooterOptionState(Label label, FooterOption option) {
