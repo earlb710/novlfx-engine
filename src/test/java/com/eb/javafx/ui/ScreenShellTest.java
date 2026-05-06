@@ -8,7 +8,9 @@ import com.eb.javafx.prefs.PreferencesService.FooterShortcutDisplay;
 import com.eb.javafx.state.GameState;
 import com.eb.javafx.util.VectorImage;
 import javafx.geometry.Pos;
+import javafx.scene.control.Label;
 import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.image.WritableImage;
 import javafx.scene.layout.BackgroundImage;
 import javafx.scene.layout.BackgroundPosition;
@@ -185,6 +187,17 @@ final class ScreenShellTest {
         }
         assertTrue(VectorImage.isSvgPath(Path.of(
                 "src/main/resources/com/eb/javafx/images/icons/icons-10x10.svg")));
+    }
+
+    @Test
+    void footerBarUsesSvgIconGraphicsWhenResourcesAreAvailable() {
+        HBox footer = ScreenShell.footerBar();
+
+        Label back = (Label) footer.getChildren().get(0);
+
+        assertTrue(back.getGraphic() instanceof ImageView);
+        assertEquals("Back", back.getText());
+        assertEquals(12.0, ((ImageView) back.getGraphic()).getFitWidth());
     }
 
     @Test

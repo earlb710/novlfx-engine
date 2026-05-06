@@ -40,6 +40,19 @@
     -fx-opacity: 0.45;
 }
 
+.conversation-history-rows {
+    -fx-hgap: 10px;
+    -fx-vgap: 6px;
+}
+
+.conversation-history-speaker {
+    -fx-alignment: top-right;
+}
+
+.conversation-history-message {
+    -fx-alignment: top-left;
+}
+
 .screen-footer-compact {
     -fx-padding: 1px;
 }

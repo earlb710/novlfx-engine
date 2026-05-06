@@ -5,11 +5,15 @@ import com.eb.javafx.state.GameState;
 import com.eb.javafx.text.DialogColumn;
 import com.eb.javafx.text.DialogMessage;
 import com.eb.javafx.text.DialogSpeaker;
+import javafx.geometry.HPos;
+import javafx.scene.control.Label;
+import javafx.scene.layout.GridPane;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 final class ConversationHistoryScreenTest {
     @Test
@@ -73,5 +77,29 @@ final class ConversationHistoryScreenTest {
         assertEquals("day 1 default", viewModel.entries().get(0).startedAt());
         assertEquals("unknown participants", viewModel.entries().get(0).participants());
         assertEquals("open", viewModel.entries().get(0).status());
+    }
+
+    @Test
+    void rendersHistoryRowsAsTwoMultilineColumnsWithRightAlignedSpeaker() {
+        GameState gameState = new GameState("main-menu");
+        DialogSpeaker ava = DialogSpeaker.text("ava", "Ava");
+        gameState.conversationHistory().beginDialog("dock-talk", new GameDateTime(3, "evening"));
+        gameState.conversationHistory().addMessage(ava, "Meet me by the docks.");
+
+        ConversationHistoryEntryViewModel entry = ConversationHistoryScreen.viewModel("Conversation History", gameState)
+                .entries()
+                .get(0);
+        GridPane rows = ConversationHistoryScreen.historyRows(entry);
+
+        assertEquals(2, rows.getColumnCount());
+        assertEquals(HPos.RIGHT, rows.getColumnConstraints().get(0).getHalignment());
+        Label speaker = (Label) rows.getChildren().get(0);
+        Label message = (Label) rows.getChildren().get(1);
+        assertEquals("Ava", speaker.getText());
+        assertEquals("Meet me by the docks.", message.getText());
+        assertEquals(0, GridPane.getColumnIndex(speaker));
+        assertEquals(1, GridPane.getColumnIndex(message));
+        assertTrue(speaker.isWrapText());
+        assertTrue(message.isWrapText());
     }
 }

@@ -5,6 +5,7 @@ import com.eb.javafx.prefs.PreferencesService;
 import com.eb.javafx.prefs.PreferencesService.FooterShortcutDisplay;
 import com.eb.javafx.state.GameState;
 import com.eb.javafx.util.Validation;
+import com.eb.javafx.util.VectorImage;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -12,6 +13,7 @@ import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.control.Tooltip;
 import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.Background;
 import javafx.scene.layout.BackgroundFill;
 import javafx.scene.layout.BackgroundImage;
@@ -29,7 +31,11 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Shared layout for reusable screen content with JavaFX frames.
@@ -84,6 +90,7 @@ public final class ScreenShell {
             OUTER_INSETS.getLeft());
     private static final double FOOTER_SPACING = 8;
     private static final double COMPACT_FOOTER_SPACING = 4;
+    private static final int FOOTER_ICON_SIZE = 12;
     private static final double DEFAULT_FOOTER_BACKGROUND_TRANSPARENCY = 0.5;
     private static final Color DEFAULT_FOOTER_BACKGROUND_COLOR = Color.rgb(10, 20, 38);
     private static final Color DEFAULT_FOOTER_BORDER_COLOR = Color.web("#143869");
@@ -94,6 +101,7 @@ public final class ScreenShell {
     private static final String FOOTER_BORDER_COLOR_PROPERTY = "screenFooterBorderColor";
     private static final String FOOTER_BORDER_SIZE_PROPERTY = "screenFooterBorderSize";
     private static final FooterShortcutDisplay DEFAULT_FOOTER_SHORTCUT_DISPLAY = FooterShortcutDisplay.TOOLTIP_ONLY;
+    private static final Map<String, Image> FOOTER_ICON_CACHE = new ConcurrentHashMap<>();
     private static final List<FooterOption> FOOTER_OPTIONS = List.of(
             new FooterOption("back", "‹", "Back", "Backspace", "Return to the previous screen."),
             new FooterOption("history", "◷", "History", "Ctrl+H", "Open conversation history."),
@@ -548,9 +556,49 @@ public final class ScreenShell {
         Validation.requireNonNull(label, "Footer label is required.");
         Validation.requireNonNull(option, "Footer option is required.");
         label.setUserData(option);
-        label.setText(displayText);
+        ImageView graphic = footerGraphic(option);
+        label.setGraphic(graphic);
+        label.setGraphicTextGap(4);
+        label.setText(graphic == null ? displayText : footerTextWithoutFallbackIcon(option, displayText));
         applyFooterOptionState(label, option);
         installFooterTooltip(label, tooltipText);
+    }
+
+    private static ImageView footerGraphic(FooterOption option) {
+        if (option.iconResourcePath().isBlank()) {
+            return null;
+        }
+        Image image = FOOTER_ICON_CACHE.computeIfAbsent(option.iconResourcePath(), ScreenShell::loadFooterIcon);
+        if (image == null) {
+            return null;
+        }
+        ImageView imageView = new ImageView(image);
+        imageView.setFitWidth(FOOTER_ICON_SIZE);
+        imageView.setFitHeight(FOOTER_ICON_SIZE);
+        imageView.setPreserveRatio(true);
+        return imageView;
+    }
+
+    private static Image loadFooterIcon(String resourcePath) {
+        try (InputStream inputStream = ScreenShell.class.getClassLoader().getResourceAsStream(resourcePath)) {
+            if (inputStream == null) {
+                return null;
+            }
+            return VectorImage.fromInputStream(inputStream).toRasterImage(FOOTER_ICON_SIZE, FOOTER_ICON_SIZE);
+        } catch (IOException | IllegalArgumentException | IllegalStateException exception) {
+            return null;
+        }
+    }
+
+    private static String footerTextWithoutFallbackIcon(FooterOption option, String displayText) {
+        if (displayText.equals(option.icon())) {
+            return "";
+        }
+        String iconPrefix = option.icon() + " ";
+        if (displayText.startsWith(iconPrefix)) {
+            return displayText.substring(iconPrefix.length());
+        }
+        return displayText;
     }
 
     private static void applyFooterOptionState(Label label, FooterOption option) {
