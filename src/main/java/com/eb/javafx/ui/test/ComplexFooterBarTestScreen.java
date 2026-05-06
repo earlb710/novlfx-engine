@@ -1,10 +1,16 @@
-package com.eb.javafx.ui;
+package com.eb.javafx.ui.test;
 
 import com.eb.javafx.gamesupport.GameDateTime;
 import com.eb.javafx.prefs.PreferencesService;
 import com.eb.javafx.prefs.PreferencesService.FooterShortcutDisplay;
 import com.eb.javafx.state.GameState;
 import com.eb.javafx.text.DialogSpeaker;
+import com.eb.javafx.ui.ButtonVisuals;
+import com.eb.javafx.ui.ConversationHistoryEntryViewModel;
+import com.eb.javafx.ui.ConversationHistoryScreen;
+import com.eb.javafx.ui.ConversationHistoryViewModel;
+import com.eb.javafx.ui.ScreenShell;
+import com.eb.javafx.ui.UiTheme;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;

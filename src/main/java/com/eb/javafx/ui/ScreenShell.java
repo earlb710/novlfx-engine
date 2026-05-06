@@ -554,7 +554,7 @@ public final class ScreenShell {
         return type.isInstance(value) ? type.cast(value) : defaultValue;
     }
 
-    static void applyFooterOption(Label label, FooterOption option, FooterShortcutDisplay shortcutDisplay) {
+    public static void applyFooterOption(Label label, FooterOption option, FooterShortcutDisplay shortcutDisplay) {
         Validation.requireNonNull(label, "Footer label is required.");
         Validation.requireNonNull(option, "Footer option is required.");
         FooterShortcutDisplay checkedDisplay = shortcutDisplay == null

@@ -1,6 +1,9 @@
-package com.eb.javafx.ui;
+package com.eb.javafx.ui.test;
 
 import com.eb.javafx.prefs.PreferencesService;
+import com.eb.javafx.ui.ButtonVisuals;
+import com.eb.javafx.ui.ScreenShell;
+import com.eb.javafx.ui.UiTheme;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;

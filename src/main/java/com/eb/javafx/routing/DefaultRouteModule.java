@@ -1,7 +1,5 @@
 package com.eb.javafx.routing;
 
-import com.eb.javafx.ui.CaptureTestScreen;
-import com.eb.javafx.ui.ComplexFooterBarTestScreen;
 import com.eb.javafx.ui.ConversationHistoryScreen;
 import com.eb.javafx.ui.DisplayBindingsScreen;
 import com.eb.javafx.ui.HudSummaryScreen;
@@ -11,6 +9,8 @@ import com.eb.javafx.ui.PreferencesSummaryScreen;
 import com.eb.javafx.ui.SaveLoadSummaryScreen;
 import com.eb.javafx.ui.SceneFlowScreen;
 import com.eb.javafx.ui.ViewModelScreen;
+import com.eb.javafx.ui.test.CaptureTestScreen;
+import com.eb.javafx.ui.test.ComplexFooterBarTestScreen;
 
 /** Registers reusable engine-provided routes used by the initial JavaFX shell. */
 public final class DefaultRouteModule implements RouteModule {

@@ -22,13 +22,13 @@ import java.util.regex.Pattern;
 /**
  * Shared button visual defaults for routed and test screens.
  */
-final class ButtonVisuals {
-    static final String BUTTON_SHAPE_RESOURCE = "/com/eb/javafx/images/svg/button-pill.svg";
-    static final String BUTTON_STYLE_CLASS = "svg-button";
-    static final String BUTTON_ARTWORK_STYLE_CLASS = "svg-button-artwork";
-    static final String BUTTON_ARTWORK_TEXT_STYLE_CLASS = "svg-button-artwork-text";
-    static final double BUTTON_ARTWORK_WIDTH = 180;
-    static final double BUTTON_ARTWORK_HEIGHT = 48;
+public final class ButtonVisuals {
+    public static final String BUTTON_SHAPE_RESOURCE = "/com/eb/javafx/images/svg/button-pill.svg";
+    public static final String BUTTON_STYLE_CLASS = "svg-button";
+    public static final String BUTTON_ARTWORK_STYLE_CLASS = "svg-button-artwork";
+    public static final String BUTTON_ARTWORK_TEXT_STYLE_CLASS = "svg-button-artwork-text";
+    public static final double BUTTON_ARTWORK_WIDTH = 180;
+    public static final double BUTTON_ARTWORK_HEIGHT = 48;
     private static final Pattern PATH_DATA_PATTERN = Pattern.compile("<path\\b[^>]*\\bd\\s*=\\s*(['\"])(.*?)\\1", Pattern.DOTALL);
     private static final Pattern SAFE_PATH_DATA_PATTERN = Pattern.compile("[MmZzLlHhVvCcSsQqTtAaEe0-9+\\-.,\\s]+");
     private static final System.Logger LOGGER = System.getLogger(ButtonVisuals.class.getName());
@@ -37,7 +37,7 @@ final class ButtonVisuals {
     private ButtonVisuals() {
     }
 
-    static Button apply(Button button) {
+    public static Button apply(Button button) {
         SVGPath shape = createShape();
         if (shape != null) {
             button.setShape(shape);
@@ -52,7 +52,7 @@ final class ButtonVisuals {
         return button;
     }
 
-    static Button applySvgArtwork(Button button) {
+    public static Button applySvgArtwork(Button button) {
         apply(button);
         Node artwork = createArtworkGraphic(button.getText());
         if (artwork != null) {
@@ -67,11 +67,11 @@ final class ButtonVisuals {
         return button;
     }
 
-    static String buttonShapePath() {
+    public static String buttonShapePath() {
         return SHAPE_PATH;
     }
 
-    static SVGPath createShape() {
+    public static SVGPath createShape() {
         if (SHAPE_PATH.isBlank()) {
             return null;
         }
@@ -80,7 +80,7 @@ final class ButtonVisuals {
         return shape;
     }
 
-    static Node createArtworkGraphic(String text) {
+    public static Node createArtworkGraphic(String text) {
         SVGPath artwork = createShape();
         if (artwork == null) {
             return null;

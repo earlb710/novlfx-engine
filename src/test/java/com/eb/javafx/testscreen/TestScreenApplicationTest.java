@@ -159,7 +159,7 @@ final class TestScreenApplicationTest {
     @Test
     void manualTestAnnotationDefaultsAutoOffForNewRecords() {
         boolean auto = TestScreenApplication.defaultAutoForSource(Optional.of(
-                "MethodSource [className = 'com.eb.javafx.ui.CaptureTestScreenTest', "
+                "MethodSource [className = 'com.eb.javafx.ui.test.CaptureTestScreenTest', "
                         + "methodName = 'runCaptureTestScreenFromTestApp', methodParameterTypes = '']"));
 
         assertFalse(auto);
@@ -235,7 +235,7 @@ final class TestScreenApplicationTest {
     @Test
     void categoryForSourceUsesFirstPackageSegmentBelowJavafxRoot() {
         assertEquals("ui", TestScreenApplication.categoryForSource(Optional.of(
-                "MethodSource [className = 'com.eb.javafx.ui.CaptureTestScreenTest', "
+                "MethodSource [className = 'com.eb.javafx.ui.test.CaptureTestScreenTest', "
                         + "methodName = 'runCaptureTestScreenFromTestApp', methodParameterTypes = '']")));
         assertEquals("testscreen", TestScreenApplication.categoryForSource(Optional.of(
                 "MethodSource [className = 'com.eb.javafx.testscreen.TestScreenApplicationTest', "
