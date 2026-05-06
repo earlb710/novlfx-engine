@@ -91,8 +91,8 @@ public final class ScreenShell {
     private static final double FOOTER_SPACING = 14;
     private static final double COMPACT_FOOTER_SPACING = 6;
     private static final int FOOTER_ICON_SIZE = 14;
-    private static final double DEFAULT_FOOTER_TRANSPARENCY = 0.5;
-    private static final double NO_FOOTER_TRANSPARENCY = 0.0;
+    private static final double DEFAULT_FOOTER_OPACITY = 0.5;
+    private static final double FULL_FOOTER_OPACITY = 1.0;
     private static final double DEFAULT_FOOTER_BACKGROUND_TRANSPARENCY = 0.5;
     private static final Color DEFAULT_FOOTER_BACKGROUND_COLOR = Color.rgb(10, 20, 38);
     private static final Color DEFAULT_FOOTER_BORDER_COLOR = Color.web("#143869");
@@ -190,9 +190,9 @@ public final class ScreenShell {
     static void configureDefaultFooterPresentation(HBox footer) {
         Validation.requireNonNull(footer, "Footer node is required.");
         footer.setSpacing(FOOTER_SPACING);
-        setFooterTransparency(footer, DEFAULT_FOOTER_TRANSPARENCY);
-        footer.setOnMouseEntered(event -> setFooterTransparency(footer, NO_FOOTER_TRANSPARENCY));
-        footer.setOnMouseExited(event -> setFooterTransparency(footer, DEFAULT_FOOTER_TRANSPARENCY));
+        footer.setOpacity(DEFAULT_FOOTER_OPACITY);
+        footer.setOnMouseEntered(event -> footer.setOpacity(FULL_FOOTER_OPACITY));
+        footer.setOnMouseExited(event -> footer.setOpacity(DEFAULT_FOOTER_OPACITY));
     }
 
     static void pinFooterToBottom(BorderPane screen) {
