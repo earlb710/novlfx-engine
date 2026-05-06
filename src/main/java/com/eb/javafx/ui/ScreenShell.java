@@ -69,6 +69,12 @@ public final class ScreenShell {
             new FooterOption("⚡", "Quick save", "Ctrl+Q"),
             new FooterOption("⚙", "Preferences", "Ctrl+P"),
             new FooterOption("›", "Forward", "Space"));
+    private static final List<String> FOOTER_OPTION_TEXTS = FOOTER_OPTIONS.stream()
+            .map(FooterOption::displayText)
+            .toList();
+    private static final List<String> FOOTER_OPTION_ACCESSIBLE_TEXTS = FOOTER_OPTIONS.stream()
+            .map(FooterOption::accessibleText)
+            .toList();
 
     private ScreenShell() {
     }
@@ -96,6 +102,12 @@ public final class ScreenShell {
         return root;
     }
 
+    /**
+     * Creates a footer bar node for one screen shell.
+     *
+     * <p>A fresh JavaFX node is returned for every shell because JavaFX nodes cannot be shared
+     * across multiple parents.</p>
+     */
     public static HBox footerBar() {
         HBox footer = new HBox(FOOTER_SPACING);
         footer.getStyleClass().add(SCREEN_FOOTER_BAR_STYLE_CLASS);
@@ -109,15 +121,11 @@ public final class ScreenShell {
     }
 
     public static List<String> footerOptionTexts() {
-        return FOOTER_OPTIONS.stream()
-                .map(FooterOption::displayText)
-                .toList();
+        return FOOTER_OPTION_TEXTS;
     }
 
     public static List<String> footerOptionAccessibleTexts() {
-        return FOOTER_OPTIONS.stream()
-                .map(FooterOption::accessibleText)
-                .toList();
+        return FOOTER_OPTION_ACCESSIBLE_TEXTS;
     }
 
     public static VBox styledPanel(String styleClass, Node... children) {
