@@ -99,10 +99,10 @@ public final class ScreenShell {
     public static HBox footerBar() {
         HBox footer = new HBox(FOOTER_SPACING);
         footer.getStyleClass().add(SCREEN_FOOTER_BAR_STYLE_CLASS);
-        for (String optionText : footerOptionTexts()) {
-            Label label = new Label(optionText);
+        for (FooterOption option : FOOTER_OPTIONS) {
+            Label label = new Label(option.displayText());
             label.getStyleClass().add(SCREEN_FOOTER_OPTION_STYLE_CLASS);
-            label.setAccessibleText(optionText);
+            label.setAccessibleText(option.accessibleText());
             footer.getChildren().add(label);
         }
         return footer;
@@ -111,6 +111,12 @@ public final class ScreenShell {
     public static List<String> footerOptionTexts() {
         return FOOTER_OPTIONS.stream()
                 .map(FooterOption::displayText)
+                .toList();
+    }
+
+    public static List<String> footerOptionAccessibleTexts() {
+        return FOOTER_OPTIONS.stream()
+                .map(FooterOption::accessibleText)
                 .toList();
     }
 
@@ -165,6 +171,10 @@ public final class ScreenShell {
     private record FooterOption(String icon, String label, String shortcut) {
         private String displayText() {
             return icon + " " + label + " (" + shortcut + ")";
+        }
+
+        private String accessibleText() {
+            return label + " - Keyboard shortcut: " + shortcut;
         }
     }
 }

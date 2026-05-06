@@ -100,7 +100,16 @@ final class ScreenShellTest {
                 "⚡ Quick save (Ctrl+Q)",
                 "⚙ Preferences (Ctrl+P)",
                 "› Forward (Space)"), ScreenShell.footerOptionTexts());
-        assertTrue(ScreenShell.SCREEN_FOOTER_BAR_STYLE_CLASS.startsWith("screen-footer"));
-        assertTrue(ScreenShell.SCREEN_FOOTER_OPTION_STYLE_CLASS.startsWith("screen-footer"));
+        assertEquals(List.of(
+                "Back - Keyboard shortcut: Backspace",
+                "History - Keyboard shortcut: Ctrl+H",
+                "Skip mode - Keyboard shortcut: Tab",
+                "Load - Keyboard shortcut: Ctrl+L",
+                "Save - Keyboard shortcut: Ctrl+S",
+                "Quick save - Keyboard shortcut: Ctrl+Q",
+                "Preferences - Keyboard shortcut: Ctrl+P",
+                "Forward - Keyboard shortcut: Space"), ScreenShell.footerOptionAccessibleTexts());
+        assertEquals("screen-footer-bar", ScreenShell.SCREEN_FOOTER_BAR_STYLE_CLASS);
+        assertEquals("screen-footer-option", ScreenShell.SCREEN_FOOTER_OPTION_STYLE_CLASS);
     }
 }
