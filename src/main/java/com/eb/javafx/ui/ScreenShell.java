@@ -226,9 +226,9 @@ public final class ScreenShell {
         if (footer == null) {
             return;
         }
-        setFooterCompact(footer, screen.getWidth() > 0.0 && screen.getWidth() <= compactWidth);
+        setFooterCompact(footer, isCompactFooterWidth(screen.getWidth(), compactWidth));
         screen.widthProperty().addListener((observable, oldWidth, newWidth) ->
-                setFooterCompact(footer, newWidth.doubleValue() > 0.0 && newWidth.doubleValue() <= compactWidth));
+                setFooterCompact(footer, isCompactFooterWidth(newWidth.doubleValue(), compactWidth)));
     }
 
     public static List<FooterOption> defaultFooterOptions() {
@@ -354,9 +354,20 @@ public final class ScreenShell {
         if (tooltip == null || tooltip.isBlank()) {
             return;
         }
+        label.setAccessibleHelp(tooltip);
         if (Platform.isFxApplicationThread()) {
             label.setTooltip(new Tooltip(tooltip));
+        } else {
+            try {
+                Platform.runLater(() -> label.setTooltip(new Tooltip(tooltip)));
+            } catch (IllegalStateException exception) {
+                label.setAccessibleText(label.getAccessibleText() + " - " + tooltip);
+            }
         }
+    }
+
+    private static boolean isCompactFooterWidth(double width, double compactWidth) {
+        return width > 0.0 && width <= compactWidth;
     }
 
     public record FooterOption(String id, String icon, String label, String shortcut, String tooltip, boolean enabled) {
