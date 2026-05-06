@@ -154,8 +154,7 @@ final class ConversationHistoryScreenTest {
                     started.countDown();
                 });
             } catch (IllegalStateException exception) {
-                Platform.setImplicitExit(false);
-                started.countDown();
+                return markJavaFxAvailableIfRunning(started);
             } catch (UnsupportedOperationException exception) {
                 JAVAFX_AVAILABLE.set(false);
                 started.countDown();
@@ -166,6 +165,22 @@ final class ConversationHistoryScreenTest {
             started.countDown();
         }
         assertTrue(started.await(5, TimeUnit.SECONDS), "JavaFX toolkit did not start.");
+        return true;
+    }
+
+    private static boolean markJavaFxAvailableIfRunning(CountDownLatch started) throws InterruptedException {
+        try {
+            Platform.runLater(started::countDown);
+        } catch (IllegalStateException exception) {
+            JAVAFX_AVAILABLE.set(false);
+            started.countDown();
+            return false;
+        }
+        if (!started.await(1, TimeUnit.SECONDS)) {
+            JAVAFX_AVAILABLE.set(false);
+            return false;
+        }
+        Platform.setImplicitExit(false);
         return true;
     }
 }
