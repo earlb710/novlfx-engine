@@ -2,6 +2,7 @@ package com.eb.javafx.ui;
 
 import com.eb.javafx.localization.LocalizationService;
 import com.eb.javafx.prefs.PreferencesService;
+import com.eb.javafx.prefs.PreferencesService.FooterShortcutDisplay;
 import com.eb.javafx.state.GameState;
 import com.eb.javafx.util.Validation;
 import javafx.application.Platform;
@@ -74,6 +75,7 @@ public final class ScreenShell {
             OUTER_INSETS.getLeft());
     private static final double FOOTER_SPACING = 8;
     private static final double COMPACT_FOOTER_SPACING = 4;
+    private static final FooterShortcutDisplay DEFAULT_FOOTER_SHORTCUT_DISPLAY = FooterShortcutDisplay.TOOLTIP_ONLY;
     private static final List<FooterOption> FOOTER_OPTIONS = List.of(
             new FooterOption("back", "‹", "Back", "Backspace", "Return to the previous screen."),
             new FooterOption("history", "◷", "History", "Ctrl+H", "Open conversation history."),
@@ -147,8 +149,7 @@ public final class ScreenShell {
             Label label = new Label();
             label.setUserData(option);
             label.getStyleClass().add(SCREEN_FOOTER_OPTION_STYLE_CLASS);
-            applyFooterOption(label, option, true);
-            installFooterTooltip(label, option.tooltip());
+            applyFooterOption(label, option, DEFAULT_FOOTER_SHORTCUT_DISPLAY);
             footer.getChildren().add(label);
         }
         return footer;
@@ -213,10 +214,25 @@ public final class ScreenShell {
         }
     }
 
+    /** Switches footer shortcut text between visible, hidden, and tooltip-only presentation. */
+    public static void setFooterShortcutDisplay(Node footer, FooterShortcutDisplay shortcutDisplay) {
+        Validation.requireNonNull(footer, "Footer node is required.");
+        FooterShortcutDisplay checkedDisplay = shortcutDisplay == null
+                ? DEFAULT_FOOTER_SHORTCUT_DISPLAY
+                : shortcutDisplay;
+        if (footer instanceof HBox footerBox) {
+            footerBox.getChildren().forEach(child -> {
+                if (child instanceof Label label && label.getUserData() instanceof FooterOption option) {
+                    applyFooterOption(label, option, checkedDisplay);
+                }
+            });
+        }
+    }
+
     /** Applies the persisted user preference for showing footer labels. */
     public static void applyFooterPreferences(Node footer, PreferencesService preferencesService) {
         Validation.requireNonNull(preferencesService, "Preferences service is required.");
-        setFooterLabelsVisible(footer, preferencesService.footerLabelsVisible());
+        setFooterShortcutDisplay(footer, preferencesService.footerShortcutDisplay());
     }
 
     /** Adds responsive compact/mobile footer behavior based on the screen width. */
@@ -356,6 +372,25 @@ public final class ScreenShell {
         } else if (!label.getStyleClass().contains(SCREEN_FOOTER_OPTION_DISABLED_STYLE_CLASS)) {
             label.getStyleClass().add(SCREEN_FOOTER_OPTION_DISABLED_STYLE_CLASS);
         }
+        installFooterTooltip(label, option.tooltip());
+    }
+
+    public static void applyFooterOption(Label label, FooterOption option, FooterShortcutDisplay shortcutDisplay) {
+        Validation.requireNonNull(label, "Footer label is required.");
+        Validation.requireNonNull(option, "Footer option is required.");
+        FooterShortcutDisplay checkedDisplay = shortcutDisplay == null
+                ? DEFAULT_FOOTER_SHORTCUT_DISPLAY
+                : shortcutDisplay;
+        label.setUserData(option);
+        label.setText(option.displayText(checkedDisplay));
+        label.setAccessibleText(option.accessibleText());
+        label.setDisable(!option.enabled());
+        if (option.enabled()) {
+            label.getStyleClass().remove(SCREEN_FOOTER_OPTION_DISABLED_STYLE_CLASS);
+        } else if (!label.getStyleClass().contains(SCREEN_FOOTER_OPTION_DISABLED_STYLE_CLASS)) {
+            label.getStyleClass().add(SCREEN_FOOTER_OPTION_DISABLED_STYLE_CLASS);
+        }
+        installFooterTooltip(label, option.tooltipText(checkedDisplay));
     }
 
     private static void installFooterTooltip(Label label, String tooltip) {
@@ -417,6 +452,30 @@ public final class ScreenShell {
                 return icon;
             }
             return icon + " " + label + " (" + shortcut + ")";
+        }
+
+        public String displayText(FooterShortcutDisplay shortcutDisplay) {
+            FooterShortcutDisplay checkedDisplay = shortcutDisplay == null
+                    ? DEFAULT_FOOTER_SHORTCUT_DISPLAY
+                    : shortcutDisplay;
+            if (checkedDisplay == FooterShortcutDisplay.DISPLAY) {
+                return displayText();
+            }
+            return icon + " " + label;
+        }
+
+        public String tooltipText(FooterShortcutDisplay shortcutDisplay) {
+            FooterShortcutDisplay checkedDisplay = shortcutDisplay == null
+                    ? DEFAULT_FOOTER_SHORTCUT_DISPLAY
+                    : shortcutDisplay;
+            if (checkedDisplay == FooterShortcutDisplay.HIDE) {
+                return tooltip;
+            }
+            String shortcutText = "Keyboard shortcut: " + shortcut + ".";
+            if (tooltip == null || tooltip.isBlank()) {
+                return shortcutText;
+            }
+            return tooltip.endsWith(".") ? tooltip + " " + shortcutText : tooltip + ". " + shortcutText;
         }
 
         public String accessibleText() {

@@ -26,7 +26,7 @@ final class ComplexFooterBarTestScreenTest {
         ComplexFooterBarTestScreen.TestConversationModel model =
                 new ComplexFooterBarTestScreen.TestConversationModel();
 
-        assertEquals("Line 1 of 4", model.positionText());
+        assertEquals("Line 1 of 5", model.positionText());
         assertEquals("Guide", model.currentSpeakerLabel());
         assertFalse(model.canBack());
         assertTrue(model.canForward());
@@ -35,7 +35,7 @@ final class ComplexFooterBarTestScreenTest {
         model.forward();
         model.back();
 
-        assertEquals("Line 2 of 4", model.positionText());
+        assertEquals("Line 2 of 5", model.positionText());
         assertEquals("MC", model.currentSpeakerLabel());
         assertTrue(model.canBack());
         assertTrue(model.canForward());
@@ -48,6 +48,7 @@ final class ComplexFooterBarTestScreenTest {
 
         model.forward();
         model.forward();
+        model.selectChoice("patient");
         model.back();
         model.forward();
 
@@ -55,9 +56,9 @@ final class ComplexFooterBarTestScreenTest {
         ConversationHistoryViewModel history = model.historyViewModel();
         assertEquals(1, history.entries().size());
         assertEquals("complex-footer-bar-test", history.entries().get(0).dialogId());
-        assertEquals(3, history.entries().get(0).rows().size());
+        assertEquals(4, history.entries().get(0).rows().size());
         assertEquals("Welcome to the complex footer bar test.", history.entries().get(0).rows().get(0).text());
-        assertEquals("Back returns to the previous line without erasing history.", history.entries().get(0).rows().get(2).text());
+        assertEquals("Choice selected: Ask for details", history.entries().get(0).rows().get(3).text());
 
         model.toggleHistory();
 
@@ -75,11 +76,20 @@ final class ComplexFooterBarTestScreenTest {
 
         model.forward();
         model.forward();
+
+        assertEquals("Line 3 of 5", model.positionText());
+        assertFalse(option(model, "forward").enabled());
+
+        model.forward();
+
+        assertEquals("Line 3 of 5", model.positionText());
+
+        model.selectChoice("direct");
         model.forward();
         model.toggleHistory();
 
         assertTrue(option(model, "back").enabled());
-        assertFalse(option(model, "forward").enabled());
+        assertTrue(option(model, "forward").enabled());
         assertEquals("Show history", option(model, "history").label());
     }
 

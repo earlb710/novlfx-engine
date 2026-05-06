@@ -28,7 +28,7 @@ final class PreferencesServiceTest {
         preferences.putBoolean("ui.showPortrait", false);
         preferences.putBoolean("ui.cheatsVisible", false);
         preferences.putBoolean("ui.logStatChanges", true);
-        preferences.putBoolean("ui.footerLabelsVisible", false);
+        preferences.put("ui.footerShortcutDisplay", "display");
         preferences.put("ui.fontFamily", "Test Font");
         preferences.putDouble("ui.fontScale", 9.0);
         preferences.putBoolean("accessibility.highContrast", true);
@@ -46,7 +46,8 @@ final class PreferencesServiceTest {
         assertFalse(service.showPortrait());
         assertFalse(service.cheatsVisible());
         assertTrue(service.logStatChanges());
-        assertFalse(service.footerLabelsVisible());
+        assertTrue(service.footerLabelsVisible());
+        assertEquals(PreferencesService.FooterShortcutDisplay.DISPLAY, service.footerShortcutDisplay());
         assertEquals("Test Font", service.fontFamily());
         assertEquals(2.0, service.fontScale());
         assertTrue(service.highContrast());
@@ -63,6 +64,15 @@ final class PreferencesServiceTest {
         service.load();
 
         assertEquals("mouse", service.inputMode());
+    }
+
+    @Test
+    void loadDefaultsFooterShortcutsToTooltipOnly() {
+        PreferencesService service = new PreferencesService();
+        service.load();
+
+        assertEquals(PreferencesService.FooterShortcutDisplay.TOOLTIP_ONLY, service.footerShortcutDisplay());
+        assertFalse(service.footerLabelsVisible());
     }
 
     @Test
@@ -87,12 +97,13 @@ final class PreferencesServiceTest {
         service.saveAccessibilityPreferences(true, true);
         service.saveInputMode("invalid");
         service.saveMasterVolume(2.0);
-        service.saveFooterLabelsVisible(false);
+        service.saveFooterShortcutDisplay(PreferencesService.FooterShortcutDisplay.HIDE);
 
         assertFalse(service.showPortrait());
         assertFalse(service.cheatsVisible());
         assertTrue(service.logStatChanges());
         assertFalse(service.footerLabelsVisible());
+        assertEquals(PreferencesService.FooterShortcutDisplay.HIDE, service.footerShortcutDisplay());
         assertEquals(1.0, service.hudAlpha());
         assertEquals(0.0, service.sayWindowAlpha());
         assertEquals("System", service.fontFamily());
@@ -101,5 +112,20 @@ final class PreferencesServiceTest {
         assertTrue(service.reducedMotion());
         assertEquals("mouse", service.inputMode());
         assertEquals(1.0, service.masterVolume());
+    }
+
+    @Test
+    void saveFooterShortcutDisplayAcceptsKnownValuesAndFallsBackForUnknownValues() {
+        PreferencesService service = new PreferencesService();
+        service.load();
+
+        service.saveFooterShortcutDisplay("display");
+
+        assertEquals(PreferencesService.FooterShortcutDisplay.DISPLAY, service.footerShortcutDisplay());
+        assertTrue(service.footerLabelsVisible());
+
+        service.saveFooterShortcutDisplay("invalid");
+
+        assertEquals(PreferencesService.FooterShortcutDisplay.TOOLTIP_ONLY, service.footerShortcutDisplay());
     }
 }

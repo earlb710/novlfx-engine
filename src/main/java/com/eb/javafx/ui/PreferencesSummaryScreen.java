@@ -39,7 +39,7 @@ public final class PreferencesSummaryScreen {
                         new PreferencesSummaryRowViewModel("Show portrait", Boolean.toString(preferencesService.showPortrait())),
                         new PreferencesSummaryRowViewModel("Cheats visible", Boolean.toString(preferencesService.cheatsVisible())),
                         new PreferencesSummaryRowViewModel("Log stat changes", Boolean.toString(preferencesService.logStatChanges())),
-                        new PreferencesSummaryRowViewModel("Footer labels visible", Boolean.toString(preferencesService.footerLabelsVisible())),
+                        new PreferencesSummaryRowViewModel("Footer shortcut display", preferencesService.footerShortcutDisplay().label()),
                         new PreferencesSummaryRowViewModel("Font family", preferencesService.fontFamily()),
                         new PreferencesSummaryRowViewModel("Font scale", Double.toString(preferencesService.fontScale())),
                         new PreferencesSummaryRowViewModel("High contrast", Boolean.toString(preferencesService.highContrast())),

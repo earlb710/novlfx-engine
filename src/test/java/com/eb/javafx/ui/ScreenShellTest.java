@@ -4,6 +4,7 @@ import com.eb.javafx.gamesupport.GameDateTime;
 import com.eb.javafx.localization.LocalizationService;
 import com.eb.javafx.localization.LocalizedTextBundle;
 import com.eb.javafx.prefs.PreferencesService;
+import com.eb.javafx.prefs.PreferencesService.FooterShortcutDisplay;
 import com.eb.javafx.state.GameState;
 import com.eb.javafx.util.VectorImage;
 import javafx.scene.image.Image;
@@ -101,6 +102,13 @@ final class ScreenShellTest {
 
     @Test
     void footerOptionTextsExposeRequestedIconShortcuts() {
+        ScreenShell.FooterOption back = ScreenShell.defaultFooterOptions().get(0);
+
+        assertEquals("‹ Back", back.displayText(FooterShortcutDisplay.TOOLTIP_ONLY));
+        assertEquals("‹ Back", back.displayText(FooterShortcutDisplay.HIDE));
+        assertEquals("Return to the previous screen. Keyboard shortcut: Backspace.",
+                back.tooltipText(FooterShortcutDisplay.TOOLTIP_ONLY));
+        assertEquals("Return to the previous screen.", back.tooltipText(FooterShortcutDisplay.HIDE));
         assertEquals(List.of(
                 "‹ Back (Backspace)",
                 "◷ History (Ctrl+H)",
@@ -246,11 +254,12 @@ final class ScreenShellTest {
         HBox footer = new HBox();
         PreferencesService preferencesService = new PreferencesService();
         preferencesService.load();
-        preferencesService.saveFooterLabelsVisible(false);
+        preferencesService.saveFooterShortcutDisplay(FooterShortcutDisplay.HIDE);
 
         ScreenShell.applyFooterPreferences(footer, preferencesService);
 
         assertFalse(preferencesService.footerLabelsVisible());
+        assertEquals(FooterShortcutDisplay.HIDE, preferencesService.footerShortcutDisplay());
     }
 
     @Test

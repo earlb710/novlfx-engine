@@ -2,8 +2,10 @@ package com.eb.javafx.ui;
 
 import com.eb.javafx.gamesupport.GameDateTime;
 import com.eb.javafx.prefs.PreferencesService;
+import com.eb.javafx.prefs.PreferencesService.FooterShortcutDisplay;
 import com.eb.javafx.state.GameState;
 import com.eb.javafx.text.DialogSpeaker;
+import javafx.scene.input.KeyCode;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
@@ -39,12 +41,18 @@ public final class ComplexFooterBarTestScreen {
         Label line = new Label();
         Label historyState = new Label();
         VBox historyContent = new VBox(4);
+        VBox choicesPanel = new VBox(4);
+        FooterShortcutDisplay shortcutDisplay = preferencesService.footerShortcutDisplay();
 
         VBox conversationPanel = ScreenShell.styledPanel(
                 ScreenShell.SCENE_DIALOGUE_PANEL_STYLE_CLASS,
                 position,
                 speaker,
                 line);
+        VBox choicePanel = ScreenShell.styledPanel(
+                ScreenShell.SCENE_CHOICES_PANEL_STYLE_CLASS,
+                new Label("Choice options"),
+                choicesPanel);
         VBox historyPanel = ScreenShell.styledPanel(
                 ScreenShell.SCENE_CHOICES_PANEL_STYLE_CLASS,
                 historyState,
@@ -54,29 +62,70 @@ public final class ComplexFooterBarTestScreen {
 
         VBox content = new VBox(
                 ScreenShell.BODY_SPACING,
-                new Label("Use the footer Back, History, and Forward controls to test conversation navigation."),
+                new Label("Use footer Back/Forward or keyboard Backspace/Space. Multiple choices require a selection first."),
                 conversationPanel,
+                choicePanel,
                 historyPanel,
                 closeButton);
         BorderPane root = ScreenShell.titled(title, content, model.footerOptions());
         HBox footer = (HBox) root.getBottom();
 
-        Runnable refresh = () -> {
-            position.setText(model.positionText());
-            speaker.setText(model.currentSpeakerLabel());
-            line.setText(model.currentText());
-            historyState.setText(model.historyVisible() ? "History display is visible." : "History display is hidden.");
-            historyPanel.setVisible(model.historyVisible());
-            historyPanel.setManaged(model.historyVisible());
-            refreshHistory(historyContent, model.historyViewModel());
-            refreshFooter(footer, model.footerOptions());
-        };
+        class Refresher implements Runnable {
+            @Override
+            public void run() {
+                position.setText(model.positionText());
+                speaker.setText(model.currentSpeakerLabel());
+                line.setText(model.currentText());
+                refreshChoices(choicesPanel, model, this);
+                choicePanel.setVisible(model.hasChoices());
+                choicePanel.setManaged(model.hasChoices());
+                historyState.setText(model.historyVisible() ? "History display is visible." : "History display is hidden.");
+                historyPanel.setVisible(model.historyVisible());
+                historyPanel.setManaged(model.historyVisible());
+                refreshHistory(historyContent, model.historyViewModel());
+                refreshFooter(footer, model.footerOptions(), shortcutDisplay);
+            }
+        }
+        Runnable refresh = new Refresher();
         wireFooter(footer, model, refresh);
         refresh.run();
 
         Scene scene = new Scene(root, preferencesService.windowWidth(), preferencesService.windowHeight());
+        scene.setOnKeyPressed(event -> {
+            if (event.getCode() == KeyCode.SPACE) {
+                model.forward();
+                refresh.run();
+                event.consume();
+            } else if (event.getCode() == KeyCode.BACK_SPACE) {
+                model.back();
+                refresh.run();
+                event.consume();
+            }
+        });
         scene.getStylesheets().add(uiTheme.stylesheet());
         return scene;
+    }
+
+    private static void refreshChoices(
+            VBox choicesPanel,
+            TestConversationModel model,
+            Runnable refresh) {
+        choicesPanel.getChildren().clear();
+        for (TestConversationChoice choice : model.currentChoices()) {
+            Button choiceButton = new Button(choice.text());
+            choiceButton.setMaxWidth(Double.MAX_VALUE);
+            choiceButton.setDisable(choice.id().equals(model.selectedChoiceId()));
+            choiceButton.setOnAction(event -> {
+                model.selectChoice(choice.id());
+                refresh.run();
+            });
+            choicesPanel.getChildren().add(choiceButton);
+        }
+        if (model.hasChoices() && model.selectedChoiceId() == null) {
+            choicesPanel.getChildren().add(new Label("Select a choice before Forward or Space can advance."));
+        } else if (model.selectedChoiceId() != null) {
+            choicesPanel.getChildren().add(new Label("Selected: " + model.selectedChoiceText()));
+        }
     }
 
     private static void refreshHistory(VBox historyContent, ConversationHistoryViewModel viewModel) {
@@ -113,22 +162,17 @@ public final class ComplexFooterBarTestScreen {
         }
     }
 
-    private static void refreshFooter(HBox footer, List<ScreenShell.FooterOption> options) {
+    private static void refreshFooter(
+            HBox footer,
+            List<ScreenShell.FooterOption> options,
+            FooterShortcutDisplay shortcutDisplay) {
         Map<String, ScreenShell.FooterOption> byId = options.stream()
                 .collect(Collectors.toMap(ScreenShell.FooterOption::id, Function.identity()));
         for (Node child : footer.getChildren()) {
             if (child instanceof Label label && label.getUserData() instanceof ScreenShell.FooterOption currentOption) {
                 ScreenShell.FooterOption option = byId.get(currentOption.id());
                 if (option != null) {
-                    label.setUserData(option);
-                    label.setText(option.displayText());
-                    label.setAccessibleText(option.accessibleText());
-                    label.setDisable(!option.enabled());
-                    if (option.enabled()) {
-                        label.getStyleClass().remove(ScreenShell.SCREEN_FOOTER_OPTION_DISABLED_STYLE_CLASS);
-                    } else if (!label.getStyleClass().contains(ScreenShell.SCREEN_FOOTER_OPTION_DISABLED_STYLE_CLASS)) {
-                        label.getStyleClass().add(ScreenShell.SCREEN_FOOTER_OPTION_DISABLED_STYLE_CLASS);
-                    }
+                    ScreenShell.applyFooterOption(label, option, shortcutDisplay);
                 }
             }
         }
@@ -140,14 +184,34 @@ public final class ComplexFooterBarTestScreen {
         private final GameState gameState = new GameState(DIALOG_ID);
         private final boolean[] recorded;
         private int index;
+        private String selectedChoiceId;
+        private boolean choiceRecorded;
         private boolean historyVisible = true;
 
         public TestConversationModel() {
             lines = List.of(
-                    new TestConversationLine(DialogSpeaker.text("guide", "Guide"), "Welcome to the complex footer bar test."),
-                    new TestConversationLine(DialogSpeaker.text("mc", "MC"), "Forward advances this test conversation."),
-                    new TestConversationLine(DialogSpeaker.text("guide", "Guide"), "Back returns to the previous line without erasing history."),
-                    new TestConversationLine(DialogSpeaker.text("mc", "MC"), "History shows every line reached during this test."));
+                    new TestConversationLine(
+                            DialogSpeaker.text("guide", "Guide"),
+                            "Welcome to the complex footer bar test.",
+                            List.of()),
+                    new TestConversationLine(
+                            DialogSpeaker.text("mc", "MC"),
+                            "Forward advances this test conversation.",
+                            List.of()),
+                    new TestConversationLine(
+                            DialogSpeaker.text("guide", "Guide"),
+                            "Choose a route. Forward and Space wait while multiple choices are unresolved.",
+                            List.of(
+                                    new TestConversationChoice("patient", "Ask for details"),
+                                    new TestConversationChoice("direct", "Move ahead"))),
+                    new TestConversationLine(
+                            DialogSpeaker.text("guide", "Guide"),
+                            "Back returns to the previous conversation line.",
+                            List.of()),
+                    new TestConversationLine(
+                            DialogSpeaker.text("mc", "MC"),
+                            "History shows every line reached during this test.",
+                            List.of()));
             recorded = new boolean[lines.size()];
             gameState.conversationHistory().beginDialog(DIALOG_ID, new GameDateTime(1, "afternoon"));
             recordCurrentLine();
@@ -170,7 +234,27 @@ public final class ComplexFooterBarTestScreen {
         }
 
         public boolean canForward() {
-            return index < lines.size() - 1;
+            return index < lines.size() - 1 && !requiresChoiceSelection();
+        }
+
+        public boolean hasChoices() {
+            return !currentChoices().isEmpty();
+        }
+
+        public List<TestConversationChoice> currentChoices() {
+            return currentLine().choices();
+        }
+
+        public String selectedChoiceId() {
+            return selectedChoiceId;
+        }
+
+        public String selectedChoiceText() {
+            return currentChoices().stream()
+                    .filter(choice -> choice.id().equals(selectedChoiceId))
+                    .map(TestConversationChoice::text)
+                    .findFirst()
+                    .orElse("");
         }
 
         public boolean historyVisible() {
@@ -192,6 +276,21 @@ public final class ComplexFooterBarTestScreen {
 
         public void toggleHistory() {
             historyVisible = !historyVisible;
+        }
+
+        public void selectChoice(String choiceId) {
+            String checkedChoiceId = currentChoices().stream()
+                    .filter(choice -> choice.id().equals(choiceId))
+                    .map(TestConversationChoice::id)
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalArgumentException("Unknown test conversation choice: " + choiceId));
+            selectedChoiceId = checkedChoiceId;
+            if (!choiceRecorded) {
+                gameState.conversationHistory().addMessage(
+                        DialogSpeaker.text("mc", "MC"),
+                        "Choice selected: " + selectedChoiceText());
+                choiceRecorded = true;
+            }
         }
 
         public ConversationHistoryViewModel historyViewModel() {
@@ -222,8 +321,15 @@ public final class ComplexFooterBarTestScreen {
                 recorded[index] = true;
             }
         }
+
+        private boolean requiresChoiceSelection() {
+            return currentChoices().size() > 1 && selectedChoiceId == null;
+        }
     }
 
-    private record TestConversationLine(DialogSpeaker speaker, String text) {
+    public record TestConversationChoice(String id, String text) {
+    }
+
+    private record TestConversationLine(DialogSpeaker speaker, String text, List<TestConversationChoice> choices) {
     }
 }
