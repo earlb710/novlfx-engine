@@ -7,6 +7,7 @@ import javafx.scene.layout.BackgroundPosition;
 import javafx.scene.layout.BackgroundRepeat;
 import javafx.scene.layout.BackgroundSize;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import org.junit.jupiter.api.Test;
 
@@ -85,5 +86,24 @@ final class ScreenShellTest {
         assertTrue(panel.getStyleClass().contains(ScreenShell.SCENE_DIALOGUE_PANEL_STYLE_CLASS));
         assertEquals(ScreenShell.BODY_SPACING, panel.getSpacing());
         assertEquals(ScreenShell.PANEL_INSETS, panel.getPadding());
+    }
+
+    @Test
+    void titledScreenIncludesBottomCenteredFooterShortcuts() {
+        BorderPane screen = ScreenShell.titled("Title", new VBox());
+
+        assertTrue(screen.getStyleClass().contains(ScreenShell.SCREEN_ROOT_STYLE_CLASS));
+        assertTrue(screen.getBottom() instanceof HBox);
+        HBox footer = (HBox) screen.getBottom();
+        assertTrue(footer.getStyleClass().contains(ScreenShell.SCREEN_FOOTER_BAR_STYLE_CLASS));
+        assertEquals(8, footer.getChildren().size());
+        assertEquals("‹ Back (Backspace)", ((javafx.scene.control.Label) footer.getChildren().get(0)).getText());
+        assertEquals("◷ History (Ctrl+H)", ((javafx.scene.control.Label) footer.getChildren().get(1)).getText());
+        assertEquals("⇥ Skip mode (Tab)", ((javafx.scene.control.Label) footer.getChildren().get(2)).getText());
+        assertEquals("⇩ Load (Ctrl+L)", ((javafx.scene.control.Label) footer.getChildren().get(3)).getText());
+        assertEquals("▣ Save (Ctrl+S)", ((javafx.scene.control.Label) footer.getChildren().get(4)).getText());
+        assertEquals("⚡ Quick save (Ctrl+Q)", ((javafx.scene.control.Label) footer.getChildren().get(5)).getText());
+        assertEquals("⚙ Preferences (Ctrl+P)", ((javafx.scene.control.Label) footer.getChildren().get(6)).getText());
+        assertEquals("› Forward (Space)", ((javafx.scene.control.Label) footer.getChildren().get(7)).getText());
     }
 }

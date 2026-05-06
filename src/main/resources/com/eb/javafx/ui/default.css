@@ -20,6 +20,20 @@
     -fx-background-radius: 6px;
 }
 
+.screen-footer-bar {
+    -fx-alignment: center;
+    -fx-background-color: rgba(10, 20, 38, 0.85);
+    -fx-border-color: #143869;
+    -fx-border-radius: 999px;
+    -fx-background-radius: 999px;
+    -fx-padding: 8px 12px;
+}
+
+.screen-footer-option {
+    -fx-text-fill: #cbd5e1;
+    -fx-font-size: 13px;
+}
+
 .scene-status-panel,
 .scene-dialogue-panel,
 .scene-choices-panel,

@@ -2,6 +2,7 @@ package com.eb.javafx.ui;
 
 import com.eb.javafx.util.Validation;
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.image.Image;
@@ -11,8 +12,11 @@ import javafx.scene.layout.BackgroundPosition;
 import javafx.scene.layout.BackgroundRepeat;
 import javafx.scene.layout.BackgroundSize;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
+
+import java.util.List;
 
 /**
  * Shared layout for reusable screen content with JavaFX frames.
@@ -25,6 +29,8 @@ public final class ScreenShell {
     public static final String SCREEN_ROOT_STYLE_CLASS = "screen-root";
     public static final String SCREEN_TITLE_STYLE_CLASS = "screen-title";
     public static final String SCREEN_PANEL_STYLE_CLASS = "screen-panel";
+    public static final String SCREEN_FOOTER_BAR_STYLE_CLASS = "screen-footer-bar";
+    public static final String SCREEN_FOOTER_OPTION_STYLE_CLASS = "screen-footer-option";
     public static final String SCENE_STATUS_PANEL_STYLE_CLASS = "scene-status-panel";
     public static final String SCENE_DIALOGUE_PANEL_STYLE_CLASS = "scene-dialogue-panel";
     public static final String SCENE_CHOICES_PANEL_STYLE_CLASS = "scene-choices-panel";
@@ -54,6 +60,16 @@ public final class ScreenShell {
     public static final double BODY_SPACING = 12;
     public static final Insets OUTER_INSETS = new Insets(16);
     public static final Insets PANEL_INSETS = new Insets(16);
+    private static final double FOOTER_SPACING = 8;
+    private static final List<FooterOption> FOOTER_OPTIONS = List.of(
+            new FooterOption("‹", "Back", "Backspace"),
+            new FooterOption("◷", "History", "Ctrl+H"),
+            new FooterOption("⇥", "Skip mode", "Tab"),
+            new FooterOption("⇩", "Load", "Ctrl+L"),
+            new FooterOption("▣", "Save", "Ctrl+S"),
+            new FooterOption("⚡", "Quick save", "Ctrl+Q"),
+            new FooterOption("⚙", "Preferences", "Ctrl+P"),
+            new FooterOption("›", "Forward", "Space"));
 
     private ScreenShell() {
     }
@@ -74,9 +90,24 @@ public final class ScreenShell {
         root.getStyleClass().add(SCREEN_ROOT_STYLE_CLASS);
         root.setTop(header);
         root.setCenter(body);
+        root.setBottom(footerBar());
         BorderPane.setMargin(header, new Insets(OUTER_INSETS.getTop(), OUTER_INSETS.getRight(), 0, OUTER_INSETS.getLeft()));
-        BorderPane.setMargin(body, OUTER_INSETS);
+        BorderPane.setMargin(body, new Insets(OUTER_INSETS.getTop(), OUTER_INSETS.getRight(), 0, OUTER_INSETS.getLeft()));
+        BorderPane.setMargin(root.getBottom(), OUTER_INSETS);
         return root;
+    }
+
+    public static HBox footerBar() {
+        HBox footer = new HBox(FOOTER_SPACING);
+        footer.getStyleClass().add(SCREEN_FOOTER_BAR_STYLE_CLASS);
+        footer.setAlignment(Pos.CENTER);
+        for (FooterOption option : FOOTER_OPTIONS) {
+            Label label = new Label(option.displayText());
+            label.getStyleClass().add(SCREEN_FOOTER_OPTION_STYLE_CLASS);
+            label.setAccessibleText(option.label() + " shortcut " + option.shortcut());
+            footer.getChildren().add(label);
+        }
+        return footer;
     }
 
     public static VBox styledPanel(String styleClass, Node... children) {
@@ -125,5 +156,11 @@ public final class ScreenShell {
                     BackgroundPosition.CENTER,
                     new BackgroundSize(0, 0, false, false, false, true));
         };
+    }
+
+    private record FooterOption(String icon, String label, String shortcut) {
+        private String displayText() {
+            return icon + " " + label + " (" + shortcut + ")";
+        }
     }
 }
