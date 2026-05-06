@@ -2,7 +2,6 @@ package com.eb.javafx.ui;
 
 import com.eb.javafx.util.Validation;
 import javafx.geometry.Insets;
-import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.image.Image;
@@ -100,7 +99,6 @@ public final class ScreenShell {
     public static HBox footerBar() {
         HBox footer = new HBox(FOOTER_SPACING);
         footer.getStyleClass().add(SCREEN_FOOTER_BAR_STYLE_CLASS);
-        footer.setAlignment(Pos.CENTER);
         for (String optionText : footerOptionTexts()) {
             Label label = new Label(optionText);
             label.getStyleClass().add(SCREEN_FOOTER_OPTION_STYLE_CLASS);
