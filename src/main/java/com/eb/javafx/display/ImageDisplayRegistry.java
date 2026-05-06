@@ -186,8 +186,11 @@ public final class ImageDisplayRegistry {
         images.put(definition.id(), definition);
     }
 
-    /** Registers or replaces an animation profile by ID. */
+    /** Registers an animation profile by ID. */
     public void registerAnimation(DisplayAnimation animation) {
+        if (animations.containsKey(animation.id())) {
+            throw new IllegalArgumentException("Duplicate display animation id: " + animation.id());
+        }
         animations.put(animation.id(), animation);
     }
 
