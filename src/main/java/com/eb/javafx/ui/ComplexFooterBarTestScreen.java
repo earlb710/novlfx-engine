@@ -178,9 +178,7 @@ public final class ComplexFooterBarTestScreen {
         }
         for (ConversationHistoryEntryViewModel entry : viewModel.entries()) {
             historyContent.getChildren().add(new Label(entry.dialogId() + " " + entry.status()));
-            for (ConversationHistoryRowViewModel row : entry.rows()) {
-                historyContent.getChildren().add(new Label("  " + row.speakerLabel() + ": " + row.text()));
-            }
+            historyContent.getChildren().add(ConversationHistoryScreen.historyRows(entry));
         }
     }
 

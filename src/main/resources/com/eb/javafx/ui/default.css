@@ -33,11 +33,24 @@
 
 .screen-footer-option {
     -fx-text-fill: #cbd5e1;
-    -fx-font-size: 11px;
+    -fx-font-size: 9px;
 }
 
 .screen-footer-option-disabled {
     -fx-opacity: 0.45;
+}
+
+.conversation-history-rows {
+    -fx-hgap: 10px;
+    -fx-vgap: 6px;
+}
+
+.conversation-history-speaker {
+    -fx-alignment: top-right;
+}
+
+.conversation-history-message {
+    -fx-alignment: top-left;
 }
 
 .screen-footer-compact {

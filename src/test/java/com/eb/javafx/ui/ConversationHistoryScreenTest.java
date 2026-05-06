@@ -74,4 +74,23 @@ final class ConversationHistoryScreenTest {
         assertEquals("unknown participants", viewModel.entries().get(0).participants());
         assertEquals("open", viewModel.entries().get(0).status());
     }
+
+    @Test
+    void mapsHistoryRowsToSpeakerAndMessageColumnText() {
+        GameState gameState = new GameState("main-menu");
+        DialogSpeaker ava = DialogSpeaker.text("ava", "Ava");
+        gameState.conversationHistory().beginDialog("dock-talk", new GameDateTime(3, "evening"));
+        gameState.conversationHistory().addMessage(ava, "Meet me by the docks.");
+        gameState.conversationHistory().addMessage(DialogMessage.columns(List.of(
+                DialogColumn.parsed("note", "{i}A folded map changes hands.{/i}"))));
+
+        ConversationHistoryEntryViewModel entry = ConversationHistoryScreen.viewModel("Conversation History", gameState)
+                .entries()
+                .get(0);
+
+        assertEquals("Ava", ConversationHistoryScreen.historySpeakerText(entry.rows().get(0)));
+        assertEquals("Meet me by the docks.", ConversationHistoryScreen.historyMessageText(entry.rows().get(0)));
+        assertEquals("", ConversationHistoryScreen.historySpeakerText(entry.rows().get(1)));
+        assertEquals("note: A folded map changes hands.", ConversationHistoryScreen.historyMessageText(entry.rows().get(1)));
+    }
 }

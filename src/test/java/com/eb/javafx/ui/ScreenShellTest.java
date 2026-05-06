@@ -125,7 +125,7 @@ final class ScreenShellTest {
         assertTrue(css.contains("-fx-background-color: rgba(10, 20, 38, 0.50);"));
         assertTrue(css.contains("-fx-border-width: 0;"));
         assertTrue(css.contains("-fx-padding: 1px;"));
-        assertTrue(css.contains("-fx-font-size: 11px;"));
+        assertTrue(css.contains("-fx-font-size: 9px;"));
     }
 
     @Test
@@ -182,9 +182,19 @@ final class ScreenShellTest {
 
             assertTrue(Files.isRegularFile(resourcePath), option.id() + " icon resource should exist.");
             assertTrue(VectorImage.isSvgPath(resourcePath), option.id() + " icon resource should be valid SVG.");
+            assertTrue(Files.readString(resourcePath).contains("#ffcc00"), option.id() + " icon should use the yellow footer color.");
         }
         assertTrue(VectorImage.isSvgPath(Path.of(
                 "src/main/resources/com/eb/javafx/images/icons/icons-10x10.svg")));
+    }
+
+    @Test
+    void footerTextOmitsFallbackGlyphWhenSvgGraphicIsUsed() {
+        ScreenShell.FooterOption back = ScreenShell.defaultFooterOptions().get(0);
+
+        assertEquals("Back", ScreenShell.footerTextWithoutFallbackIcon(back, "‹ Back"));
+        assertEquals("", ScreenShell.footerTextWithoutFallbackIcon(back, "‹"));
+        assertEquals("Back (Backspace)", ScreenShell.footerTextWithoutFallbackIcon(back, "‹ Back (Backspace)"));
     }
 
     @Test

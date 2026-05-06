@@ -10,9 +10,14 @@ import com.eb.javafx.text.DialogMessage;
 import com.eb.javafx.text.DialogSpeaker;
 import com.eb.javafx.text.TextToken;
 import com.eb.javafx.text.TextTokenType;
+import javafx.geometry.HPos;
+import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.layout.ColumnConstraints;
+import javafx.scene.layout.GridPane;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 
 import java.util.LinkedHashSet;
@@ -28,6 +33,13 @@ import java.util.stream.Collectors;
  * character discussed without needing authored game-specific UI.</p>
  */
 public final class ConversationHistoryScreen {
+    static final String HISTORY_ROWS_STYLE_CLASS = "conversation-history-rows";
+    static final String HISTORY_SPEAKER_STYLE_CLASS = "conversation-history-speaker";
+    static final String HISTORY_MESSAGE_STYLE_CLASS = "conversation-history-message";
+    private static final double HISTORY_COLUMN_GAP = 10;
+    private static final double HISTORY_ROW_GAP = 6;
+    private static final double SPEAKER_COLUMN_WIDTH = 140;
+
     private ConversationHistoryScreen() {
     }
 
@@ -78,10 +90,56 @@ public final class ConversationHistoryScreen {
     private static VBox entryPanel(ConversationHistoryEntryViewModel entry) {
         VBox panel = ScreenShell.styledPanel(null);
         panel.getChildren().add(new Label(formatEntryHeader(entry)));
-        for (ConversationHistoryRowViewModel row : entry.rows()) {
-            panel.getChildren().add(new Label("  " + rowText(row)));
-        }
+        panel.getChildren().add(historyRows(entry));
         return panel;
+    }
+
+    static GridPane historyRows(ConversationHistoryEntryViewModel entry) {
+        GridPane rows = new GridPane();
+        rows.getStyleClass().add(HISTORY_ROWS_STYLE_CLASS);
+        rows.setHgap(HISTORY_COLUMN_GAP);
+        rows.setVgap(HISTORY_ROW_GAP);
+
+        ColumnConstraints speakerColumn = new ColumnConstraints();
+        speakerColumn.setPrefWidth(SPEAKER_COLUMN_WIDTH);
+        speakerColumn.setHalignment(HPos.RIGHT);
+        ColumnConstraints messageColumn = new ColumnConstraints();
+        messageColumn.setHgrow(Priority.ALWAYS);
+        rows.getColumnConstraints().addAll(speakerColumn, messageColumn);
+
+        int rowIndex = 0;
+        for (ConversationHistoryRowViewModel row : entry.rows()) {
+            Label speaker = multilineLabel(historySpeakerText(row));
+            speaker.getStyleClass().add(HISTORY_SPEAKER_STYLE_CLASS);
+            speaker.setAlignment(Pos.TOP_RIGHT);
+            speaker.setMaxWidth(Double.MAX_VALUE);
+
+            Label message = multilineLabel(historyMessageText(row));
+            message.getStyleClass().add(HISTORY_MESSAGE_STYLE_CLASS);
+            message.setMaxWidth(Double.MAX_VALUE);
+            GridPane.setHgrow(message, Priority.ALWAYS);
+
+            rows.add(speaker, 0, rowIndex);
+            rows.add(message, 1, rowIndex);
+            rowIndex++;
+        }
+        return rows;
+    }
+
+    private static Label multilineLabel(String text) {
+        Label label = new Label(text);
+        label.setWrapText(true);
+        return label;
+    }
+
+    static String historySpeakerText(ConversationHistoryRowViewModel row) {
+        return row.speakerLabel() == null ? "" : row.speakerLabel();
+    }
+
+    static String historyMessageText(ConversationHistoryRowViewModel row) {
+        return row.speakerLabel() == null || row.speakerLabel().isBlank()
+                ? rowText(row)
+                : row.text();
     }
 
     private static String formatEntryHeader(ConversationHistoryEntryViewModel entry) {
