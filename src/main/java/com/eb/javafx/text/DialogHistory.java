@@ -44,6 +44,17 @@ public final class DialogHistory {
         return addMessage(DialogMessage.speakerMessage(speaker, message));
     }
 
+    public Optional<DialogMessage> removeLastMessage() {
+        ensureOpen();
+        DialogHistoryEntry entry = entries.get(openEntryIndex);
+        if (entry.messages().isEmpty()) {
+            return Optional.empty();
+        }
+        DialogMessage removed = entry.messages().get(entry.messages().size() - 1);
+        entries.set(openEntryIndex, entry.withoutLastMessage());
+        return Optional.of(removed);
+    }
+
     public DialogHistoryEntry endDialog(GameDateTime endedAt) {
         ensureOpen();
         DialogHistoryEntry updatedEntry = entries.get(openEntryIndex).ended(endedAt);

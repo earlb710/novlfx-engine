@@ -19,6 +19,7 @@ public final class PreferencesService {
     private static final String CHEATS_VISIBLE_KEY = "ui.cheatsVisible";
     private static final String LOG_STAT_CHANGES_KEY = "ui.logStatChanges";
     private static final String FOOTER_LABELS_VISIBLE_KEY = "ui.footerLabelsVisible";
+    private static final String FOOTER_SHORTCUT_DISPLAY_KEY = "ui.footerShortcutDisplay";
     private static final String FONT_FAMILY_KEY = "ui.fontFamily";
     private static final String FONT_SCALE_KEY = "ui.fontScale";
     private static final String HIGH_CONTRAST_KEY = "accessibility.highContrast";
@@ -34,7 +35,7 @@ public final class PreferencesService {
     private boolean showPortrait;
     private boolean cheatsVisible;
     private boolean logStatChanges;
-    private boolean footerLabelsVisible;
+    private FooterShortcutDisplay footerShortcutDisplay;
     private String fontFamily;
     private double fontScale;
     private boolean highContrast;
@@ -56,7 +57,7 @@ public final class PreferencesService {
         showPortrait = preferences.getBoolean(SHOW_PORTRAIT_KEY, true);
         cheatsVisible = preferences.getBoolean(CHEATS_VISIBLE_KEY, true);
         logStatChanges = preferences.getBoolean(LOG_STAT_CHANGES_KEY, false);
-        footerLabelsVisible = preferences.getBoolean(FOOTER_LABELS_VISIBLE_KEY, true);
+        footerShortcutDisplay = validatedFooterShortcutDisplay(footerShortcutDisplayPreferenceValue());
         fontFamily = preferences.get(FONT_FAMILY_KEY, "System");
         fontScale = clamp(preferences.getDouble(FONT_SCALE_KEY, 1.0), 0.75, 2.0);
         highContrast = preferences.getBoolean(HIGH_CONTRAST_KEY, false);
@@ -107,7 +108,12 @@ public final class PreferencesService {
 
     /** Returns whether footer buttons should show labels and shortcuts in addition to icons. */
     public boolean footerLabelsVisible() {
-        return footerLabelsVisible;
+        return footerShortcutDisplay == FooterShortcutDisplay.DISPLAY;
+    }
+
+    /** Returns how footer keyboard shortcuts should be displayed. */
+    public FooterShortcutDisplay footerShortcutDisplay() {
+        return footerShortcutDisplay;
     }
 
     /** Returns the preferred JavaFX font family for migrated UI controls. */
@@ -156,10 +162,28 @@ public final class PreferencesService {
         this.logStatChanges = logStatChanges;
     }
 
-    /** Persists whether reusable footer buttons should show labels or icons only. */
+    /**
+     * Persists the legacy footer label preference and mirrors it to the current shortcut display mode.
+     *
+     * <p>The legacy key is retained so older callers that still save this boolean do not lose their selected
+     * behavior while newer code reads {@link #footerShortcutDisplay()}.</p>
+     */
     public void saveFooterLabelsVisible(boolean footerLabelsVisible) {
         preferences.putBoolean(FOOTER_LABELS_VISIBLE_KEY, footerLabelsVisible);
-        this.footerLabelsVisible = footerLabelsVisible;
+        saveFooterShortcutDisplay(footerLabelsVisible ? FooterShortcutDisplay.DISPLAY : FooterShortcutDisplay.HIDE);
+    }
+
+    /** Persists how reusable footer buttons should show keyboard shortcuts. */
+    public void saveFooterShortcutDisplay(FooterShortcutDisplay footerShortcutDisplay) {
+        this.footerShortcutDisplay = footerShortcutDisplay == null
+                ? FooterShortcutDisplay.TOOLTIP_ONLY
+                : footerShortcutDisplay;
+        preferences.put(FOOTER_SHORTCUT_DISPLAY_KEY, this.footerShortcutDisplay.preferenceValue());
+    }
+
+    /** Persists a validated footer shortcut display value, falling back to tooltip-only for unknown strings. */
+    public void saveFooterShortcutDisplay(String footerShortcutDisplay) {
+        saveFooterShortcutDisplay(validatedFooterShortcutDisplay(footerShortcutDisplay));
     }
 
     /** Persists dialogue/HUD opacity preferences and updates the loaded model. */
@@ -216,5 +240,50 @@ public final class PreferencesService {
             return value;
         }
         return "mouse";
+    }
+
+    private String footerShortcutDisplayPreferenceValue() {
+        String configuredValue = preferences.get(FOOTER_SHORTCUT_DISPLAY_KEY, null);
+        if (configuredValue != null) {
+            return configuredValue;
+        }
+        String legacyLabelsVisible = preferences.get(FOOTER_LABELS_VISIBLE_KEY, null);
+        if (legacyLabelsVisible != null) {
+            return Boolean.parseBoolean(legacyLabelsVisible)
+                    ? FooterShortcutDisplay.DISPLAY.preferenceValue()
+                    : FooterShortcutDisplay.HIDE.preferenceValue();
+        }
+        return FooterShortcutDisplay.TOOLTIP_ONLY.preferenceValue();
+    }
+
+    private FooterShortcutDisplay validatedFooterShortcutDisplay(String value) {
+        for (FooterShortcutDisplay display : FooterShortcutDisplay.values()) {
+            if (display.preferenceValue().equals(value)) {
+                return display;
+            }
+        }
+        return FooterShortcutDisplay.TOOLTIP_ONLY;
+    }
+
+    public enum FooterShortcutDisplay {
+        DISPLAY("display", "Display"),
+        HIDE("hide", "Do not display"),
+        TOOLTIP_ONLY("tooltip-only", "Tooltips only");
+
+        private final String preferenceValue;
+        private final String label;
+
+        FooterShortcutDisplay(String preferenceValue, String label) {
+            this.preferenceValue = preferenceValue;
+            this.label = label;
+        }
+
+        public String preferenceValue() {
+            return preferenceValue;
+        }
+
+        public String label() {
+            return label;
+        }
     }
 }

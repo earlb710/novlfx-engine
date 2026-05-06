@@ -9,6 +9,7 @@ import javafx.scene.Node;
 import javafx.stage.Stage;
 import org.junit.jupiter.api.Test;
 
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.CountDownLatch;
@@ -17,6 +18,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
@@ -71,6 +73,18 @@ final class ManBaseMeshTestScreenTest {
 
         assertTrue(model instanceof Group);
         assertTrue(((Group) model).getChildren().size() > 0);
+    }
+
+    @Test
+    void manBaseMeshMaterialResourceIsPackagedWithObj() throws Exception {
+        URL objResource = ManBaseMeshTestScreen.class.getResource(ManBaseMeshTestScreen.MESH_RESOURCE);
+        assertNotNull(objResource, "ManBaseMesh OBJ resource should exist.");
+        String objText = new String(objResource.openStream().readAllBytes());
+
+        assertTrue(objText.contains("mtllib FinalBaseMesh.mtl"));
+        assertNotNull(
+                ManBaseMeshTestScreen.class.getResource("/com/eb/javafx/ui/FinalBaseMesh.mtl"),
+                "OBJ material library resource should be packaged beside ManBaseMesh.obj.");
     }
 
     @Test

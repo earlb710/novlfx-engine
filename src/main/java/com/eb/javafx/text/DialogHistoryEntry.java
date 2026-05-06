@@ -38,6 +38,18 @@ public final class DialogHistoryEntry {
         return new DialogHistoryEntry(dialogId, startedAt, null, updatedMessages);
     }
 
+    public DialogHistoryEntry withoutLastMessage() {
+        if (endedAt != null) {
+            throw new IllegalStateException("Dialog history entry is already ended.");
+        }
+        if (messages.isEmpty()) {
+            return this;
+        }
+        List<DialogMessage> updatedMessages = new ArrayList<>(messages);
+        updatedMessages.remove(updatedMessages.size() - 1);
+        return new DialogHistoryEntry(dialogId, startedAt, null, updatedMessages);
+    }
+
     public DialogHistoryEntry ended(GameDateTime endedAt) {
         if (this.endedAt != null) {
             throw new IllegalStateException("Dialog history entry is already ended.");

@@ -1,0 +1,8 @@
+# Default material library for ManBaseMesh.obj.
+newmtl default
+Ka 0.200000 0.200000 0.200000
+Kd 0.784314 0.827451 0.901961
+Ks 0.000000 0.000000 0.000000
+Ns 10.000000
+d 1.000000
+illum 2

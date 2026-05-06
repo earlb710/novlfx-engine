@@ -25,6 +25,7 @@ public final class EnginePlaceholderContentModule implements StaticContentModule
         definitions.put("ui.conversationHistory.title", "Conversation History");
         definitions.put("ui.displayBindings.title", "Display Bindings Preview");
         definitions.put("ui.captureTest.title", "Capture Test Screen");
+        definitions.put("ui.complexFooterBarTest.title", "Complex Footer Bar Test");
         definitions.put("ui.footer.back.label", "Back");
         definitions.put("ui.footer.back.tooltip", "Return to the previous screen.");
         definitions.put("ui.footer.history.label", "History");

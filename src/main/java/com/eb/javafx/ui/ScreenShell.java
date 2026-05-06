@@ -2,23 +2,32 @@ package com.eb.javafx.ui;
 
 import com.eb.javafx.localization.LocalizationService;
 import com.eb.javafx.prefs.PreferencesService;
+import com.eb.javafx.prefs.PreferencesService.FooterShortcutDisplay;
 import com.eb.javafx.state.GameState;
 import com.eb.javafx.util.Validation;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.control.Tooltip;
 import javafx.scene.image.Image;
 import javafx.scene.layout.Background;
+import javafx.scene.layout.BackgroundFill;
 import javafx.scene.layout.BackgroundImage;
 import javafx.scene.layout.BackgroundPosition;
 import javafx.scene.layout.BackgroundRepeat;
 import javafx.scene.layout.BackgroundSize;
+import javafx.scene.layout.Border;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.BorderStroke;
+import javafx.scene.layout.BorderStrokeStyle;
+import javafx.scene.layout.BorderWidths;
+import javafx.scene.layout.CornerRadii;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
 
 import java.util.List;
 
@@ -67,6 +76,7 @@ public final class ScreenShell {
     public static final double BODY_SPACING = 12;
     public static final Insets OUTER_INSETS = new Insets(16);
     public static final Insets PANEL_INSETS = new Insets(16);
+    static final Insets FOOTER_INSETS = new Insets(1);
     private static final Insets OUTER_INSETS_WITHOUT_BOTTOM = new Insets(
             OUTER_INSETS.getTop(),
             OUTER_INSETS.getRight(),
@@ -74,6 +84,16 @@ public final class ScreenShell {
             OUTER_INSETS.getLeft());
     private static final double FOOTER_SPACING = 8;
     private static final double COMPACT_FOOTER_SPACING = 4;
+    private static final double DEFAULT_FOOTER_BACKGROUND_TRANSPARENCY = 0.5;
+    private static final Color DEFAULT_FOOTER_BACKGROUND_COLOR = Color.rgb(10, 20, 38);
+    private static final Color DEFAULT_FOOTER_BORDER_COLOR = Color.web("#143869");
+    private static final CornerRadii FOOTER_CORNER_RADII = new CornerRadii(999);
+    private static final String FOOTER_BACKGROUND_COLOR_PROPERTY = "screenFooterBackgroundColor";
+    private static final String FOOTER_BACKGROUND_TRANSPARENCY_PROPERTY = "screenFooterBackgroundTransparency";
+    private static final String FOOTER_BORDER_STYLE_PROPERTY = "screenFooterBorderStyle";
+    private static final String FOOTER_BORDER_COLOR_PROPERTY = "screenFooterBorderColor";
+    private static final String FOOTER_BORDER_SIZE_PROPERTY = "screenFooterBorderSize";
+    private static final FooterShortcutDisplay DEFAULT_FOOTER_SHORTCUT_DISPLAY = FooterShortcutDisplay.TOOLTIP_ONLY;
     private static final List<FooterOption> FOOTER_OPTIONS = List.of(
             new FooterOption("back", "‹", "Back", "Backspace", "Return to the previous screen."),
             new FooterOption("history", "◷", "History", "Ctrl+H", "Open conversation history."),
@@ -112,11 +132,13 @@ public final class ScreenShell {
 
         BorderPane root = new BorderPane();
         root.getStyleClass().add(SCREEN_ROOT_STYLE_CLASS);
+        root.setMinSize(0, 0);
+        body.setMinSize(0, 0);
         root.setTop(header);
         root.setCenter(body);
         if (footerOptions != null && !footerOptions.isEmpty()) {
             root.setBottom(footerBar(footerOptions));
-            BorderPane.setMargin(root.getBottom(), OUTER_INSETS);
+            pinFooterToBottom(root);
         }
         BorderPane.setMargin(header, OUTER_INSETS_WITHOUT_BOTTOM);
         BorderPane.setMargin(body, OUTER_INSETS_WITHOUT_BOTTOM);
@@ -142,16 +164,25 @@ public final class ScreenShell {
         Validation.requireNonNull(footerOptions, "Footer options are required.");
         HBox footer = new HBox(FOOTER_SPACING);
         footer.getStyleClass().add(SCREEN_FOOTER_BAR_STYLE_CLASS);
+        footer.setMaxHeight(Region.USE_PREF_SIZE);
         for (FooterOption option : footerOptions) {
             Validation.requireNonNull(option, "Footer option is required.");
             Label label = new Label();
             label.setUserData(option);
             label.getStyleClass().add(SCREEN_FOOTER_OPTION_STYLE_CLASS);
-            applyFooterOption(label, option, true);
-            installFooterTooltip(label, option.tooltip());
+            applyFooterOption(label, option, DEFAULT_FOOTER_SHORTCUT_DISPLAY);
             footer.getChildren().add(label);
         }
         return footer;
+    }
+
+    static void pinFooterToBottom(BorderPane screen) {
+        Validation.requireNonNull(screen, "Screen shell is required.");
+        if (screen.getBottom() != null) {
+            screen.getBottom().setManaged(true);
+            BorderPane.setAlignment(screen.getBottom(), Pos.BOTTOM_CENTER);
+            BorderPane.setMargin(screen.getBottom(), FOOTER_INSETS);
+        }
     }
 
     /** Shows or hides the footer node while keeping layout management in sync. */
@@ -185,6 +216,60 @@ public final class ScreenShell {
         }
     }
 
+    /** Sets the footer option font size in pixels. */
+    public static void setFooterFontSize(Node footer, double fontSize) {
+        Validation.requirePositive(fontSize, "Footer font size must be positive.");
+        forEachFooterLabel(footer, label ->
+                label.setStyle(appendStyle(label.getStyle(), "-fx-font-size: " + fontSize + "px;")));
+    }
+
+    /** Sets the footer option text color using a JavaFX web color string. */
+    public static void setFooterTextColor(Node footer, String color) {
+        Color parsedColor = parseColor(color, "Footer text color is required.");
+        forEachFooterLabel(footer, label -> label.setTextFill(parsedColor));
+    }
+
+    /** Sets the footer background color while preserving the configured background transparency. */
+    public static void setFooterBackgroundColor(Node footer, String color) {
+        Validation.requireNonNull(footer, "Footer node is required.");
+        footer.getProperties().put(FOOTER_BACKGROUND_COLOR_PROPERTY, parseColor(color, "Footer background color is required."));
+        applyFooterBackground(footer);
+    }
+
+    /** Sets footer background transparency where {@code 0.0} is opaque and {@code 1.0} is invisible. */
+    public static void setFooterBackgroundTransparency(Node footer, double transparency) {
+        Validation.requireNonNull(footer, "Footer node is required.");
+        footer.getProperties().put(FOOTER_BACKGROUND_TRANSPARENCY_PROPERTY, Validation.requireUnitInterval(
+                transparency,
+                "Footer background transparency must be between 0.0 and 1.0."));
+        applyFooterBackground(footer);
+    }
+
+    /** Sets the footer border style: none, solid, dashed, or dotted. */
+    public static void setFooterBorderStyle(Node footer, String borderStyle) {
+        Validation.requireNonNull(footer, "Footer node is required.");
+        footer.getProperties().put(FOOTER_BORDER_STYLE_PROPERTY, parseBorderStyle(borderStyle));
+        applyFooterBorder(footer);
+    }
+
+    /** Sets the footer border color using a JavaFX web color string. */
+    public static void setFooterBorderColor(Node footer, String color) {
+        Validation.requireNonNull(footer, "Footer node is required.");
+        footer.getProperties().put(FOOTER_BORDER_COLOR_PROPERTY, parseColor(color, "Footer border color is required."));
+        applyFooterBorder(footer);
+    }
+
+    /** Sets the footer border width in pixels. A size of {@code 0.0} removes the border. */
+    public static void setFooterBorderSize(Node footer, double borderSize) {
+        Validation.requireNonNull(footer, "Footer node is required.");
+        footer.getProperties().put(FOOTER_BORDER_SIZE_PROPERTY, Validation.requireBetween(
+                borderSize,
+                0.0,
+                Double.MAX_VALUE,
+                "Footer border size cannot be negative."));
+        applyFooterBorder(footer);
+    }
+
     /** Applies compact mobile footer presentation, including icon-only labels and tighter spacing. */
     public static void setFooterCompact(Node footer, boolean compact) {
         Validation.requireNonNull(footer, "Footer node is required.");
@@ -207,7 +292,22 @@ public final class ScreenShell {
         if (footer instanceof HBox footerBox) {
             footerBox.getChildren().forEach(child -> {
                 if (child instanceof Label label && label.getUserData() instanceof FooterOption option) {
-                    applyFooterOption(label, option, labelsVisible);
+                    applyFooterOption(label, option, option.displayText(labelsVisible), option.tooltip());
+                }
+            });
+        }
+    }
+
+    /** Switches footer shortcut text between visible, hidden, and tooltip-only presentation. */
+    public static void setFooterShortcutDisplay(Node footer, FooterShortcutDisplay shortcutDisplay) {
+        Validation.requireNonNull(footer, "Footer node is required.");
+        FooterShortcutDisplay checkedDisplay = shortcutDisplay == null
+                ? DEFAULT_FOOTER_SHORTCUT_DISPLAY
+                : shortcutDisplay;
+        if (footer instanceof HBox footerBox) {
+            footerBox.getChildren().forEach(child -> {
+                if (child instanceof Label label && label.getUserData() instanceof FooterOption option) {
+                    applyFooterOption(label, option, checkedDisplay);
                 }
             });
         }
@@ -216,7 +316,7 @@ public final class ScreenShell {
     /** Applies the persisted user preference for showing footer labels. */
     public static void applyFooterPreferences(Node footer, PreferencesService preferencesService) {
         Validation.requireNonNull(preferencesService, "Preferences service is required.");
-        setFooterLabelsVisible(footer, preferencesService.footerLabelsVisible());
+        setFooterShortcutDisplay(footer, preferencesService.footerShortcutDisplay());
     }
 
     /** Adds responsive compact/mobile footer behavior based on the screen width. */
@@ -347,8 +447,113 @@ public final class ScreenShell {
                 .toList();
     }
 
-    private static void applyFooterOption(Label label, FooterOption option, boolean labelsVisible) {
-        label.setText(option.displayText(labelsVisible));
+    private static void forEachFooterLabel(Node footer, java.util.function.Consumer<Label> action) {
+        Validation.requireNonNull(footer, "Footer node is required.");
+        Validation.requireNonNull(action, "Footer label action is required.");
+        if (footer instanceof HBox footerBox) {
+            footerBox.getChildren().forEach(child -> {
+                if (child instanceof Label label) {
+                    action.accept(label);
+                }
+            });
+        }
+    }
+
+    private static Color parseColor(String color, String message) {
+        try {
+            return Color.web(Validation.requireNonBlank(color, message));
+        } catch (IllegalArgumentException exception) {
+            throw new IllegalArgumentException(message, exception);
+        }
+    }
+
+    private static String appendStyle(String existingStyle, String style) {
+        if (existingStyle == null || existingStyle.isBlank()) {
+            return style;
+        }
+        return existingStyle.stripTrailing() + " " + style;
+    }
+
+    private static void applyFooterBackground(Node footer) {
+        if (footer instanceof Region footerRegion) {
+            Color color = propertyValue(
+                    footer,
+                    FOOTER_BACKGROUND_COLOR_PROPERTY,
+                    Color.class,
+                    DEFAULT_FOOTER_BACKGROUND_COLOR);
+            double transparency = propertyValue(
+                    footer,
+                    FOOTER_BACKGROUND_TRANSPARENCY_PROPERTY,
+                    Double.class,
+                    DEFAULT_FOOTER_BACKGROUND_TRANSPARENCY);
+            footerRegion.setBackground(new Background(new BackgroundFill(
+                    new Color(color.getRed(), color.getGreen(), color.getBlue(), 1.0 - transparency),
+                    FOOTER_CORNER_RADII,
+                    Insets.EMPTY)));
+        }
+    }
+
+    private static void applyFooterBorder(Node footer) {
+        if (footer instanceof Region footerRegion) {
+            BorderStrokeStyle style = propertyValue(
+                    footer,
+                    FOOTER_BORDER_STYLE_PROPERTY,
+                    BorderStrokeStyle.class,
+                    BorderStrokeStyle.NONE);
+            double size = propertyValue(footer, FOOTER_BORDER_SIZE_PROPERTY, Double.class, 0.0);
+            if (style == BorderStrokeStyle.NONE || size == 0.0) {
+                footerRegion.setBorder(Border.EMPTY);
+                return;
+            }
+            Color color = propertyValue(
+                    footer,
+                    FOOTER_BORDER_COLOR_PROPERTY,
+                    Color.class,
+                    DEFAULT_FOOTER_BORDER_COLOR);
+            footerRegion.setBorder(new Border(new BorderStroke(
+                    color,
+                    style,
+                    FOOTER_CORNER_RADII,
+                    new BorderWidths(size))));
+        }
+    }
+
+    private static BorderStrokeStyle parseBorderStyle(String borderStyle) {
+        String normalizedStyle = Validation.requireNonBlank(borderStyle, "Footer border style is required.")
+                .toLowerCase();
+        return switch (normalizedStyle) {
+            case "none" -> BorderStrokeStyle.NONE;
+            case "solid" -> BorderStrokeStyle.SOLID;
+            case "dashed" -> BorderStrokeStyle.DASHED;
+            case "dotted" -> BorderStrokeStyle.DOTTED;
+            default -> throw new IllegalArgumentException("Footer border style must be none, solid, dashed, or dotted.");
+        };
+    }
+
+    private static <T> T propertyValue(Node node, String key, Class<T> type, T defaultValue) {
+        Object value = node.getProperties().get(key);
+        return type.isInstance(value) ? type.cast(value) : defaultValue;
+    }
+
+    static void applyFooterOption(Label label, FooterOption option, FooterShortcutDisplay shortcutDisplay) {
+        Validation.requireNonNull(label, "Footer label is required.");
+        Validation.requireNonNull(option, "Footer option is required.");
+        FooterShortcutDisplay checkedDisplay = shortcutDisplay == null
+                ? DEFAULT_FOOTER_SHORTCUT_DISPLAY
+                : shortcutDisplay;
+        applyFooterOption(label, option, option.displayText(checkedDisplay), option.tooltipText(checkedDisplay));
+    }
+
+    private static void applyFooterOption(Label label, FooterOption option, String displayText, String tooltipText) {
+        Validation.requireNonNull(label, "Footer label is required.");
+        Validation.requireNonNull(option, "Footer option is required.");
+        label.setUserData(option);
+        label.setText(displayText);
+        applyFooterOptionState(label, option);
+        installFooterTooltip(label, tooltipText);
+    }
+
+    private static void applyFooterOptionState(Label label, FooterOption option) {
         label.setAccessibleText(option.accessibleText());
         label.setDisable(!option.enabled());
         if (option.enabled()) {
@@ -417,6 +622,30 @@ public final class ScreenShell {
                 return icon;
             }
             return icon + " " + label + " (" + shortcut + ")";
+        }
+
+        public String displayText(FooterShortcutDisplay shortcutDisplay) {
+            FooterShortcutDisplay checkedDisplay = shortcutDisplay == null
+                    ? DEFAULT_FOOTER_SHORTCUT_DISPLAY
+                    : shortcutDisplay;
+            if (checkedDisplay == FooterShortcutDisplay.DISPLAY) {
+                return displayText();
+            }
+            return icon + " " + label;
+        }
+
+        public String tooltipText(FooterShortcutDisplay shortcutDisplay) {
+            FooterShortcutDisplay checkedDisplay = shortcutDisplay == null
+                    ? DEFAULT_FOOTER_SHORTCUT_DISPLAY
+                    : shortcutDisplay;
+            if (checkedDisplay == FooterShortcutDisplay.HIDE) {
+                return tooltip;
+            }
+            String shortcutText = "Keyboard shortcut: " + shortcut + ".";
+            if (tooltip == null || tooltip.isBlank()) {
+                return shortcutText;
+            }
+            return tooltip.endsWith(".") ? tooltip + " " + shortcutText : tooltip + ". " + shortcutText;
         }
 
         public String accessibleText() {
