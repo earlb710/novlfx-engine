@@ -59,6 +59,11 @@ public final class ScreenShell {
     public static final double BODY_SPACING = 12;
     public static final Insets OUTER_INSETS = new Insets(16);
     public static final Insets PANEL_INSETS = new Insets(16);
+    private static final Insets OUTER_INSETS_WITHOUT_BOTTOM = new Insets(
+            OUTER_INSETS.getTop(),
+            OUTER_INSETS.getRight(),
+            0,
+            OUTER_INSETS.getLeft());
     private static final double FOOTER_SPACING = 8;
     private static final List<FooterOption> FOOTER_OPTIONS = List.of(
             new FooterOption("‹", "Back", "Backspace"),
@@ -96,8 +101,8 @@ public final class ScreenShell {
         root.setTop(header);
         root.setCenter(body);
         root.setBottom(footerBar());
-        BorderPane.setMargin(header, new Insets(OUTER_INSETS.getTop(), OUTER_INSETS.getRight(), 0, OUTER_INSETS.getLeft()));
-        BorderPane.setMargin(body, new Insets(OUTER_INSETS.getTop(), OUTER_INSETS.getRight(), 0, OUTER_INSETS.getLeft()));
+        BorderPane.setMargin(header, OUTER_INSETS_WITHOUT_BOTTOM);
+        BorderPane.setMargin(body, OUTER_INSETS_WITHOUT_BOTTOM);
         BorderPane.setMargin(root.getBottom(), OUTER_INSETS);
         return root;
     }
@@ -120,11 +125,11 @@ public final class ScreenShell {
         return footer;
     }
 
-    public static List<String> footerOptionTexts() {
+    static List<String> footerOptionTexts() {
         return FOOTER_OPTION_TEXTS;
     }
 
-    public static List<String> footerOptionAccessibleTexts() {
+    static List<String> footerOptionAccessibleTexts() {
         return FOOTER_OPTION_ACCESSIBLE_TEXTS;
     }
 
