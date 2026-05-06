@@ -7,6 +7,7 @@ import com.eb.javafx.prefs.PreferencesService;
 import com.eb.javafx.prefs.PreferencesService.FooterShortcutDisplay;
 import com.eb.javafx.state.GameState;
 import com.eb.javafx.util.VectorImage;
+import javafx.application.Platform;
 import javafx.geometry.Pos;
 import javafx.scene.control.Label;
 import javafx.scene.image.Image;
@@ -28,14 +29,21 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 final class ScreenShellTest {
+    private static final AtomicBoolean JAVAFX_STARTED = new AtomicBoolean();
+
     @Test
     void backgroundImageStretchesToScreenBounds() {
         Image image = new WritableImage(16, 9);
@@ -190,14 +198,19 @@ final class ScreenShellTest {
     }
 
     @Test
-    void footerBarUsesSvgIconGraphicsWhenResourcesAreAvailable() {
-        HBox footer = ScreenShell.footerBar();
+    void footerBarUsesSvgIconGraphicsWhenResourcesAreAvailable() throws Exception {
+        AtomicReference<HBox> footerReference = new AtomicReference<>();
 
-        Label back = (Label) footer.getChildren().get(0);
+        runOnJavaFxThread(() -> footerReference.set(ScreenShell.footerBar()));
 
-        assertTrue(back.getGraphic() instanceof ImageView);
-        assertEquals("Back", back.getText());
-        assertEquals(12.0, ((ImageView) back.getGraphic()).getFitWidth());
+        HBox footer = footerReference.get();
+        runOnJavaFxThread(() -> {
+            Label back = (Label) footer.getChildren().get(0);
+
+            assertTrue(back.getGraphic() instanceof ImageView);
+            assertEquals("Back", back.getText());
+            assertEquals(12.0, ((ImageView) back.getGraphic()).getFitWidth());
+        });
     }
 
     @Test
@@ -362,5 +375,47 @@ final class ScreenShellTest {
                 ScreenShell.changeFooterIcon(ScreenShell.defaultFooterOptions(), "quick-save", ""));
         assertThrows(IllegalArgumentException.class, () ->
                 new ScreenShell.FooterOption("", "?", "Help", "F1", "Help tooltip"));
+    }
+
+    private static void runOnJavaFxThread(Runnable action) throws Exception {
+        startJavaFxToolkit();
+        CountDownLatch completed = new CountDownLatch(1);
+        AtomicReference<Throwable> failure = new AtomicReference<>();
+        Platform.runLater(() -> {
+            try {
+                action.run();
+            } catch (Throwable throwable) {
+                failure.set(throwable);
+            } finally {
+                completed.countDown();
+            }
+        });
+        assertTrue(completed.await(5, TimeUnit.SECONDS), "JavaFX action did not complete.");
+        if (failure.get() instanceof Exception exception) {
+            throw exception;
+        }
+        if (failure.get() instanceof Error error) {
+            throw error;
+        }
+        assertNull(failure.get(), () -> "JavaFX action failed: " + failure.get());
+    }
+
+    private static void startJavaFxToolkit() throws InterruptedException {
+        CountDownLatch started = new CountDownLatch(1);
+        if (JAVAFX_STARTED.compareAndSet(false, true)) {
+            try {
+                Platform.startup(() -> {
+                    Platform.setImplicitExit(false);
+                    started.countDown();
+                });
+            } catch (IllegalStateException exception) {
+                Platform.setImplicitExit(false);
+                started.countDown();
+            }
+        } else {
+            Platform.setImplicitExit(false);
+            started.countDown();
+        }
+        assertTrue(started.await(5, TimeUnit.SECONDS), "JavaFX toolkit did not start.");
     }
 }

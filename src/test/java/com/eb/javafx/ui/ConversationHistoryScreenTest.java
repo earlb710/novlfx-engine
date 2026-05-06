@@ -5,17 +5,25 @@ import com.eb.javafx.state.GameState;
 import com.eb.javafx.text.DialogColumn;
 import com.eb.javafx.text.DialogMessage;
 import com.eb.javafx.text.DialogSpeaker;
+import javafx.application.Platform;
 import javafx.geometry.HPos;
 import javafx.scene.control.Label;
 import javafx.scene.layout.GridPane;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 final class ConversationHistoryScreenTest {
+    private static final AtomicBoolean JAVAFX_STARTED = new AtomicBoolean();
+
     @Test
     void showsEmptyConversationHistory() {
         ConversationHistoryViewModel viewModel = ConversationHistoryScreen.viewModel("Conversation History", new GameState("main-menu"));
@@ -80,7 +88,7 @@ final class ConversationHistoryScreenTest {
     }
 
     @Test
-    void rendersHistoryRowsAsTwoMultilineColumnsWithRightAlignedSpeaker() {
+    void rendersHistoryRowsAsTwoMultilineColumnsWithRightAlignedSpeaker() throws Exception {
         GameState gameState = new GameState("main-menu");
         DialogSpeaker ava = DialogSpeaker.text("ava", "Ava");
         gameState.conversationHistory().beginDialog("dock-talk", new GameDateTime(3, "evening"));
@@ -89,17 +97,64 @@ final class ConversationHistoryScreenTest {
         ConversationHistoryEntryViewModel entry = ConversationHistoryScreen.viewModel("Conversation History", gameState)
                 .entries()
                 .get(0);
-        GridPane rows = ConversationHistoryScreen.historyRows(entry);
+        AtomicReference<GridPane> rowsReference = new AtomicReference<>();
 
-        assertEquals(2, rows.getColumnCount());
-        assertEquals(HPos.RIGHT, rows.getColumnConstraints().get(0).getHalignment());
-        Label speaker = (Label) rows.getChildren().get(0);
-        Label message = (Label) rows.getChildren().get(1);
-        assertEquals("Ava", speaker.getText());
-        assertEquals("Meet me by the docks.", message.getText());
-        assertEquals(0, GridPane.getColumnIndex(speaker));
-        assertEquals(1, GridPane.getColumnIndex(message));
-        assertTrue(speaker.isWrapText());
-        assertTrue(message.isWrapText());
+        runOnJavaFxThread(() -> rowsReference.set(ConversationHistoryScreen.historyRows(entry)));
+
+        GridPane rows = rowsReference.get();
+        runOnJavaFxThread(() -> {
+            assertEquals(2, rows.getColumnCount());
+            assertEquals(HPos.RIGHT, rows.getColumnConstraints().get(0).getHalignment());
+            Label speaker = (Label) rows.getChildren().get(0);
+            Label message = (Label) rows.getChildren().get(1);
+            assertEquals("Ava", speaker.getText());
+            assertEquals("Meet me by the docks.", message.getText());
+            assertEquals(0, GridPane.getColumnIndex(speaker));
+            assertEquals(1, GridPane.getColumnIndex(message));
+            assertTrue(speaker.isWrapText());
+            assertTrue(message.isWrapText());
+        });
+    }
+
+    private static void runOnJavaFxThread(Runnable action) throws Exception {
+        startJavaFxToolkit();
+        CountDownLatch completed = new CountDownLatch(1);
+        AtomicReference<Throwable> failure = new AtomicReference<>();
+        Platform.runLater(() -> {
+            try {
+                action.run();
+            } catch (Throwable throwable) {
+                failure.set(throwable);
+            } finally {
+                completed.countDown();
+            }
+        });
+        assertTrue(completed.await(5, TimeUnit.SECONDS), "JavaFX action did not complete.");
+        if (failure.get() instanceof Exception exception) {
+            throw exception;
+        }
+        if (failure.get() instanceof Error error) {
+            throw error;
+        }
+        assertNull(failure.get(), () -> "JavaFX action failed: " + failure.get());
+    }
+
+    private static void startJavaFxToolkit() throws InterruptedException {
+        CountDownLatch started = new CountDownLatch(1);
+        if (JAVAFX_STARTED.compareAndSet(false, true)) {
+            try {
+                Platform.startup(() -> {
+                    Platform.setImplicitExit(false);
+                    started.countDown();
+                });
+            } catch (IllegalStateException exception) {
+                Platform.setImplicitExit(false);
+                started.countDown();
+            }
+        } else {
+            Platform.setImplicitExit(false);
+            started.countDown();
+        }
+        assertTrue(started.await(5, TimeUnit.SECONDS), "JavaFX toolkit did not start.");
     }
 }
