@@ -7,15 +7,19 @@ import com.eb.javafx.prefs.PreferencesService;
 import com.eb.javafx.prefs.PreferencesService.FooterShortcutDisplay;
 import com.eb.javafx.state.GameState;
 import com.eb.javafx.util.VectorImage;
+import javafx.geometry.Pos;
 import javafx.scene.image.Image;
 import javafx.scene.image.WritableImage;
 import javafx.scene.layout.BackgroundImage;
 import javafx.scene.layout.BackgroundPosition;
 import javafx.scene.layout.BackgroundRepeat;
 import javafx.scene.layout.BackgroundSize;
+import javafx.scene.layout.Border;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.BorderStrokeStyle;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Files;
@@ -98,6 +102,29 @@ final class ScreenShellTest {
         assertTrue(panel.getStyleClass().contains(ScreenShell.SCENE_DIALOGUE_PANEL_STYLE_CLASS));
         assertEquals(ScreenShell.BODY_SPACING, panel.getSpacing());
         assertEquals(ScreenShell.PANEL_INSETS, panel.getPadding());
+    }
+
+    @Test
+    void footerCanBePinnedAsBottomRegion() {
+        BorderPane screen = new BorderPane();
+        HBox footer = new HBox();
+        footer.setManaged(false);
+        screen.setBottom(footer);
+
+        ScreenShell.pinFooterToBottom(screen);
+
+        assertTrue(footer.isManaged());
+        assertEquals(Pos.BOTTOM_CENTER, BorderPane.getAlignment(footer));
+        assertEquals(ScreenShell.OUTER_INSETS, BorderPane.getMargin(footer));
+    }
+
+    @Test
+    void defaultStylesMakeFooterCompactTransparentAndBorderless() throws Exception {
+        String css = Files.readString(Path.of("src/main/resources/com/eb/javafx/ui/default.css"));
+
+        assertTrue(css.contains("-fx-background-color: rgba(10, 20, 38, 0.50);"));
+        assertTrue(css.contains("-fx-border-width: 0;"));
+        assertTrue(css.contains("-fx-font-size: 11px;"));
     }
 
     @Test
@@ -210,6 +237,32 @@ final class ScreenShellTest {
     }
 
     @Test
+    void footerVisualHelpersUpdateBackgroundAndBorder() {
+        HBox footer = new HBox();
+
+        ScreenShell.setFooterFontSize(footer, 9.0);
+        ScreenShell.setFooterTextColor(footer, "#ff0000");
+        ScreenShell.setFooterBackgroundColor(footer, "#112233");
+        ScreenShell.setFooterBackgroundTransparency(footer, 0.25);
+        ScreenShell.setFooterBorderColor(footer, "#445566");
+        ScreenShell.setFooterBorderSize(footer, 2.0);
+        ScreenShell.setFooterBorderStyle(footer, "dashed");
+
+        Color backgroundColor = (Color) footer.getBackground()
+                .getFills()
+                .get(0)
+                .getFill();
+        assertEquals(0.75, backgroundColor.getOpacity());
+        assertEquals(Color.web("#112233").getBlue(), backgroundColor.getBlue());
+        assertEquals(BorderStrokeStyle.DASHED, footer.getBorder().getStrokes().get(0).getTopStyle());
+        assertEquals(2.0, footer.getBorder().getStrokes().get(0).getWidths().getTop());
+
+        ScreenShell.setFooterBorderStyle(footer, "none");
+
+        assertEquals(Border.EMPTY, footer.getBorder());
+    }
+
+    @Test
     void footerOptionsCanBeDisabledFromGameState() {
         List<ScreenShell.FooterOption> withoutHistory = ScreenShell.footerOptionsForGameState(new GameState("start"));
 
@@ -287,6 +340,10 @@ final class ScreenShellTest {
                 ScreenShell.setFooterVisible((javafx.scene.Node) null, true));
         assertThrows(IllegalArgumentException.class, () ->
                 ScreenShell.setFooterTransparency(footer, -0.1));
+        assertThrows(IllegalArgumentException.class, () ->
+                ScreenShell.setFooterFontSize(footer, 0.0));
+        assertThrows(IllegalArgumentException.class, () ->
+                ScreenShell.setFooterBorderStyle(footer, "double"));
         assertThrows(IllegalArgumentException.class, () ->
                 ScreenShell.changeFooterIcon(ScreenShell.defaultFooterOptions(), "quick-save", ""));
         assertThrows(IllegalArgumentException.class, () ->
