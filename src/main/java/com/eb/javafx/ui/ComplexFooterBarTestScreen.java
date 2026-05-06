@@ -5,14 +5,21 @@ import com.eb.javafx.prefs.PreferencesService;
 import com.eb.javafx.prefs.PreferencesService.FooterShortcutDisplay;
 import com.eb.javafx.state.GameState;
 import com.eb.javafx.text.DialogSpeaker;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.input.KeyCode;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.layout.Background;
+import javafx.scene.layout.BackgroundFill;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.CornerRadii;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
 
 import java.util.List;
 import java.util.Map;
@@ -26,6 +33,8 @@ public final class ComplexFooterBarTestScreen {
     private static final String BACK_ID = "back";
     private static final String HISTORY_ID = "history";
     private static final String FORWARD_ID = "forward";
+    private static final Background HISTORY_OVERLAY_BACKGROUND = new Background(
+            new BackgroundFill(Color.rgb(0, 0, 0, 0.60), CornerRadii.EMPTY, Insets.EMPTY));
 
     private ComplexFooterBarTestScreen() {
     }
@@ -39,8 +48,8 @@ public final class ComplexFooterBarTestScreen {
         Label position = new Label();
         Label speaker = new Label();
         Label line = new Label();
-        Label historyState = new Label();
         VBox historyContent = new VBox(4);
+        StackPane historyOverlay = historyOverlay(historyContent);
         VBox choicesPanel = new VBox(4);
         FooterShortcutDisplay shortcutDisplay = preferencesService.footerShortcutDisplay();
 
@@ -53,10 +62,6 @@ public final class ComplexFooterBarTestScreen {
                 ScreenShell.SCENE_CHOICES_PANEL_STYLE_CLASS,
                 new Label("Choice options"),
                 choicesPanel);
-        VBox historyPanel = ScreenShell.styledPanel(
-                ScreenShell.SCENE_CHOICES_PANEL_STYLE_CLASS,
-                historyState,
-                historyContent);
         Button closeButton = new Button("Back to main menu");
         closeButton.setOnAction(event -> closeAction.run());
 
@@ -65,9 +70,10 @@ public final class ComplexFooterBarTestScreen {
                 new Label("Use footer Back/Forward or keyboard Backspace/Space. Multiple choices require a selection first."),
                 conversationPanel,
                 choicePanel,
-                historyPanel,
                 closeButton);
         BorderPane root = ScreenShell.titled(title, content, model.footerOptions());
+        StackPane sceneArea = sceneAreaWithHistoryOverlay(root, historyOverlay);
+        root.setCenter(sceneArea);
         HBox footer = (HBox) root.getBottom();
 
         class Refresher implements Runnable {
@@ -79,9 +85,8 @@ public final class ComplexFooterBarTestScreen {
                 refreshChoices(choicesPanel, model, this);
                 choicePanel.setVisible(model.hasChoices());
                 choicePanel.setManaged(model.hasChoices());
-                historyState.setText(model.historyVisible() ? "History display is visible." : "History display is hidden.");
-                historyPanel.setVisible(model.historyVisible());
-                historyPanel.setManaged(model.historyVisible());
+                historyOverlay.setVisible(model.historyVisible());
+                historyOverlay.setManaged(model.historyVisible());
                 refreshHistory(historyContent, model.historyViewModel());
                 refreshFooter(footer, model.footerOptions(), shortcutDisplay);
             }
@@ -106,6 +111,32 @@ public final class ComplexFooterBarTestScreen {
         return scene;
     }
 
+    static StackPane historyOverlay(VBox historyContent) {
+        historyContent.setAlignment(Pos.BOTTOM_LEFT);
+
+        StackPane historyOverlay = new StackPane(historyContent);
+        historyOverlay.setBackground(HISTORY_OVERLAY_BACKGROUND);
+        historyOverlay.setPadding(ScreenShell.PANEL_INSETS);
+        historyOverlay.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
+        StackPane.setAlignment(historyContent, Pos.BOTTOM_LEFT);
+        return historyOverlay;
+    }
+
+    static StackPane sceneAreaWithHistoryOverlay(BorderPane root, StackPane historyOverlay) {
+        Node header = root.getTop();
+        Node body = root.getCenter();
+        root.setTop(null);
+        root.setCenter(null);
+
+        BorderPane sceneContent = new BorderPane();
+        sceneContent.setTop(header);
+        sceneContent.setCenter(body);
+
+        StackPane sceneArea = new StackPane(sceneContent, historyOverlay);
+        sceneArea.setMinSize(0, 0);
+        return sceneArea;
+    }
+
     private static void refreshChoices(
             VBox choicesPanel,
             TestConversationModel model,
@@ -128,7 +159,7 @@ public final class ComplexFooterBarTestScreen {
         }
     }
 
-    private static void refreshHistory(VBox historyContent, ConversationHistoryViewModel viewModel) {
+    static void refreshHistory(VBox historyContent, ConversationHistoryViewModel viewModel) {
         historyContent.getChildren().clear();
         for (String message : viewModel.messages()) {
             historyContent.getChildren().add(new Label(message));

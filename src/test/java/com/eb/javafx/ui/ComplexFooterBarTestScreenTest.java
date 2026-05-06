@@ -4,9 +4,16 @@ import com.eb.javafx.prefs.PreferencesService;
 import com.eb.javafx.testscreen.ManualTest;
 import com.eb.javafx.testscreen.TestScreenApplication;
 import javafx.application.Platform;
+import javafx.geometry.Pos;
+import javafx.scene.layout.BackgroundFill;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -15,6 +22,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
@@ -57,8 +65,14 @@ final class ComplexFooterBarTestScreenTest {
         assertEquals(1, history.entries().size());
         assertEquals("complex-footer-bar-test", history.entries().get(0).dialogId());
         assertEquals(4, history.entries().get(0).rows().size());
-        assertEquals("Welcome to the complex footer bar test.", history.entries().get(0).rows().get(0).text());
-        assertEquals("Choice selected: Ask for details", history.entries().get(0).rows().get(3).text());
+        assertEquals(List.of(
+                        "Welcome to the complex footer bar test.",
+                        "Forward advances this test conversation.",
+                        "Choose a route. Forward and Space wait while multiple choices are unresolved.",
+                        "Choice selected: Ask for details"),
+                history.entries().get(0).rows().stream()
+                        .map(ConversationHistoryRowViewModel::text)
+                        .toList());
 
         model.toggleHistory();
 
@@ -91,6 +105,41 @@ final class ComplexFooterBarTestScreenTest {
         assertTrue(option(model, "back").enabled());
         assertTrue(option(model, "forward").enabled());
         assertEquals("Show history", option(model, "history").label());
+    }
+
+    @Test
+    void historyDisplayOverlaysSceneAboveFooterWithTransparentBlackBackground() {
+        BorderPane root = new BorderPane();
+        VBox header = new VBox();
+        VBox body = new VBox();
+        VBox footer = new VBox();
+        VBox historyContent = new VBox();
+        StackPane historyOverlay = ComplexFooterBarTestScreen.historyOverlay(historyContent);
+        root.setTop(header);
+        root.setCenter(body);
+        root.setBottom(footer);
+
+        StackPane sceneArea = ComplexFooterBarTestScreen.sceneAreaWithHistoryOverlay(root, historyOverlay);
+        root.setCenter(sceneArea);
+
+        assertNull(root.getTop());
+        assertSame(footer, root.getBottom());
+        assertSame(sceneArea, root.getCenter());
+        assertEquals(2, sceneArea.getChildren().size());
+        assertTrue(sceneArea.getChildren().get(0) instanceof BorderPane);
+        BorderPane sceneContent = (BorderPane) sceneArea.getChildren().get(0);
+        assertSame(header, sceneContent.getTop());
+        assertSame(body, sceneContent.getCenter());
+        assertSame(historyOverlay, sceneArea.getChildren().get(1));
+
+        BackgroundFill fill = historyOverlay.getBackground().getFills().get(0);
+        assertEquals(Color.rgb(0, 0, 0, 0.60), fill.getFill());
+        assertEquals(ScreenShell.PANEL_INSETS, historyOverlay.getPadding());
+        assertEquals(Double.MAX_VALUE, historyOverlay.getMaxWidth());
+        assertEquals(Double.MAX_VALUE, historyOverlay.getMaxHeight());
+        assertEquals(Pos.BOTTOM_LEFT, historyContent.getAlignment());
+        assertTrue(historyOverlay.isVisible());
+        assertTrue(historyOverlay.isManaged());
     }
 
     @Test
