@@ -291,6 +291,5 @@ public final class ScreenShell {
         public FooterOption withTooltip(String tooltip) {
             return new FooterOption(id, icon, label, shortcut, tooltip);
         }
-
     }
 }
