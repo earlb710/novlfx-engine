@@ -21,7 +21,7 @@ public final class DisplayAnimationPlayer {
     /**
      * Builds a JavaFX timeline for the supplied node and animation profile.
      *
-     * @param node node whose opacity, scale, and translation properties are animated
+     * @param node node whose opacity, scale, translation, and rotation properties are animated
      * @param animation validated non-empty animation profile
      * @param reducedMotion when true, skips interpolation and applies the final step immediately
      * @return timeline configured with repeat count and auto-reverse behavior
@@ -39,7 +39,8 @@ public final class DisplayAnimationPlayer {
                 new KeyValue(node.scaleXProperty(), node.getScaleX()),
                 new KeyValue(node.scaleYProperty(), node.getScaleY()),
                 new KeyValue(node.translateXProperty(), node.getTranslateX()),
-                new KeyValue(node.translateYProperty(), node.getTranslateY())));
+                new KeyValue(node.translateYProperty(), node.getTranslateY()),
+                new KeyValue(node.rotateProperty(), node.getRotate())));
 
         for (DisplayAnimationStep step : animation.steps()) {
             elapsed = elapsed.add(Duration.millis(step.pauseBeforeMillis()));
@@ -49,7 +50,8 @@ public final class DisplayAnimationPlayer {
                     new KeyValue(node.scaleXProperty(), step.targetScaleX(), step.interpolation().toJavaFxInterpolator()),
                     new KeyValue(node.scaleYProperty(), step.targetScaleY(), step.interpolation().toJavaFxInterpolator()),
                     new KeyValue(node.translateXProperty(), step.targetTranslateX(), step.interpolation().toJavaFxInterpolator()),
-                    new KeyValue(node.translateYProperty(), step.targetTranslateY(), step.interpolation().toJavaFxInterpolator())));
+                    new KeyValue(node.translateYProperty(), step.targetTranslateY(), step.interpolation().toJavaFxInterpolator()),
+                    new KeyValue(node.rotateProperty(), step.targetRotate(), step.interpolation().toJavaFxInterpolator())));
         }
 
         Timeline timeline = new Timeline(keyFrames.toArray(KeyFrame[]::new));
@@ -64,5 +66,6 @@ public final class DisplayAnimationPlayer {
         node.setScaleY(step.targetScaleY());
         node.setTranslateX(step.targetTranslateX());
         node.setTranslateY(step.targetTranslateY());
+        node.setRotate(step.targetRotate());
     }
 }

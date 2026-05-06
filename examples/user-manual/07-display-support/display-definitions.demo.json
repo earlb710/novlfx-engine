@@ -34,7 +34,9 @@
       "autoReverse": true,
       "script": [
         "move 180 translateX 0 translateY -8 ease_out",
-        "move 180 translateX 0 translateY 0 ease_both"
+        "rotate 90 -3 ease_in",
+        "move 180 translateX 0 translateY 0 ease_both",
+        "rotate 90 0 ease_out"
       ]
     },
     {
@@ -47,6 +49,7 @@
           "targetScaleY": 1.0,
           "targetTranslateX": 0,
           "targetTranslateY": 0,
+          "targetRotate": 0,
           "interpolation": "ease_out"
         }
       ]

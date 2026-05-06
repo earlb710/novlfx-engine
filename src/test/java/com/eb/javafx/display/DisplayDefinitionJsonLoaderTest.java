@@ -62,6 +62,7 @@ final class DisplayDefinitionJsonLoaderTest {
                           "targetScaleY": 1.2,
                           "targetTranslateX": 4,
                           "targetTranslateY": -2,
+                          "targetRotate": 30,
                           "interpolation": "ease_both"
                         }
                       ]
@@ -79,6 +80,7 @@ final class DisplayDefinitionJsonLoaderTest {
         assertEquals(100, registry.animation("speaker.fade").steps().get(0).pauseBeforeMillis());
         assertEquals(0.5, registry.animation("speaker.fade").steps().get(1).targetOpacity());
         assertEquals(25, registry.animation("speaker.step").steps().get(0).pauseBeforeMillis());
+        assertEquals(30.0, registry.animation("speaker.step").steps().get(0).targetRotate());
         assertEquals(DisplayInterpolation.EASE_BOTH, registry.animation("speaker.step").steps().get(0).interpolation());
         assertEquals(8.0, registry.animation("speaker.slide").steps().get(0).targetTranslateX());
     }

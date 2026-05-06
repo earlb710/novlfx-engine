@@ -122,6 +122,7 @@ public final class AuthoredDisplayAnimationParser {
             case "fade" -> parseFade(builder, tokens, sourceName, lineNumber);
             case "move" -> parseMove(builder, tokens, sourceName, lineNumber);
             case "scale" -> parseScale(builder, tokens, sourceName, lineNumber);
+            case "rotate" -> parseRotate(builder, tokens, sourceName, lineNumber);
             case "step" -> parseStep(builder, tokens, sourceName, lineNumber);
             default -> throw error(sourceName, lineNumber, "unknown authored animation command: " + tokens.get(0));
         }
@@ -225,6 +226,24 @@ public final class AuthoredDisplayAnimationParser {
         builder.addStep(lineNumber, durationMillis, 0L, parseInterpolation(tokens, endExclusive, sourceName, lineNumber));
     }
 
+    private static void parseRotate(Builder builder, List<String> tokens, String sourceName, int lineNumber) {
+        if (tokens.size() < 3 || tokens.size() > 5) {
+            throw error(sourceName, lineNumber, "rotate syntax is: rotate <durationMillis> <degrees> [interpolation] or rotate <durationMillis> rotate <degrees> [interpolation].");
+        }
+        long durationMillis = parseZeroOrPositiveLong(tokens.get(1), sourceName, lineNumber, "rotate duration");
+        int valueIndex = 2;
+        if ("rotate".equalsIgnoreCase(tokens.get(2)) || "rotation".equalsIgnoreCase(tokens.get(2))) {
+            if (tokens.size() < 4) {
+                throw error(sourceName, lineNumber, "rotate command requires a degree value.");
+            }
+            valueIndex = 3;
+        } else if (tokens.size() > 4) {
+            throw error(sourceName, lineNumber, "rotate syntax is: rotate <durationMillis> <degrees> [interpolation] or rotate <durationMillis> rotate <degrees> [interpolation].");
+        }
+        builder.rotate = parseDouble(tokens.get(valueIndex), sourceName, lineNumber, "rotate");
+        builder.addStep(lineNumber, durationMillis, 0L, parseInterpolation(tokens, valueIndex + 1, sourceName, lineNumber));
+    }
+
     private static void parseStep(Builder builder, List<String> tokens, String sourceName, int lineNumber) {
         if (tokens.size() < 2) {
             throw error(sourceName, lineNumber, "step syntax is: step <durationMillis> [property value ...] [interpolation].");
@@ -249,6 +268,7 @@ public final class AuthoredDisplayAnimationParser {
                 case "scaley" -> builder.scaleY = parseDouble(value, sourceName, lineNumber, "scaleY");
                 case "translatex" -> builder.translateX = parseDouble(value, sourceName, lineNumber, "translateX");
                 case "translatey" -> builder.translateY = parseDouble(value, sourceName, lineNumber, "translateY");
+                case "rotate", "rotation" -> builder.rotate = parseDouble(value, sourceName, lineNumber, "rotate");
                 case "interpolation" -> interpolation = parseInterpolation(value, sourceName, lineNumber);
                 default -> throw error(sourceName, lineNumber, "unsupported step property: " + property);
             }
@@ -365,6 +385,7 @@ public final class AuthoredDisplayAnimationParser {
         private double scaleY = 1.0;
         private double translateX = 0.0;
         private double translateY = 0.0;
+        private double rotate = 0.0;
 
         private Builder(String id, String sourceName, int lineNumber, int repeatCount, boolean autoReverse) {
             this.id = Validation.requireNonBlank(id, "Authored animation id is required.");
@@ -383,6 +404,7 @@ public final class AuthoredDisplayAnimationParser {
                     scaleY,
                     translateX,
                     translateY,
+                    rotate,
                     interpolation)));
         }
 

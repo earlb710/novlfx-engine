@@ -20,12 +20,13 @@ final class AuthoredDisplayAnimationParserTest {
                 move 500 translateX 12 translateY -4 ease_out
                 fade 300 opacity 0.75 linear
                 scale 250 scaleX 1.1 scaleY 1.2 ease_both
+                rotate 125 15 ease_in
                 end
 
                 animation character.idle
                 repeat indefinite
                 scale 120 1.05
-                step 80 pauseBefore 20 opacity 1 scaleX 1 scaleY 1 translateX 0 translateY 0 discrete
+                step 80 pauseBefore 20 opacity 1 scaleX 1 scaleY 1 translateX 0 translateY 0 rotate -5 discrete
                 end
                 """, "animations.atl");
 
@@ -36,7 +37,7 @@ final class AuthoredDisplayAnimationParserTest {
         assertEquals(1, enter.lineNumber());
         assertEquals(2, enter.repeatCount());
         assertEquals(true, enter.autoReverse());
-        assertEquals(4, enter.steps().size());
+        assertEquals(5, enter.steps().size());
 
         DisplayAnimation compiled = enter.compile();
         assertEquals(2, compiled.repeatCount());
@@ -46,9 +47,12 @@ final class AuthoredDisplayAnimationParserTest {
         assertEquals(0.75, compiled.steps().get(2).targetOpacity());
         assertEquals(1.2, compiled.steps().get(3).targetScaleY());
         assertEquals(DisplayInterpolation.EASE_BOTH, compiled.steps().get(3).interpolation());
+        assertEquals(15.0, compiled.steps().get(4).targetRotate());
+        assertEquals(DisplayInterpolation.EASE_IN, compiled.steps().get(4).interpolation());
 
         assertEquals(Animation.INDEFINITE, animations.get(1).repeatCount());
         assertEquals(DisplayInterpolation.DISCRETE, animations.get(1).compile().steps().get(1).interpolation());
+        assertEquals(-5.0, animations.get(1).compile().steps().get(1).targetRotate());
     }
 
     @Test
@@ -94,6 +98,20 @@ final class AuthoredDisplayAnimationParserTest {
                         fade 10 opacity 0.5 springy
                         """, "bad.atl"));
         assertEquals("bad.atl:2: unsupported interpolation: springy", interpolation.getMessage());
+    }
+
+    @Test
+    void parsesNamedRotateCommandForm() {
+        AuthoredDisplayAnimation animation = AuthoredDisplayAnimationParser.parseAnimation(
+                "speaker.turn",
+                List.of("rotate 90 rotation 45 ease-out"),
+                "display.json",
+                7,
+                1,
+                false);
+
+        assertEquals(45.0, animation.compile().steps().get(0).targetRotate());
+        assertEquals(DisplayInterpolation.EASE_OUT, animation.compile().steps().get(0).interpolation());
     }
 
     @Test

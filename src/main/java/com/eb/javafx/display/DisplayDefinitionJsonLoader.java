@@ -129,6 +129,7 @@ public final class DisplayDefinitionJsonLoader {
                 JsonData.optionalDouble(object, "targetScaleY", 1.0, "display animation step targetScaleY"),
                 JsonData.optionalDouble(object, "targetTranslateX", 0.0, "display animation step targetTranslateX"),
                 JsonData.optionalDouble(object, "targetTranslateY", 0.0, "display animation step targetTranslateY"),
+                JsonData.optionalDouble(object, "targetRotate", 0.0, "display animation step targetRotate"),
                 JsonData.enumValue(DisplayInterpolation.class,
                         JsonData.optionalString(object, "interpolation", "display animation step interpolation")
                                 .orElse(DisplayInterpolation.LINEAR.name()),

@@ -16,8 +16,8 @@ final class DisplayAnimationPlayerTest {
         DisplayAnimation animation = new DisplayAnimation(
                 "pulse",
                 List.of(
-                        new DisplayAnimationStep(120, 0, 0.8, 1.0, 1.0, 0.0, 0.0, DisplayInterpolation.LINEAR),
-                        new DisplayAnimationStep(180, 60, 1.0, 1.1, 1.1, 3.0, -2.0, DisplayInterpolation.EASE_BOTH)),
+                        new DisplayAnimationStep(120, 0, 0.8, 1.0, 1.0, 0.0, 0.0, 0.0, DisplayInterpolation.LINEAR),
+                        new DisplayAnimationStep(180, 60, 1.0, 1.1, 1.1, 3.0, -2.0, 12.0, DisplayInterpolation.EASE_BOTH)),
                 Animation.INDEFINITE,
                 true);
 
@@ -33,7 +33,7 @@ final class DisplayAnimationPlayerTest {
         Group node = new Group();
         DisplayAnimation animation = new DisplayAnimation(
                 "reduced",
-                List.of(new DisplayAnimationStep(120, 30, 0.6, 1.2, 1.2, 4.0, -1.0, DisplayInterpolation.EASE_OUT)),
+                List.of(new DisplayAnimationStep(120, 30, 0.6, 1.2, 1.2, 4.0, -1.0, 18.0, DisplayInterpolation.EASE_OUT)),
                 1,
                 false);
 
@@ -42,6 +42,7 @@ final class DisplayAnimationPlayerTest {
         assertEquals(0.6, node.getOpacity());
         assertEquals(1.2, node.getScaleX());
         assertEquals(4.0, node.getTranslateX());
+        assertEquals(18.0, node.getRotate());
         assertEquals(1, timeline.getKeyFrames().size());
     }
 }
