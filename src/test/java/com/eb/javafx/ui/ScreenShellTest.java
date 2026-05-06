@@ -5,6 +5,7 @@ import com.eb.javafx.localization.LocalizationService;
 import com.eb.javafx.localization.LocalizedTextBundle;
 import com.eb.javafx.prefs.PreferencesService;
 import com.eb.javafx.state.GameState;
+import com.eb.javafx.util.VectorImage;
 import javafx.scene.image.Image;
 import javafx.scene.image.WritableImage;
 import javafx.scene.layout.BackgroundImage;
@@ -16,6 +17,8 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import org.junit.jupiter.api.Test;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 
@@ -125,18 +128,45 @@ final class ScreenShellTest {
     }
 
     @Test
+    void footerOptionsExposeDefaultIconResources() throws Exception {
+        assertEquals(List.of(
+                "com/eb/javafx/images/icons/footer-back.svg",
+                "com/eb/javafx/images/icons/footer-history.svg",
+                "com/eb/javafx/images/icons/footer-skip-mode.svg",
+                "com/eb/javafx/images/icons/footer-load.svg",
+                "com/eb/javafx/images/icons/footer-save.svg",
+                "com/eb/javafx/images/icons/footer-quick-save.svg",
+                "com/eb/javafx/images/icons/footer-preferences.svg",
+                "com/eb/javafx/images/icons/footer-forward.svg"), ScreenShell.defaultFooterOptions().stream()
+                .map(ScreenShell.FooterOption::iconResourcePath)
+                .toList());
+
+        for (ScreenShell.FooterOption option : ScreenShell.defaultFooterOptions()) {
+            Path resourcePath = Path.of("src/main/resources").resolve(option.iconResourcePath());
+
+            assertTrue(Files.isRegularFile(resourcePath), option.id() + " icon resource should exist.");
+            assertTrue(VectorImage.isSvgPath(resourcePath), option.id() + " icon resource should be valid SVG.");
+        }
+        assertTrue(VectorImage.isSvgPath(Path.of(
+                "src/main/resources/com/eb/javafx/images/icons/icons-10x10.svg")));
+    }
+
+    @Test
     void footerOptionsCanBeCustomizedWithoutChangingDefaults() {
         List<ScreenShell.FooterOption> customized = ScreenShell.changeFooterTooltip(
-                ScreenShell.changeFooterIcon(
+                ScreenShell.changeFooterIconResourcePath(
+                        ScreenShell.changeFooterIcon(
                         ScreenShell.changeFooterLabel(
                                 ScreenShell.changeFooterShortcut(
                                         ScreenShell.defaultFooterOptions(),
                                         "quick-save",
                                         "Ctrl+Shift+S"),
                                 "quick-save",
-                                "Quicksave"),
+                                 "Quicksave"),
+                         "quick-save",
+                         "💾"),
                         "quick-save",
-                        "💾"),
+                        "com/example/quicksave.svg"),
                 "quick-save",
                 "Immediately write a quick save.");
 
@@ -146,6 +176,7 @@ final class ScreenShellTest {
                 .orElseThrow();
 
         assertEquals("💾 Quicksave (Ctrl+Shift+S)", quickSave.displayText());
+        assertEquals("com/example/quicksave.svg", quickSave.iconResourcePath());
         assertEquals("Quicksave - Keyboard shortcut: Ctrl+Shift+S", quickSave.accessibleText());
         assertEquals("Immediately write a quick save.", quickSave.tooltip());
         assertEquals("⚡ Quick save (Ctrl+Q)", ScreenShell.defaultFooterOptions().get(5).displayText());

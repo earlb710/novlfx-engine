@@ -37,6 +37,7 @@ public final class ScreenShell {
     public static final String SCREEN_FOOTER_OPTION_STYLE_CLASS = "screen-footer-option";
     public static final String SCREEN_FOOTER_OPTION_DISABLED_STYLE_CLASS = "screen-footer-option-disabled";
     public static final String SCREEN_FOOTER_COMPACT_STYLE_CLASS = "screen-footer-compact";
+    public static final String DEFAULT_FOOTER_ICON_RESOURCE_DIRECTORY = "com/eb/javafx/images/icons";
     public static final String SCENE_STATUS_PANEL_STYLE_CLASS = "scene-status-panel";
     public static final String SCENE_DIALOGUE_PANEL_STYLE_CLASS = "scene-dialogue-panel";
     public static final String SCENE_CHOICES_PANEL_STYLE_CLASS = "scene-choices-panel";
@@ -239,6 +240,13 @@ public final class ScreenShell {
         return replaceFooterOption(options, id, option -> option.withIcon(icon));
     }
 
+    public static List<FooterOption> changeFooterIconResourcePath(
+            List<FooterOption> options,
+            String id,
+            String iconResourcePath) {
+        return replaceFooterOption(options, id, option -> option.withIconResourcePath(iconResourcePath));
+    }
+
     public static List<FooterOption> changeFooterLabel(List<FooterOption> options, String id, String label) {
         return replaceFooterOption(options, id, option -> option.withLabel(label));
     }
@@ -370,9 +378,25 @@ public final class ScreenShell {
         return width > 0.0 && width <= compactWidth;
     }
 
-    public record FooterOption(String id, String icon, String label, String shortcut, String tooltip, boolean enabled) {
+    public static String defaultFooterIconResourcePath(String id) {
+        String checkedId = Validation.requireNonBlank(id, "Footer option id is required.");
+        return DEFAULT_FOOTER_ICON_RESOURCE_DIRECTORY + "/footer-" + checkedId + ".svg";
+    }
+
+    public record FooterOption(
+            String id,
+            String icon,
+            String label,
+            String shortcut,
+            String tooltip,
+            boolean enabled,
+            String iconResourcePath) {
         public FooterOption(String id, String icon, String label, String shortcut, String tooltip) {
             this(id, icon, label, shortcut, tooltip, true);
+        }
+
+        public FooterOption(String id, String icon, String label, String shortcut, String tooltip, boolean enabled) {
+            this(id, icon, label, shortcut, tooltip, enabled, defaultFooterIconResourcePath(id));
         }
 
         public FooterOption {
@@ -381,6 +405,7 @@ public final class ScreenShell {
             label = Validation.requireNonBlank(label, "Footer option label is required.");
             shortcut = Validation.requireNonBlank(shortcut, "Footer option shortcut is required.");
             tooltip = tooltip == null ? "" : tooltip;
+            iconResourcePath = iconResourcePath == null ? "" : iconResourcePath;
         }
 
         public String displayText() {
@@ -399,23 +424,27 @@ public final class ScreenShell {
         }
 
         public FooterOption withIcon(String icon) {
-            return new FooterOption(id, icon, label, shortcut, tooltip, enabled);
+            return new FooterOption(id, icon, label, shortcut, tooltip, enabled, iconResourcePath);
+        }
+
+        public FooterOption withIconResourcePath(String iconResourcePath) {
+            return new FooterOption(id, icon, label, shortcut, tooltip, enabled, iconResourcePath);
         }
 
         public FooterOption withLabel(String label) {
-            return new FooterOption(id, icon, label, shortcut, tooltip, enabled);
+            return new FooterOption(id, icon, label, shortcut, tooltip, enabled, iconResourcePath);
         }
 
         public FooterOption withShortcut(String shortcut) {
-            return new FooterOption(id, icon, label, shortcut, tooltip, enabled);
+            return new FooterOption(id, icon, label, shortcut, tooltip, enabled, iconResourcePath);
         }
 
         public FooterOption withTooltip(String tooltip) {
-            return new FooterOption(id, icon, label, shortcut, tooltip, enabled);
+            return new FooterOption(id, icon, label, shortcut, tooltip, enabled, iconResourcePath);
         }
 
         public FooterOption withEnabled(boolean enabled) {
-            return new FooterOption(id, icon, label, shortcut, tooltip, enabled);
+            return new FooterOption(id, icon, label, shortcut, tooltip, enabled, iconResourcePath);
         }
     }
 }
