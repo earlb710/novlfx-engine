@@ -40,9 +40,11 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 final class ScreenShellTest {
     private static final AtomicBoolean JAVAFX_STARTED = new AtomicBoolean();
+    private static final AtomicBoolean JAVAFX_AVAILABLE = new AtomicBoolean(true);
 
     @Test
     void backgroundImageStretchesToScreenBounds() {
@@ -378,7 +380,7 @@ final class ScreenShellTest {
     }
 
     private static void runOnJavaFxThread(Runnable action) throws Exception {
-        startJavaFxToolkit();
+        assumeTrue(startJavaFxToolkit());
         CountDownLatch completed = new CountDownLatch(1);
         AtomicReference<Throwable> failure = new AtomicReference<>();
         Platform.runLater(() -> {
@@ -400,7 +402,11 @@ final class ScreenShellTest {
         assertNull(failure.get(), () -> "JavaFX action failed: " + failure.get());
     }
 
-    private static void startJavaFxToolkit() throws InterruptedException {
+    private static boolean startJavaFxToolkit() throws InterruptedException {
+        if (!JAVAFX_AVAILABLE.get()) {
+            return false;
+        }
+
         CountDownLatch started = new CountDownLatch(1);
         if (JAVAFX_STARTED.compareAndSet(false, true)) {
             try {
@@ -411,11 +417,16 @@ final class ScreenShellTest {
             } catch (IllegalStateException exception) {
                 Platform.setImplicitExit(false);
                 started.countDown();
+            } catch (UnsupportedOperationException exception) {
+                JAVAFX_AVAILABLE.set(false);
+                started.countDown();
+                return false;
             }
         } else {
             Platform.setImplicitExit(false);
             started.countDown();
         }
         assertTrue(started.await(5, TimeUnit.SECONDS), "JavaFX toolkit did not start.");
+        return true;
     }
 }
