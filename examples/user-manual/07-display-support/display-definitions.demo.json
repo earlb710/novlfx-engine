@@ -26,5 +26,30 @@
         "mood": "neutral"
       }
     }
+  ],
+  "animations": [
+    {
+      "id": "hero.bob",
+      "repeatCount": 2,
+      "autoReverse": true,
+      "script": [
+        "move 180 translateX 0 translateY -8 ease_out",
+        "move 180 translateX 0 translateY 0 ease_both"
+      ]
+    },
+    {
+      "id": "hero.fade-in",
+      "steps": [
+        {
+          "durationMillis": 240,
+          "targetOpacity": 1.0,
+          "targetScaleX": 1.0,
+          "targetScaleY": 1.0,
+          "targetTranslateX": 0,
+          "targetTranslateY": 0,
+          "interpolation": "ease_out"
+        }
+      ]
+    }
   ]
 }

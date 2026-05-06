@@ -187,7 +187,7 @@ public final class AuthoredDisplayAnimationParser {
     }
 
     private static void parseScale(Builder builder, List<String> tokens, String sourceName, int lineNumber) {
-        if (tokens.size() < 4 || tokens.size() > 7) {
+        if (tokens.size() < 3 || tokens.size() > 7) {
             throw error(sourceName, lineNumber, "scale syntax is: scale <durationMillis> <value> [interpolation] or scale <durationMillis> scaleX <x> scaleY <y> [interpolation].");
         }
         long durationMillis = parseZeroOrPositiveLong(tokens.get(1), sourceName, lineNumber, "scale duration");
