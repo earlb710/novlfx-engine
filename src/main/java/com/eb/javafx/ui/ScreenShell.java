@@ -172,12 +172,10 @@ public final class ScreenShell {
      */
     public static HBox footerBar(List<FooterOption> footerOptions) {
         Validation.requireNonNull(footerOptions, "Footer options are required.");
-        HBox footer = new HBox(FOOTER_SPACING);
+        HBox footer = new HBox();
         footer.getStyleClass().add(SCREEN_FOOTER_BAR_STYLE_CLASS);
         footer.setMaxHeight(Region.USE_PREF_SIZE);
-        setFooterTransparency(footer, DEFAULT_FOOTER_TRANSPARENCY);
-        footer.setOnMouseEntered(event -> setFooterTransparency(footer, HOVER_FOOTER_TRANSPARENCY));
-        footer.setOnMouseExited(event -> setFooterTransparency(footer, DEFAULT_FOOTER_TRANSPARENCY));
+        configureDefaultFooterPresentation(footer);
         for (FooterOption option : footerOptions) {
             Validation.requireNonNull(option, "Footer option is required.");
             Label label = new Label();
@@ -187,6 +185,14 @@ public final class ScreenShell {
             footer.getChildren().add(label);
         }
         return footer;
+    }
+
+    static void configureDefaultFooterPresentation(HBox footer) {
+        Validation.requireNonNull(footer, "Footer node is required.");
+        footer.setSpacing(FOOTER_SPACING);
+        setFooterTransparency(footer, DEFAULT_FOOTER_TRANSPARENCY);
+        footer.setOnMouseEntered(event -> setFooterTransparency(footer, HOVER_FOOTER_TRANSPARENCY));
+        footer.setOnMouseExited(event -> setFooterTransparency(footer, DEFAULT_FOOTER_TRANSPARENCY));
     }
 
     static void pinFooterToBottom(BorderPane screen) {

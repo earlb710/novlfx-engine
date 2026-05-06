@@ -133,7 +133,9 @@ final class ScreenShellTest {
 
     @Test
     void footerBarDefaultsToDimOpacityAndRestoresOnHover() {
-        HBox footer = ScreenShell.footerBar();
+        HBox footer = new HBox();
+
+        ScreenShell.configureDefaultFooterPresentation(footer);
 
         assertEquals(14.0, footer.getSpacing());
         assertEquals(0.5, footer.getOpacity());
