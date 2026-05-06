@@ -15,6 +15,7 @@ import java.util.regex.Pattern;
  */
 final class ButtonVisuals {
     static final String BUTTON_SHAPE_RESOURCE = "/com/eb/javafx/images/svg/button-pill.svg";
+    static final String BUTTON_STYLE_CLASS = "svg-button";
     private static final Pattern PATH_DATA_PATTERN = Pattern.compile("<path\\b[^>]*\\bd\\s*=\\s*(['\"])(.*?)\\1", Pattern.DOTALL);
     private static final Pattern SAFE_PATH_DATA_PATTERN = Pattern.compile("[MmZzLlHhVvCcSsQqTtAaEe0-9+\\-.,\\s]+");
     private static final System.Logger LOGGER = System.getLogger(ButtonVisuals.class.getName());
@@ -24,12 +25,14 @@ final class ButtonVisuals {
     }
 
     static Button apply(Button button) {
-        if (!SHAPE_PATH.isBlank()) {
-            SVGPath shape = new SVGPath();
-            shape.setContent(SHAPE_PATH);
+        SVGPath shape = createShape();
+        if (shape != null) {
             button.setShape(shape);
             button.setScaleShape(true);
             button.setCenterShape(false);
+        }
+        if (!button.getStyleClass().contains(BUTTON_STYLE_CLASS)) {
+            button.getStyleClass().add(BUTTON_STYLE_CLASS);
         }
         button.setMinSize(Region.USE_PREF_SIZE, Region.USE_PREF_SIZE);
         button.setMaxSize(Region.USE_PREF_SIZE, Region.USE_PREF_SIZE);
@@ -38,6 +41,15 @@ final class ButtonVisuals {
 
     static String buttonShapePath() {
         return SHAPE_PATH;
+    }
+
+    static SVGPath createShape() {
+        if (SHAPE_PATH.isBlank()) {
+            return null;
+        }
+        SVGPath shape = new SVGPath();
+        shape.setContent(SHAPE_PATH);
+        return shape;
     }
 
     private static String loadShapePath() {

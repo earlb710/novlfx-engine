@@ -20,6 +20,7 @@ import javafx.scene.layout.BorderStrokeStyle;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
+import javafx.scene.shape.SVGPath;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Files;
@@ -29,6 +30,7 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -129,17 +131,24 @@ final class ScreenShellTest {
     }
 
     @Test
-    void defaultStylesMakeButtonsBoldLabelSizedAndSvgShaped() throws Exception {
+    void defaultStylesMakeButtonsBoldAndLabelSized() throws Exception {
         String css = Files.readString(Path.of("src/main/resources/com/eb/javafx/ui/default.css"));
-        String svg = Files.readString(Path.of("src/main/resources/com/eb/javafx/images/svg/button-pill.svg"));
 
         assertTrue(css.contains("-fx-font-size: 20px;"));
         assertTrue(css.contains("-fx-font-weight: bold;"));
         assertTrue(css.contains("-fx-padding: 8px 18px;"));
-        assertTrue(css.contains("-fx-shape: \"" + ButtonVisuals.buttonShapePath() + "\";"));
+    }
+
+    @Test
+    void buttonVisualsLoadShapeFromButtonPillSvg() throws Exception {
+        String svg = Files.readString(Path.of("src/main/resources/com/eb/javafx/images/svg/button-pill.svg"));
+
         assertTrue(svg.contains("id=\"button-shape\""));
         assertEquals("M 24 0 H 156 Q 180 0 180 24 Q 180 48 156 48 H 24 Q 0 48 0 24 Q 0 0 24 0 Z",
                 ButtonVisuals.buttonShapePath());
+        SVGPath shape = ButtonVisuals.createShape();
+        assertNotNull(shape);
+        assertEquals(ButtonVisuals.buttonShapePath(), shape.getContent());
     }
 
     @Test
