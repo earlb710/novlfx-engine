@@ -45,18 +45,9 @@ final class ButtonVisuals {
             }
             String svg = new String(stream.readAllBytes(), StandardCharsets.UTF_8);
             Matcher matcher = PATH_DATA_PATTERN.matcher(svg);
-            return matcher.find() ? unescapeXmlAttribute(matcher.group(2)) : "";
+            return matcher.find() ? matcher.group(2) : "";
         } catch (IOException exception) {
             return "";
         }
-    }
-
-    private static String unescapeXmlAttribute(String value) {
-        return value
-                .replace("&quot;", "\"")
-                .replace("&apos;", "'")
-                .replace("&lt;", "<")
-                .replace("&gt;", ">")
-                .replace("&amp;", "&");
     }
 }

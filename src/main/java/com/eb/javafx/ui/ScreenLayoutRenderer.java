@@ -311,9 +311,8 @@ public final class ScreenLayoutRenderer {
 
     private static Button actionButton(RouteContext context, ScreenActionViewModel action, String styleClass) {
         Button button = context == null
-                ? new Button(action.label())
+                ? ButtonVisuals.apply(new Button(action.label()))
                 : ScreenNavigation.button(context, action.label(), action.routeId());
-        ButtonVisuals.apply(button);
         button.getStyleClass().add(styleClass);
         button.setDisable(!action.enabled());
         return button;
