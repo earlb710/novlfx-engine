@@ -2,6 +2,7 @@ package com.eb.javafx.save;
 
 import com.eb.javafx.gamesupport.GameDateTime;
 import com.eb.javafx.progress.ProgressSnapshot;
+import com.eb.javafx.scene.SceneCheckpointLog;
 import com.eb.javafx.scene.SceneFlowState;
 import com.eb.javafx.util.Validation;
 
@@ -13,6 +14,7 @@ import com.eb.javafx.util.Validation;
  */
 public record ReusableGameplaySnapshot(
         SceneFlowState sceneFlowState,
+        SceneCheckpointLog sceneCheckpointLog,
         GameDateTime gameTime,
         ProgressSnapshot progress,
         InventorySnapshot inventory,
@@ -23,9 +25,31 @@ public record ReusableGameplaySnapshot(
     public ReusableGameplaySnapshot(
             SceneFlowState sceneFlowState,
             GameDateTime gameTime,
+            ProgressSnapshot progress,
+            InventorySnapshot inventory,
+            WardrobeSnapshot wardrobe,
+            CharacterStatesSnapshot characters,
+            JournalSnapshot journal,
+            LocationOccupancySnapshot locationOccupancy) {
+        this(
+                sceneFlowState,
+                SceneCheckpointLog.empty(),
+                gameTime,
+                progress,
+                inventory,
+                wardrobe,
+                characters,
+                journal,
+                locationOccupancy);
+    }
+
+    public ReusableGameplaySnapshot(
+            SceneFlowState sceneFlowState,
+            GameDateTime gameTime,
             ProgressSnapshot progress) {
         this(
                 sceneFlowState,
+                SceneCheckpointLog.empty(),
                 gameTime,
                 progress,
                 InventorySnapshot.empty(),
@@ -37,6 +61,7 @@ public record ReusableGameplaySnapshot(
 
     public ReusableGameplaySnapshot {
         sceneFlowState = Validation.requireNonNull(sceneFlowState, "Scene flow state is required.");
+        sceneCheckpointLog = Validation.requireNonNull(sceneCheckpointLog, "Scene checkpoint log is required.");
         gameTime = Validation.requireNonNull(gameTime, "Game time is required.");
         progress = Validation.requireNonNull(progress, "Progress snapshot is required.");
         inventory = Validation.requireNonNull(inventory, "Inventory snapshot is required.");

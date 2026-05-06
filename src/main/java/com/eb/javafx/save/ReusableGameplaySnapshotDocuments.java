@@ -2,11 +2,14 @@ package com.eb.javafx.save;
 
 import com.eb.javafx.gamesupport.TimeSaveSnapshots;
 import com.eb.javafx.progress.ProgressSnapshotCodec;
+import com.eb.javafx.scene.SceneCheckpointLog;
+import com.eb.javafx.scene.SceneCheckpointLogJson;
 import com.eb.javafx.scene.SceneFlowStateJson;
 import com.eb.javafx.util.Validation;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 /** Helpers for composing reusable gameplay slices into app-owned save snapshot documents. */
 public final class ReusableGameplaySnapshotDocuments {
@@ -29,6 +32,7 @@ public final class ReusableGameplaySnapshotDocuments {
     public static SaveSnapshotRegistry reusableGameplayRegistry() {
         SaveSnapshotRegistry registry = new SaveSnapshotRegistry();
         registry.registerRequired(SceneFlowStateJson.SNAPSHOT_SECTION_ID, SceneFlowStateJson.SNAPSHOT_SCHEMA_VERSION);
+        registry.registerOptional(SceneCheckpointLogJson.SNAPSHOT_SECTION_ID, SceneCheckpointLogJson.SNAPSHOT_SCHEMA_VERSION);
         registry.registerRequired(TimeSaveSnapshots.SNAPSHOT_SECTION_ID, TimeSaveSnapshots.SNAPSHOT_SCHEMA_VERSION);
         registry.registerRequired(PROGRESS_CODEC.sectionId(), PROGRESS_CODEC.schemaVersion());
         registry.registerRequired(INVENTORY_CODEC.sectionId(), INVENTORY_CODEC.schemaVersion());
@@ -47,6 +51,7 @@ public final class ReusableGameplaySnapshotDocuments {
                 Validation.requireNonNull(snapshot, "Reusable gameplay snapshot is required.");
         List<SaveSnapshotSection> sections = new ArrayList<>();
         sections.add(SceneFlowStateJson.toSnapshotSection(checkedSnapshot.sceneFlowState()));
+        sections.add(SceneCheckpointLogJson.toSnapshotSection(checkedSnapshot.sceneCheckpointLog()));
         sections.add(TimeSaveSnapshots.toSnapshotSection(checkedSnapshot.gameTime()));
         sections.add(PROGRESS_CODEC.toSection(checkedSnapshot.progress()));
         sections.add(INVENTORY_CODEC.toSection(checkedSnapshot.inventory()));
@@ -63,6 +68,9 @@ public final class ReusableGameplaySnapshotDocuments {
         List<SaveSnapshotSection> sections = reusableGameplayRegistry().decompose(document);
         return new ReusableGameplaySnapshot(
                 SceneFlowStateJson.fromSnapshotSection(requiredSection(sections, SceneFlowStateJson.SNAPSHOT_SECTION_ID)),
+                optionalSection(sections, SceneCheckpointLogJson.SNAPSHOT_SECTION_ID)
+                        .map(SceneCheckpointLogJson::fromSnapshotSection)
+                        .orElse(SceneCheckpointLog.empty()),
                 TimeSaveSnapshots.fromSnapshotSection(requiredSection(sections, TimeSaveSnapshots.SNAPSHOT_SECTION_ID)),
                 PROGRESS_CODEC.fromSection(requiredSection(sections, PROGRESS_CODEC.sectionId())),
                 INVENTORY_CODEC.fromSection(requiredSection(sections, INVENTORY_CODEC.sectionId())),
@@ -70,6 +78,12 @@ public final class ReusableGameplaySnapshotDocuments {
                 CHARACTERS_CODEC.fromSection(requiredSection(sections, CHARACTERS_CODEC.sectionId())),
                 JOURNAL_CODEC.fromSection(requiredSection(sections, JOURNAL_CODEC.sectionId())),
                 LOCATION_OCCUPANCY_CODEC.fromSection(requiredSection(sections, LOCATION_OCCUPANCY_CODEC.sectionId())));
+    }
+
+    private static Optional<SaveSnapshotSection> optionalSection(List<SaveSnapshotSection> sections, String sectionId) {
+        return sections.stream()
+                .filter(section -> sectionId.equals(section.sectionId()))
+                .findFirst();
     }
 
     private static SaveSnapshotSection requiredSection(List<SaveSnapshotSection> sections, String sectionId) {
