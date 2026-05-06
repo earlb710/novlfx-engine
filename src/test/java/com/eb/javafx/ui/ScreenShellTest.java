@@ -132,6 +132,22 @@ final class ScreenShellTest {
     }
 
     @Test
+    void footerBarDefaultsToDimOpacityAndRestoresOnHover() {
+        HBox footer = ScreenShell.footerBar();
+
+        assertEquals(14.0, footer.getSpacing());
+        assertEquals(0.5, footer.getOpacity());
+
+        footer.getOnMouseEntered().handle(null);
+
+        assertEquals(1.0, footer.getOpacity());
+
+        footer.getOnMouseExited().handle(null);
+
+        assertEquals(0.5, footer.getOpacity());
+    }
+
+    @Test
     void defaultStylesMakeButtonsBoldAndLabelSized() throws Exception {
         String css = Files.readString(Path.of("src/main/resources/com/eb/javafx/ui/default.css"));
 
@@ -338,12 +354,13 @@ final class ScreenShellTest {
 
         assertTrue(footer.getStyleClass().contains(ScreenShell.SCREEN_FOOTER_COMPACT_STYLE_CLASS));
         assertEquals("‹", firstOption.displayText(false));
-        assertEquals(4.0, footer.getSpacing());
+        assertEquals(6.0, footer.getSpacing());
 
         ScreenShell.setFooterCompact(footer, false);
         ScreenShell.setFooterLabelsVisible(footer, false);
 
         assertFalse(footer.getStyleClass().contains(ScreenShell.SCREEN_FOOTER_COMPACT_STYLE_CLASS));
+        assertEquals(14.0, footer.getSpacing());
         assertEquals("‹ Back (Backspace)", firstOption.displayText());
     }
 
