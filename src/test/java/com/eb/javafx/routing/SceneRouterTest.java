@@ -47,7 +47,7 @@ final class SceneRouterTest {
         router.registerDefaultRoutes(null, preferencesService, registry, imageDisplayRegistry, saveLoadService, uiTheme);
         router.validateRouteDefinitions(registry);
 
-        assertEquals(11, router.routes().size());
+        assertEquals(12, router.routes().size());
         assertEquals(router.routes().keySet(), router.routeDescriptors().keySet());
         assertTrue(router.routeDescriptors().get(SceneRouter.MAIN_MENU_ROUTE).migrated());
         assertTrue(router.routeDescriptors().get(SceneRouter.PREFERENCES_ROUTE).migrated());
@@ -62,6 +62,9 @@ final class SceneRouterTest {
         assertEquals("ui.conversationHistory.title", router.routeDescriptors().get(SceneRouter.CONVERSATION_HISTORY_ROUTE).titleDefinition());
         assertEquals("ui.displayBindings.title", router.routeDescriptors().get(SceneRouter.DISPLAY_BINDINGS_ROUTE).titleDefinition());
         assertEquals("ui.captureTest.title", router.routeDescriptors().get(SceneRouter.CAPTURE_TEST_ROUTE).titleDefinition());
+        assertEquals(
+                "ui.complexFooterBarTest.title",
+                router.routeDescriptors().get(SceneRouter.COMPLEX_FOOTER_BAR_TEST_ROUTE).titleDefinition());
     }
 
     @Test

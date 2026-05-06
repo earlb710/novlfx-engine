@@ -1,6 +1,7 @@
 package com.eb.javafx.routing;
 
 import com.eb.javafx.ui.CaptureTestScreen;
+import com.eb.javafx.ui.ComplexFooterBarTestScreen;
 import com.eb.javafx.ui.ConversationHistoryScreen;
 import com.eb.javafx.ui.DisplayBindingsScreen;
 import com.eb.javafx.ui.HudSummaryScreen;
@@ -97,6 +98,17 @@ public final class DefaultRouteModule implements RouteModule {
                         "Small routed JavaFX screen that captures field values with buttons."),
                 context -> CaptureTestScreen.createScene(
                         context.contentRegistry().definition("ui.captureTest.title"),
+                        context.preferencesService(),
+                        context.uiTheme(),
+                        () -> context.navigateTo(SceneRouter.MAIN_MENU_ROUTE)));
+        router.registerRoute(new RouteDescriptor(
+                        SceneRouter.COMPLEX_FOOTER_BAR_TEST_ROUTE,
+                        "ui.complexFooterBarTest.title",
+                        RouteCategory.DIALOGUE,
+                        true,
+                        "Diagnostic screen for testing footer back, forward, and history controls."),
+                context -> ComplexFooterBarTestScreen.createScene(
+                        context.contentRegistry().definition("ui.complexFooterBarTest.title"),
                         context.preferencesService(),
                         context.uiTheme(),
                         () -> context.navigateTo(SceneRouter.MAIN_MENU_ROUTE)));

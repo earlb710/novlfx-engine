@@ -39,6 +39,7 @@ public final class SceneRouter {
     public static final String CONVERSATION_HISTORY_ROUTE = "conversation-history";
     public static final String DISPLAY_BINDINGS_ROUTE = "display-bindings";
     public static final String CAPTURE_TEST_ROUTE = "capture-test";
+    public static final String COMPLEX_FOOTER_BAR_TEST_ROUTE = "complex-footer-bar-test";
 
     private final Map<String, RouteFactory> routes = new LinkedHashMap<>();
     private final Map<String, RouteDescriptor> routeDescriptors = new LinkedHashMap<>();
