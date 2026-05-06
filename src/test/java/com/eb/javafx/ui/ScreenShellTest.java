@@ -115,7 +115,7 @@ final class ScreenShellTest {
 
         assertTrue(footer.isManaged());
         assertEquals(Pos.BOTTOM_CENTER, BorderPane.getAlignment(footer));
-        assertEquals(ScreenShell.OUTER_INSETS, BorderPane.getMargin(footer));
+        assertEquals(ScreenShell.FOOTER_INSETS, BorderPane.getMargin(footer));
     }
 
     @Test
@@ -124,6 +124,7 @@ final class ScreenShellTest {
 
         assertTrue(css.contains("-fx-background-color: rgba(10, 20, 38, 0.50);"));
         assertTrue(css.contains("-fx-border-width: 0;"));
+        assertTrue(css.contains("-fx-padding: 1px;"));
         assertTrue(css.contains("-fx-font-size: 11px;"));
     }
 

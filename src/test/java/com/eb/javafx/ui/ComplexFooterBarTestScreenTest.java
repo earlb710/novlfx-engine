@@ -64,12 +64,13 @@ final class ComplexFooterBarTestScreenTest {
         ConversationHistoryViewModel history = model.historyViewModel();
         assertEquals(1, history.entries().size());
         assertEquals("complex-footer-bar-test", history.entries().get(0).dialogId());
-        assertEquals(4, history.entries().get(0).rows().size());
+        assertEquals(5, history.entries().get(0).rows().size());
         assertEquals(List.of(
                         "Welcome to the complex footer bar test.",
                         "Forward advances this test conversation.",
-                        "Choose a route. Forward and Space wait while multiple choices are unresolved.",
-                        "Choice selected: Ask for details"),
+                        "Choose a route. Selecting a choice advances automatically.",
+                        "Choice selected: Ask for details",
+                        "Back returns to the previous conversation line."),
                 history.entries().get(0).rows().stream()
                         .map(ConversationHistoryRowViewModel::text)
                         .toList());
@@ -94,17 +95,28 @@ final class ComplexFooterBarTestScreenTest {
         assertEquals("Line 3 of 5", model.positionText());
         assertFalse(option(model, "forward").enabled());
 
-        model.forward();
-
-        assertEquals("Line 3 of 5", model.positionText());
-
         model.selectChoice("direct");
-        model.forward();
+
+        assertEquals("Line 4 of 5", model.positionText());
         model.toggleHistory();
 
         assertTrue(option(model, "back").enabled());
         assertTrue(option(model, "forward").enabled());
         assertEquals("Show history", option(model, "history").label());
+    }
+
+    @Test
+    void selectingChoiceAutomaticallyAdvancesConversation() {
+        ComplexFooterBarTestScreen.TestConversationModel model =
+                new ComplexFooterBarTestScreen.TestConversationModel();
+
+        model.forward();
+        model.forward();
+        model.selectChoice("patient");
+
+        assertEquals("Line 4 of 5", model.positionText());
+        assertEquals("Guide", model.currentSpeakerLabel());
+        assertEquals("Back returns to the previous conversation line.", model.currentText());
     }
 
     @Test

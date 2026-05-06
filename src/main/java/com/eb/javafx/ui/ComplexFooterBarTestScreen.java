@@ -67,7 +67,7 @@ public final class ComplexFooterBarTestScreen {
 
         VBox content = new VBox(
                 ScreenShell.BODY_SPACING,
-                new Label("Use footer Back/Forward or keyboard Backspace/Space. Multiple choices require a selection first."),
+                new Label("Use footer Back/Forward or keyboard Backspace/Space. Selecting a choice advances automatically."),
                 conversationPanel,
                 choicePanel,
                 closeButton);
@@ -153,7 +153,7 @@ public final class ComplexFooterBarTestScreen {
             choicesPanel.getChildren().add(choiceButton);
         }
         if (model.hasChoices() && model.selectedChoiceId() == null) {
-            choicesPanel.getChildren().add(new Label("Select a choice before Forward or Space can advance."));
+            choicesPanel.getChildren().add(new Label("Select a choice to advance."));
         } else if (model.selectedChoiceId() != null) {
             choicesPanel.getChildren().add(new Label("Selected: " + model.selectedChoiceText()));
         }
@@ -231,7 +231,7 @@ public final class ComplexFooterBarTestScreen {
                             List.of()),
                     new TestConversationLine(
                             DialogSpeaker.text("guide", "Guide"),
-                            "Choose a route. Forward and Space wait while multiple choices are unresolved.",
+                            "Choose a route. Selecting a choice advances automatically.",
                             List.of(
                                     new TestConversationChoice("patient", "Ask for details"),
                                     new TestConversationChoice("direct", "Move ahead"))),
@@ -321,6 +321,9 @@ public final class ComplexFooterBarTestScreen {
                         DialogSpeaker.text("mc", "MC"),
                         "Choice selected: " + selectedChoiceText());
                 choiceRecorded = true;
+            }
+            if (canForward()) {
+                forward();
             }
         }
 

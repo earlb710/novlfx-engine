@@ -28,7 +28,7 @@
     /* Large radii make the footer read as a pill at any supported height. */
     -fx-border-radius: 999px;
     -fx-background-radius: 999px;
-    -fx-padding: 8px 12px;
+    -fx-padding: 1px;
 }
 
 .screen-footer-option {
@@ -41,7 +41,7 @@
 }
 
 .screen-footer-compact {
-    -fx-padding: 6px 10px;
+    -fx-padding: 1px;
 }
 
 .scene-status-panel,

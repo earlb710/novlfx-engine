@@ -76,6 +76,7 @@ public final class ScreenShell {
     public static final double BODY_SPACING = 12;
     public static final Insets OUTER_INSETS = new Insets(16);
     public static final Insets PANEL_INSETS = new Insets(16);
+    static final Insets FOOTER_INSETS = new Insets(1);
     private static final Insets OUTER_INSETS_WITHOUT_BOTTOM = new Insets(
             OUTER_INSETS.getTop(),
             OUTER_INSETS.getRight(),
@@ -180,7 +181,7 @@ public final class ScreenShell {
         if (screen.getBottom() != null) {
             screen.getBottom().setManaged(true);
             BorderPane.setAlignment(screen.getBottom(), Pos.BOTTOM_CENTER);
-            BorderPane.setMargin(screen.getBottom(), OUTER_INSETS);
+            BorderPane.setMargin(screen.getBottom(), FOOTER_INSETS);
         }
     }
 
