@@ -109,14 +109,12 @@ public final class ConversationHistoryScreen {
 
         int rowIndex = 0;
         for (ConversationHistoryRowViewModel row : entry.rows()) {
-            Label speaker = multilineLabel(row.speakerLabel() == null ? "" : row.speakerLabel());
+            Label speaker = multilineLabel(historySpeakerText(row));
             speaker.getStyleClass().add(HISTORY_SPEAKER_STYLE_CLASS);
             speaker.setAlignment(Pos.TOP_RIGHT);
             speaker.setMaxWidth(Double.MAX_VALUE);
 
-            Label message = multilineLabel(row.speakerLabel() == null || row.speakerLabel().isBlank()
-                    ? rowText(row)
-                    : row.text());
+            Label message = multilineLabel(historyMessageText(row));
             message.getStyleClass().add(HISTORY_MESSAGE_STYLE_CLASS);
             message.setMaxWidth(Double.MAX_VALUE);
             GridPane.setHgrow(message, Priority.ALWAYS);
@@ -132,6 +130,16 @@ public final class ConversationHistoryScreen {
         Label label = new Label(text);
         label.setWrapText(true);
         return label;
+    }
+
+    static String historySpeakerText(ConversationHistoryRowViewModel row) {
+        return row.speakerLabel() == null ? "" : row.speakerLabel();
+    }
+
+    static String historyMessageText(ConversationHistoryRowViewModel row) {
+        return row.speakerLabel() == null || row.speakerLabel().isBlank()
+                ? rowText(row)
+                : row.text();
     }
 
     private static String formatEntryHeader(ConversationHistoryEntryViewModel entry) {

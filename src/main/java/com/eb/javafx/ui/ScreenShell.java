@@ -590,7 +590,7 @@ public final class ScreenShell {
         }
     }
 
-    private static String footerTextWithoutFallbackIcon(FooterOption option, String displayText) {
+    static String footerTextWithoutFallbackIcon(FooterOption option, String displayText) {
         if (displayText.equals(option.icon())) {
             return "";
         }

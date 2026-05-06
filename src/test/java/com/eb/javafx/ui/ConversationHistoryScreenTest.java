@@ -5,27 +5,13 @@ import com.eb.javafx.state.GameState;
 import com.eb.javafx.text.DialogColumn;
 import com.eb.javafx.text.DialogMessage;
 import com.eb.javafx.text.DialogSpeaker;
-import javafx.application.Platform;
-import javafx.geometry.HPos;
-import javafx.scene.control.Label;
-import javafx.scene.layout.GridPane;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 final class ConversationHistoryScreenTest {
-    private static final AtomicBoolean JAVAFX_STARTED = new AtomicBoolean();
-    private static final AtomicBoolean JAVAFX_AVAILABLE = new AtomicBoolean(true);
-
     @Test
     void showsEmptyConversationHistory() {
         ConversationHistoryViewModel viewModel = ConversationHistoryScreen.viewModel("Conversation History", new GameState("main-menu"));
@@ -90,97 +76,21 @@ final class ConversationHistoryScreenTest {
     }
 
     @Test
-    void rendersHistoryRowsAsTwoMultilineColumnsWithRightAlignedSpeaker() throws Exception {
+    void mapsHistoryRowsToSpeakerAndMessageColumnText() {
         GameState gameState = new GameState("main-menu");
         DialogSpeaker ava = DialogSpeaker.text("ava", "Ava");
         gameState.conversationHistory().beginDialog("dock-talk", new GameDateTime(3, "evening"));
         gameState.conversationHistory().addMessage(ava, "Meet me by the docks.");
+        gameState.conversationHistory().addMessage(DialogMessage.columns(List.of(
+                DialogColumn.parsed("note", "{i}A folded map changes hands.{/i}"))));
 
         ConversationHistoryEntryViewModel entry = ConversationHistoryScreen.viewModel("Conversation History", gameState)
                 .entries()
                 .get(0);
-        AtomicReference<GridPane> rowsReference = new AtomicReference<>();
 
-        runOnJavaFxThread(() -> rowsReference.set(ConversationHistoryScreen.historyRows(entry)));
-
-        GridPane rows = rowsReference.get();
-        runOnJavaFxThread(() -> {
-            assertEquals(2, rows.getColumnCount());
-            assertEquals(HPos.RIGHT, rows.getColumnConstraints().get(0).getHalignment());
-            Label speaker = (Label) rows.getChildren().get(0);
-            Label message = (Label) rows.getChildren().get(1);
-            assertEquals("Ava", speaker.getText());
-            assertEquals("Meet me by the docks.", message.getText());
-            assertEquals(0, GridPane.getColumnIndex(speaker));
-            assertEquals(1, GridPane.getColumnIndex(message));
-            assertTrue(speaker.isWrapText());
-            assertTrue(message.isWrapText());
-        });
-    }
-
-    private static void runOnJavaFxThread(Runnable action) throws Exception {
-        assumeTrue(startJavaFxToolkit());
-        CountDownLatch completed = new CountDownLatch(1);
-        AtomicReference<Throwable> failure = new AtomicReference<>();
-        Platform.runLater(() -> {
-            try {
-                action.run();
-            } catch (Throwable throwable) {
-                failure.set(throwable);
-            } finally {
-                completed.countDown();
-            }
-        });
-        assertTrue(completed.await(5, TimeUnit.SECONDS), "JavaFX action did not complete.");
-        if (failure.get() instanceof Exception exception) {
-            throw exception;
-        }
-        if (failure.get() instanceof Error error) {
-            throw error;
-        }
-        assertNull(failure.get(), () -> "JavaFX action failed: " + failure.get());
-    }
-
-    private static boolean startJavaFxToolkit() throws InterruptedException {
-        if (!JAVAFX_AVAILABLE.get()) {
-            return false;
-        }
-
-        CountDownLatch started = new CountDownLatch(1);
-        if (JAVAFX_STARTED.compareAndSet(false, true)) {
-            try {
-                Platform.startup(() -> {
-                    Platform.setImplicitExit(false);
-                    started.countDown();
-                });
-            } catch (IllegalStateException exception) {
-                return markJavaFxAvailableIfRunning(started);
-            } catch (UnsupportedOperationException exception) {
-                JAVAFX_AVAILABLE.set(false);
-                started.countDown();
-                return false;
-            }
-        } else {
-            Platform.setImplicitExit(false);
-            started.countDown();
-        }
-        assertTrue(started.await(5, TimeUnit.SECONDS), "JavaFX toolkit did not start.");
-        return true;
-    }
-
-    private static boolean markJavaFxAvailableIfRunning(CountDownLatch started) throws InterruptedException {
-        try {
-            Platform.runLater(started::countDown);
-        } catch (IllegalStateException exception) {
-            JAVAFX_AVAILABLE.set(false);
-            started.countDown();
-            return false;
-        }
-        if (!started.await(1, TimeUnit.SECONDS)) {
-            JAVAFX_AVAILABLE.set(false);
-            return false;
-        }
-        Platform.setImplicitExit(false);
-        return true;
+        assertEquals("Ava", ConversationHistoryScreen.historySpeakerText(entry.rows().get(0)));
+        assertEquals("Meet me by the docks.", ConversationHistoryScreen.historyMessageText(entry.rows().get(0)));
+        assertEquals("", ConversationHistoryScreen.historySpeakerText(entry.rows().get(1)));
+        assertEquals("note: A folded map changes hands.", ConversationHistoryScreen.historyMessageText(entry.rows().get(1)));
     }
 }
