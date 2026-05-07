@@ -317,6 +317,15 @@ The `ui` package provides reusable JavaFX surfaces and helpers:
 - `UiTheme` loads the reusable stylesheet from `src/main/resources/com/eb/javafx/ui/default.css`.
 - `StartupErrorReporter`, `StartupFailureException`, and `StartupFailureCategory` provide structured startup diagnostics.
 
+### SVG button styles
+
+`ButtonVisuals` provides two reusable SVG-backed button styles:
+
+- `applySvgArtwork(Button)` renders the standard pill button using `button-pill-long.svg`.
+- `applyBevelSvgArtwork(Button)` renders the rectangular beveled button using `button-bevel.svg`.
+
+Both styles rasterize the SVG artwork to the requested button size, support pressed-state gradient reversal, and keep the button text centered horizontally and vertically, including multiline labels. The text node exposes the `svg-button-artwork-text` style class, so applications can set the caption color in CSS with `-fx-fill`, for example by overriding `.svg-button-artwork-text` or state selectors such as `.svg-button:hover .svg-button-artwork-text`. The SVG artwork fill/gradient itself comes from the SVG resource; use a different SVG resource or engine extension if an application needs to recolor the button body rather than the caption.
+
 ### Screen layouts, reusable screens, and editable screen designs
 
 Use `ScreenViewModel` when the screen can be described as a title, a small number of informational lines, and route-backed actions. Use `ScreenLayoutModel` when the screen needs a more explicit structure with named sections, form-style rows, menu/action lists, dialogue/status panels, preview cards, or a sidebar/content split. `ScreenLayoutRenderer` turns that UI-neutral layout data into JavaFX nodes and applies the stable engine style hooks from `default.css`.

@@ -15,6 +15,7 @@ import javafx.scene.shape.SVGPath;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.scene.text.Text;
+import javafx.scene.text.TextAlignment;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -343,6 +344,7 @@ public final class ButtonVisuals {
 
             label.setText(text == null ? "" : text);
             label.setFont(Font.font(Font.getDefault().getFamily(), FontWeight.BOLD, BUTTON_ARTWORK_FONT_SIZE));
+            label.setTextAlignment(TextAlignment.CENTER);
             label.getStyleClass().add(BUTTON_ARTWORK_TEXT_STYLE_CLASS);
 
             getChildren().addAll(artwork, label);
@@ -480,6 +482,7 @@ public final class ButtonVisuals {
 
             label.setText(text == null ? "" : text);
             label.setFont(Font.font(Font.getDefault().getFamily(), FontWeight.BOLD, BUTTON_ARTWORK_FONT_SIZE));
+            label.setTextAlignment(TextAlignment.CENTER);
             label.getStyleClass().add(BUTTON_ARTWORK_TEXT_STYLE_CLASS);
 
             getChildren().addAll(artwork, label);

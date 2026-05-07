@@ -12,6 +12,8 @@ import javafx.scene.image.ImageView;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
+import javafx.scene.text.Text;
+import javafx.scene.text.TextAlignment;
 import javafx.stage.Stage;
 import org.junit.jupiter.api.Test;
 
@@ -146,6 +148,17 @@ final class ButtonPillSvgTestScreenTest {
     }
 
     @Test
+    void svgButtonArtworkTextIsAlwaysCentered() {
+        StackPane pillGraphic = assertInstanceOf(StackPane.class,
+                ButtonVisuals.createArtworkGraphic(ButtonPillSvgTestScreen.MULTILINE_LABEL, 220, 72));
+        StackPane bevelGraphic = assertInstanceOf(StackPane.class,
+                ButtonVisuals.createBevelArtworkGraphic("Wide\nbevel label", 240, 72));
+
+        assertCenteredArtworkText(pillGraphic, 220, 72);
+        assertCenteredArtworkText(bevelGraphic, 240, 72);
+    }
+
+    @Test
     void buttonPillArtworkUsesBlueGradientForLongButtonArtwork() {
         StackPane graphic = assertInstanceOf(StackPane.class,
                 ButtonVisuals.createArtworkGraphic(ButtonPillSvgTestScreen.SECONDARY_LABEL));
@@ -232,6 +245,20 @@ final class ButtonPillSvgTestScreenTest {
 
     private static double brightness(Color color) {
         return color.getRed() + color.getGreen() + color.getBlue();
+    }
+
+    private static void assertCenteredArtworkText(StackPane graphic, double width, double height) {
+        graphic.resize(width, height);
+        graphic.layout();
+
+        Text label = assertInstanceOf(Text.class, graphic.getChildren().get(1));
+
+        assertEquals(TextAlignment.CENTER, label.getTextAlignment());
+        assertTrue(label.getStyleClass().contains(ButtonVisuals.BUTTON_ARTWORK_TEXT_STYLE_CLASS));
+        assertEquals((width - label.getLayoutBounds().getWidth()) / 2 - label.getLayoutBounds().getMinX(),
+                label.getLayoutX(), 0.5);
+        assertEquals((height - label.getLayoutBounds().getHeight()) / 2 - label.getLayoutBounds().getMinY(),
+                label.getLayoutY(), 0.5);
     }
 
     @Test
