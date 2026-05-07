@@ -9,6 +9,7 @@ import javafx.application.Platform;
 import javafx.scene.Node;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.layout.Pane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
@@ -48,7 +49,7 @@ final class ButtonPillSvgTestScreenTest {
     @Test
     void buttonPillArtworkUsesPackagedSvgResource() {
         assertTrue(ButtonVisuals.buttonArtworkResourceUrl()
-                .endsWith(ButtonVisuals.BUTTON_NORMAL_ARTWORK_RESOURCE.substring(1)));
+                .endsWith(ButtonVisuals.BUTTON_LONG_ARTWORK_RESOURCE.substring(1)));
     }
 
     @Test
@@ -66,27 +67,27 @@ final class ButtonPillSvgTestScreenTest {
     }
 
     @Test
-    void buttonPillArtworkSelectsShortNormalAndLongSvgResources() {
+    void buttonPillArtworkAlwaysUsesLongSvgResourceForSlicedRendering() {
         String normalLabel = "Normal";
         double normalWidth = 160;
 
-        assertTrue(ButtonVisuals.usesShortArtwork(ButtonPillSvgTestScreen.PRIMARY_LABEL, -1, -1));
+        assertFalse(ButtonVisuals.usesShortArtwork(ButtonPillSvgTestScreen.PRIMARY_LABEL, -1, -1));
         assertFalse(ButtonVisuals.usesShortArtwork(normalLabel, normalWidth, ButtonVisuals.BUTTON_ARTWORK_HEIGHT));
         assertTrue(ButtonVisuals.usesLongArtwork(ButtonPillSvgTestScreen.SECONDARY_LABEL, -1, -1));
         assertTrue(ButtonVisuals.usesLongArtwork(ButtonPillSvgTestScreen.MULTILINE_LABEL, -1, -1));
         assertTrue(ButtonVisuals.usesLongArtwork(ButtonPillSvgTestScreen.FIXED_LABEL, 260, 64));
-        assertFalse(ButtonVisuals.usesLongArtwork(normalLabel, normalWidth, ButtonVisuals.BUTTON_ARTWORK_HEIGHT));
+        assertTrue(ButtonVisuals.usesLongArtwork(normalLabel, normalWidth, ButtonVisuals.BUTTON_ARTWORK_HEIGHT));
         assertTrue(ButtonVisuals.buttonArtworkResourceUrl(ButtonPillSvgTestScreen.PRIMARY_LABEL, -1, -1)
-                .endsWith(ButtonVisuals.BUTTON_SHORT_ARTWORK_RESOURCE.substring(1)));
+                .endsWith(ButtonVisuals.BUTTON_LONG_ARTWORK_RESOURCE.substring(1)));
         assertTrue(ButtonVisuals.buttonArtworkResourceUrl(normalLabel, normalWidth, ButtonVisuals.BUTTON_ARTWORK_HEIGHT)
-                .endsWith(ButtonVisuals.BUTTON_NORMAL_ARTWORK_RESOURCE.substring(1)));
+                .endsWith(ButtonVisuals.BUTTON_LONG_ARTWORK_RESOURCE.substring(1)));
         assertTrue(ButtonVisuals.buttonArtworkResourceUrl(ButtonPillSvgTestScreen.SECONDARY_LABEL, -1, -1)
                 .endsWith(ButtonVisuals.BUTTON_LONG_ARTWORK_RESOURCE.substring(1)));
-        assertFalse(ButtonVisuals.usesLongArtwork(ButtonPillSvgTestScreen.PRIMARY_LABEL, -1, -1));
+        assertTrue(ButtonVisuals.usesLongArtwork(ButtonPillSvgTestScreen.PRIMARY_LABEL, -1, -1));
     }
 
     @Test
-    void buttonPillArtworkUsesRasterizedImageViewAtTextSizedDimensions() {
+    void buttonPillArtworkUsesThreeSlicedImageViewsAtTextSizedDimensions() {
         StackPane graphic = assertInstanceOf(StackPane.class, ButtonVisuals.createArtworkGraphic("Play"));
         double width = graphic.prefWidth(-1);
         double height = graphic.prefHeight(width);
@@ -94,12 +95,20 @@ final class ButtonPillSvgTestScreenTest {
         graphic.layout();
 
         Node artwork = graphic.getChildren().get(0);
-        ImageView imageView = assertInstanceOf(ImageView.class, artwork);
+        Pane pane = assertInstanceOf(Pane.class, artwork);
+        assertEquals(3, pane.getChildren().size());
+        ImageView leftCap = assertInstanceOf(ImageView.class, pane.getChildren().get(0));
+        ImageView middle = assertInstanceOf(ImageView.class, pane.getChildren().get(1));
+        ImageView rightCap = assertInstanceOf(ImageView.class, pane.getChildren().get(2));
 
-        assertEquals(width, imageView.getFitWidth());
-        assertEquals(height, imageView.getFitHeight());
-        assertEquals(width, imageView.getImage().getWidth());
-        assertEquals(height, imageView.getImage().getHeight());
+        assertEquals(height / 2, leftCap.getFitWidth());
+        assertEquals(height, leftCap.getFitHeight());
+        assertEquals(Math.max(0, width - height), middle.getFitWidth());
+        assertEquals(height, middle.getFitHeight());
+        assertEquals(height / 2, rightCap.getFitWidth());
+        assertEquals(height, rightCap.getFitHeight());
+        assertEquals(leftCap.getImage(), middle.getImage());
+        assertEquals(leftCap.getImage(), rightCap.getImage());
     }
 
     @Test
@@ -130,7 +139,8 @@ final class ButtonPillSvgTestScreenTest {
         graphic.resize(width, height);
         graphic.layout();
 
-        ImageView imageView = assertInstanceOf(ImageView.class, graphic.getChildren().get(0));
+        Pane pane = assertInstanceOf(Pane.class, graphic.getChildren().get(0));
+        ImageView imageView = assertInstanceOf(ImageView.class, pane.getChildren().get(1));
         Image image = imageView.getImage();
         int centerY = Math.max(0, (int) Math.round(image.getHeight() / 2) - 1);
         Color middleCenter = image.getPixelReader().getColor((int) image.getWidth() / 2, centerY);
@@ -165,12 +175,17 @@ final class ButtonPillSvgTestScreenTest {
         graphic.layout();
 
         Node artwork = graphic.getChildren().get(0);
-        ImageView imageView = assertInstanceOf(ImageView.class, artwork);
+        Pane pane = assertInstanceOf(Pane.class, artwork);
+        ImageView leftCap = assertInstanceOf(ImageView.class, pane.getChildren().get(0));
+        ImageView middle = assertInstanceOf(ImageView.class, pane.getChildren().get(1));
+        ImageView rightCap = assertInstanceOf(ImageView.class, pane.getChildren().get(2));
 
-        assertEquals(220, imageView.getFitWidth());
-        assertEquals(72, imageView.getFitHeight());
-        assertEquals(220, imageView.getImage().getWidth());
-        assertEquals(72, imageView.getImage().getHeight());
+        assertEquals(36, leftCap.getFitWidth());
+        assertEquals(72, leftCap.getFitHeight());
+        assertEquals(148, middle.getFitWidth());
+        assertEquals(72, middle.getFitHeight());
+        assertEquals(36, rightCap.getFitWidth());
+        assertEquals(72, rightCap.getFitHeight());
     }
 
     private static Image rasterizedImage(String text, boolean pressed) {
@@ -180,7 +195,8 @@ final class ButtonPillSvgTestScreenTest {
         double height = graphic.prefHeight(width);
         graphic.resize(width, height);
         graphic.layout();
-        ImageView imageView = assertInstanceOf(ImageView.class, graphic.getChildren().get(0));
+        Pane pane = assertInstanceOf(Pane.class, graphic.getChildren().get(0));
+        ImageView imageView = assertInstanceOf(ImageView.class, pane.getChildren().get(1));
         return imageView.getImage();
     }
 
