@@ -21,9 +21,14 @@ public final class ConversationDefinitionJson {
     }
 
     public static ConversationDefinition load(Path jsonPath) {
+        return load(jsonPath, ConversationConditionVariables.fixed());
+    }
+
+    public static ConversationDefinition load(Path jsonPath, ConversationConditionVariables conditionVariables) {
         Validation.requireNonNull(jsonPath, "Conversation JSON path is required.");
+        Validation.requireNonNull(conditionVariables, "Conversation condition variables are required.");
         try {
-            return fromJson(Files.readString(jsonPath, StandardCharsets.UTF_8), jsonPath.toString());
+            return fromJson(Files.readString(jsonPath, StandardCharsets.UTF_8), jsonPath.toString(), conditionVariables);
         } catch (IOException exception) {
             throw new IllegalArgumentException("Unable to read conversation JSON: " + jsonPath, exception);
         }
@@ -44,9 +49,17 @@ public final class ConversationDefinitionJson {
     }
 
     public static ConversationDefinition fromJson(String json, String sourceName) {
+        return fromJson(json, sourceName, ConversationConditionVariables.fixed());
+    }
+
+    public static ConversationDefinition fromJson(
+            String json,
+            String sourceName,
+            ConversationConditionVariables conditionVariables) {
+        Validation.requireNonNull(conditionVariables, "Conversation condition variables are required.");
         Map<String, Object> root = JsonData.rootObject(json, sourceName);
         List<ConversationBlock> conversations = JsonData.requiredList(root, "conversations", "conversations").stream()
-                .map(entry -> parseConversation(JsonData.requireObject(entry, "conversations[]")))
+                .map(entry -> parseConversation(JsonData.requireObject(entry, "conversations[]"), conditionVariables))
                 .toList();
         return new ConversationDefinition(
                 JsonData.requiredString(root, "name", "conversation name"),
@@ -71,9 +84,11 @@ public final class ConversationDefinitionJson {
         return json.toString();
     }
 
-    private static ConversationBlock parseConversation(Map<String, Object> object) {
+    private static ConversationBlock parseConversation(
+            Map<String, Object> object,
+            ConversationConditionVariables conditionVariables) {
         List<ConversationLine> lines = JsonData.requiredList(object, "lines", "conversation lines").stream()
-                .map(entry -> parseLine(JsonData.requireObject(entry, "conversation lines[]")))
+                .map(entry -> parseLine(JsonData.requireObject(entry, "conversation lines[]"), conditionVariables))
                 .toList();
         return new ConversationBlock(
                 JsonData.requiredString(object, "id", "conversation id"),
@@ -81,9 +96,9 @@ public final class ConversationDefinitionJson {
                 lines);
     }
 
-    private static ConversationLine parseLine(Map<String, Object> object) {
+    private static ConversationLine parseLine(Map<String, Object> object, ConversationConditionVariables conditionVariables) {
         List<ConversationVariant> variants = JsonData.requiredList(object, "variants", "conversation line variants").stream()
-                .map(entry -> parseVariant(JsonData.requireObject(entry, "conversation line variants[]")))
+                .map(entry -> parseVariant(JsonData.requireObject(entry, "conversation line variants[]"), conditionVariables))
                 .toList();
         return new ConversationLine(
                 JsonData.requiredString(object, "speaker", "conversation line speaker"),
@@ -98,13 +113,16 @@ public final class ConversationDefinitionJson {
                 .orElse(LineType.SAY);
     }
 
-    private static ConversationVariant parseVariant(Map<String, Object> object) {
+    private static ConversationVariant parseVariant(
+            Map<String, Object> object,
+            ConversationConditionVariables conditionVariables) {
         return new ConversationVariant(
                 requiredStringAllowingEmpty(object, "text", "conversation variant text"),
                 stringAllowingEmpty(object, "value", "conversation variant value", ""),
                 JsonData.optionalDouble(object, "weight", 1.0, "conversation variant weight"),
                 JsonData.optionalStringList(object, "conditions", "conversation variant conditions"),
-                stringAllowingEmpty(object, "tooltipText", "conversation variant tooltipText", ""));
+                stringAllowingEmpty(object, "tooltipText", "conversation variant tooltipText", ""),
+                conditionVariables);
     }
 
     private static String requiredStringAllowingEmpty(Map<String, Object> object, String key, String description) {

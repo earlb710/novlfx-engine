@@ -78,6 +78,8 @@ Condition values can reference fixed conversation variables with `$name` or `${n
 
 Use `variant.*` when referring to the authored JSON variant fields. Use `choice.*` when referring to the generated runtime choice values for `choice` lines.
 
+Application code can also declare additional condition variable names before loading conversation JSON. For example, a game can declare `money` so authored JSON may use `$money` or `${money}` even if the backing `mc.money` field is only provided by the game later. Use a `ConversationConditionVariables` instance with `ConversationDefinitionJson.load(...)` or `fromJson(...)` to allow those application names, and pass the same instance to `JsonConversationContentModule` when variable references should be replaced through the supplied lookup handler during scene projection.
+
 Example choice line:
 
 ```json

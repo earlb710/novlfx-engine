@@ -20,13 +20,23 @@ import java.util.stream.Collectors;
 /** Registers an AltLife-compatible JSON conversation document as content definitions and scene definitions. */
 public final class JsonConversationContentModule implements StaticContentModule, SceneModule {
     private final ConversationDefinition document;
+    private final ConversationConditionVariables conditionVariables;
 
     public JsonConversationContentModule(Path jsonPath) {
-        this(ConversationDefinitionJson.load(jsonPath));
+        this(jsonPath, ConversationConditionVariables.fixed());
+    }
+
+    public JsonConversationContentModule(Path jsonPath, ConversationConditionVariables conditionVariables) {
+        this(ConversationDefinitionJson.load(jsonPath, conditionVariables), conditionVariables);
     }
 
     public JsonConversationContentModule(ConversationDefinition document) {
+        this(document, ConversationConditionVariables.fixed());
+    }
+
+    public JsonConversationContentModule(ConversationDefinition document, ConversationConditionVariables conditionVariables) {
         this.document = Validation.requireNonNull(document, "Conversation definition is required.");
+        this.conditionVariables = Validation.requireNonNull(conditionVariables, "Conversation condition variables are required.");
     }
 
     @Override
@@ -58,7 +68,7 @@ public final class JsonConversationContentModule implements StaticContentModule,
         return document.conversations().stream()
                 .filter(conversation -> conversation.id().equals(checkedId))
                 .findFirst()
-                .map(conversation -> SceneDefinition.of(conversation.id(), stepsFor(conversation)));
+                .map(conversation -> SceneDefinition.of(conversation.id(), stepsFor(conversation, conditionVariables)));
     }
 
     public SceneDefinition requireConversationById(String id) {
@@ -91,17 +101,22 @@ public final class JsonConversationContentModule implements StaticContentModule,
         return document.conversations().stream()
                 .map(conversation -> SceneDefinition.of(
                         conversation.id(),
-                        stepsFor(conversation)))
+                        stepsFor(conversation, conditionVariables)))
                 .toList();
     }
 
-    private static List<SceneStep> stepsFor(ConversationBlock conversation) {
+    private static List<SceneStep> stepsFor(
+            ConversationBlock conversation,
+            ConversationConditionVariables conditionVariables) {
         return java.util.stream.IntStream.range(0, conversation.lines().size())
-                .mapToObj(index -> stepFor(conversation, index))
+                .mapToObj(index -> stepFor(conversation, index, conditionVariables))
                 .toList();
     }
 
-    private static SceneStep stepFor(ConversationBlock conversation, int lineIndex) {
+    private static SceneStep stepFor(
+            ConversationBlock conversation,
+            int lineIndex,
+            ConversationConditionVariables conditionVariables) {
         ConversationLine line = conversation.lines().get(lineIndex);
         if (line.type() == ConversationDefinition.LineType.CHOICE) {
             return SceneStep.create(
@@ -110,7 +125,7 @@ public final class JsonConversationContentModule implements StaticContentModule,
                     null,
                     null,
                     null,
-                    choicesFor(conversation, lineIndex),
+                    choicesFor(conversation, lineIndex, conditionVariables),
                     List.of(),
                     transitionFor(conversation, lineIndex),
                     Map.of("lineType", line.type().jsonValue()));
@@ -140,18 +155,26 @@ public final class JsonConversationContentModule implements StaticContentModule,
                 Map.of("lineType", line.type().jsonValue()));
     }
 
-    private static List<SceneChoice> choicesFor(ConversationBlock conversation, int lineIndex) {
+    private static List<SceneChoice> choicesFor(
+            ConversationBlock conversation,
+            int lineIndex,
+            ConversationConditionVariables conditionVariables) {
         ConversationLine line = conversation.lines().get(lineIndex);
         return java.util.stream.IntStream.range(0, line.variants().size())
-                .mapToObj(index -> choiceFor(conversation, lineIndex, index, line.variants().get(index)))
+                .mapToObj(index -> choiceFor(conversation, lineIndex, index, line.variants().get(index), conditionVariables))
                 .toList();
     }
 
-    private static SceneChoice choiceFor(ConversationBlock conversation, int lineIndex, int variantIndex, ConversationVariant variant) {
+    private static SceneChoice choiceFor(
+            ConversationBlock conversation,
+            int lineIndex,
+            int variantIndex,
+            ConversationVariant variant,
+            ConversationConditionVariables conditionVariables) {
         Map<String, String> metadata = new LinkedHashMap<>();
         metadata.put("value", choiceValue(variant, variantIndex));
         if (!variant.conditions().isEmpty()) {
-            metadata.put("conditions", conditionsJson(variant.conditions()));
+            metadata.put("conditions", conditionsJson(variant.conditions(), conditionVariables));
         }
         return new SceneChoice(
                 choiceId(lineIndex, variantIndex),
@@ -197,8 +220,9 @@ public final class JsonConversationContentModule implements StaticContentModule,
         return stepId(lineIndex) + "-choice-" + String.format("%04d", variantIndex + 1);
     }
 
-    private static String conditionsJson(List<String> conditions) {
+    private static String conditionsJson(List<String> conditions, ConversationConditionVariables conditionVariables) {
         return conditions.stream()
+                .map(condition -> ConversationConditionSyntax.replaceVariables(condition, conditionVariables))
                 .map(JsonStrings::quote)
                 .collect(Collectors.joining(", ", "[", "]"));
     }

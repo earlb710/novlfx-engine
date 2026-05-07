@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -248,6 +249,81 @@ final class ConversationDefinitionJsonTest {
                 () -> new ConversationVariant("Ask", 1.0, List.of("context=$")));
         assertThrows(IllegalArgumentException.class,
                 () -> new ConversationVariant("Ask", 1.0, List.of("context=${line.speaker")));
+    }
+
+    @Test
+    void allowsDeclaredApplicationVariablesInConditionValues() {
+        String json = """
+                {
+                  "name": "Application Variable Conditions",
+                  "language": "en",
+                  "conversations": [{
+                    "id": "game.debug.application_variable_conditions.block_0001",
+                    "description": "Extracted dialogue block.",
+                    "lines": [{
+                      "speaker": "guide",
+                      "listener": "hero",
+                      "type": "choice",
+                      "variants": [
+                        {"text": "Buy", "weight": 1.0, "conditions": ["context=$money", "context=${money}_available"]}
+                      ]
+                    }]
+                  }]
+                }
+                """;
+
+        ConversationConditionVariables variables = ConversationConditionVariables.declaring(List.of("money"));
+        ConversationDefinition parsed = ConversationDefinitionJson.fromJson(json, "application variable conditions", variables);
+
+        assertEquals(List.of("context=$money", "context=${money}_available"),
+                parsed.conversations().get(0).lines().get(0).variants().get(0).conditions());
+        assertThrows(IllegalArgumentException.class,
+                () -> ConversationDefinitionJson.fromJson(json, "application variable conditions"));
+    }
+
+    @Test
+    void replacesDeclaredApplicationVariablesWithLookupHandlerValues() {
+        ConversationConditionVariables variables = ConversationConditionVariables.withResolver(
+                List.of("money"),
+                name -> Optional.of("100"));
+
+        assertEquals("context=100", ConversationConditionSyntax.replaceVariables("context=$money", variables));
+        assertEquals("context=100_available",
+                ConversationConditionSyntax.replaceVariables("context=${money}_available", variables));
+        assertThrows(IllegalArgumentException.class,
+                () -> ConversationConditionSyntax.replaceVariables("context=$money_available", variables));
+    }
+
+    @Test
+    void jsonConversationContentModuleResolvesDeclaredApplicationVariablesInConditionMetadata() {
+        String json = """
+                {
+                  "name": "Application Variable Projection",
+                  "language": "en",
+                  "conversations": [{
+                    "id": "game.debug.application_variable_projection.block_0001",
+                    "description": "Extracted dialogue block.",
+                    "lines": [{
+                      "speaker": "guide",
+                      "listener": "",
+                      "type": "choice",
+                      "variants": [
+                        {"text": "Buy", "weight": 1.0, "conditions": ["context=$money"]}
+                      ]
+                    }]
+                  }]
+                }
+                """;
+        ConversationConditionVariables variables = ConversationConditionVariables.withResolver(
+                List.of("money"),
+                name -> Optional.of("100"));
+        ConversationDefinition parsed = ConversationDefinitionJson.fromJson(json, "application variable projection", variables);
+
+        JsonConversationContentModule module = new JsonConversationContentModule(parsed, variables);
+
+        assertEquals("[\"context=100\"]",
+                module.requireConversationById("game.debug.application_variable_projection.block_0001")
+                        .steps().get(0).choices().get(0).metadata().get("conditions"));
     }
 
     @Test

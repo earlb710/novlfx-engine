@@ -3,7 +3,6 @@ package com.eb.javafx.scene;
 import com.eb.javafx.util.Validation;
 
 import java.util.Comparator;
-import java.util.List;
 import java.util.Set;
 
 /** Validates authored conversation condition strings and their fixed variable references. */
@@ -29,11 +28,6 @@ public final class ConversationConditionSyntax {
             "value",
             "weight",
             "tooltipText");
-    // Match longer unbraced variable names before shorter aliases, e.g. line.speaker before speaker.
-    private static final List<String> VARIABLE_NAMES_BY_LENGTH = VARIABLE_NAMES.stream()
-            .sorted(Comparator.comparingInt(String::length).reversed())
-            .toList();
-
     private ConversationConditionSyntax() {
     }
 
@@ -42,18 +36,53 @@ public final class ConversationConditionSyntax {
     }
 
     public static void validateCondition(String condition, String description) {
+        validateCondition(condition, description, ConversationConditionVariables.fixed());
+    }
+
+    public static void validateCondition(
+            String condition,
+            String description,
+            ConversationConditionVariables variables) {
         String checkedCondition = Validation.requireNonBlank(condition, description + " is required.");
+        ConversationConditionVariables checkedVariables = Validation.requireNonNull(variables,
+                "Conversation condition variables are required.");
         int index = 0;
         while (index < checkedCondition.length()) {
             int markerIndex = checkedCondition.indexOf('$', index);
             if (markerIndex < 0) {
                 return;
             }
-            index = validateVariableAt(checkedCondition, markerIndex, description);
+            VariableReference reference = variableReferenceAt(checkedCondition, markerIndex, description, checkedVariables);
+            index = reference.endIndex();
         }
     }
 
-    private static int validateVariableAt(String condition, int markerIndex, String description) {
+    public static String replaceVariables(String condition, ConversationConditionVariables variables) {
+        String checkedCondition = Validation.requireNonBlank(condition, "Conversation condition is required.");
+        ConversationConditionVariables checkedVariables = Validation.requireNonNull(variables,
+                "Conversation condition variables are required.");
+        StringBuilder result = new StringBuilder();
+        int index = 0;
+        while (index < checkedCondition.length()) {
+            int markerIndex = checkedCondition.indexOf('$', index);
+            if (markerIndex < 0) {
+                result.append(checkedCondition.substring(index));
+                break;
+            }
+            result.append(checkedCondition, index, markerIndex);
+            VariableReference reference = variableReferenceAt(checkedCondition, markerIndex,
+                    "Conversation condition", checkedVariables);
+            result.append(checkedVariables.resolve(reference.name()).orElse(reference.sourceText()));
+            index = reference.endIndex();
+        }
+        return result.toString();
+    }
+
+    private static VariableReference variableReferenceAt(
+            String condition,
+            int markerIndex,
+            String description,
+            ConversationConditionVariables variables) {
         int nameStart = markerIndex + 1;
         if (nameStart >= condition.length()) {
             throw new IllegalArgumentException(description + " has dangling variable marker '$'.");
@@ -65,17 +94,20 @@ public final class ConversationConditionSyntax {
                         + condition.substring(markerIndex));
             }
             String variableName = condition.substring(nameStart + 1, nameEnd);
-            validateVariableName(variableName, description);
-            return nameEnd + 1;
+            validateVariableName(variableName, description, variables);
+            return new VariableReference(variableName, markerIndex, nameEnd + 1, condition.substring(markerIndex, nameEnd + 1));
         }
-        String variableName = VARIABLE_NAMES_BY_LENGTH.stream()
+        // Match longer unbraced variable names before shorter aliases, e.g. line.speaker before speaker.
+        String variableName = variables.declaredVariableNames().stream()
+                .sorted(Comparator.comparingInt(String::length).reversed())
                 .filter(name -> condition.startsWith(name, nameStart)
                         && isVariableBoundary(condition, nameStart + name.length()))
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException(description
                         + " references an unknown conversation variable near: "
                         + condition.substring(markerIndex)));
-        return nameStart + variableName.length();
+        return new VariableReference(variableName, markerIndex, nameStart + variableName.length(),
+                condition.substring(markerIndex, nameStart + variableName.length()));
     }
 
     private static boolean isVariableBoundary(String condition, int index) {
@@ -86,9 +118,15 @@ public final class ConversationConditionSyntax {
         return !Character.isLetterOrDigit(next) && next != '_' && next != '.';
     }
 
-    private static void validateVariableName(String variableName, String description) {
-        if (!VARIABLE_NAMES.contains(variableName)) {
+    private static void validateVariableName(
+            String variableName,
+            String description,
+            ConversationConditionVariables variables) {
+        if (!variables.isDeclared(variableName)) {
             throw new IllegalArgumentException(description + " references unknown conversation variable: " + variableName);
         }
+    }
+
+    private record VariableReference(String name, int startIndex, int endIndex, String sourceText) {
     }
 }
