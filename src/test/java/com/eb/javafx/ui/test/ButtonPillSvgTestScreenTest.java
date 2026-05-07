@@ -46,17 +46,15 @@ final class ButtonPillSvgTestScreenTest {
     }
 
     @Test
-    void buttonPillArtworkUsesRasterizedImageView() throws Exception {
-        runOnJavaFxThread(() -> {
-            StackPane graphic = assertInstanceOf(StackPane.class, ButtonVisuals.createArtworkGraphic("Play"));
-            Node artwork = graphic.getChildren().get(0);
-            ImageView imageView = assertInstanceOf(ImageView.class, artwork);
+    void buttonPillArtworkUsesRasterizedImageView() {
+        StackPane graphic = assertInstanceOf(StackPane.class, ButtonVisuals.createArtworkGraphic("Play"));
+        Node artwork = graphic.getChildren().get(0);
+        ImageView imageView = assertInstanceOf(ImageView.class, artwork);
 
-            assertEquals(ButtonVisuals.BUTTON_ARTWORK_WIDTH, imageView.getFitWidth());
-            assertEquals(ButtonVisuals.BUTTON_ARTWORK_HEIGHT, imageView.getFitHeight());
-            assertEquals(ButtonVisuals.BUTTON_ARTWORK_WIDTH, imageView.getImage().getWidth());
-            assertEquals(ButtonVisuals.BUTTON_ARTWORK_HEIGHT, imageView.getImage().getHeight());
-        });
+        assertEquals(ButtonVisuals.BUTTON_ARTWORK_WIDTH, imageView.getFitWidth());
+        assertEquals(ButtonVisuals.BUTTON_ARTWORK_HEIGHT, imageView.getFitHeight());
+        assertEquals(ButtonVisuals.BUTTON_ARTWORK_WIDTH, imageView.getImage().getWidth());
+        assertEquals(ButtonVisuals.BUTTON_ARTWORK_HEIGHT, imageView.getImage().getHeight());
     }
 
     @Test
