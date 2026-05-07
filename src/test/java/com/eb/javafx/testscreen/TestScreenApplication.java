@@ -19,6 +19,7 @@ import org.w3c.dom.NodeList;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
@@ -112,9 +113,11 @@ public final class TestScreenApplication {
     private final JTextArea outputArea;
     private final JButton runButton;
     private final JButton runAllButton;
+    private final JCheckBox manualOnlyCheckBox;
     private final TestScreenConfiguration configuration;
     private final Path resultPath;
     private final String applicationVersion;
+    private List<TestCase> discoveredTests = List.of();
     private JFrame frame;
 
     private TestScreenApplication() {
@@ -133,6 +136,7 @@ public final class TestScreenApplication {
         outputArea = new JTextArea();
         runButton = new JButton("Run");
         runAllButton = new JButton("Run All in Category");
+        manualOnlyCheckBox = new JCheckBox("manual");
         resultPath = configuration.resultPath();
         applicationVersion = System.getProperty(configuration.applicationVersionProperty(), "unknown");
     }
@@ -224,6 +228,7 @@ public final class TestScreenApplication {
         runAllButton.setEnabled(false);
         runAllButton.addActionListener(event -> runAllCategoryTests());
 
+        manualOnlyCheckBox.addActionListener(event -> refreshDisplayedTests());
 
         JPanel rightPanel = new JPanel(new BorderLayout(8, 8));
         rightPanel.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
@@ -232,11 +237,15 @@ public final class TestScreenApplication {
 
         JScrollPane testTreePane = new JScrollPane(testTree);
         testTreePane.setPreferredSize(new Dimension(300, 600));
+        JPanel treePanel = new JPanel(new BorderLayout(4, 4));
+        treePanel.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 0));
+        treePanel.add(manualOnlyCheckBox, BorderLayout.NORTH);
+        treePanel.add(testTreePane, BorderLayout.CENTER);
         rightPanel.setPreferredSize(new Dimension(820, 600));
 
         JSplitPane splitPane = new JSplitPane(
                 JSplitPane.HORIZONTAL_SPLIT,
-                testTreePane,
+                treePanel,
                 rightPanel);
         splitPane.setResizeWeight(0.25);
         splitPane.setDividerLocation(300);
@@ -362,14 +371,37 @@ public final class TestScreenApplication {
                 .thenComparing(Comparator.comparing(TestCase::newTest).reversed())
                 .thenComparing(TestCase::displayName));
 
-        populateTestTree(tests);
-        updateFrameTitle(tests);
-        runAllButton.setEnabled(!tests.isEmpty());
+        discoveredTests = List.copyOf(tests);
+        List<TestCase> displayedTests = displayedTests();
+        populateTestTree(displayedTests);
+        updateFrameTitle(displayedTests);
+        runAllButton.setEnabled(!displayedTests.isEmpty());
         saveResultRecords();
-        if (!tests.isEmpty()) {
+        if (!displayedTests.isEmpty()) {
             selectFirstTest();
         }
-        outputArea.setText("Discovered " + tests.size() + " tests. Results are recorded in " + resultPath.toAbsolutePath() + ".");
+        outputArea.setText(discoveryMessage(displayedTests.size(), tests.size(), resultPath));
+    }
+
+    private void refreshDisplayedTests() {
+        List<TestCase> displayedTests = displayedTests();
+        populateTestTree(displayedTests);
+        updateFrameTitle(displayedTests);
+        runAllButton.setEnabled(!displayedTests.isEmpty());
+        if (!displayedTests.isEmpty()) {
+            selectFirstTest();
+        } else {
+            testTree.clearSelection();
+            updateSelectedTest();
+        }
+        outputArea.setText(discoveryMessage(displayedTests.size(), discoveredTests.size(), resultPath));
+    }
+
+    private List<TestCase> displayedTests() {
+        if (!manualOnlyCheckBox.isSelected()) {
+            return discoveredTests;
+        }
+        return manualTests(discoveredTests, TestCase::auto);
     }
 
     private void populateTestTree(List<TestCase> tests) {
@@ -1047,6 +1079,19 @@ public final class TestScreenApplication {
         return tests.stream()
                 .filter(autoPredicate)
                 .collect(Collectors.toList());
+    }
+
+    static <T> List<T> manualTests(List<T> tests, Predicate<T> autoPredicate) {
+        return tests.stream()
+                .filter(test -> !autoPredicate.test(test))
+                .collect(Collectors.toList());
+    }
+
+    static String discoveryMessage(int displayedTests, int totalTests, Path resultPath) {
+        String countMessage = displayedTests == totalTests
+                ? "Discovered " + totalTests + " tests."
+                : "Showing " + displayedTests + " of " + totalTests + " tests.";
+        return countMessage + " Results are recorded in " + resultPath.toAbsolutePath() + ".";
     }
 
     private static boolean parseBoolean(String value, boolean defaultValue) {

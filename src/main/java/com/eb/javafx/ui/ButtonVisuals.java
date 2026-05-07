@@ -10,6 +10,8 @@ import javafx.scene.image.ImageView;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.shape.SVGPath;
+import javafx.scene.text.Font;
+import javafx.scene.text.FontWeight;
 import javafx.scene.text.Text;
 
 import java.io.IOException;
@@ -34,6 +36,7 @@ public final class ButtonVisuals {
     private static final double BUTTON_ARTWORK_MIN_WIDTH = 48;
     private static final double BUTTON_ARTWORK_HORIZONTAL_PADDING = 36;
     private static final double BUTTON_ARTWORK_VERTICAL_PADDING = 16;
+    private static final double BUTTON_ARTWORK_FONT_SIZE = 20;
     private static final int MAX_RASTER_CACHE_SIZE = 128;
     private static final String ARTWORK_FALLBACK_GRADIENT = """
             <linearGradient id="%s" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2="48">
@@ -85,6 +88,11 @@ public final class ButtonVisuals {
         if (artwork != null) {
             button.setGraphic(artwork);
             button.setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
+            double targetWidth = fixedWidth > 0 ? fixedWidth : artwork.prefWidth(-1);
+            double targetHeight = fixedHeight > 0 ? fixedHeight : artwork.prefHeight(targetWidth);
+            button.setPrefSize(targetWidth, targetHeight);
+            button.setMinSize(targetWidth, targetHeight);
+            button.setMaxSize(targetWidth, targetHeight);
             if (fixedWidth > 0) {
                 button.setPrefWidth(fixedWidth);
             }
@@ -215,19 +223,13 @@ public final class ButtonVisuals {
             artwork.setMouseTransparent(true);
 
             label.setText(text == null ? "" : text);
+            label.setFont(Font.font(Font.getDefault().getFamily(), FontWeight.BOLD, BUTTON_ARTWORK_FONT_SIZE));
             label.getStyleClass().add(BUTTON_ARTWORK_TEXT_STYLE_CLASS);
 
             getChildren().addAll(artwork, label);
             getStyleClass().add(BUTTON_ARTWORK_STYLE_CLASS);
             setAlignment(Pos.CENTER);
-            setMinSize(Region.USE_PREF_SIZE, Region.USE_PREF_SIZE);
-            setMaxSize(Region.USE_PREF_SIZE, Region.USE_PREF_SIZE);
-            if (fixedWidth > 0 || fixedHeight > 0) {
-                setPrefSize(
-                        fixedWidth > 0 ? fixedWidth : computeTextWidth(),
-                        fixedHeight > 0 ? fixedHeight : computeTextHeight()
-                );
-            }
+            refreshPreferredSize();
         }
 
         @Override
@@ -253,6 +255,25 @@ public final class ButtonVisuals {
             label.setWrappingWidth(Math.max(0, width - BUTTON_ARTWORK_HORIZONTAL_PADDING));
             updateArtwork(width, height);
             super.layoutChildren();
+        }
+
+        @Override
+        public void applyCss() {
+            super.applyCss();
+            refreshPreferredSize();
+        }
+
+        private void refreshPreferredSize() {
+            if (fixedWidth > 0) {
+                label.setWrappingWidth(Math.max(0, fixedWidth - BUTTON_ARTWORK_HORIZONTAL_PADDING));
+            } else {
+                label.setWrappingWidth(0);
+            }
+            double width = fixedWidth > 0 ? fixedWidth : computeTextWidth();
+            double height = fixedHeight > 0 ? fixedHeight : computeTextHeight();
+            setPrefSize(width, height);
+            setMinSize(width, height);
+            setMaxSize(width, height);
         }
 
         private double computeTextWidth() {

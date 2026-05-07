@@ -30,11 +30,13 @@ final class ButtonPillSvgTestScreenTest {
     void exposesExpectedButtonPillScreenCopy() {
         assertEquals("Use this screen to confirm the shared button-pill.svg shape is visibly applied.",
                 ButtonPillSvgTestScreen.DESCRIPTION_TEXT);
-        assertEquals("All buttons below should render with the same pill silhouette from the packaged SVG resource.",
+        assertEquals("Buttons below cover text-sized, fixed-width, long-label, and multiline SVG artwork.",
                 ButtonPillSvgTestScreen.DETAIL_TEXT);
-        assertEquals("Primary action", ButtonPillSvgTestScreen.PRIMARY_LABEL);
-        assertEquals("Secondary action", ButtonPillSvgTestScreen.SECONDARY_LABEL);
-        assertEquals("Back to main menu", ButtonPillSvgTestScreen.BACK_LABEL);
+        assertEquals("Short", ButtonPillSvgTestScreen.PRIMARY_LABEL);
+        assertEquals("Long dynamic text button", ButtonPillSvgTestScreen.SECONDARY_LABEL);
+        assertEquals("Fixed width", ButtonPillSvgTestScreen.FIXED_LABEL);
+        assertEquals("Multiline\nbutton text", ButtonPillSvgTestScreen.MULTILINE_LABEL);
+        assertEquals("Back", ButtonPillSvgTestScreen.BACK_LABEL);
         assertEquals("M 24 0 H 156 Q 180 0 180 24 Q 180 48 156 48 H 24 Q 0 48 0 24 Q 0 0 24 0 Z",
                 ButtonVisuals.buttonShapePath());
     }
@@ -60,6 +62,25 @@ final class ButtonPillSvgTestScreenTest {
         assertEquals(height, imageView.getFitHeight());
         assertEquals(width, imageView.getImage().getWidth());
         assertEquals(height, imageView.getImage().getHeight());
+    }
+
+    @Test
+    void buttonPillArtworkTextSizedDimensionsGrowForLongAndMultilineLabels() {
+        StackPane shortGraphic = assertInstanceOf(StackPane.class,
+                ButtonVisuals.createArtworkGraphic(ButtonPillSvgTestScreen.PRIMARY_LABEL));
+        StackPane longGraphic = assertInstanceOf(StackPane.class,
+                ButtonVisuals.createArtworkGraphic(ButtonPillSvgTestScreen.SECONDARY_LABEL));
+        StackPane multilineGraphic = assertInstanceOf(StackPane.class,
+                ButtonVisuals.createArtworkGraphic(ButtonPillSvgTestScreen.MULTILINE_LABEL));
+
+        double shortWidth = shortGraphic.prefWidth(-1);
+        double longWidth = longGraphic.prefWidth(-1);
+        double multilineHeight = multilineGraphic.prefHeight(multilineGraphic.prefWidth(-1));
+
+        assertTrue(shortWidth >= 48);
+        assertTrue(longWidth > shortWidth, "Long dynamic button should be wider than short button.");
+        assertTrue(multilineHeight > ButtonVisuals.BUTTON_ARTWORK_HEIGHT,
+                "Multiline button should be taller than a single-line button.");
     }
 
     @Test
