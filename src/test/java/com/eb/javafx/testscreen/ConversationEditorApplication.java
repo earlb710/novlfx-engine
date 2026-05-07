@@ -5,6 +5,7 @@ import com.eb.javafx.scene.ConversationDefinition.ConversationBlock;
 import com.eb.javafx.scene.ConversationDefinition.ConversationLine;
 import com.eb.javafx.scene.ConversationDefinition.ConversationVariant;
 import com.eb.javafx.scene.ConversationDefinition.LineType;
+import com.eb.javafx.scene.ConversationConditionSyntax;
 import com.eb.javafx.scene.ConversationDefinitionJson;
 import com.eb.javafx.gamesupport.SystemCodeTables;
 import com.eb.javafx.util.Validation;
@@ -797,7 +798,29 @@ public final class ConversationEditorApplication {
     }
 
     static List<String> validationProblems(ConversationDefinition conversation) {
-        return List.of();
+        List<String> problems = new ArrayList<>();
+        for (int conversationIndex = 0; conversationIndex < conversation.conversations().size(); conversationIndex++) {
+            ConversationBlock block = conversation.conversations().get(conversationIndex);
+            for (int lineIndex = 0; lineIndex < block.lines().size(); lineIndex++) {
+                ConversationLine line = block.lines().get(lineIndex);
+                for (int variantIndex = 0; variantIndex < line.variants().size(); variantIndex++) {
+                    ConversationVariant variant = line.variants().get(variantIndex);
+                    for (int conditionIndex = 0; conditionIndex < variant.conditions().size(); conditionIndex++) {
+                        try {
+                            ConversationConditionSyntax.validateCondition(
+                                    variant.conditions().get(conditionIndex),
+                                    "Conversation " + block.id()
+                                            + " line " + (lineIndex + 1)
+                                            + " variant " + (variantIndex + 1)
+                                            + " condition " + (conditionIndex + 1));
+                        } catch (IllegalArgumentException exception) {
+                            problems.add(exception.getMessage());
+                        }
+                    }
+                }
+            }
+        }
+        return List.copyOf(problems);
     }
 
     static ConversationDefinition sampleConversation() {

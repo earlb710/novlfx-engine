@@ -69,6 +69,28 @@ Each line has `speaker`, `listener`, optional `type`, and one or more `variants`
 - `whisper`: converts the selected variant text to lowercase, escapes authored text, and wraps it in `<i></i>`.
 - `choice`: treats each variant as a player-selectable choice. Each choice variant can carry its own `value`; if `value` is empty or omitted, the runtime projection uses the zero-based variant index as the choice value. A variant can also carry its own `conditions` array; the editor builds each condition from a condition type such as `context` or `time of day`, the `=` operand, and a selected value, then stores it as a compact string such as `context=has_key` or `time of day=evening`. The runtime projection stores the choice value and those conditions with the generated scene choice metadata.
 
+Condition values can reference fixed conversation variables with `$name` or `${name}` syntax. Use `${name}` when adding suffix text immediately after the variable. Malformed or unknown `$` variables are rejected when JSON is loaded. Supported variables are:
+
+- `conversation.id`, `conversation.name`, `conversation.language`
+- `line.speaker`, `line.listener`, `line.type`
+- `variant.text`, `variant.value`, `variant.weight`, `variant.tooltipText`
+- `choice.text`, `choice.value`, `choice.tooltipText`
+
+Use `variant.*` when referring to the authored JSON variant fields. Use `choice.*` when referring to the generated runtime choice values for `choice` lines.
+
+Application code can also declare additional variable names in a reusable text variable catalog before loading conversation JSON. The catalog is not conversation-specific and can be reused anywhere else that wants declared variable names plus a resolver. A game can keep a JSON catalog such as:
+
+```json
+{
+  "variables": [
+    {"name": "money", "valueType": "number"},
+    {"name": "player.name", "valueType": "string"}
+  ]
+}
+```
+
+Anything not declared in that catalog is treated as an error. For example, a game can declare `money` so authored JSON may use `$money` or `${money}` even if the backing `mc.money` field is only provided by the game later. Load the catalog with `TextVariableCatalog.load(...)`, attach a `TextVariableResolver` with `withResolver(...)`, wrap it in `ConversationConditionVariables.catalog(...)`, then pass that to `ConversationDefinitionJson.load(...)` or `fromJson(...)`. Pass the same `ConversationConditionVariables` instance to `JsonConversationContentModule` when condition variable references should be replaced through the supplied lookup handler during scene projection.
+
 Example choice line:
 
 ```json
@@ -186,6 +208,8 @@ Use `context.resourceConfig().resolveCategoryCodeTables(context.applicationRoot(
 Use `context.resourceConfig().resolveResource(context.applicationRoot(), "displayDefinitions")` with `JsonDisplayContentModule` when app-owned display definitions should be loaded during the static content phase, and use named resources such as `sceneDefinitions` to load JSON-authored scene modules from the application side.
 
 The management UI includes a **Default App Values** screen for inspecting these startup defaults and related display resources. The **Application Values** tab presents editable application config fields with local **Save** and **Reset** actions.
+
+Immediately after that, the **Lookup Variables** tab opens an editable text variable catalog for this management screen session. The catalog uses two fields per row: `name` and `value type`. The value type is limited to `string`, `number`, or `boolean`; use **Add Variable** to append a blank row and **Remove Variable** to delete selected rows, or the last row when nothing is selected. Use the tab-level **Save** and **Reset** buttons to apply or restore the staged catalog rows locally while reviewing startup defaults.
 
 Beneath those fields, the **Application Variables** block provides a multiline table for app-owned variable notes or future app-specific persistence with four fields: `name`, `type`, `value`, and `description`. The type field is limited to `string`, `number`, or `bool`; use **Add Variable** to append a blank row and **Remove Variable** to delete selected rows, or the last row when nothing is selected.
 

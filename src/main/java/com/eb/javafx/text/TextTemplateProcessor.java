@@ -7,6 +7,16 @@ public final class TextTemplateProcessor {
     private TextTemplateProcessor() {
     }
 
+    public static String replaceVariables(String template, TextVariableCatalog catalog) {
+        Validation.requireNonNull(catalog, "Text variable catalog is required.");
+        return replaceVariables(template, variableName -> {
+            if (!catalog.isDeclared(variableName)) {
+                throw new IllegalArgumentException("Text template references undeclared variable: " + variableName);
+            }
+            return catalog.resolve(variableName);
+        });
+    }
+
     public static String replaceVariables(String template, TextVariableResolver resolver) {
         Validation.requireNonNull(template, "Text template is required.");
         Validation.requireNonNull(resolver, "Text variable resolver is required.");
