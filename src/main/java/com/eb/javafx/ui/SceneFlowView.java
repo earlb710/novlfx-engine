@@ -152,10 +152,9 @@ public final class SceneFlowView {
     private static Node choicePanel(SceneViewModel viewModel, Consumer<String> choiceHandler) {
         VBox panel = ScreenShell.styledPanel(ScreenShell.SCENE_CHOICES_PANEL_STYLE_CLASS);
         for (SceneChoiceViewModel choice : viewModel.choices()) {
-            Button button = new Button(choice.textDefinition());
+            Button button = ButtonVisuals.apply(new Button(choice.textDefinition()));
             button.getStyleClass().add("scene-choice-button");
             button.setDisable(!choice.available());
-            button.setMaxWidth(Double.MAX_VALUE);
             button.setOnAction(event -> choiceHandler.accept(choice.value()));
             if (!choice.tooltipTextDefinition().isBlank()) {
                 button.setTooltip(new Tooltip(choice.tooltipTextDefinition()));

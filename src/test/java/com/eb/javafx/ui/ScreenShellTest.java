@@ -20,6 +20,8 @@ import javafx.scene.layout.BorderStrokeStyle;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
+import javafx.scene.image.ImageView;
+import javafx.scene.shape.SVGPath;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Files;
@@ -29,6 +31,7 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -129,6 +132,50 @@ final class ScreenShellTest {
     }
 
     @Test
+    void footerBarDefaultsToDimOpacityAndRestoresOnHover() {
+        HBox footer = new HBox();
+
+        ScreenShell.configureDefaultFooterPresentation(footer);
+
+        assertEquals(14.0, footer.getSpacing());
+        assertEquals(0.5, footer.getOpacity());
+
+        footer.getOnMouseEntered().handle(null);
+
+        assertEquals(1.0, footer.getOpacity());
+
+        footer.getOnMouseExited().handle(null);
+
+        assertEquals(0.5, footer.getOpacity());
+    }
+
+    @Test
+    void defaultStylesMakeButtonsBoldAndLabelSized() throws Exception {
+        String css = Files.readString(Path.of("src/main/resources/com/eb/javafx/ui/default.css"));
+
+        assertTrue(css.contains("-fx-font-size: 20px;"));
+        assertTrue(css.contains("-fx-font-weight: bold;"));
+        assertTrue(css.contains("-fx-padding: 8px 18px;"));
+        assertTrue(css.contains("-fx-text-fill: #bfd3ec;"));
+        assertTrue(css.contains(".button:hover"));
+        assertTrue(css.contains(".svg-button:hover .svg-button-artwork-text"));
+        assertTrue(css.contains("-fx-fill: #ffffff;"));
+    }
+
+    @Test
+    void buttonVisualsLoadShapeFromLongButtonPillSvg() throws Exception {
+        String svg = Files.readString(Path.of("src/main/resources/com/eb/javafx/images/svg/button-pill-long.svg"));
+
+        assertTrue(svg.contains("button-shape-long"));
+        assertTrue(svg.contains("width=\"400\""));
+        assertTrue(svg.contains("height=\"150\""));
+        assertTrue(ButtonVisuals.buttonShapePath().startsWith("M "));
+        SVGPath shape = ButtonVisuals.createShape();
+        assertNotNull(shape);
+        assertEquals(ButtonVisuals.buttonShapePath(), shape.getContent());
+    }
+
+    @Test
     void footerOptionTextsExposeRequestedIconShortcuts() {
         ScreenShell.FooterOption back = ScreenShell.defaultFooterOptions().get(0);
 
@@ -186,6 +233,16 @@ final class ScreenShellTest {
         }
         assertTrue(VectorImage.isSvgPath(Path.of(
                 "src/main/resources/com/eb/javafx/images/icons/icons-10x10.svg")));
+    }
+
+    @Test
+    void footerOptionsRenderSlightlyLargerSvgIcons() {
+        ImageView graphic = ScreenShell.footerGraphic(ScreenShell.defaultFooterOptions().get(0));
+
+        assertNotNull(graphic);
+        assertEquals(14.0, graphic.getFitWidth());
+        assertEquals(14.0, graphic.getFitHeight());
+        assertTrue(graphic.isPreserveRatio());
     }
 
     @Test
@@ -304,12 +361,13 @@ final class ScreenShellTest {
 
         assertTrue(footer.getStyleClass().contains(ScreenShell.SCREEN_FOOTER_COMPACT_STYLE_CLASS));
         assertEquals("‹", firstOption.displayText(false));
-        assertEquals(4.0, footer.getSpacing());
+        assertEquals(6.0, footer.getSpacing());
 
         ScreenShell.setFooterCompact(footer, false);
         ScreenShell.setFooterLabelsVisible(footer, false);
 
         assertFalse(footer.getStyleClass().contains(ScreenShell.SCREEN_FOOTER_COMPACT_STYLE_CLASS));
+        assertEquals(14.0, footer.getSpacing());
         assertEquals("‹ Back (Backspace)", firstOption.displayText());
     }
 

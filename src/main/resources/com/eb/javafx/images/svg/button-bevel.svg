@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="400"
+   height="150"
+   viewBox="0 0 400 150"
+   version="1.1"
+   id="svg1"
+   sodipodi:docname="button-bevel.svg"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs id="defs1">
+    <linearGradient id="buttonBevelGradient" inkscape:collect="always">
+      <stop style="stop-color:#9dccff;stop-opacity:1;" offset="0" id="stop1" />
+      <stop style="stop-color:#0f4f9f;stop-opacity:1;" offset="0.55" id="stop2" />
+      <stop style="stop-color:#052f6f;stop-opacity:1;" offset="1" id="stop3" />
+    </linearGradient>
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#buttonBevelGradient"
+       id="buttonBevelFill"
+       x1="200"
+       y1="0"
+       x2="200"
+       y2="150"
+       gradientUnits="userSpaceOnUse" />
+  </defs>
+  <path
+     style="fill:url(#buttonBevelFill);stroke-width:1"
+     d="M 30,0 H 370 L 400,30 V 120 L 370,150 H 30 L 0,120 V 30 Z"
+     id="button-shape-bevel" />
+</svg>

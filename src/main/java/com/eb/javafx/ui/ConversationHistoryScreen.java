@@ -94,7 +94,7 @@ public final class ConversationHistoryScreen {
         return panel;
     }
 
-    static GridPane historyRows(ConversationHistoryEntryViewModel entry) {
+    public static GridPane historyRows(ConversationHistoryEntryViewModel entry) {
         GridPane rows = new GridPane();
         rows.getStyleClass().add(HISTORY_ROWS_STYLE_CLASS);
         rows.setHgap(HISTORY_COLUMN_GAP);
@@ -133,7 +133,7 @@ public final class ConversationHistoryScreen {
     }
 
     static String historySpeakerText(ConversationHistoryRowViewModel row) {
-        return row.speakerLabel() == null ? "" : row.speakerLabel();
+        return row.speakerLabel() == null || row.speakerLabel().isBlank() ? "" : row.speakerLabel() + ":";
     }
 
     static String historyMessageText(ConversationHistoryRowViewModel row) {

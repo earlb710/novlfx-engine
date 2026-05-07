@@ -1,8 +1,9 @@
-package com.eb.javafx.ui;
+package com.eb.javafx.ui.test;
 
 import com.eb.javafx.prefs.PreferencesService;
 import com.eb.javafx.testscreen.ManualTest;
 import com.eb.javafx.testscreen.TestScreenApplication;
+import com.eb.javafx.ui.UiTheme;
 import javafx.application.Platform;
 import javafx.stage.Stage;
 import org.junit.jupiter.api.Test;

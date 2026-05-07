@@ -14,8 +14,7 @@ final class ScreenNavigation {
     }
 
     static Button button(RouteContext context, String text, String routeId) {
-        Button button = new Button(text);
-        button.setMaxWidth(Double.MAX_VALUE);
+        Button button = ButtonVisuals.apply(new Button(text));
         button.setOnAction(event -> context.navigateTo(routeId));
         return button;
     }

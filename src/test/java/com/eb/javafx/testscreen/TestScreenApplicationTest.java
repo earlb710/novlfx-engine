@@ -3,8 +3,17 @@ package com.eb.javafx.testscreen;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import javax.swing.JCheckBox;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTextField;
 import java.io.ByteArrayInputStream;
+import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Component;
+import java.awt.Container;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -159,7 +168,7 @@ final class TestScreenApplicationTest {
     @Test
     void manualTestAnnotationDefaultsAutoOffForNewRecords() {
         boolean auto = TestScreenApplication.defaultAutoForSource(Optional.of(
-                "MethodSource [className = 'com.eb.javafx.ui.CaptureTestScreenTest', "
+                "MethodSource [className = 'com.eb.javafx.ui.test.CaptureTestScreenTest', "
                         + "methodName = 'runCaptureTestScreenFromTestApp', methodParameterTypes = '']"));
 
         assertFalse(auto);
@@ -235,7 +244,7 @@ final class TestScreenApplicationTest {
     @Test
     void categoryForSourceUsesFirstPackageSegmentBelowJavafxRoot() {
         assertEquals("ui", TestScreenApplication.categoryForSource(Optional.of(
-                "MethodSource [className = 'com.eb.javafx.ui.CaptureTestScreenTest', "
+                "MethodSource [className = 'com.eb.javafx.ui.test.CaptureTestScreenTest', "
                         + "methodName = 'runCaptureTestScreenFromTestApp', methodParameterTypes = '']")));
         assertEquals("testscreen", TestScreenApplication.categoryForSource(Optional.of(
                 "MethodSource [className = 'com.eb.javafx.testscreen.TestScreenApplicationTest', "
@@ -298,6 +307,38 @@ final class TestScreenApplicationTest {
         List<String> autoTests = TestScreenApplication.autoCategoryTests(tests, test -> test.startsWith("auto"));
 
         assertEquals(List.of("auto first", "auto second"), autoTests);
+    }
+
+    @Test
+    void manualTestsIncludesOnlyNonAutoTests() {
+        List<String> tests = List.of("auto first", "manual", "auto second");
+
+        List<String> manualTests = TestScreenApplication.manualTests(tests, test -> test.startsWith("auto"));
+
+        assertEquals(List.of("manual"), manualTests);
+    }
+
+    @Test
+    void discoveryMessageShowsFilteredAndTotalCounts() {
+        assertEquals("Showing 3 of 10 tests. Results are recorded in " + tempDir.resolve("result.json").toAbsolutePath() + ".",
+                TestScreenApplication.discoveryMessage(3, 10, tempDir.resolve("result.json")));
+        assertEquals("Discovered 10 tests. Results are recorded in " + tempDir.resolve("result.json").toAbsolutePath() + ".",
+                TestScreenApplication.discoveryMessage(10, 10, tempDir.resolve("result.json")));
+    }
+
+    @Test
+    void buildContentAddsManualFilterCheckboxAtTopOfTestTree() throws Exception {
+        TestScreenApplication application = new TestScreenApplication(TestScreenApplication.TestScreenConfiguration.defaults());
+        Method buildContent = TestScreenApplication.class.getDeclaredMethod("buildContent");
+        buildContent.setAccessible(true);
+
+        JPanel content = (JPanel) buildContent.invoke(application);
+
+        Optional<JCheckBox> manualCheckbox = findComponents(content, JCheckBox.class).stream()
+                .filter(checkBox -> "manual".equals(checkBox.getText()))
+                .findFirst();
+        assertTrue(manualCheckbox.isPresent());
+        assertFalse(manualCheckbox.orElseThrow().isSelected());
     }
 
     @Test
@@ -437,5 +478,40 @@ final class TestScreenApplicationTest {
 
         assertEquals("08-audio-support/AudioServiceDemo.java", displayName);
         assertNotEquals("examples/user-manual/08-audio-support/AudioServiceDemo.java", displayName);
+    }
+
+    @Test
+    void buildTestTabShowsFilePathFieldWithoutExtraScrollPane() throws Exception {
+        TestScreenApplication application = new TestScreenApplication(TestScreenApplication.TestScreenConfiguration.defaults());
+        Method buildTestTab = TestScreenApplication.class.getDeclaredMethod("buildTestTab");
+        buildTestTab.setAccessible(true);
+
+        JPanel testTab = (JPanel) buildTestTab.invoke(application);
+        JPanel selectionDetailsPanel = (JPanel) testTab.getComponent(0);
+        Object northComponent = ((BorderLayout) selectionDetailsPanel.getLayout()).getLayoutComponent(BorderLayout.NORTH);
+
+        assertTrue(northComponent instanceof JPanel);
+        assertFalse(northComponent instanceof JScrollPane);
+
+        JPanel pathPanel = (JPanel) northComponent;
+        Object centerComponent = ((BorderLayout) pathPanel.getLayout()).getLayoutComponent(BorderLayout.CENTER);
+
+        Field pathFieldField = TestScreenApplication.class.getDeclaredField("pathField");
+        pathFieldField.setAccessible(true);
+        assertTrue(centerComponent instanceof JTextField);
+        assertEquals(pathFieldField.get(application), centerComponent);
+    }
+
+    private static <T extends Component> List<T> findComponents(Component component, Class<T> componentType) {
+        List<T> matches = new java.util.ArrayList<>();
+        if (componentType.isInstance(component)) {
+            matches.add(componentType.cast(component));
+        }
+        if (component instanceof Container container) {
+            for (Component child : container.getComponents()) {
+                matches.addAll(findComponents(child, componentType));
+            }
+        }
+        return matches;
     }
 }

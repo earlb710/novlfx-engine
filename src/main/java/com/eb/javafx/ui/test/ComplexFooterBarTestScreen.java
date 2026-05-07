@@ -1,10 +1,16 @@
-package com.eb.javafx.ui;
+package com.eb.javafx.ui.test;
 
 import com.eb.javafx.gamesupport.GameDateTime;
 import com.eb.javafx.prefs.PreferencesService;
 import com.eb.javafx.prefs.PreferencesService.FooterShortcutDisplay;
 import com.eb.javafx.state.GameState;
 import com.eb.javafx.text.DialogSpeaker;
+import com.eb.javafx.ui.ButtonVisuals;
+import com.eb.javafx.ui.ConversationHistoryEntryViewModel;
+import com.eb.javafx.ui.ConversationHistoryScreen;
+import com.eb.javafx.ui.ConversationHistoryViewModel;
+import com.eb.javafx.ui.ScreenShell;
+import com.eb.javafx.ui.UiTheme;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
@@ -63,7 +69,7 @@ public final class ComplexFooterBarTestScreen {
                 ScreenShell.SCENE_CHOICES_PANEL_STYLE_CLASS,
                 new Label("Choice options"),
                 choicesPanel);
-        Button closeButton = new Button("Back to main menu");
+        Button closeButton = ButtonVisuals.apply(new Button("Back to main menu"));
         closeButton.setOnAction(event -> closeAction.run());
 
         VBox content = new VBox(
@@ -155,8 +161,7 @@ public final class ComplexFooterBarTestScreen {
             Runnable refresh) {
         choicesPanel.getChildren().clear();
         for (TestConversationChoice choice : model.currentChoices()) {
-            Button choiceButton = new Button(choice.text());
-            choiceButton.setMaxWidth(Double.MAX_VALUE);
+            Button choiceButton = ButtonVisuals.apply(new Button(choice.text()));
             choiceButton.setDisable(choice.id().equals(model.selectedChoiceId()));
             choiceButton.setOnAction(event -> {
                 model.selectChoice(choice.id());

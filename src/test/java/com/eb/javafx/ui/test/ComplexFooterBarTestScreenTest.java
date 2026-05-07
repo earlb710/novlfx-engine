@@ -1,8 +1,14 @@
-package com.eb.javafx.ui;
+package com.eb.javafx.ui.test;
 
 import com.eb.javafx.prefs.PreferencesService;
+import com.eb.javafx.prefs.PreferencesService.FooterShortcutDisplay;
 import com.eb.javafx.testscreen.ManualTest;
 import com.eb.javafx.testscreen.TestScreenApplication;
+import com.eb.javafx.ui.ConversationHistoryEntryViewModel;
+import com.eb.javafx.ui.ConversationHistoryRowViewModel;
+import com.eb.javafx.ui.ConversationHistoryViewModel;
+import com.eb.javafx.ui.ScreenShell;
+import com.eb.javafx.ui.UiTheme;
 import javafx.application.Platform;
 import javafx.geometry.Pos;
 import javafx.scene.input.KeyCode;
