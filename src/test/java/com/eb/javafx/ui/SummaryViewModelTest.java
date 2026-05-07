@@ -27,10 +27,27 @@ final class SummaryViewModelTest {
         assertEquals("Window", viewModel.rows().get(0).label());
         assertEquals("HUD alpha", viewModel.rows().get(1).label());
         assertEquals("0.42", viewModel.rows().get(1).value());
-        assertEquals(13, viewModel.rows().size());
+        assertEquals(15, viewModel.rows().size());
         assertEquals("Footer shortcut display", viewModel.rows().get(6).label());
+        assertEquals("Theme set", viewModel.rows().get(9).label());
+        assertEquals("Ocean", viewModel.rows().get(9).value());
+        assertEquals("Theme variant", viewModel.rows().get(10).label());
         assertEquals("HUD alpha: 0.42", viewModel.screenViewModel().lines().get(1));
         assertEquals("Back to main menu", viewModel.actions().get(0).label());
+    }
+
+    @Test
+    void preferencesThemeOptionsListAllFamiliesAndVariants() {
+        assertEquals(List.of(
+                        "Ocean - Dark",
+                        "Ocean - Light pastel",
+                        "Forest - Dark",
+                        "Forest - Light pastel",
+                        "Sunset - Dark",
+                        "Sunset - Light pastel",
+                        "Violet - Dark",
+                        "Violet - Light pastel"),
+                PreferencesSummaryScreen.themeOptionLabels());
     }
 
     @Test

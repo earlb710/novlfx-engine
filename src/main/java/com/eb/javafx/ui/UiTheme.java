@@ -1,18 +1,192 @@
 package com.eb.javafx.ui;
 
 import com.eb.javafx.prefs.PreferencesService;
+import com.eb.javafx.prefs.PreferencesService.ThemeFamily;
+import com.eb.javafx.prefs.PreferencesService.ThemeVariant;
 
-import java.net.URL;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 /**
- * JavaFX theme tokens for GUI variables and shared style declarations.
- *
- * <p>The theme derives font, high-contrast, and reduced-motion tokens from loaded
- * preferences and combines them with fixed migrated color defaults. The stylesheet
- * is loaded from module resources and reported as a startup asset failure when
- * missing.</p>
+ * JavaFX theme tokens and generated stylesheet lookup for reusable screens.
  */
 public final class UiTheme {
+    private static final String STYLESHEET_TEMPLATE = """
+            .root {
+                -fx-background-color: %s;
+                -fx-font-family: "%s";
+            }
+
+            .screen-root {
+                -fx-background-color: linear-gradient(to bottom, %s, %s);
+            }
+
+            .screen-title {
+                -fx-font-size: 34px;
+                -fx-font-weight: bold;
+                -fx-text-fill: %s;
+            }
+
+            .screen-panel {
+                -fx-background-color: %s;
+                -fx-border-color: %s;
+                -fx-border-radius: 6px;
+                -fx-background-radius: 6px;
+            }
+
+            .screen-footer-bar {
+                -fx-alignment: center;
+                -fx-background-color: %s;
+                -fx-border-color: transparent;
+                -fx-border-width: 0;
+                -fx-border-radius: 999px;
+                -fx-background-radius: 999px;
+                -fx-padding: 1px;
+            }
+
+            .screen-footer-option {
+                -fx-text-fill: %s;
+                -fx-font-size: 9px;
+            }
+
+            .screen-footer-option-disabled {
+                -fx-opacity: 0.45;
+            }
+
+            .conversation-history-rows {
+                -fx-hgap: 10px;
+                -fx-vgap: 6px;
+            }
+
+            .conversation-history-speaker {
+                -fx-alignment: top-right;
+            }
+
+            .conversation-history-message {
+                -fx-alignment: top-left;
+            }
+
+            .screen-footer-compact {
+                -fx-padding: 1px;
+            }
+
+            .scene-status-panel,
+            .scene-dialogue-panel,
+            .scene-choices-panel,
+            .scene-effects-panel {
+                -fx-border-color: %s;
+            }
+
+            .scene-choice-button {
+                -fx-alignment: center-left;
+            }
+
+            .scene-choice-state,
+            .scene-effect-preview {
+                -fx-text-fill: %s;
+            }
+
+            .layout-content,
+            .layout-titled-panel,
+            .layout-main-content,
+            .layout-hud-overlay,
+            .layout-dialogue,
+            .layout-menu,
+            .layout-form {
+                -fx-spacing: 12px;
+            }
+
+            .layout-subtitle,
+            .layout-footer,
+            .layout-section-row {
+                -fx-text-fill: %s;
+            }
+
+            .layout-section-title {
+                -fx-font-weight: bold;
+                -fx-font-size: 20px;
+                -fx-text-fill: %s;
+            }
+
+            .layout-two-column,
+            .layout-sidebar-content {
+                -fx-spacing: 12px;
+            }
+
+            .layout-column,
+            .layout-sidebar,
+            .layout-card,
+            .layout-section {
+                -fx-spacing: 8px;
+            }
+
+            .layout-sidebar,
+            .layout-card,
+            .layout-hud-overlay,
+            .layout-dialogue {
+                -fx-background-color: %s;
+                -fx-border-color: %s;
+                -fx-border-radius: 6px;
+                -fx-background-radius: 6px;
+                -fx-padding: 12px;
+            }
+
+            .layout-action-row {
+                -fx-spacing: 8px;
+            }
+
+            .layout-primary-action {
+                -fx-border-color: %s;
+            }
+
+            .layout-secondary-action,
+            .layout-sidebar-entry {
+                -fx-border-color: %s;
+            }
+
+            .label {
+                -fx-text-fill: %s;
+                -fx-font-size: 18px;
+            }
+
+            .button {
+                -fx-font-size: 20px;
+                -fx-font-weight: bold;
+                -fx-padding: 8px 18px;
+                -fx-background-color: %s;
+                -fx-text-fill: %s;
+                -fx-border-color: %s;
+                -fx-border-width: 1px;
+                -fx-background-insets: 0;
+                -fx-border-insets: 0;
+            }
+
+            .button:hover {
+                -fx-background-color: %s;
+                -fx-text-fill: %s;
+                -fx-border-color: %s;
+            }
+
+            .button:pressed {
+                -fx-background-color: %s;
+                -fx-text-fill: %s;
+                -fx-border-color: %s;
+            }
+
+            .svg-button-artwork-text {
+                -fx-fill: %s;
+                -fx-font-size: 20px;
+                -fx-font-weight: bold;
+            }
+
+            .svg-button:hover .svg-button-artwork-text,
+            .svg-button:pressed .svg-button-artwork-text {
+                -fx-fill: %s;
+            }
+            """;
+
     private String fontFamily;
     private String accentColor;
     private String textColor;
@@ -21,21 +195,33 @@ public final class UiTheme {
     private double fontScale;
     private boolean highContrast;
     private boolean reducedMotion;
+    private String stylesheet;
+    private String stylesheetContent;
 
     /**
-     * Loads the first JavaFX theme from preferences and fixed migrated GUI values.
+     * Loads the active theme from preferences and writes a generated stylesheet for the current palette.
      *
-     * @param preferencesService loaded preferences supplying font and accessibility tokens
+     * @param preferencesService loaded preferences supplying font, theme, and accessibility tokens
      */
     public void initialize(PreferencesService preferencesService) {
         fontFamily = preferencesService.fontFamily();
         fontScale = preferencesService.fontScale();
         highContrast = preferencesService.highContrast();
         reducedMotion = preferencesService.reducedMotion();
-        accentColor = highContrast ? "#ffff66" : "#0099cc";
-        textColor = "#ffffff";
-        panelBackground = highContrast ? "#000000" : "rgba(10, 20, 38, 0.85)";
-        hoverBackground = highContrast ? "#333300" : "#143869";
+
+        ThemePalette palette = highContrast
+                ? ThemePalette.highContrast()
+                : ThemePalette.forSelection(preferencesService.themeFamily(), preferencesService.themeVariant());
+        accentColor = palette.accentColor();
+        textColor = palette.labelText();
+        panelBackground = palette.screenPanelBackground();
+        hoverBackground = palette.buttonHoverBackground();
+        stylesheetContent = palette.toStylesheet(fontFamily);
+        stylesheet = writeStylesheet(stylesheetContent);
+        ButtonVisuals.configureArtworkGradient(
+                palette.buttonGradientStart(),
+                palette.buttonGradientMid(),
+                palette.buttonGradientEnd());
     }
 
     public String fontFamily() {
@@ -71,15 +257,205 @@ public final class UiTheme {
     }
 
     /**
-     * Returns the module stylesheet used by reusable screens.
+     * Returns the generated stylesheet used by reusable screens.
      *
-     * @throws StartupFailureException when the CSS resource is missing
+     * @throws StartupFailureException when the stylesheet cannot be materialized
      */
     public String stylesheet() {
-        URL stylesheet = UiTheme.class.getResource("/com/eb/javafx/ui/default.css");
-        if (stylesheet == null) {
+        if (stylesheet == null || stylesheet.isBlank()) {
             throw new StartupFailureException(StartupFailureCategory.MISSING_ASSET, "Missing JavaFX stylesheet.");
         }
-        return stylesheet.toExternalForm();
+        return stylesheet;
+    }
+
+    String stylesheetContent() {
+        return stylesheetContent;
+    }
+
+    private static String writeStylesheet(String css) {
+        try {
+            Path stylesheetPath = Files.createTempFile("novlfx-theme-", ".css");
+            Files.writeString(stylesheetPath, css, StandardCharsets.UTF_8);
+            stylesheetPath.toFile().deleteOnExit();
+            return stylesheetPath.toUri().toString();
+        } catch (IOException exception) {
+            throw new StartupFailureException(StartupFailureCategory.MISSING_ASSET, "Unable to create JavaFX stylesheet.");
+        }
+    }
+
+    private record ThemePalette(
+            String rootBackground,
+            String screenGradientStart,
+            String screenGradientEnd,
+            String accentColor,
+            String screenPanelBackground,
+            String screenPanelBorder,
+            String footerBackground,
+            String footerText,
+            String sectionBorder,
+            String sectionText,
+            String layoutPanelBackground,
+            String labelText,
+            String buttonBackground,
+            String buttonText,
+            String buttonBorder,
+            String buttonHoverBackground,
+            String buttonHoverText,
+            String buttonHoverBorder,
+            String buttonPressedBackground,
+            String buttonPressedText,
+            String buttonPressedBorder,
+            String svgButtonText,
+            String svgButtonHoverText,
+            String buttonGradientStart,
+            String buttonGradientMid,
+            String buttonGradientEnd) {
+        private static ThemePalette forSelection(ThemeFamily family, ThemeVariant variant) {
+            return switch (family) {
+                case OCEAN -> variant == ThemeVariant.DARK
+                        ? new ThemePalette(
+                        "#101828", "#101828", "#0a1426", "#66c1e0",
+                        "rgba(10, 20, 38, 0.85)", "#0099cc",
+                        "rgba(10, 20, 38, 0.50)", "#cbd5e1",
+                        "#143869", "#cbd5e1",
+                        "rgba(10, 20, 38, 0.65)", "#dbeafe",
+                        "#0a1426", "#bfd3ec", "#143869",
+                        "#143869", "#ffffff", "#0099cc",
+                        "#0099cc", "#ffffff", "#66c1e0",
+                        "#bfd3ec", "#ffffff",
+                        "#9dccff", "#0f4f9f", "#052f6f")
+                        : new ThemePalette(
+                        "#f4fbff", "#f4fbff", "#dcefff", "#3c7ea3",
+                        "rgba(229, 243, 251, 0.92)", "#7cb8d6",
+                        "rgba(229, 243, 251, 0.72)", "#456273",
+                        "#97c7dd", "#456273",
+                        "rgba(220, 239, 255, 0.84)", "#234052",
+                        "#e7f4fb", "#36576a", "#97c7dd",
+                        "#cfe8f6", "#234052", "#5ba6c8",
+                        "#8cc9e3", "#1f3e50", "#cae8f6",
+                        "#36576a", "#1f3e50",
+                        "#eef8fd", "#9fd3ea", "#5a9ec0");
+                case FOREST -> variant == ThemeVariant.DARK
+                        ? new ThemePalette(
+                        "#0f1a13", "#0f1a13", "#0a140f", "#8dd7a8",
+                        "rgba(11, 25, 17, 0.88)", "#57b27e",
+                        "rgba(11, 25, 17, 0.52)", "#cfe7d7",
+                        "#2d6a45", "#cfe7d7",
+                        "rgba(16, 34, 22, 0.68)", "#e2f4e8",
+                        "#122117", "#d2eedc", "#2d6a45",
+                        "#2d6a45", "#ffffff", "#57b27e",
+                        "#57b27e", "#082212", "#9fe0ba",
+                        "#d2eedc", "#ffffff",
+                        "#b7ebc8", "#40916c", "#1b4332")
+                        : new ThemePalette(
+                        "#f5fcf7", "#f5fcf7", "#e1f3e5", "#4f8b66",
+                        "rgba(231, 246, 235, 0.92)", "#90c7a4",
+                        "rgba(231, 246, 235, 0.72)", "#446152",
+                        "#a2cfb1", "#446152",
+                        "rgba(225, 243, 229, 0.84)", "#284233",
+                        "#e9f6ed", "#365343", "#9ecfb0",
+                        "#d4ecdb", "#284233", "#6aad87",
+                        "#9ed3b4", "#1d3427", "#d7f0df",
+                        "#365343", "#1d3427",
+                        "#eef8f0", "#abd7bb", "#6aa07f");
+                case SUNSET -> variant == ThemeVariant.DARK
+                        ? new ThemePalette(
+                        "#24131a", "#24131a", "#160d12", "#f3a6a0",
+                        "rgba(36, 19, 26, 0.86)", "#e07a6e",
+                        "rgba(36, 19, 26, 0.52)", "#f0d3d0",
+                        "#8f3f4c", "#f0d3d0",
+                        "rgba(45, 24, 31, 0.68)", "#fff0ee",
+                        "#2a151d", "#f8d8d3", "#8f3f4c",
+                        "#8f3f4c", "#ffffff", "#e07a6e",
+                        "#e07a6e", "#2a151d", "#f7c1b8",
+                        "#f8d8d3", "#ffffff",
+                        "#f7c8c2", "#d16b62", "#7f3b45")
+                        : new ThemePalette(
+                        "#fff6f3", "#fff6f3", "#ffe6df", "#b86d61",
+                        "rgba(255, 235, 228, 0.92)", "#e6ae9f",
+                        "rgba(255, 235, 228, 0.72)", "#72514c",
+                        "#d7a195", "#72514c",
+                        "rgba(255, 230, 223, 0.84)", "#593e3a",
+                        "#fff0ea", "#6f4d47", "#daa296",
+                        "#ffdcd0", "#593e3a", "#d99081",
+                        "#efb0a2", "#4c322c", "#f9d7cf",
+                        "#6f4d47", "#4c322c",
+                        "#fff5f1", "#f0b8ab", "#d88978");
+                case VIOLET -> variant == ThemeVariant.DARK
+                        ? new ThemePalette(
+                        "#191427", "#191427", "#110d1b", "#c7b5ff",
+                        "rgba(25, 20, 39, 0.86)", "#9b7be6",
+                        "rgba(25, 20, 39, 0.52)", "#e1d9fb",
+                        "#5b4b8a", "#e1d9fb",
+                        "rgba(32, 26, 49, 0.68)", "#f2efff",
+                        "#1c1730", "#ddd3ff", "#5b4b8a",
+                        "#5b4b8a", "#ffffff", "#9b7be6",
+                        "#9b7be6", "#1c1730", "#d7c9ff",
+                        "#ddd3ff", "#ffffff",
+                        "#e3d8ff", "#8f6ad8", "#4c3b78")
+                        : new ThemePalette(
+                        "#faf6ff", "#faf6ff", "#ede3ff", "#775fc1",
+                        "rgba(240, 232, 255, 0.92)", "#b9a2ea",
+                        "rgba(240, 232, 255, 0.72)", "#605375",
+                        "#c8b8ee", "#605375",
+                        "rgba(237, 227, 255, 0.84)", "#43395a",
+                        "#f3ecff", "#5b5076", "#baa7e9",
+                        "#e6dafd", "#43395a", "#9f81dd",
+                        "#c5b0f2", "#352c49", "#e9e0ff",
+                        "#5b5076", "#352c49",
+                        "#faf5ff", "#cebdf3", "#a287dd");
+            };
+        }
+
+        private static ThemePalette highContrast() {
+            return new ThemePalette(
+                    "#000000", "#000000", "#000000", "#ffff66",
+                    "rgba(0, 0, 0, 0.96)", "#ffff66",
+                    "rgba(0, 0, 0, 0.92)", "#ffff66",
+                    "#ffff66", "#ffff66",
+                    "rgba(0, 0, 0, 0.94)", "#ffffff",
+                    "#000000", "#ffff66", "#ffff66",
+                    "#333300", "#ffffff", "#ffff66",
+                    "#ffff66", "#000000", "#ffffff",
+                    "#ffff66", "#ffffff",
+                    "#fff8a6", "#c7bf2d", "#5c5400");
+        }
+
+        private String toStylesheet(String fontFamily) {
+            return STYLESHEET_TEMPLATE.formatted(
+                    rootBackground,
+                    cssQuoted(fontFamily == null || fontFamily.isBlank() ? "System" : fontFamily),
+                    screenGradientStart,
+                    screenGradientEnd,
+                    accentColor,
+                    screenPanelBackground,
+                    screenPanelBorder,
+                    footerBackground,
+                    footerText,
+                    sectionBorder,
+                    sectionText,
+                    sectionText,
+                    accentColor,
+                    layoutPanelBackground,
+                    sectionBorder,
+                    screenPanelBorder,
+                    sectionBorder,
+                    labelText,
+                    buttonBackground,
+                    buttonText,
+                    buttonBorder,
+                    buttonHoverBackground,
+                    buttonHoverText,
+                    buttonHoverBorder,
+                    buttonPressedBackground,
+                    buttonPressedText,
+                    buttonPressedBorder,
+                    svgButtonText,
+                    svgButtonHoverText);
+        }
+
+        private static String cssQuoted(String value) {
+            return value.replace("\\", "\\\\").replace("\"", "\\\"");
+        }
     }
 }

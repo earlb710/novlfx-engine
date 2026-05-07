@@ -31,6 +31,8 @@ final class PreferencesServiceTest {
         preferences.put("ui.footerShortcutDisplay", "display");
         preferences.put("ui.fontFamily", "Test Font");
         preferences.putDouble("ui.fontScale", 9.0);
+        preferences.put("ui.themeFamily", "forest");
+        preferences.put("ui.themeVariant", "light-pastel");
         preferences.putBoolean("accessibility.highContrast", true);
         preferences.putBoolean("accessibility.reducedMotion", true);
         preferences.put("input.mode", "keyboard");
@@ -50,6 +52,8 @@ final class PreferencesServiceTest {
         assertEquals(PreferencesService.FooterShortcutDisplay.DISPLAY, service.footerShortcutDisplay());
         assertEquals("Test Font", service.fontFamily());
         assertEquals(2.0, service.fontScale());
+        assertEquals(PreferencesService.ThemeFamily.FOREST, service.themeFamily());
+        assertEquals(PreferencesService.ThemeVariant.LIGHT_PASTEL, service.themeVariant());
         assertTrue(service.highContrast());
         assertTrue(service.reducedMotion());
         assertEquals("keyboard", service.inputMode());
@@ -94,6 +98,7 @@ final class PreferencesServiceTest {
         service.saveUiVisibility(false, false, true);
         service.saveUiOpacity(2.0, -1.0);
         service.saveFontPreferences("", 9.0);
+        service.saveThemePreferences(PreferencesService.ThemeFamily.SUNSET, PreferencesService.ThemeVariant.LIGHT_PASTEL);
         service.saveAccessibilityPreferences(true, true);
         service.saveInputMode("invalid");
         service.saveMasterVolume(2.0);
@@ -108,6 +113,8 @@ final class PreferencesServiceTest {
         assertEquals(0.0, service.sayWindowAlpha());
         assertEquals("System", service.fontFamily());
         assertEquals(2.0, service.fontScale());
+        assertEquals(PreferencesService.ThemeFamily.SUNSET, service.themeFamily());
+        assertEquals(PreferencesService.ThemeVariant.LIGHT_PASTEL, service.themeVariant());
         assertTrue(service.highContrast());
         assertTrue(service.reducedMotion());
         assertEquals("mouse", service.inputMode());
@@ -127,5 +134,25 @@ final class PreferencesServiceTest {
         service.saveFooterShortcutDisplay("invalid");
 
         assertEquals(PreferencesService.FooterShortcutDisplay.TOOLTIP_ONLY, service.footerShortcutDisplay());
+    }
+
+    @Test
+    void loadAndSaveThemePreferencesValidateUnknownValues() {
+        preferences.put("ui.themeFamily", "invalid");
+        preferences.put("ui.themeVariant", "invalid");
+
+        PreferencesService service = new PreferencesService();
+        service.load();
+
+        assertEquals(PreferencesService.ThemeFamily.OCEAN, service.themeFamily());
+        assertEquals(PreferencesService.ThemeVariant.DARK, service.themeVariant());
+
+        service.saveThemePreferences("violet", "light-pastel");
+        assertEquals(PreferencesService.ThemeFamily.VIOLET, service.themeFamily());
+        assertEquals(PreferencesService.ThemeVariant.LIGHT_PASTEL, service.themeVariant());
+
+        service.saveThemePreferences("bad", "bad");
+        assertEquals(PreferencesService.ThemeFamily.OCEAN, service.themeFamily());
+        assertEquals(PreferencesService.ThemeVariant.DARK, service.themeVariant());
     }
 }

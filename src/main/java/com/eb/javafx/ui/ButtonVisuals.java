@@ -71,8 +71,13 @@ public final class ButtonVisuals {
     private static final System.Logger LOGGER = System.getLogger(ButtonVisuals.class.getName());
     private static final String SHAPE_PATH = loadShapePath(BUTTON_SHAPE_RESOURCE);
     private static final String BEVEL_SHAPE_PATH = loadShapePath(BUTTON_BEVEL_ARTWORK_RESOURCE);
-    private static final ArtworkResource LONG_ARTWORK = loadArtworkResource(BUTTON_LONG_ARTWORK_RESOURCE);
-    private static final ArtworkResource BEVEL_ARTWORK = loadArtworkResource(BUTTON_BEVEL_ARTWORK_RESOURCE);
+    private static final ArtworkResource LONG_ARTWORK_BASE = loadArtworkResource(BUTTON_LONG_ARTWORK_RESOURCE);
+    private static final ArtworkResource BEVEL_ARTWORK_BASE = loadArtworkResource(BUTTON_BEVEL_ARTWORK_RESOURCE);
+    private static volatile ArtworkResource longArtwork = LONG_ARTWORK_BASE;
+    private static volatile ArtworkResource bevelArtwork = BEVEL_ARTWORK_BASE;
+    private static volatile String gradientStartColor = "#9dccff";
+    private static volatile String gradientMidColor = "#0f4f9f";
+    private static volatile String gradientEndColor = "#052f6f";
     private static final Map<RasterSize, Image> RASTER_CACHE = new LinkedHashMap<>(16, 0.75f, true) {
         @Override
         protected boolean removeEldestEntry(Map.Entry<RasterSize, Image> eldest) {
@@ -156,15 +161,15 @@ public final class ButtonVisuals {
     }
 
     public static String buttonArtworkResourceUrl() {
-        return LONG_ARTWORK.url();
+        return longArtwork.url();
     }
 
     public static String buttonArtworkResourceUrl(String text, double width, double height) {
-        return LONG_ARTWORK.url();
+        return longArtwork.url();
     }
 
     public static String buttonBevelArtworkResourceUrl() {
-        return BEVEL_ARTWORK.url();
+        return bevelArtwork.url();
     }
 
     public static boolean usesLongArtwork(String text, double width, double height) {
@@ -201,10 +206,10 @@ public final class ButtonVisuals {
     }
 
     public static Node createArtworkGraphic(String text, double width, double height, boolean pressed) {
-        if (LONG_ARTWORK.svg().isBlank()) {
+        if (longArtwork.svg().isBlank()) {
             return null;
         }
-        return new RasterizedArtwork(text, width, height, LONG_ARTWORK, pressed);
+        return new RasterizedArtwork(text, width, height, longArtwork, pressed);
     }
 
     public static Node createBevelArtworkGraphic(String text) {
@@ -216,10 +221,27 @@ public final class ButtonVisuals {
     }
 
     public static Node createBevelArtworkGraphic(String text, double width, double height, boolean pressed) {
-        if (BEVEL_ARTWORK.svg().isBlank()) {
+        if (bevelArtwork.svg().isBlank()) {
             return null;
         }
-        return new RasterizedArtwork(text, width, height, BEVEL_ARTWORK, pressed);
+        return new RasterizedArtwork(text, width, height, bevelArtwork, pressed);
+    }
+
+    public static synchronized void configureArtworkGradient(String startColor, String midColor, String endColor) {
+        String safeStart = validColorOrDefault(startColor, "#9dccff");
+        String safeMid = validColorOrDefault(midColor, "#0f4f9f");
+        String safeEnd = validColorOrDefault(endColor, "#052f6f");
+        if (safeStart.equals(gradientStartColor) && safeMid.equals(gradientMidColor) && safeEnd.equals(gradientEndColor)) {
+            return;
+        }
+        gradientStartColor = safeStart;
+        gradientMidColor = safeMid;
+        gradientEndColor = safeEnd;
+        longArtwork = themeArtwork(LONG_ARTWORK_BASE, safeStart, safeMid, safeEnd);
+        bevelArtwork = themeArtwork(BEVEL_ARTWORK_BASE, safeStart, safeMid, safeEnd);
+        synchronized (RASTER_CACHE) {
+            RASTER_CACHE.clear();
+        }
     }
 
     private static String loadShapePath(String resourcePath) {
@@ -279,6 +301,25 @@ public final class ButtonVisuals {
             reversed.replace(span.start(), span.end(), spans.get(spans.size() - 1 - index).style());
         }
         return reversed.toString();
+    }
+
+    private static ArtworkResource themeArtwork(ArtworkResource baseArtwork, String startColor, String midColor, String endColor) {
+        if (baseArtwork.svg().isBlank()) {
+            return baseArtwork;
+        }
+        String themedSvg = baseArtwork.svg()
+                .replace("#9dccff", startColor)
+                .replace("#0f4f9f", midColor)
+                .replace("#052f6f", endColor);
+        return new ArtworkResource(
+                baseArtwork.resourcePath(),
+                baseArtwork.url(),
+                themedSvg,
+                reverseGradientStopStyles(themedSvg));
+    }
+
+    private static String validColorOrDefault(String color, String fallback) {
+        return color != null && color.matches("#[0-9a-fA-F]{6,8}") ? color : fallback;
     }
 
     private static Image rasterizeArtwork(ArtworkResource artworkResource, int width, int height, boolean pressed) {
