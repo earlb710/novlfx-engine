@@ -51,17 +51,18 @@ final class ButtonPillSvgTestScreenTest {
 
     @Test
     void buttonPillArtworkSelectsShortNormalAndLongSvgResources() {
-        String normalLabel = "Medium label";
+        String normalLabel = "Normal";
+        double normalWidth = 160;
 
         assertTrue(ButtonVisuals.usesShortArtwork(ButtonPillSvgTestScreen.PRIMARY_LABEL, -1, -1));
-        assertFalse(ButtonVisuals.usesShortArtwork(normalLabel, -1, -1));
+        assertFalse(ButtonVisuals.usesShortArtwork(normalLabel, normalWidth, ButtonVisuals.BUTTON_ARTWORK_HEIGHT));
         assertTrue(ButtonVisuals.usesLongArtwork(ButtonPillSvgTestScreen.SECONDARY_LABEL, -1, -1));
         assertTrue(ButtonVisuals.usesLongArtwork(ButtonPillSvgTestScreen.MULTILINE_LABEL, -1, -1));
         assertTrue(ButtonVisuals.usesLongArtwork(ButtonPillSvgTestScreen.FIXED_LABEL, 260, 64));
-        assertFalse(ButtonVisuals.usesLongArtwork(normalLabel, -1, -1));
+        assertFalse(ButtonVisuals.usesLongArtwork(normalLabel, normalWidth, ButtonVisuals.BUTTON_ARTWORK_HEIGHT));
         assertTrue(ButtonVisuals.buttonArtworkResourceUrl(ButtonPillSvgTestScreen.PRIMARY_LABEL, -1, -1)
                 .endsWith(ButtonVisuals.BUTTON_SHORT_ARTWORK_RESOURCE.substring(1)));
-        assertTrue(ButtonVisuals.buttonArtworkResourceUrl(normalLabel, -1, -1)
+        assertTrue(ButtonVisuals.buttonArtworkResourceUrl(normalLabel, normalWidth, ButtonVisuals.BUTTON_ARTWORK_HEIGHT)
                 .endsWith(ButtonVisuals.BUTTON_NORMAL_ARTWORK_RESOURCE.substring(1)));
         assertTrue(ButtonVisuals.buttonArtworkResourceUrl(ButtonPillSvgTestScreen.SECONDARY_LABEL, -1, -1)
                 .endsWith(ButtonVisuals.BUTTON_LONG_ARTWORK_RESOURCE.substring(1)));
