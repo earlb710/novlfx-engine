@@ -32,10 +32,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Consumer;
 
 /** Manual editor for engine default display values and viewer for related resources. */
@@ -44,6 +46,10 @@ public final class DefaultDisplayValuesApplication {
     private static final List<DisplayResource> DISPLAY_RESOURCES = List.of(
             new DisplayResource("Default CSS", "/com/eb/javafx/ui/default.css", true),
             new DisplayResource("Layouts", "/com/eb/javafx/ui/layout-contract.json", false));
+    private static final List<String> LOOKUP_VARIABLE_TYPE_OPTIONS = Arrays.stream(TextVariableType.values())
+            .map(type -> type.name().toLowerCase(Locale.ROOT))
+            .toList();
+    private static final Set<String> LOOKUP_VARIABLE_TYPE_OPTIONS_SET = Set.copyOf(LOOKUP_VARIABLE_TYPE_OPTIONS);
     private DisplayDefaults displayDefaults = DisplayDefaults.defaults();
     private List<ApplicationConfigField> editedApplicationConfigFields = applicationConfigFields();
     private List<LookupVariable> editedLookupVariables = lookupVariables();
@@ -206,9 +212,7 @@ public final class DefaultDisplayValuesApplication {
     }
 
     static List<String> lookupVariableTypeOptions() {
-        return List.of(TextVariableType.values()).stream()
-                .map(type -> type.name().toLowerCase(Locale.ROOT))
-                .toList();
+        return LOOKUP_VARIABLE_TYPE_OPTIONS;
     }
 
     static List<LookupVariable> lookupVariables() {
@@ -577,7 +581,7 @@ public final class DefaultDisplayValuesApplication {
         LookupVariable {
             name = Validation.requireNonNull(name, "Lookup variable name is required.");
             valueType = Validation.requireNonBlank(valueType, "Lookup variable type is required.");
-            if (!lookupVariableTypeOptions().contains(valueType)) {
+            if (!LOOKUP_VARIABLE_TYPE_OPTIONS_SET.contains(valueType)) {
                 throw new IllegalArgumentException("Unsupported lookup variable type: " + valueType);
             }
         }

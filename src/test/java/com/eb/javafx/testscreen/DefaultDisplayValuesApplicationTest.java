@@ -114,6 +114,14 @@ final class DefaultDisplayValuesApplicationTest {
     }
 
     @Test
+    void lookupVariableValidationRejectsUnsupportedType() {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> new DefaultDisplayValuesApplication.LookupVariable("money", "bool"));
+
+        assertEquals("Unsupported lookup variable type: bool", exception.getMessage());
+    }
+
+    @Test
     void applicationVariablesTableModelUsesHelperFields() {
         DefaultTableModel model = DefaultDisplayValuesApplication.applicationVariablesTableModel(List.of(
                 new DefaultDisplayValuesApplication.ApplicationVariable("enabled", "bool", "true", "Feature flag")));
