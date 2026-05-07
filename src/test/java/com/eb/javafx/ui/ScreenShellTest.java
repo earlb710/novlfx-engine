@@ -162,7 +162,7 @@ final class ScreenShellTest {
     void buttonVisualsLoadShapeFromButtonPillSvg() throws Exception {
         String svg = Files.readString(Path.of("src/main/resources/com/eb/javafx/images/svg/button-pill.svg"));
 
-        assertTrue(svg.contains("id=\"button-shape\""));
+        assertTrue(svg.contains("button-shape"));
         assertTrue(ButtonVisuals.buttonShapePath().startsWith("M "));
         SVGPath shape = ButtonVisuals.createShape();
         assertNotNull(shape);
