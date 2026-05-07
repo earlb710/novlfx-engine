@@ -11,6 +11,7 @@ import java.util.stream.Collectors;
 
 /** Declares application-owned conversation condition variables and their optional lookup handler. */
 public final class ConversationConditionVariables {
+    /** Application variable aliases start with a letter and then allow letters, digits, underscores, or dots. */
     private static final Pattern VARIABLE_NAME_PATTERN = Pattern.compile("[A-Za-z][A-Za-z0-9_.]*");
     private static final ConversationConditionVariables FIXED = new ConversationConditionVariables(Set.of(), name -> Optional.empty());
 

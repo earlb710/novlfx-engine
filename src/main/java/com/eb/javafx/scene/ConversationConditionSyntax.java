@@ -28,6 +28,8 @@ public final class ConversationConditionSyntax {
             "value",
             "weight",
             "tooltipText");
+
+    /** Static-only helper; callers should use the validation and replacement methods directly. */
     private ConversationConditionSyntax() {
     }
 
