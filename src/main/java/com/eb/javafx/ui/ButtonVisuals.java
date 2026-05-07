@@ -307,6 +307,13 @@ public final class ButtonVisuals {
         return Double.isFinite(size) && size > 0 ? size : Region.USE_COMPUTED_SIZE;
     }
 
+    private static void layoutArtworkLabel(Text label, double width, double height) {
+        label.autosize();
+        var bounds = label.getLayoutBounds();
+        label.setLayoutX((width - bounds.getWidth()) / 2 - bounds.getMinX() + BUTTON_ARTWORK_LABEL_OFFSET_X);
+        label.setLayoutY((height - bounds.getHeight()) / 2 - bounds.getMinY() + BUTTON_ARTWORK_LABEL_OFFSET_Y);
+    }
+
     private record StyleSpan(int start, int end, String style) {
     }
 
@@ -393,7 +400,7 @@ public final class ButtonVisuals {
             label.setWrappingWidth(Math.max(0, width - BUTTON_ARTWORK_HORIZONTAL_PADDING));
             artwork.resizeRelocate(0, 0, width, height);
             updateArtwork(width, height);
-            layoutLabel(width, height);
+            layoutArtworkLabel(label, width, height);
         }
 
         private void refreshPreferredSize() {
@@ -453,12 +460,6 @@ public final class ButtonVisuals {
             slice.relocate(targetX, 0);
         }
 
-        private void layoutLabel(double width, double height) {
-            label.autosize();
-            var bounds = label.getLayoutBounds();
-            label.setLayoutX((width - bounds.getWidth()) / 2 - bounds.getMinX() + BUTTON_ARTWORK_LABEL_OFFSET_X);
-            label.setLayoutY((height - bounds.getHeight()) / 2 - bounds.getMinY() + BUTTON_ARTWORK_LABEL_OFFSET_Y);
-        }
     }
 
     private static final class FullRasterizedArtwork extends StackPane implements PressableArtwork {
@@ -527,7 +528,7 @@ public final class ButtonVisuals {
             label.setWrappingWidth(Math.max(0, width - BUTTON_ARTWORK_HORIZONTAL_PADDING));
             updateArtwork(width, height);
             artwork.resizeRelocate(0, 0, width, height);
-            layoutLabel(width, height);
+            layoutArtworkLabel(label, width, height);
         }
 
         private void refreshPreferredSize() {
@@ -560,12 +561,6 @@ public final class ButtonVisuals {
             }
         }
 
-        private void layoutLabel(double width, double height) {
-            label.autosize();
-            var bounds = label.getLayoutBounds();
-            label.setLayoutX((width - bounds.getWidth()) / 2 - bounds.getMinX() + BUTTON_ARTWORK_LABEL_OFFSET_X);
-            label.setLayoutY((height - bounds.getHeight()) / 2 - bounds.getMinY() + BUTTON_ARTWORK_LABEL_OFFSET_Y);
-        }
     }
 
     private static String loadSvgResource(String resourcePath) {
