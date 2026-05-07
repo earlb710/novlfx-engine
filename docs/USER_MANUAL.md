@@ -209,6 +209,8 @@ Use `context.resourceConfig().resolveResource(context.applicationRoot(), "displa
 
 The management UI includes a **Default App Values** screen for inspecting these startup defaults and related display resources. The **Application Values** tab presents editable application config fields with local **Save** and **Reset** actions.
 
+Immediately after that, the **Lookup Variables** tab opens an editable text variable catalog for this management screen session. The catalog uses two fields per row: `name` and `value type`. The value type is limited to `string`, `number`, or `boolean`; use **Add Variable** to append a blank row and **Remove Variable** to delete selected rows, or the last row when nothing is selected. Use the tab-level **Save** and **Reset** buttons to apply or restore the staged catalog rows locally while reviewing startup defaults.
+
 Beneath those fields, the **Application Variables** block provides a multiline table for app-owned variable notes or future app-specific persistence with four fields: `name`, `type`, `value`, and `description`. The type field is limited to `string`, `number`, or `bool`; use **Add Variable** to append a blank row and **Remove Variable** to delete selected rows, or the last row when nothing is selected.
 
 Below that, the **Load Files** block provides a second table for tracking authored startup loads with three fields: `type`, `path`, and `file name`. The type field is limited to `code table` or `conversation`; use **Add Load** to append a blank row and **Remove Load** to delete selected rows, or the last row when nothing is selected. Leave `file name` empty when the intent is to load every file in the specified directory.
