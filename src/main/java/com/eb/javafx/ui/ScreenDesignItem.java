@@ -13,6 +13,7 @@ public record ScreenDesignItem(
         String text,
         String value,
         String defaultValue,
+        Integer sequence,
         boolean editable,
         String styleClass,
         Map<String, String> metadata) {
@@ -32,6 +33,9 @@ public record ScreenDesignItem(
         if (styleClass != null && styleClass.isBlank()) {
             throw new IllegalArgumentException("Screen design item style class cannot be blank.");
         }
+        if (sequence != null && sequence < 0) {
+            throw new IllegalArgumentException("Screen design item sequence cannot be negative.");
+        }
         editable = supportsEditable(type) && editable;
         metadata = Map.copyOf(Validation.requireNonNull(metadata, "Screen design item metadata is required."));
     }
@@ -44,17 +48,45 @@ public record ScreenDesignItem(
             String text,
             String value,
             String defaultValue,
+            boolean editable,
             String styleClass,
             Map<String, String> metadata) {
-        this(id, blockId, type, label, text, value, defaultValue, defaultEditable(type), styleClass, metadata);
+        this(id, blockId, type, label, text, value, defaultValue, null, editable, styleClass, metadata);
+    }
+
+    public ScreenDesignItem(
+            String id,
+            String blockId,
+            ScreenDesignItemType type,
+            String label,
+            String text,
+            String value,
+            String defaultValue,
+            String styleClass,
+            Map<String, String> metadata) {
+        this(id, blockId, type, label, text, value, defaultValue, null, defaultEditable(type), styleClass, metadata);
+    }
+
+    public ScreenDesignItem(
+            String id,
+            String blockId,
+            ScreenDesignItemType type,
+            String label,
+            String text,
+            String value,
+            String defaultValue,
+            Integer sequence,
+            String styleClass,
+            Map<String, String> metadata) {
+        this(id, blockId, type, label, text, value, defaultValue, sequence, defaultEditable(type), styleClass, metadata);
     }
 
     public ScreenDesignItem withId(String newId) {
-        return new ScreenDesignItem(newId, blockId, type, label, text, value, defaultValue, editable, styleClass, metadata);
+        return new ScreenDesignItem(newId, blockId, type, label, text, value, defaultValue, sequence, editable, styleClass, metadata);
     }
 
     public ScreenDesignItem inBlock(String newBlockId) {
-        return new ScreenDesignItem(id, newBlockId, type, label, text, value, defaultValue, editable, styleClass, metadata);
+        return new ScreenDesignItem(id, newBlockId, type, label, text, value, defaultValue, sequence, editable, styleClass, metadata);
     }
 
     public static boolean defaultEditable(ScreenDesignItemType type) {

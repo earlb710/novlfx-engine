@@ -82,4 +82,25 @@ final class ScreenLayoutRendererTest {
                 "borderThickness", "",
                 "borderColor", "")));
     }
+
+    @Test
+    void rendererReadsDialogWindowIndicatorsFromLayoutMetadata() {
+        ScreenLayoutModel dialog = new ScreenLayoutModel(
+                ScreenLayoutType.DIALOGUE,
+                "Dialog",
+                null,
+                List.of(new ScreenLayoutSection("body", "Body", List.of("Ready"))),
+                List.of(),
+                List.of(),
+                List.of(),
+                null,
+                Map.of(
+                        "dialog", "true",
+                        "dismissOnClickOutside", "yes",
+                        "dismissOnEscape", "1"));
+
+        assertTrue(ScreenLayoutRenderer.isDialog(dialog));
+        assertTrue(ScreenLayoutRenderer.dismissOnClickOutside(dialog));
+        assertTrue(ScreenLayoutRenderer.dismissOnEscape(dialog));
+    }
 }

@@ -1,5 +1,6 @@
 package com.eb.javafx.ui;
 
+import com.eb.javafx.scene.ConversationConditionVariables;
 import com.eb.javafx.util.JsonData;
 import com.eb.javafx.util.JsonStrings;
 import com.eb.javafx.util.Validation;
@@ -17,9 +18,14 @@ public final class ScreenDesignJson {
     }
 
     public static ScreenDesignModel load(Path jsonPath) {
+        return load(jsonPath, ConversationConditionVariables.fixed());
+    }
+
+    public static ScreenDesignModel load(Path jsonPath, ConversationConditionVariables conditionVariables) {
         Validation.requireNonNull(jsonPath, "Screen design JSON path is required.");
+        Validation.requireNonNull(conditionVariables, "Screen design condition variables are required.");
         try {
-            return fromJson(Files.readString(jsonPath, StandardCharsets.UTF_8), jsonPath.toString());
+            return fromJson(Files.readString(jsonPath, StandardCharsets.UTF_8), jsonPath.toString(), conditionVariables);
         } catch (IOException exception) {
             throw new IllegalArgumentException("Unable to read screen design JSON: " + jsonPath, exception);
         }
@@ -40,6 +46,14 @@ public final class ScreenDesignJson {
     }
 
     public static ScreenDesignModel fromJson(String json, String sourceName) {
+        return fromJson(json, sourceName, ConversationConditionVariables.fixed());
+    }
+
+    public static ScreenDesignModel fromJson(
+            String json,
+            String sourceName,
+            ConversationConditionVariables conditionVariables) {
+        Validation.requireNonNull(conditionVariables, "Screen design condition variables are required.");
         Map<String, Object> root = JsonData.rootObject(json, sourceName);
         List<ScreenDesignBlock> blocks = JsonData.requiredList(root, "blocks", "screen design blocks").stream()
                 .map(entry -> parseBlock(JsonData.requireObject(entry, "screen design blocks[]")))
@@ -47,7 +61,7 @@ public final class ScreenDesignJson {
         List<ScreenDesignItem> items = JsonData.optionalList(root, "items", "screen design items").stream()
                 .map(entry -> parseItem(JsonData.requireObject(entry, "screen design items[]")))
                 .toList();
-        return new ScreenDesignModel(
+        ScreenDesignModel design = new ScreenDesignModel(
                 JsonData.requiredString(root, "id", "screen design id"),
                 JsonData.requiredString(root, "title", "screen design title"),
                 JsonData.enumValue(ScreenLayoutType.class,
@@ -59,11 +73,16 @@ public final class ScreenDesignJson {
                 blocks,
                 items,
                 List.of());
+        ScreenDesignValidator.requireValid(design, conditionVariables);
+        return design;
     }
 
     public static String toJson(ScreenDesignModel design) {
         Validation.requireNonNull(design, "Screen design is required.");
-        ScreenDesignValidator.requireValid(design.withoutTemporaryItems());
+        ScreenDesignValidator.requireValidStructureRaw(
+                design.blocks(),
+                design.items(),
+                List.of());
         StringBuilder json = new StringBuilder("{\n")
                 .append("  \"id\": ").append(JsonStrings.quote(design.id())).append(",\n")
                 .append("  \"title\": ").append(JsonStrings.quote(design.title())).append(",\n")
@@ -97,6 +116,7 @@ public final class ScreenDesignJson {
                         .map(layoutType -> JsonData.enumValue(ScreenLayoutType.class, layoutType, "screen design block layoutType"))
                         .orElse(null),
                 optionalString(object, "parentBlockId", "screen design block parentBlockId"),
+                JsonData.optionalStringList(object, "conditions", "screen design block conditions"),
                 optionalString(object, "styleClass", "screen design block styleClass"),
                 JsonData.optionalObject(object, "metadata", "screen design block metadata")
                         .map(metadata -> JsonData.stringMap(metadata, "screen design block metadata"))
@@ -115,6 +135,7 @@ public final class ScreenDesignJson {
                 optionalString(object, "text", "screen design item text"),
                 optionalString(object, "value", "screen design item value"),
                 optionalString(object, "defaultValue", "screen design item defaultValue"),
+                optionalInteger(object, "sequence", "screen design item sequence"),
                 JsonData.optionalBoolean(object, "editable", ScreenDesignItem.defaultEditable(type), "screen design item editable"),
                 optionalString(object, "styleClass", "screen design item styleClass"),
                 JsonData.optionalObject(object, "metadata", "screen design item metadata")
@@ -133,6 +154,17 @@ public final class ScreenDesignJson {
         throw new IllegalArgumentException("Expected JSON string for " + description + ".");
     }
 
+    private static Integer optionalInteger(Map<String, Object> object, String key, String description) {
+        if (!object.containsKey(key) || object.get(key) == null) {
+            return null;
+        }
+        Object value = object.get(key);
+        if (value instanceof Integer integerValue) {
+            return integerValue;
+        }
+        throw new IllegalArgumentException("Expected JSON number for " + description + ".");
+    }
+
     private static void appendBlock(StringBuilder json, ScreenDesignBlock block, String indent) {
         json.append(indent).append("{\n")
                 .append(indent).append("  \"id\": ").append(JsonStrings.quote(block.id())).append(",\n")
@@ -141,6 +173,7 @@ public final class ScreenDesignJson {
                         ? "null"
                         : JsonStrings.quote(block.layoutType().name())).append(",\n")
                 .append(indent).append("  \"parentBlockId\": ").append(JsonStrings.nullableQuote(block.parentBlockId())).append(",\n")
+                .append(indent).append("  \"conditions\": ").append(stringListJson(block.conditions())).append(",\n")
                 .append(indent).append("  \"styleClass\": ").append(JsonStrings.nullableQuote(block.styleClass())).append(",\n")
                 .append(indent).append("  \"metadata\": ").append(stringMapJson(block.metadata())).append('\n')
                 .append(indent).append('}');
@@ -155,6 +188,7 @@ public final class ScreenDesignJson {
                 .append(indent).append("  \"text\": ").append(JsonStrings.nullableQuote(item.text())).append(",\n")
                 .append(indent).append("  \"value\": ").append(JsonStrings.nullableQuote(item.value())).append(",\n")
                 .append(indent).append("  \"defaultValue\": ").append(JsonStrings.nullableQuote(item.defaultValue())).append(",\n")
+                .append(indent).append("  \"sequence\": ").append(item.sequence() == null ? "null" : item.sequence()).append(",\n")
                 .append(indent).append("  \"editable\": ").append(item.editable()).append(",\n")
                 .append(indent).append("  \"styleClass\": ").append(JsonStrings.nullableQuote(item.styleClass())).append(",\n")
                 .append(indent).append("  \"metadata\": ").append(stringMapJson(item.metadata())).append('\n')
@@ -171,5 +205,16 @@ public final class ScreenDesignJson {
             json.append(JsonStrings.quote(entry.getKey())).append(": ").append(JsonStrings.quote(entry.getValue()));
         }
         return json.append('}').toString();
+    }
+
+    private static String stringListJson(List<String> values) {
+        StringBuilder json = new StringBuilder("[");
+        for (int index = 0; index < values.size(); index++) {
+            if (index > 0) {
+                json.append(", ");
+            }
+            json.append(JsonStrings.quote(values.get(index)));
+        }
+        return json.append(']').toString();
     }
 }

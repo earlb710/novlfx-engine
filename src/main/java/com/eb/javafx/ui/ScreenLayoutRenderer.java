@@ -8,6 +8,8 @@ import com.eb.javafx.util.Validation;
 import javafx.geometry.Insets;
 import javafx.scene.Node;
 import javafx.scene.Scene;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.BorderPane;
@@ -15,6 +17,9 @@ import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
+import javafx.stage.Modality;
+import javafx.stage.Stage;
+import javafx.stage.Window;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -34,6 +39,9 @@ public final class ScreenLayoutRenderer {
     private static final Map<String, String> FONT_FAMILY_CACHE = new ConcurrentHashMap<>();
     private static final String EVENT_NAME_KEY = "eventName";
     private static final String ACTION_VALUE_KEY = "actionValue";
+    static final String DIALOG_KEY = "dialog";
+    static final String DISMISS_ON_CLICK_OUTSIDE_KEY = "dismissOnClickOutside";
+    static final String DISMISS_ON_ESCAPE_KEY = "dismissOnEscape";
 
     private ScreenLayoutRenderer() {
     }
@@ -63,6 +71,56 @@ public final class ScreenLayoutRenderer {
         BorderPane root = ScreenShell.titled(model.title(), content);
         applyContainerStyle(root, model.metadata());
         return root;
+    }
+
+    public static void configureDialogStage(Stage stage, Scene scene, ScreenLayoutModel model, Window owner) {
+        Validation.requireNonNull(stage, "Dialog stage is required.");
+        Validation.requireNonNull(scene, "Dialog scene is required.");
+        Validation.requireNonNull(model, "Screen layout model is required.");
+        if (!isDialog(model)) {
+            return;
+        }
+        if (owner != null) {
+            stage.initOwner(owner);
+            stage.initModality(Modality.WINDOW_MODAL);
+        } else {
+            stage.initModality(Modality.APPLICATION_MODAL);
+        }
+        if (dismissOnEscape(model)) {
+            scene.addEventHandler(KeyEvent.KEY_PRESSED, event -> {
+                if (event.getCode() == KeyCode.ESCAPE) {
+                    stage.hide();
+                    event.consume();
+                }
+            });
+        }
+        if (dismissOnClickOutside(model)) {
+            stage.focusedProperty().addListener((observable, previous, focused) -> {
+                if (!focused && stage.isShowing()) {
+                    stage.hide();
+                }
+            });
+        }
+    }
+
+    public static boolean isDialog(ScreenLayoutModel model) {
+        return metadataBoolean(model.metadata(), DIALOG_KEY);
+    }
+
+    public static boolean dismissOnClickOutside(ScreenLayoutModel model) {
+        return metadataBoolean(model.metadata(), DISMISS_ON_CLICK_OUTSIDE_KEY);
+    }
+
+    public static boolean dismissOnEscape(ScreenLayoutModel model) {
+        return metadataBoolean(model.metadata(), DISMISS_ON_ESCAPE_KEY);
+    }
+
+    static boolean metadataBoolean(Map<String, String> metadata, String key) {
+        String value = metadata.get(key);
+        return value != null && switch (value.trim().toLowerCase(java.util.Locale.ROOT)) {
+            case "true", "1", "yes", "y", "on" -> true;
+            default -> false;
+        };
     }
 
     private static Node layoutContent(RouteContext context, ScreenLayoutModel model, GameEventBus eventBus) {

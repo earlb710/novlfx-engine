@@ -1,5 +1,6 @@
 package com.eb.javafx.ui;
 
+import com.eb.javafx.util.JsonStrings;
 import com.eb.javafx.util.Validation;
 
 import java.util.LinkedHashMap;
@@ -7,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -26,6 +28,8 @@ public final class ScreenDesignLayoutAdapter {
     static final String EVENT_NAME_KEY = "eventName";
     static final String ACTION_EVENT_KEY = "actionEvent";
     static final String ACTION_VALUE_KEY = "actionValue";
+    static final String CONDITIONS_KEY = "conditions";
+    static final String SEQUENCE_KEY = "sequence";
     // Matches $name and ${name}; names may contain letters, numbers, underscore, dot, or hyphen after the first letter.
     private static final Pattern BINDING_PATTERN = Pattern.compile("\\$\\{?([A-Za-z][A-Za-z0-9_.-]*)}?");
 
@@ -83,13 +87,11 @@ public final class ScreenDesignLayoutAdapter {
             Map<String, String> screenOverrides,
             DisplayDefaults defaults,
             Map<String, String> bindings) {
-        List<ScreenDesignItem> blockItems = items.stream()
-                .filter(item -> block.id().equals(item.blockId()))
-                .toList();
         Map<String, String> blockBaseMetadata = mergedMetadata(
                 mergedMetadata(defaults.screen(), defaults.block()),
                 screenOverrides);
-        Map<String, String> blockMetadata = mergedMetadata(blockBaseMetadata, block.metadata());
+        Map<String, String> blockMetadata = sectionMetadata(block, blockBaseMetadata, bindings);
+        List<ScreenDesignItem> blockItems = sortedBlockItems(block, items);
         List<String> lines = blockItems.stream()
                 .map(item -> itemLine(item, temporaryItemIds.contains(item.id()), bindings))
                 .toList();
@@ -129,6 +131,9 @@ public final class ScreenDesignLayoutAdapter {
                                 textStyleMetadata(blockOverrides)),
                 resolveMetadata(item.metadata(), bindings));
         LinkedHashMap<String, String> withAction = new LinkedHashMap<>(metadata);
+        if (item.sequence() != null) {
+            withAction.put(SEQUENCE_KEY, Integer.toString(item.sequence()));
+        }
         String eventName = firstNonBlank(item.metadata().get(EVENT_NAME_KEY), item.metadata().get(ACTION_EVENT_KEY));
         if (eventName != null) {
             withAction.put(EVENT_NAME_KEY, resolve(eventName, bindings));
@@ -137,6 +142,30 @@ public final class ScreenDesignLayoutAdapter {
             withAction.put(ACTION_VALUE_KEY, resolve(item.value(), bindings));
         }
         return Map.copyOf(withAction);
+    }
+
+    private static Map<String, String> sectionMetadata(
+            ScreenDesignBlock block,
+            Map<String, String> inheritedMetadata,
+            Map<String, String> bindings) {
+        LinkedHashMap<String, String> metadata = new LinkedHashMap<>(mergedMetadata(inheritedMetadata, block.metadata()));
+        if (!block.conditions().isEmpty()) {
+            metadata.put(CONDITIONS_KEY, conditionsJson(block.conditions(), bindings));
+        }
+        return Map.copyOf(metadata);
+    }
+
+    private static List<ScreenDesignItem> sortedBlockItems(ScreenDesignBlock block, List<ScreenDesignItem> items) {
+        return IntStream.range(0, items.size())
+                .mapToObj(index -> new IndexedItem(index, items.get(index)))
+                .filter(indexedItem -> block.id().equals(indexedItem.item().blockId()))
+                .sorted(java.util.Comparator
+                        .comparingInt((IndexedItem indexedItem) -> indexedItem.item().sequence() == null
+                                ? Integer.MAX_VALUE
+                                : indexedItem.item().sequence())
+                        .thenComparingInt(IndexedItem::index))
+                .map(IndexedItem::item)
+                .toList();
     }
 
     private static Map<String, String> textStyleMetadata(Map<String, String> metadata) {
@@ -226,5 +255,15 @@ public final class ScreenDesignLayoutAdapter {
 
     private static boolean hasEvent(ScreenDesignItem item) {
         return firstNonBlank(item.metadata().get(EVENT_NAME_KEY), item.metadata().get(ACTION_EVENT_KEY)) != null;
+    }
+
+    private static String conditionsJson(List<String> conditions, Map<String, String> bindings) {
+        return conditions.stream()
+                .map(condition -> resolve(condition, bindings))
+                .map(JsonStrings::quote)
+                .collect(Collectors.joining(", ", "[", "]"));
+    }
+
+    private record IndexedItem(int index, ScreenDesignItem item) {
     }
 }
