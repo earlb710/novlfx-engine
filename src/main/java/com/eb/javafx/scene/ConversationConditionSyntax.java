@@ -50,11 +50,11 @@ public final class ConversationConditionSyntax {
                 "Conversation condition variables are required.");
         int index = 0;
         while (index < checkedCondition.length()) {
-            int markerIndex = checkedCondition.indexOf('$', index);
-            if (markerIndex < 0) {
+            int dollarSignIndex = checkedCondition.indexOf('$', index);
+            if (dollarSignIndex < 0) {
                 return;
             }
-            VariableReference reference = variableReferenceAt(checkedCondition, markerIndex, description, checkedVariables);
+            VariableReference reference = variableReferenceAt(checkedCondition, dollarSignIndex, description, checkedVariables);
             index = reference.endIndex();
         }
     }
@@ -66,13 +66,13 @@ public final class ConversationConditionSyntax {
         StringBuilder result = new StringBuilder();
         int index = 0;
         while (index < checkedCondition.length()) {
-            int markerIndex = checkedCondition.indexOf('$', index);
-            if (markerIndex < 0) {
+            int dollarSignIndex = checkedCondition.indexOf('$', index);
+            if (dollarSignIndex < 0) {
                 result.append(checkedCondition.substring(index));
                 break;
             }
-            result.append(checkedCondition, index, markerIndex);
-            VariableReference reference = variableReferenceAt(checkedCondition, markerIndex,
+            result.append(checkedCondition, index, dollarSignIndex);
+            VariableReference reference = variableReferenceAt(checkedCondition, dollarSignIndex,
                     "Conversation condition", checkedVariables);
             result.append(checkedVariables.resolve(reference.name()).orElse(reference.sourceText()));
             index = reference.endIndex();
@@ -82,10 +82,10 @@ public final class ConversationConditionSyntax {
 
     private static VariableReference variableReferenceAt(
             String condition,
-            int markerIndex,
+            int dollarSignIndex,
             String description,
             ConversationConditionVariables variables) {
-        int nameStart = markerIndex + 1;
+        int nameStart = dollarSignIndex + 1;
         if (nameStart >= condition.length()) {
             throw new IllegalArgumentException(description + " has dangling variable marker '$'.");
         }
@@ -93,11 +93,11 @@ public final class ConversationConditionSyntax {
             int nameEnd = condition.indexOf('}', nameStart + 1);
             if (nameEnd < 0) {
                 throw new IllegalArgumentException(description + " has unterminated variable reference: "
-                        + condition.substring(markerIndex));
+                        + condition.substring(dollarSignIndex));
             }
             String variableName = condition.substring(nameStart + 1, nameEnd);
             validateVariableName(variableName, description, variables);
-            return new VariableReference(variableName, nameEnd + 1, condition.substring(markerIndex, nameEnd + 1));
+            return new VariableReference(variableName, nameEnd + 1, condition.substring(dollarSignIndex, nameEnd + 1));
         }
         // Match longer unbraced variable names before shorter aliases, e.g. line.speaker before speaker.
         String variableName = variables.declaredVariableNames().stream()
@@ -107,9 +107,9 @@ public final class ConversationConditionSyntax {
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException(description
                         + " references an unknown conversation variable near: "
-                        + condition.substring(markerIndex)));
+                        + condition.substring(dollarSignIndex)));
         return new VariableReference(variableName, nameStart + variableName.length(),
-                condition.substring(markerIndex, nameStart + variableName.length()));
+                condition.substring(dollarSignIndex, nameStart + variableName.length()));
     }
 
     private static boolean isVariableBoundary(String condition, int index) {
