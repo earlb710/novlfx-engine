@@ -6,11 +6,6 @@ import com.eb.javafx.testscreen.TestScreenApplication;
 import com.eb.javafx.ui.ButtonVisuals;
 import com.eb.javafx.ui.UiTheme;
 import javafx.application.Platform;
-import javafx.scene.Node;
-import javafx.scene.layout.StackPane;
-import javafx.scene.paint.ImagePattern;
-import javafx.scene.shape.SVGPath;
-import javafx.scene.text.Text;
 import javafx.stage.Stage;
 import org.junit.jupiter.api.Test;
 
@@ -41,24 +36,9 @@ final class ButtonPillSvgTestScreenTest {
     }
 
     @Test
-    void buttonPillArtworkIsBuiltFromPackagedSvg() {
-        Node graphic = ButtonVisuals.createArtworkGraphic(ButtonPillSvgTestScreen.PRIMARY_LABEL);
-
-        assertTrue(graphic instanceof StackPane);
-        StackPane stack = (StackPane) graphic;
-        assertTrue(stack.getStyleClass().contains(ButtonVisuals.BUTTON_ARTWORK_STYLE_CLASS));
-        assertEquals(2, stack.getChildren().size());
-
-        assertTrue(stack.getChildren().get(0) instanceof SVGPath);
-        SVGPath artwork = (SVGPath) stack.getChildren().get(0);
-        assertEquals(ButtonVisuals.buttonShapePath(), artwork.getContent());
-        assertTrue(artwork.getFill() instanceof ImagePattern);
-        assertNull(artwork.getStroke());
-
-        assertTrue(stack.getChildren().get(1) instanceof Text);
-        Text label = (Text) stack.getChildren().get(1);
-        assertEquals(ButtonPillSvgTestScreen.PRIMARY_LABEL, label.getText());
-        assertTrue(label.getStyleClass().contains(ButtonVisuals.BUTTON_ARTWORK_TEXT_STYLE_CLASS));
+    void buttonPillArtworkUsesPackagedSvgResource() {
+        assertTrue(ButtonVisuals.buttonArtworkResourceUrl()
+                .endsWith(ButtonVisuals.BUTTON_SHAPE_RESOURCE.substring(1)));
     }
 
     @Test

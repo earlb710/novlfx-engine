@@ -4,21 +4,16 @@ import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.ContentDisplay;
 import javafx.scene.control.Button;
-import javafx.scene.image.PixelWriter;
-import javafx.scene.image.WritableImage;
-import javafx.scene.paint.ImagePattern;
-import javafx.scene.paint.Color;
-import javafx.scene.paint.Paint;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.shape.SVGPath;
 import javafx.scene.text.Text;
+import javafx.scene.web.WebView;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -33,13 +28,10 @@ public final class ButtonVisuals {
     public static final double BUTTON_ARTWORK_WIDTH = 180;
     public static final double BUTTON_ARTWORK_HEIGHT = 48;
     private static final Pattern PATH_DATA_PATTERN = Pattern.compile("<path\\b[^>]*\\bd\\s*=\\s*(['\"])(.*?)\\1", Pattern.DOTALL);
-    private static final Pattern STOP_STYLE_PATTERN = Pattern.compile("<stop\\b[^>]*\\bstyle\\s*=\\s*(['\"])(.*?)\\1", Pattern.DOTALL);
-    private static final Pattern STOP_COLOR_PATTERN = Pattern.compile("stop-color\\s*:\\s*([^;]+)");
-    private static final Pattern STOP_OPACITY_PATTERN = Pattern.compile("stop-opacity\\s*:\\s*([^;]+)");
     private static final Pattern SAFE_PATH_DATA_PATTERN = Pattern.compile("[MmZzLlHhVvCcSsQqTtAaEe0-9+\\-.,\\s]+");
     private static final System.Logger LOGGER = System.getLogger(ButtonVisuals.class.getName());
     private static final String SHAPE_PATH = loadShapePath();
-    private static final Paint ARTWORK_FILL = loadArtworkFill();
+    private static final String ARTWORK_RESOURCE_URL = loadArtworkResourceUrl();
 
     private ButtonVisuals() {
     }
@@ -78,6 +70,10 @@ public final class ButtonVisuals {
         return SHAPE_PATH;
     }
 
+    public static String buttonArtworkResourceUrl() {
+        return ARTWORK_RESOURCE_URL;
+    }
+
     public static SVGPath createShape() {
         if (SHAPE_PATH.isBlank()) {
             return null;
@@ -88,11 +84,17 @@ public final class ButtonVisuals {
     }
 
     public static Node createArtworkGraphic(String text) {
-        SVGPath artwork = createShape();
-        if (artwork == null) {
+        if (ARTWORK_RESOURCE_URL.isBlank()) {
             return null;
         }
-        artwork.setFill(ARTWORK_FILL);
+        WebView artwork = new WebView();
+        artwork.setPrefSize(BUTTON_ARTWORK_WIDTH, BUTTON_ARTWORK_HEIGHT);
+        artwork.setMinSize(BUTTON_ARTWORK_WIDTH, BUTTON_ARTWORK_HEIGHT);
+        artwork.setMaxSize(BUTTON_ARTWORK_WIDTH, BUTTON_ARTWORK_HEIGHT);
+        artwork.setMouseTransparent(true);
+        artwork.setContextMenuEnabled(false);
+        artwork.getEngine().setJavaScriptEnabled(true);
+        artwork.getEngine().load(ARTWORK_RESOURCE_URL);
 
         Text label = new Text(text == null ? "" : text);
         label.getStyleClass().add(BUTTON_ARTWORK_TEXT_STYLE_CLASS);
@@ -100,6 +102,9 @@ public final class ButtonVisuals {
         StackPane graphic = new StackPane(artwork, label);
         graphic.getStyleClass().add(BUTTON_ARTWORK_STYLE_CLASS);
         graphic.setAlignment(Pos.CENTER);
+        graphic.setPrefSize(BUTTON_ARTWORK_WIDTH, BUTTON_ARTWORK_HEIGHT);
+        graphic.setMinSize(BUTTON_ARTWORK_WIDTH, BUTTON_ARTWORK_HEIGHT);
+        graphic.setMaxSize(BUTTON_ARTWORK_WIDTH, BUTTON_ARTWORK_HEIGHT);
         return graphic;
     }
 
@@ -121,18 +126,13 @@ public final class ButtonVisuals {
         return pathData;
     }
 
-    private static Paint loadArtworkFill() {
-        String svg = loadSvgResource();
-        if (svg.isEmpty()) {
-            return Color.TRANSPARENT;
+    private static String loadArtworkResourceUrl() {
+        URL resource = ButtonVisuals.class.getResource(BUTTON_SHAPE_RESOURCE);
+        if (resource == null) {
+            LOGGER.log(System.Logger.Level.WARNING, "Button artwork resource is missing: {0}", BUTTON_SHAPE_RESOURCE);
+            return "";
         }
-        List<Color> stops = loadStopColors(svg);
-        if (stops.size() < 4) {
-            LOGGER.log(System.Logger.Level.WARNING, "Button artwork resource does not include four mesh stop colors: {0}",
-                    BUTTON_SHAPE_RESOURCE);
-            return Color.TRANSPARENT;
-        }
-        return createMeshFill(stops.get(0), stops.get(1), stops.get(2), stops.get(3));
+        return resource.toExternalForm();
     }
 
     private static String loadSvgResource() {
@@ -146,60 +146,6 @@ public final class ButtonVisuals {
             LOGGER.log(System.Logger.Level.WARNING, "Button shape resource failed to load: " + BUTTON_SHAPE_RESOURCE, exception);
             return "";
         }
-    }
-
-    private static List<Color> loadStopColors(String svg) {
-        List<Color> colors = new ArrayList<>(4);
-        Matcher stopMatcher = STOP_STYLE_PATTERN.matcher(svg);
-        while (stopMatcher.find() && colors.size() < 4) {
-            String style = stopMatcher.group(2);
-            Matcher colorMatcher = STOP_COLOR_PATTERN.matcher(style);
-            if (!colorMatcher.find()) {
-                continue;
-            }
-            Color color = parseColor(colorMatcher.group(1).trim());
-            if (color == null) {
-                continue;
-            }
-            Matcher opacityMatcher = STOP_OPACITY_PATTERN.matcher(style);
-            if (opacityMatcher.find()) {
-                try {
-                    double opacity = Double.parseDouble(opacityMatcher.group(1).trim());
-                    color = color.deriveColor(0, 1, 1, opacity);
-                } catch (NumberFormatException ignored) {
-                    LOGGER.log(System.Logger.Level.WARNING, "Button artwork stop opacity is invalid in {0}",
-                            BUTTON_SHAPE_RESOURCE);
-                }
-            }
-            colors.add(color);
-        }
-        return colors;
-    }
-
-    private static Color parseColor(String value) {
-        try {
-            return Color.web(value);
-        } catch (IllegalArgumentException exception) {
-            LOGGER.log(System.Logger.Level.WARNING, "Button artwork stop color is invalid in {0}", BUTTON_SHAPE_RESOURCE);
-            return null;
-        }
-    }
-
-    private static Paint createMeshFill(Color topLeft, Color topRight, Color bottomRight, Color bottomLeft) {
-        int width = (int) BUTTON_ARTWORK_WIDTH;
-        int height = (int) BUTTON_ARTWORK_HEIGHT;
-        WritableImage image = new WritableImage(width, height);
-        PixelWriter writer = image.getPixelWriter();
-        for (int y = 0; y < height; y++) {
-            double verticalProgress = height == 1 ? 0 : (double) y / (height - 1);
-            for (int x = 0; x < width; x++) {
-                double horizontalProgress = width == 1 ? 0 : (double) x / (width - 1);
-                Color top = topLeft.interpolate(topRight, horizontalProgress);
-                Color bottom = bottomLeft.interpolate(bottomRight, horizontalProgress);
-                writer.setColor(x, y, top.interpolate(bottom, verticalProgress));
-            }
-        }
-        return new ImagePattern(image, 0, 0, BUTTON_ARTWORK_WIDTH, BUTTON_ARTWORK_HEIGHT, false);
     }
 
     private static String appendStyle(String currentStyle, String addition) {
