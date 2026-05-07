@@ -203,7 +203,7 @@ public final class ButtonVisuals {
         if (LONG_ARTWORK.svg().isBlank()) {
             return null;
         }
-        return new RasterizedArtwork(text, width, height, pressed);
+        return new RasterizedArtwork(text, width, height, LONG_ARTWORK, pressed);
     }
 
     public static Node createBevelArtworkGraphic(String text) {
@@ -218,7 +218,7 @@ public final class ButtonVisuals {
         if (BEVEL_ARTWORK.svg().isBlank()) {
             return null;
         }
-        return new FullRasterizedArtwork(text, width, height, BEVEL_ARTWORK, pressed);
+        return new RasterizedArtwork(text, width, height, BEVEL_ARTWORK, pressed);
     }
 
     private static String loadShapePath(String resourcePath) {
@@ -335,14 +335,16 @@ public final class ButtonVisuals {
         private final Text label = new Text();
         private final double fixedWidth;
         private final double fixedHeight;
+        private final ArtworkResource artworkResource;
         private boolean pressed;
         private int rasterWidth;
         private int rasterHeight;
         private boolean rasterPressed;
 
-        private RasterizedArtwork(String text, double width, double height, boolean pressed) {
+        private RasterizedArtwork(String text, double width, double height, ArtworkResource artworkResource, boolean pressed) {
             this.fixedWidth = positiveSizeOrUnset(width);
             this.fixedHeight = positiveSizeOrUnset(height);
+            this.artworkResource = artworkResource;
             this.pressed = pressed;
 
             artwork.setMouseTransparent(true);
@@ -436,7 +438,7 @@ public final class ButtonVisuals {
             int sourceWidth = Math.max(1, (int) Math.ceil(BUTTON_ARTWORK_SOURCE_WIDTH * sourceScale));
             int sourceCapWidth = Math.max(1, (int) Math.round(BUTTON_ARTWORK_SOURCE_CAP_WIDTH * sourceScale));
             int sourceMiddleWidth = Math.max(1, sourceWidth - (sourceCapWidth * 2));
-            Image image = rasterizeArtwork(LONG_ARTWORK, sourceWidth, targetHeight, pressed);
+            Image image = rasterizeArtwork(artworkResource, sourceWidth, targetHeight, pressed);
             if (image != null) {
                 double capWidth = Math.min(targetWidth / 2.0,
                         targetHeight * BUTTON_ARTWORK_SOURCE_CAP_WIDTH / BUTTON_ARTWORK_SOURCE_HEIGHT);
@@ -458,107 +460,6 @@ public final class ButtonVisuals {
             slice.setFitWidth(targetWidth);
             slice.setFitHeight(targetHeight);
             slice.relocate(targetX, 0);
-        }
-
-    }
-
-    private static final class FullRasterizedArtwork extends StackPane implements PressableArtwork {
-        private final ImageView artwork = new ImageView();
-        private final Text label = new Text();
-        private final double fixedWidth;
-        private final double fixedHeight;
-        private final ArtworkResource artworkResource;
-        private boolean pressed;
-        private int rasterWidth;
-        private int rasterHeight;
-        private boolean rasterPressed;
-
-        private FullRasterizedArtwork(String text, double width, double height, ArtworkResource artworkResource, boolean pressed) {
-            this.fixedWidth = positiveSizeOrUnset(width);
-            this.fixedHeight = positiveSizeOrUnset(height);
-            this.artworkResource = artworkResource;
-            this.pressed = pressed;
-
-            artwork.setPreserveRatio(false);
-            artwork.setSmooth(true);
-            artwork.setMouseTransparent(true);
-
-            label.setText(text == null ? "" : text);
-            label.setFont(Font.font(Font.getDefault().getFamily(), FontWeight.BOLD, BUTTON_ARTWORK_FONT_SIZE));
-            label.setTextAlignment(TextAlignment.CENTER);
-            label.getStyleClass().add(BUTTON_ARTWORK_TEXT_STYLE_CLASS);
-
-            getChildren().addAll(artwork, label);
-            getStyleClass().add(BUTTON_ARTWORK_STYLE_CLASS);
-            setAlignment(Pos.CENTER);
-            refreshPreferredSize();
-        }
-
-        @Override
-        public void setArtworkPressed(boolean pressed) {
-            if (this.pressed == pressed) {
-                return;
-            }
-            this.pressed = pressed;
-            requestLayout();
-        }
-
-        @Override
-        protected double computePrefWidth(double height) {
-            if (fixedWidth > 0) {
-                return fixedWidth;
-            }
-            return Math.max(BUTTON_ARTWORK_WIDTH,
-                    Math.ceil(label.getLayoutBounds().getWidth() + BUTTON_ARTWORK_HORIZONTAL_PADDING));
-        }
-
-        @Override
-        protected double computePrefHeight(double width) {
-            if (fixedHeight > 0) {
-                return fixedHeight;
-            }
-            return Math.max(BUTTON_ARTWORK_HEIGHT,
-                    Math.ceil(label.getLayoutBounds().getHeight() + BUTTON_ARTWORK_VERTICAL_PADDING));
-        }
-
-        @Override
-        protected void layoutChildren() {
-            double width = getWidth() > 0 ? getWidth() : prefWidth(-1);
-            double height = getHeight() > 0 ? getHeight() : prefHeight(width);
-            label.setWrappingWidth(Math.max(0, width - BUTTON_ARTWORK_HORIZONTAL_PADDING));
-            updateArtwork(width, height);
-            super.layoutChildren();
-            layoutArtworkLabel(label, width, height);
-        }
-
-        private void refreshPreferredSize() {
-            if (fixedWidth > 0) {
-                label.setWrappingWidth(Math.max(0, fixedWidth - BUTTON_ARTWORK_HORIZONTAL_PADDING));
-            } else {
-                label.setWrappingWidth(0);
-            }
-            double width = fixedWidth > 0 ? fixedWidth : computePrefWidth(-1);
-            double height = fixedHeight > 0 ? fixedHeight : computePrefHeight(width);
-            setPrefSize(width, height);
-            setMinSize(width, height);
-            setMaxSize(width, height);
-        }
-
-        private void updateArtwork(double width, double height) {
-            int targetWidth = Math.max(1, (int) Math.ceil(width));
-            int targetHeight = Math.max(1, (int) Math.ceil(height));
-            if (targetWidth == rasterWidth && targetHeight == rasterHeight && pressed == rasterPressed) {
-                return;
-            }
-            Image image = rasterizeArtwork(artworkResource, targetWidth, targetHeight, pressed);
-            if (image != null) {
-                artwork.setImage(image);
-                artwork.setFitWidth(targetWidth);
-                artwork.setFitHeight(targetHeight);
-                rasterWidth = targetWidth;
-                rasterHeight = targetHeight;
-                rasterPressed = pressed;
-            }
         }
     }
 

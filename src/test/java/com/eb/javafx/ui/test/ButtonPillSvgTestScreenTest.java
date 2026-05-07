@@ -221,18 +221,27 @@ final class ButtonPillSvgTestScreenTest {
     }
 
     @Test
-    void buttonBevelArtworkRasterizesDirectlyAtFixedDimensions() {
+    void buttonBevelArtworkUsesThreeSlicedImageViewsAtFixedDimensions() {
         StackPane graphic = assertInstanceOf(StackPane.class,
                 ButtonVisuals.createBevelArtworkGraphic(ButtonPillSvgTestScreen.BEVEL_LABEL, 240, 60));
         graphic.resize(240, 60);
         graphic.layout();
 
-        ImageView imageView = assertInstanceOf(ImageView.class, graphic.getChildren().get(0));
+        Node artwork = graphic.getChildren().get(0);
+        Pane pane = assertInstanceOf(Pane.class, artwork);
+        assertEquals(3, pane.getChildren().size());
+        ImageView leftCap = assertInstanceOf(ImageView.class, pane.getChildren().get(0));
+        ImageView middle = assertInstanceOf(ImageView.class, pane.getChildren().get(1));
+        ImageView rightCap = assertInstanceOf(ImageView.class, pane.getChildren().get(2));
 
-        assertEquals(240, imageView.getFitWidth());
-        assertEquals(60, imageView.getFitHeight());
-        assertEquals(240, imageView.getImage().getWidth());
-        assertEquals(60, imageView.getImage().getHeight());
+        assertEquals(30, leftCap.getFitWidth());
+        assertEquals(60, leftCap.getFitHeight());
+        assertEquals(180, middle.getFitWidth());
+        assertEquals(60, middle.getFitHeight());
+        assertEquals(30, rightCap.getFitWidth());
+        assertEquals(60, rightCap.getFitHeight());
+        assertEquals(leftCap.getImage(), middle.getImage());
+        assertEquals(leftCap.getImage(), rightCap.getImage());
     }
 
     private static Image rasterizedImage(String text, boolean pressed) {
