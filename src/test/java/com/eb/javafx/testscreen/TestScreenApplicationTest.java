@@ -3,8 +3,14 @@ package com.eb.javafx.testscreen;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTextField;
 import java.io.ByteArrayInputStream;
+import java.awt.BorderLayout;
 import java.awt.Color;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -437,5 +443,27 @@ final class TestScreenApplicationTest {
 
         assertEquals("08-audio-support/AudioServiceDemo.java", displayName);
         assertNotEquals("examples/user-manual/08-audio-support/AudioServiceDemo.java", displayName);
+    }
+
+    @Test
+    void buildTestTabShowsFilePathFieldWithoutExtraScrollPane() throws Exception {
+        TestScreenApplication application = new TestScreenApplication(TestScreenApplication.TestScreenConfiguration.defaults());
+        Method buildTestTab = TestScreenApplication.class.getDeclaredMethod("buildTestTab");
+        buildTestTab.setAccessible(true);
+
+        JPanel testTab = (JPanel) buildTestTab.invoke(application);
+        JPanel selectionDetailsPanel = (JPanel) testTab.getComponent(0);
+        Object northComponent = ((BorderLayout) selectionDetailsPanel.getLayout()).getLayoutComponent(BorderLayout.NORTH);
+
+        assertTrue(northComponent instanceof JPanel);
+        assertFalse(northComponent instanceof JScrollPane);
+
+        JPanel pathPanel = (JPanel) northComponent;
+        Object centerComponent = ((BorderLayout) pathPanel.getLayout()).getLayoutComponent(BorderLayout.CENTER);
+
+        Field pathFieldField = TestScreenApplication.class.getDeclaredField("pathField");
+        pathFieldField.setAccessible(true);
+        assertTrue(centerComponent instanceof JTextField);
+        assertEquals(pathFieldField.get(application), centerComponent);
     }
 }

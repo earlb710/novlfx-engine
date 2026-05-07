@@ -1,5 +1,6 @@
 package com.eb.javafx.ui;
 
+import javafx.application.Platform;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.ContentDisplay;
@@ -9,6 +10,7 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.shape.SVGPath;
 import javafx.scene.text.Text;
 import javafx.scene.web.WebView;
+import javafx.concurrent.Worker;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -94,6 +96,11 @@ public final class ButtonVisuals {
         artwork.setMouseTransparent(true);
         artwork.setContextMenuEnabled(false);
         artwork.getEngine().setJavaScriptEnabled(true);
+        artwork.getEngine().getLoadWorker().stateProperty().addListener((observable, oldState, newState) -> {
+            if (newState == Worker.State.SUCCEEDED) {
+                configureArtworkViewport(artwork);
+            }
+        });
         artwork.getEngine().load(ARTWORK_RESOURCE_URL);
 
         Text label = new Text(text == null ? "" : text);
@@ -106,6 +113,31 @@ public final class ButtonVisuals {
         graphic.setMinSize(BUTTON_ARTWORK_WIDTH, BUTTON_ARTWORK_HEIGHT);
         graphic.setMaxSize(BUTTON_ARTWORK_WIDTH, BUTTON_ARTWORK_HEIGHT);
         return graphic;
+    }
+
+    private static void configureArtworkViewport(WebView artwork) {
+        try {
+            artwork.getEngine().executeScript(
+                    "var root = document.documentElement;"
+                            + "if (root) {"
+                            + " root.style.overflow='hidden';"
+                            + " root.style.margin='0';"
+                            + " root.style.padding='0';"
+                            + " root.style.width='" + (int) BUTTON_ARTWORK_WIDTH + "px';"
+                            + " root.style.height='" + (int) BUTTON_ARTWORK_HEIGHT + "px';"
+                            + "}"
+                            + "if (document.body) {"
+                            + " document.body.style.overflow='hidden';"
+                            + " document.body.style.margin='0';"
+                            + " document.body.style.padding='0';"
+                            + "}");
+        } catch (RuntimeException exception) {
+            LOGGER.log(System.Logger.Level.DEBUG, "Unable to configure SVG artwork viewport", exception);
+        }
+        Platform.runLater(() -> artwork.lookupAll(".scroll-bar").forEach(scrollBar -> {
+            scrollBar.setManaged(false);
+            scrollBar.setVisible(false);
+        }));
     }
 
     private static String loadShapePath() {

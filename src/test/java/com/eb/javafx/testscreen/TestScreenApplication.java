@@ -310,8 +310,9 @@ public final class TestScreenApplication {
     private JPanel buildTestTab() {
         JPanel testTab = new JPanel(new GridLayout(2, 1, 8, 8));
 
-        JScrollPane pathPane = new JScrollPane(pathField);
+        JPanel pathPane = new JPanel(new BorderLayout());
         pathPane.setBorder(BorderFactory.createTitledBorder("File Path"));
+        pathPane.add(pathField, BorderLayout.CENTER);
 
         JScrollPane descriptionPane = new JScrollPane(descriptionArea);
         descriptionPane.setBorder(BorderFactory.createTitledBorder("Description"));
