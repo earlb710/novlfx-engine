@@ -18,7 +18,9 @@ public record ScreenLayoutSection(
         String styleClass,
         Map<String, String> metadata,
         List<String> lineIds,
-        List<Map<String, String>> lineMetadata) {
+        List<Map<String, String>> lineMetadata,
+        ScreenLayoutType layoutType,
+        List<ScreenLayoutSection> childSections) {
     public ScreenLayoutSection {
         Validation.requireNonBlank(id, "Screen layout section id is required.");
         lines = List.copyOf(Validation.requireNonNull(lines, "Screen layout section lines are required."));
@@ -30,6 +32,9 @@ public record ScreenLayoutSection(
                         lineMetadataEntry,
                         "Screen layout section line metadata entry is required.")))
                 .toList();
+        childSections = List.copyOf(Validation.requireNonNull(
+                childSections,
+                "Screen layout child sections are required."));
         lines.forEach(line -> Validation.requireNonBlank(line, "Screen layout section line text is required."));
         lineIds.forEach(lineId -> Validation.requireNonBlank(lineId, "Screen layout section line id is required."));
         if (!lineIds.isEmpty() && lineIds.size() != lines.size()) {
@@ -38,6 +43,29 @@ public record ScreenLayoutSection(
         if (!lineMetadata.isEmpty() && lineMetadata.size() != lines.size()) {
             throw new IllegalArgumentException("Screen layout section line metadata must match line count.");
         }
+    }
+
+    public ScreenLayoutSection(
+            String id,
+            String title,
+            List<String> lines,
+            String styleClass,
+            Map<String, String> metadata,
+            List<String> lineIds,
+            List<Map<String, String>> lineMetadata) {
+        this(id, title, lines, styleClass, metadata, lineIds, lineMetadata, null, List.of());
+    }
+
+    public ScreenLayoutSection(
+            String id,
+            String title,
+            List<String> lines,
+            String styleClass,
+            Map<String, String> metadata,
+            List<String> lineIds,
+            List<Map<String, String>> lineMetadata,
+            ScreenLayoutType layoutType) {
+        this(id, title, lines, styleClass, metadata, lineIds, lineMetadata, layoutType, List.of());
     }
 
     public ScreenLayoutSection(String id, String title, List<String> lines, String styleClass, Map<String, String> metadata, List<String> lineIds) {

@@ -117,6 +117,45 @@ final class ScreenDesignModelTest {
         assertEquals("settings.profile", layout.title());
         assertEquals("profile", layout.contentSections().get(0).id());
         assertEquals(List.of("profile.name"), layout.contentSections().get(0).lineIds());
+        assertEquals("summary", layout.contentSections().get(0).childSections().get(0).id());
+    }
+
+    @Test
+    void adaptsNestedBlocksAsChildSectionsForContainerScaffolding() {
+        ScreenLayoutSection root = ScreenDesignLayoutAdapter.toLayoutModel(design())
+                .contentSections()
+                .get(0);
+
+        assertEquals("profile", root.id());
+        assertEquals(1, root.childSections().size());
+        assertEquals("summary", root.childSections().get(0).id());
+        assertEquals(ScreenLayoutType.TWO_COLUMN, root.childSections().get(0).layoutType());
+        assertEquals(List.of("Ready"), root.childSections().get(0).lines());
+    }
+
+    @Test
+    void resolvesDollarNameBindingsForScreenScaffoldingTextAndActions() {
+        ScreenDesignModel model = new ScreenDesignModel("$screen.id", "Load $playerName", ScreenLayoutType.FORM, Map.of(),
+                List.of(new ScreenDesignBlock("actions", "Actions for ${playerName}")),
+                List.of(
+                        new ScreenDesignItem("status", "actions", ScreenDesignItemType.TEXT,
+                                null, "Welcome $playerName", null, null, null, Map.of()),
+                        new ScreenDesignItem("save", "actions", ScreenDesignItemType.BUTTON,
+                                "Save $playerName", null, "slot-$slot", null, null,
+                                Map.of("eventName", "save.$slot"))),
+                List.of());
+
+        ScreenLayoutModel layout = ScreenDesignLayoutAdapter.toLayoutModel(model, Map.of(
+                "screen.id", "profile",
+                "playerName", "Ava",
+                "slot", "1"));
+        ScreenLayoutSection section = layout.contentSections().get(0);
+
+        assertEquals("Load Ava", layout.title());
+        assertEquals("Actions for Ava", section.title());
+        assertEquals(List.of("Welcome Ava", "Save Ava"), section.lines());
+        assertEquals("save.1", section.lineMetadata().get(1).get("eventName"));
+        assertEquals("slot-1", section.lineMetadata().get(1).get("actionValue"));
     }
 
     @Test

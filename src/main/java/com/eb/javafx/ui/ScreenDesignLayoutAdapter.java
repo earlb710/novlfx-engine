@@ -1,13 +1,14 @@
 package com.eb.javafx.ui;
 
 import com.eb.javafx.util.Validation;
-import com.eb.javafx.util.HierarchyTraversal;
 
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /** Converts editable screen designs into reusable screen layout models for preview or runtime rendering. */
 public final class ScreenDesignLayoutAdapter {
@@ -22,6 +23,10 @@ public final class ScreenDesignLayoutAdapter {
     static final String BORDER_THICKNESS_KEY = "borderThickness";
     static final String BORDER_COLOR_KEY = "borderColor";
     static final String DISPLAY_ROLE_KEY = "displayRole";
+    static final String EVENT_NAME_KEY = "eventName";
+    static final String ACTION_EVENT_KEY = "actionEvent";
+    static final String ACTION_VALUE_KEY = "actionValue";
+    private static final Pattern BINDING_PATTERN = Pattern.compile("\\$\\{?([A-Za-z][A-Za-z0-9_.-]*)}?");
 
     private ScreenDesignLayoutAdapter() {
     }
@@ -38,29 +43,45 @@ public final class ScreenDesignLayoutAdapter {
             ScreenDesignModel design,
             boolean includeTemporaryItems,
             DisplayDefaults defaults) {
+        return toLayoutModel(design, includeTemporaryItems, defaults, Map.of());
+    }
+
+    public static ScreenLayoutModel toLayoutModel(
+            ScreenDesignModel design,
+            Map<String, String> bindings) {
+        return toLayoutModel(design, true, DisplayDefaults.defaults(), bindings);
+    }
+
+    public static ScreenLayoutModel toLayoutModel(
+            ScreenDesignModel design,
+            boolean includeTemporaryItems,
+            DisplayDefaults defaults,
+            Map<String, String> bindings) {
         Validation.requireNonNull(design, "Screen design is required.");
         DisplayDefaults effectiveDefaults = Validation.requireNonNull(defaults, "Display defaults are required.");
+        Map<String, String> effectiveBindings = Map.copyOf(Validation.requireNonNull(bindings, "Screen design bindings are required."));
         List<ScreenDesignItem> previewItems = includeTemporaryItems ? design.allItemsForPreview() : design.items();
         Set<String> temporaryItemIds = includeTemporaryItems
                 ? design.temporaryItems().stream().map(ScreenDesignItem::id).collect(Collectors.toSet())
                 : Set.of();
         Map<String, String> screenMetadata = mergedMetadata(effectiveDefaults.screen(), design.metadata());
-        List<ScreenLayoutSection> sections = HierarchyTraversal.depthFirst(
-                        design.blocks(),
-                        ScreenDesignBlock::id,
-                        ScreenDesignBlock::parentBlockId,
-                        null).stream()
-                .map(block -> toSection(block, previewItems, temporaryItemIds, design.metadata(), effectiveDefaults))
+        List<ScreenLayoutSection> sections = design.blocks().stream()
+                .filter(block -> block.parentBlockId() == null)
+                .map(block -> toSection(block, design.blocks(), previewItems, temporaryItemIds,
+                        design.metadata(), effectiveDefaults, effectiveBindings))
                 .toList();
-        return new ScreenLayoutModel(design.layoutType(), design.title(), null, sections, List.of(), List.of(), List.of(), null, screenMetadata);
+        return new ScreenLayoutModel(design.layoutType(), resolve(design.title(), effectiveBindings),
+                null, sections, List.of(), List.of(), List.of(), null, screenMetadata);
     }
 
     private static ScreenLayoutSection toSection(
             ScreenDesignBlock block,
+            List<ScreenDesignBlock> blocks,
             List<ScreenDesignItem> items,
             Set<String> temporaryItemIds,
             Map<String, String> screenOverrides,
-            DisplayDefaults defaults) {
+            DisplayDefaults defaults,
+            Map<String, String> bindings) {
         List<ScreenDesignItem> blockItems = items.stream()
                 .filter(item -> block.id().equals(item.blockId()))
                 .toList();
@@ -69,33 +90,52 @@ public final class ScreenDesignLayoutAdapter {
                 screenOverrides);
         Map<String, String> blockMetadata = mergedMetadata(blockBaseMetadata, block.metadata());
         List<String> lines = blockItems.stream()
-                .map(item -> itemLine(item, temporaryItemIds.contains(item.id())))
+                .map(item -> itemLine(item, temporaryItemIds.contains(item.id()), bindings))
                 .toList();
         List<String> lineIds = blockItems.stream().map(ScreenDesignItem::id).toList();
+        List<Map<String, String>> lineMetadata = blockItems.stream()
+                .map(item -> mergedItemMetadata(block.metadata(), item, defaults, screenOverrides, bindings))
+                .toList();
+        List<ScreenLayoutSection> childSections = blocks.stream()
+                .filter(child -> block.id().equals(child.parentBlockId()))
+                .map(child -> toSection(child, blocks, items, temporaryItemIds, screenOverrides, defaults, bindings))
+                .toList();
         return new ScreenLayoutSection(
                 block.id(),
-                block.title(),
+                resolve(block.title(), bindings),
                 lines,
                 block.styleClass(),
                 blockMetadata,
                 lineIds,
-                blockItems.stream().map(item -> mergedItemMetadata(block.metadata(), item, defaults, screenOverrides)).toList());
+                lineMetadata,
+                block.layoutType(),
+                childSections);
     }
 
     private static Map<String, String> mergedItemMetadata(
             Map<String, String> blockOverrides,
             ScreenDesignItem item,
             DisplayDefaults defaults,
-            Map<String, String> screenOverrides) {
-        return mergedMetadata(
+            Map<String, String> screenOverrides,
+            Map<String, String> bindings) {
+        Map<String, String> metadata = mergedMetadata(
                 mergedMetadata(
                         mergedMetadata(
                                 mergedMetadata(
                                         mergedMetadata(textStyleMetadata(defaults.screen()), textStyleMetadata(defaults.block())),
                                         defaults.itemDefaults(itemRole(item))),
                                 textStyleMetadata(screenOverrides)),
-                        textStyleMetadata(blockOverrides)),
-                item.metadata());
+                                textStyleMetadata(blockOverrides)),
+                resolveMetadata(item.metadata(), bindings));
+        LinkedHashMap<String, String> withAction = new LinkedHashMap<>(metadata);
+        String eventName = firstNonBlank(item.metadata().get(EVENT_NAME_KEY), item.metadata().get(ACTION_EVENT_KEY));
+        if (eventName != null) {
+            withAction.put(EVENT_NAME_KEY, resolve(eventName, bindings));
+        }
+        if (item.value() != null) {
+            withAction.put(ACTION_VALUE_KEY, resolve(item.value(), bindings));
+        }
+        return Map.copyOf(withAction);
     }
 
     private static Map<String, String> textStyleMetadata(Map<String, String> metadata) {
@@ -137,15 +177,15 @@ public final class ScreenDesignLayoutAdapter {
         return Map.copyOf(metadata);
     }
 
-    private static String itemLine(ScreenDesignItem item, boolean temporary) {
+    private static String itemLine(ScreenDesignItem item, boolean temporary, Map<String, String> bindings) {
         String prefix = temporary ? "[temporary] " : "";
-        String label = item.label() == null ? item.id() : item.label();
+        String label = item.label() == null ? item.id() : resolve(item.label(), bindings);
         return switch (item.type()) {
-            case TEXT -> prefix + (item.text() == null ? item.id() : item.text());
-            case TEXT_AREA -> prefix + (item.text() == null ? item.id() : item.text());
-            case FIELD -> prefix + label + ": " + fallback(item.value(), item.defaultValue());
-            case MULTI_LINE_FIELD -> prefix + label + ": " + fallback(item.value(), item.defaultValue());
-            case BUTTON -> prefix + "[" + label + "]";
+            case TEXT -> prefix + (item.text() == null ? item.id() : resolve(item.text(), bindings));
+            case TEXT_AREA -> prefix + (item.text() == null ? item.id() : resolve(item.text(), bindings));
+            case FIELD -> prefix + label + ": " + resolve(fallback(item.value(), item.defaultValue()), bindings);
+            case MULTI_LINE_FIELD -> prefix + label + ": " + resolve(fallback(item.value(), item.defaultValue()), bindings);
+            case BUTTON -> prefix + label;
         };
     }
 
@@ -154,5 +194,32 @@ public final class ScreenDesignLayoutAdapter {
             return value;
         }
         return defaultValue == null ? "" : defaultValue;
+    }
+
+    private static Map<String, String> resolveMetadata(Map<String, String> metadata, Map<String, String> bindings) {
+        LinkedHashMap<String, String> resolved = new LinkedHashMap<>();
+        metadata.forEach((key, value) -> resolved.put(key, resolve(value, bindings)));
+        return Map.copyOf(resolved);
+    }
+
+    private static String resolve(String text, Map<String, String> bindings) {
+        if (text == null || bindings.isEmpty()) {
+            return text;
+        }
+        Matcher matcher = BINDING_PATTERN.matcher(text);
+        StringBuilder resolved = new StringBuilder();
+        while (matcher.find()) {
+            String replacement = bindings.get(matcher.group(1));
+            matcher.appendReplacement(resolved, Matcher.quoteReplacement(replacement == null ? matcher.group() : replacement));
+        }
+        matcher.appendTail(resolved);
+        return resolved.toString();
+    }
+
+    private static String firstNonBlank(String first, String second) {
+        if (first != null && !first.isBlank()) {
+            return first;
+        }
+        return second == null || second.isBlank() ? null : second;
     }
 }

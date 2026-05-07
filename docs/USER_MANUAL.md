@@ -327,7 +327,7 @@ The `ui` package provides reusable JavaFX surfaces and helpers:
 - `DisplayPreviewBinding` carries image id, source path, layer, and asset-resolution state for display diagnostics and app-owned previews.
 - `ScreenBackgroundFit` names reusable background sizing modes: stretch or center-crop.
 - `ScreenLayoutType`, `ScreenLayoutModel`, and `ScreenLayoutSection` define reusable screen layout intent without JavaFX control state. Use them when a screen needs a stable general structure such as a titled panel, two-column layout, sidebar/content layout, HUD/status overlay, dialogue surface, menu/action list, form, or preview/card grid.
-- `ScreenDesignModel`, `ScreenDesignBlock`, and `ScreenDesignItem` define editable JSON-backed screen designs with stable screen, block, and item ids. Use `ScreenDesignService.addItemToBlock(...)` or `addTemporaryItemToBlock(...)` when code needs to target a block id directly; temporary items render in preview/test mode but `ScreenDesignJson.save(...)` excludes them from persisted JSON. `ScreenDesignJson` saves/loads documents with top-level `id`, `title`, `layoutType`, `metadata`, ordered `blocks`, and ordered saved `items`. Each block carries `id`, optional `title`, optional `styleClass`, and `metadata`; each item carries `id`, `blockId`, `type`, optional `label`, `text`, `value`, `defaultValue`, `styleClass`, and `metadata`.
+- `ScreenDesignModel`, `ScreenDesignBlock`, and `ScreenDesignItem` define editable JSON-backed screen designs with stable screen, block, and item ids. Use `ScreenDesignService.addItemToBlock(...)` or `addTemporaryItemToBlock(...)` when code needs to target a block id directly; temporary items render in preview/test mode but `ScreenDesignJson.save(...)` excludes them from persisted JSON. `ScreenDesignJson` saves/loads documents with top-level `id`, `title`, `layoutType`, `metadata`, ordered `blocks`, and ordered saved `items`. Each block carries `id`, optional `title`, optional block-level `layoutType`, optional `parentBlockId`, optional `styleClass`, and `metadata`; each item carries `id`, `blockId`, `type`, optional `label`, `text`, `value`, `defaultValue`, `styleClass`, and `metadata`.
 - `ConversationDefinition`, `ConversationDefinitionJson`, and `JsonConversationContentModule` define JSON-backed conversation documents for authored visual-novel content using the AltLife exported shape. A conversation file has top-level `name`, `language`, and ordered `conversations`; each conversation carries `id`, `description`, and typed `lines`. Line `type` supports `say` by default, `shout` for uppercase bold text, `whisper` for lowercase italic text, and `choice` for player-selectable variants with per-choice values and conditions. `JsonConversationContentModule` projects that document into reusable content definitions and scene definitions when runtime registration is needed.
 - `ScreenLayoutContract` loads the machine-readable layout contract from `src/main/resources/com/eb/javafx/ui/layout-contract.json`, which lists engine-provided layout types, the default stylesheet, and stable CSS style hooks applications can target.
 - `ScreenInventory`, `ScreenInventoryItem`, `ScreenInventorySource`, `ScreenInventoryScanner`, and `ScreenInventoryAssignmentCategory` provide content-neutral inventory models for application-owned screen/style/control migration scanners. Use them to classify source artifacts as route-backed, reusable-control-backed, deferred, deprecated, excluded, or app-owned without hard-coding source-engine names in the engine.
@@ -361,7 +361,7 @@ Blocks and items are stable editable records:
 - `FIELD` and `MULTI_LINE_FIELD` support `label`, `value`, `defaultValue`, and `editable`
 - `BUTTON` uses `label` as the rendered button caption
 
-`ScreenDesignLayoutAdapter` converts a `ScreenDesignModel` into a `ScreenLayoutModel` for preview or runtime rendering. It preserves stable block/item ids, maps field-style items to `label: value/defaultValue` lines, and carries item metadata into the layout so renderer-supported visual metadata can be applied consistently.
+`ScreenDesignLayoutAdapter` converts a `ScreenDesignModel` into a `ScreenLayoutModel` for preview or runtime rendering. It preserves stable block/item ids, converts `parentBlockId` relationships into nested layout sections, maps field-style items to `label: value/defaultValue` lines, and carries item metadata into the layout so renderer-supported visual metadata can be applied consistently. Applications can call the binding overload with a string map so authored text such as `$playerName` or `${playerName}` is resolved during scaffolding. Complex or application-specific controls can still be added programmatically by targeting stable block ids after the JSON scaffold is loaded.
 
 ### Editing a screen manually in JSON
 
@@ -428,12 +428,15 @@ When editing manually:
 - `defaultValue` is the fallback text shown by `FIELD` and `MULTI_LINE_FIELD` when `value` is null
 - `editable` is only meaningful for field-style items
 - `styleClass` is a stable CSS hook; `metadata` is a string map for extra tool/renderer-owned values
+- nested containers are represented as blocks with `parentBlockId`; a block-level `layoutType` controls how its child blocks are arranged
+- `$name` and `${name}` tokens in titles, labels, text, values, default values, and metadata can be resolved by passing bindings to `ScreenDesignLayoutAdapter`
+- `BUTTON` item metadata can include `eventName` or `actionEvent`; when rendered with a `GameEventBus`, clicking the button publishes that named event with the item id as the source id
 
 The designer and JSON format currently expose these style-oriented metadata keys:
 
 - screen metadata: `fontFamily`, `fontSize`, `fontStyle`, `color`, `backgroundColor`, `borderStyle`, `borderCorner`, `borderThickness`, `borderColor`
 - block metadata: `fontFamily`, `fontSize`, `fontStyle`, `color`, `backgroundColor`, `transparency`, `borderStyle`, `borderCorner`, `borderThickness`, `borderColor`
-- item metadata: `displayRole`, `fontFamily`, `fontSize`, `fontStyle`, `color`, `backgroundColor`, `transparency`, `labelFontFamily`, `labelFontSize`, `labelFontStyle`, `labelColor`
+- item metadata: `displayRole`, `fontFamily`, `fontSize`, `fontStyle`, `color`, `backgroundColor`, `transparency`, `labelFontFamily`, `labelFontSize`, `labelFontStyle`, `labelColor`, `eventName`, `actionEvent`
 
 These keys are string-valued metadata entries in the saved JSON. Leave a key out to inherit the bundled default display configuration from `src/main/resources/com/eb/javafx/ui/display-defaults.json`, or from any edited preview defaults currently loaded in the screen designer.
 
