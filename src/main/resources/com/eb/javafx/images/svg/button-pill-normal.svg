@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <svg
-   width="180"
-   height="48"
-   viewBox="0 0 180 48"
+   width="200"
+   height="150"
+   viewBox="0 0 200 150"
    version="1.1"
    id="svg1"
    sodipodi:docname="button-pill-normal.svg"
@@ -21,14 +21,14 @@
        inkscape:collect="always"
        xlink:href="#buttonPillGradient"
        id="buttonPillFill"
-       x1="90"
+       x1="100"
        y1="0"
-       x2="90"
-       y2="48"
+       x2="100"
+       y2="150"
        gradientUnits="userSpaceOnUse" />
   </defs>
   <path
      style="fill:url(#buttonPillFill);stroke-width:1"
-     d="M 20.712909,48 H 159.287091 q 20.712909,0 20.712909,-24 Q 180,0 159.287091,0 H 20.712909 Q 0,0 0,24 q 0,24 20.712909,24 z"
+     d="M 75,150 H 125 A 75,75 0 0 0 125,0 H 75 A 75,75 0 0 0 75,150 Z"
      id="button-shape-normal" />
 </svg>

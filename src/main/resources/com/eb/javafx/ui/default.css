@@ -141,7 +141,7 @@
     -fx-font-weight: bold;
     -fx-padding: 8px 18px;
     -fx-background-color: #0a1426;
-    -fx-text-fill: #ffffff;
+    -fx-text-fill: #bfd3ec;
     -fx-border-color: #143869;
     -fx-border-width: 1px;
     -fx-background-insets: 0;
@@ -161,7 +161,7 @@
 }
 
 .svg-button-artwork-text {
-    -fx-fill: #dbeafe;
+    -fx-fill: #bfd3ec;
     -fx-font-size: 20px;
     -fx-font-weight: bold;
 }

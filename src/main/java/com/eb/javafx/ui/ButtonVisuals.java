@@ -36,8 +36,8 @@ public final class ButtonVisuals {
     public static final String BUTTON_STYLE_CLASS = "svg-button";
     public static final String BUTTON_ARTWORK_STYLE_CLASS = "svg-button-artwork";
     public static final String BUTTON_ARTWORK_TEXT_STYLE_CLASS = "svg-button-artwork-text";
-    public static final double BUTTON_SHORT_ARTWORK_WIDTH = 120;
-    public static final double BUTTON_ARTWORK_WIDTH = 180;
+    public static final double BUTTON_SHORT_ARTWORK_WIDTH = 100;
+    public static final double BUTTON_ARTWORK_WIDTH = 200;
     public static final double BUTTON_ARTWORK_HEIGHT = 48;
     private static final double BUTTON_ARTWORK_MIN_WIDTH = 48;
     private static final double BUTTON_ARTWORK_HORIZONTAL_PADDING = 36;

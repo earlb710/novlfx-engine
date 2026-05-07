@@ -14,6 +14,8 @@ import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 import org.junit.jupiter.api.Test;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -47,6 +49,20 @@ final class ButtonPillSvgTestScreenTest {
     void buttonPillArtworkUsesPackagedSvgResource() {
         assertTrue(ButtonVisuals.buttonArtworkResourceUrl()
                 .endsWith(ButtonVisuals.BUTTON_NORMAL_ARTWORK_RESOURCE.substring(1)));
+    }
+
+    @Test
+    void buttonPillSvgFilesUseRequestedIntrinsicSizes() throws Exception {
+        String shortSvg = Files.readString(Path.of("src/main/resources/com/eb/javafx/images/svg/button-pill-short.svg"));
+        String normalSvg = Files.readString(Path.of("src/main/resources/com/eb/javafx/images/svg/button-pill-normal.svg"));
+        String longSvg = Files.readString(Path.of("src/main/resources/com/eb/javafx/images/svg/button-pill-long.svg"));
+
+        assertTrue(shortSvg.contains("width=\"100\""));
+        assertTrue(shortSvg.contains("height=\"150\""));
+        assertTrue(normalSvg.contains("width=\"200\""));
+        assertTrue(normalSvg.contains("height=\"150\""));
+        assertTrue(longSvg.contains("width=\"400\""));
+        assertTrue(longSvg.contains("height=\"150\""));
     }
 
     @Test

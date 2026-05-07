@@ -156,7 +156,7 @@ final class ScreenShellTest {
         assertTrue(css.contains("-fx-font-size: 20px;"));
         assertTrue(css.contains("-fx-font-weight: bold;"));
         assertTrue(css.contains("-fx-padding: 8px 18px;"));
-        assertTrue(css.contains("-fx-text-fill: #dbeafe;"));
+        assertTrue(css.contains("-fx-text-fill: #bfd3ec;"));
         assertTrue(css.contains(".button:hover"));
         assertTrue(css.contains(".svg-button:hover .svg-button-artwork-text"));
         assertTrue(css.contains("-fx-fill: #ffffff;"));
@@ -167,6 +167,8 @@ final class ScreenShellTest {
         String svg = Files.readString(Path.of("src/main/resources/com/eb/javafx/images/svg/button-pill-normal.svg"));
 
         assertTrue(svg.contains("button-shape"));
+        assertTrue(svg.contains("width=\"200\""));
+        assertTrue(svg.contains("height=\"150\""));
         assertTrue(ButtonVisuals.buttonShapePath().startsWith("M "));
         SVGPath shape = ButtonVisuals.createShape();
         assertNotNull(shape);
