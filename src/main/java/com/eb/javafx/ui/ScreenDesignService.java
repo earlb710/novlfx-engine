@@ -46,9 +46,11 @@ public final class ScreenDesignService {
         Validation.requireNonBlank(newBlockId, "New screen design block id is required.");
         List<ScreenDesignBlock> blocks = design.blocks().stream()
                 .map(block -> oldBlockId.equals(block.id())
-                        ? new ScreenDesignBlock(newBlockId, block.title(), block.layoutType(), block.parentBlockId(), block.styleClass(), block.metadata())
+                        ? new ScreenDesignBlock(newBlockId, block.title(), block.layoutType(),
+                        block.parentBlockId(), block.conditions(), block.styleClass(), block.metadata())
                         : oldBlockId.equals(block.parentBlockId())
-                        ? new ScreenDesignBlock(block.id(), block.title(), block.layoutType(), newBlockId, block.styleClass(), block.metadata())
+                        ? new ScreenDesignBlock(block.id(), block.title(), block.layoutType(),
+                        newBlockId, block.conditions(), block.styleClass(), block.metadata())
                         : block)
                 .toList();
         List<ScreenDesignItem> items = design.items().stream()

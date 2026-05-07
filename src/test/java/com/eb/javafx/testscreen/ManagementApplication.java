@@ -1,5 +1,6 @@
 package com.eb.javafx.testscreen;
 
+import com.eb.javafx.ui.test.JsonScreenDesignTestScreen;
 import com.eb.javafx.util.Validation;
 
 import javax.swing.JButton;
@@ -22,6 +23,10 @@ public final class ManagementApplication {
                     "Screen Designer",
                     "Open the JSON-backed screen designer.",
                     ScreenDesignerApplication::showFromManagement),
+            new ManagementAction(
+                    "Reloadable JSON Screen",
+                    "Render a screen-design JSON file and reload it after edits.",
+                    JsonScreenDesignTestScreen::showFromManagement),
             new ManagementAction(
                     "Conversation Editor",
                     "Open the AltLife-compatible conversation JSON editor.",

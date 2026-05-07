@@ -1,5 +1,7 @@
 package com.eb.javafx.ui;
 
+import com.eb.javafx.scene.ConversationConditionSyntax;
+import com.eb.javafx.scene.ConversationConditionVariables;
 import com.eb.javafx.util.Validation;
 
 import java.util.ArrayList;
@@ -13,22 +15,21 @@ public final class ScreenDesignValidator {
     }
 
     public static List<ScreenDesignValidationProblem> validate(ScreenDesignModel design) {
+        return validate(design, ConversationConditionVariables.fixed());
+    }
+
+    public static List<ScreenDesignValidationProblem> validate(
+            ScreenDesignModel design,
+            ConversationConditionVariables conditionVariables) {
         Validation.requireNonNull(design, "Screen design is required.");
-        List<ScreenDesignValidationProblem> problems = new ArrayList<>();
-        Set<String> blockIds = new HashSet<>();
-        for (ScreenDesignBlock block : design.blocks()) {
-            if (!blockIds.add(block.id())) {
-                problems.add(error("blocks." + block.id(), "Duplicate screen design block id: " + block.id()));
-            }
-        }
-        validateBlockParents(design.blocks(), blockIds, problems);
-        Set<String> itemIds = new HashSet<>();
-        validateItems(design.items(), "items", blockIds, itemIds, problems);
-        validateItems(design.temporaryItems(), "temporaryItems", blockIds, itemIds, problems);
+        Validation.requireNonNull(conditionVariables, "Screen design condition variables are required.");
+        List<ScreenDesignValidationProblem> problems = new ArrayList<>(
+                validateStructureRaw(design.blocks(), design.items(), design.temporaryItems()));
+        validateBlockConditions(design.blocks(), conditionVariables, problems);
         return List.copyOf(problems);
     }
 
-    static List<ScreenDesignValidationProblem> validateRaw(
+    static List<ScreenDesignValidationProblem> validateStructureRaw(
             List<ScreenDesignBlock> blocks,
             List<ScreenDesignItem> items,
             List<ScreenDesignItem> temporaryItems) {
@@ -46,15 +47,56 @@ public final class ScreenDesignValidator {
         return List.copyOf(problems);
     }
 
+    static List<ScreenDesignValidationProblem> validateRaw(
+            List<ScreenDesignBlock> blocks,
+            List<ScreenDesignItem> items,
+            List<ScreenDesignItem> temporaryItems) {
+        return validateRaw(blocks, items, temporaryItems, ConversationConditionVariables.fixed());
+    }
+
+    static List<ScreenDesignValidationProblem> validateRaw(
+            List<ScreenDesignBlock> blocks,
+            List<ScreenDesignItem> items,
+            List<ScreenDesignItem> temporaryItems,
+            ConversationConditionVariables conditionVariables) {
+        List<ScreenDesignValidationProblem> problems = new ArrayList<>(validateStructureRaw(blocks, items, temporaryItems));
+        validateBlockConditions(blocks, conditionVariables, problems);
+        return List.copyOf(problems);
+    }
+
     public static void requireValid(ScreenDesignModel design) {
-        List<ScreenDesignValidationProblem> problems = validate(design);
+        requireValid(design, ConversationConditionVariables.fixed());
+    }
+
+    public static void requireValid(
+            ScreenDesignModel design,
+            ConversationConditionVariables conditionVariables) {
+        List<ScreenDesignValidationProblem> problems = validate(design, conditionVariables);
         if (!problems.isEmpty()) {
             throw new IllegalArgumentException(problems.get(0).message());
         }
     }
 
     static void requireValidRaw(List<ScreenDesignBlock> blocks, List<ScreenDesignItem> items, List<ScreenDesignItem> temporaryItems) {
-        List<ScreenDesignValidationProblem> problems = validateRaw(blocks, items, temporaryItems);
+        requireValidRaw(blocks, items, temporaryItems, ConversationConditionVariables.fixed());
+    }
+
+    static void requireValidRaw(
+            List<ScreenDesignBlock> blocks,
+            List<ScreenDesignItem> items,
+            List<ScreenDesignItem> temporaryItems,
+            ConversationConditionVariables conditionVariables) {
+        List<ScreenDesignValidationProblem> problems = validateRaw(blocks, items, temporaryItems, conditionVariables);
+        if (!problems.isEmpty()) {
+            throw new IllegalArgumentException(problems.get(0).message());
+        }
+    }
+
+    static void requireValidStructureRaw(
+            List<ScreenDesignBlock> blocks,
+            List<ScreenDesignItem> items,
+            List<ScreenDesignItem> temporaryItems) {
+        List<ScreenDesignValidationProblem> problems = validateStructureRaw(blocks, items, temporaryItems);
         if (!problems.isEmpty()) {
             throw new IllegalArgumentException(problems.get(0).message());
         }
@@ -102,6 +144,24 @@ public final class ScreenDesignValidator {
                     break;
                 }
                 current = parentByBlockId.get(current);
+            }
+        }
+    }
+
+    private static void validateBlockConditions(
+            List<ScreenDesignBlock> blocks,
+            ConversationConditionVariables conditionVariables,
+            List<ScreenDesignValidationProblem> problems) {
+        for (ScreenDesignBlock block : blocks) {
+            for (int index = 0; index < block.conditions().size(); index++) {
+                try {
+                    ConversationConditionSyntax.validateCondition(
+                            block.conditions().get(index),
+                            "Screen design block " + block.id() + " condition " + (index + 1),
+                            conditionVariables);
+                } catch (IllegalArgumentException exception) {
+                    problems.add(error("blocks." + block.id() + ".conditions[" + index + "]", exception.getMessage()));
+                }
             }
         }
     }

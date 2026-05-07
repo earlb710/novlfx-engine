@@ -1,11 +1,15 @@
 package com.eb.javafx.ui;
 
+import com.eb.javafx.events.GameEvent;
+import com.eb.javafx.events.GameEventBus;
 import com.eb.javafx.routing.RouteContext;
 import com.eb.javafx.util.FontResources;
 import com.eb.javafx.util.Validation;
 import javafx.geometry.Insets;
 import javafx.scene.Node;
 import javafx.scene.Scene;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.BorderPane;
@@ -13,6 +17,9 @@ import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
+import javafx.stage.Modality;
+import javafx.stage.Stage;
+import javafx.stage.Window;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -30,6 +37,11 @@ public final class ScreenLayoutRenderer {
     private static final Pattern COLOR_PATTERN = Pattern.compile("#[0-9a-fA-F]{3,8}|[a-zA-Z]+");
     private static final Pattern BORDER_STYLE_PATTERN = Pattern.compile("[a-zA-Z\\- ]+");
     private static final Map<String, String> FONT_FAMILY_CACHE = new ConcurrentHashMap<>();
+    private static final String EVENT_NAME_KEY = "eventName";
+    private static final String ACTION_VALUE_KEY = "actionValue";
+    static final String DIALOG_KEY = "dialog";
+    static final String DISMISS_ON_CLICK_OUTSIDE_KEY = "dismissOnClickOutside";
+    static final String DISMISS_ON_ESCAPE_KEY = "dismissOnEscape";
 
     private ScreenLayoutRenderer() {
     }
@@ -44,11 +56,15 @@ public final class ScreenLayoutRenderer {
     }
 
     public static BorderPane createRoot(RouteContext context, ScreenLayoutModel model) {
+        return createRoot(context, model, null);
+    }
+
+    public static BorderPane createRoot(RouteContext context, ScreenLayoutModel model, GameEventBus eventBus) {
         Validation.requireNonNull(model, "Screen layout model is required.");
         VBox content = new VBox(REGION_SPACING);
         content.getStyleClass().add(ScreenShell.LAYOUT_CONTENT_STYLE_CLASS);
         addOptionalText(content, model.subtitle(), ScreenShell.LAYOUT_SUBTITLE_STYLE_CLASS);
-        content.getChildren().add(layoutContent(context, model));
+        content.getChildren().add(layoutContent(context, model, eventBus));
         addActions(content, context, model.primaryActions(), ScreenShell.LAYOUT_PRIMARY_ACTION_STYLE_CLASS);
         addActions(content, context, model.secondaryActions(), ScreenShell.LAYOUT_SECONDARY_ACTION_STYLE_CLASS);
         addOptionalText(content, model.footer(), ScreenShell.LAYOUT_FOOTER_STYLE_CLASS);
@@ -57,35 +73,85 @@ public final class ScreenLayoutRenderer {
         return root;
     }
 
-    private static Node layoutContent(RouteContext context, ScreenLayoutModel model) {
-        return switch (model.type()) {
-            case TITLED_PANEL -> titledPanel(model);
-            case TWO_COLUMN -> twoColumn(model);
-            case SIDEBAR_CONTENT -> sidebarContent(context, model);
-            case HUD_STATUS_OVERLAY -> sectionList(model, ScreenShell.LAYOUT_HUD_OVERLAY_STYLE_CLASS);
-            case DIALOGUE -> sectionList(model, ScreenShell.LAYOUT_DIALOGUE_STYLE_CLASS);
-            case MENU_ACTION_LIST -> sectionList(model, ScreenShell.LAYOUT_MENU_STYLE_CLASS);
-            case FORM -> sectionList(model, ScreenShell.LAYOUT_FORM_STYLE_CLASS);
-            case PREVIEW_GRID -> previewGrid(model);
+    public static void configureDialogStage(Stage stage, Scene scene, ScreenLayoutModel model, Window owner) {
+        Validation.requireNonNull(stage, "Dialog stage is required.");
+        Validation.requireNonNull(scene, "Dialog scene is required.");
+        Validation.requireNonNull(model, "Screen layout model is required.");
+        if (!isDialog(model)) {
+            return;
+        }
+        if (owner != null) {
+            stage.initOwner(owner);
+            stage.initModality(Modality.WINDOW_MODAL);
+        } else {
+            stage.initModality(Modality.APPLICATION_MODAL);
+        }
+        if (dismissOnEscape(model)) {
+            scene.addEventHandler(KeyEvent.KEY_PRESSED, event -> {
+                if (event.getCode() == KeyCode.ESCAPE) {
+                    stage.hide();
+                    event.consume();
+                }
+            });
+        }
+        if (dismissOnClickOutside(model)) {
+            stage.focusedProperty().addListener((observable, previous, focused) -> {
+                if (!focused && stage.isShowing()) {
+                    stage.hide();
+                }
+            });
+        }
+    }
+
+    public static boolean isDialog(ScreenLayoutModel model) {
+        return metadataBoolean(model.metadata(), DIALOG_KEY);
+    }
+
+    public static boolean dismissOnClickOutside(ScreenLayoutModel model) {
+        return metadataBoolean(model.metadata(), DISMISS_ON_CLICK_OUTSIDE_KEY);
+    }
+
+    public static boolean dismissOnEscape(ScreenLayoutModel model) {
+        return metadataBoolean(model.metadata(), DISMISS_ON_ESCAPE_KEY);
+    }
+
+    static boolean metadataBoolean(Map<String, String> metadata, String key) {
+        String value = metadata.get(key);
+        return value != null && switch (value.trim().toLowerCase(java.util.Locale.ROOT)) {
+            case "true", "1", "yes", "y", "on" -> true;
+            default -> false;
         };
     }
 
-    private static Node titledPanel(ScreenLayoutModel model) {
-        return sectionList(model, ScreenShell.LAYOUT_TITLED_PANEL_STYLE_CLASS);
+    private static Node layoutContent(RouteContext context, ScreenLayoutModel model, GameEventBus eventBus) {
+        return switch (model.type()) {
+            case TITLED_PANEL -> titledPanel(model, eventBus);
+            case TWO_COLUMN -> twoColumn(model, eventBus);
+            case SIDEBAR_CONTENT -> sidebarContent(context, model, eventBus);
+            case HUD_STATUS_OVERLAY -> sectionList(model, ScreenShell.LAYOUT_HUD_OVERLAY_STYLE_CLASS, eventBus);
+            case DIALOGUE -> sectionList(model, ScreenShell.LAYOUT_DIALOGUE_STYLE_CLASS, eventBus);
+            case MENU_ACTION_LIST -> sectionList(model, ScreenShell.LAYOUT_MENU_STYLE_CLASS, eventBus);
+            case FORM -> sectionList(model, ScreenShell.LAYOUT_FORM_STYLE_CLASS, eventBus);
+            case PREVIEW_GRID -> previewGrid(model, eventBus);
+        };
     }
 
-    private static Node twoColumn(ScreenLayoutModel model) {
+    private static Node titledPanel(ScreenLayoutModel model, GameEventBus eventBus) {
+        return sectionList(model, ScreenShell.LAYOUT_TITLED_PANEL_STYLE_CLASS, eventBus);
+    }
+
+    private static Node twoColumn(ScreenLayoutModel model, GameEventBus eventBus) {
         HBox columns = new HBox(REGION_SPACING);
         columns.getStyleClass().add(ScreenShell.LAYOUT_TWO_COLUMN_STYLE_CLASS);
         for (ScreenLayoutSection section : model.contentSections()) {
-            VBox column = sectionNode(section, ScreenShell.LAYOUT_COLUMN_STYLE_CLASS);
+            VBox column = sectionNode(section, ScreenShell.LAYOUT_COLUMN_STYLE_CLASS, eventBus);
             HBox.setHgrow(column, Priority.ALWAYS);
             columns.getChildren().add(column);
         }
         return columns;
     }
 
-    private static Node sidebarContent(RouteContext context, ScreenLayoutModel model) {
+    private static Node sidebarContent(RouteContext context, ScreenLayoutModel model, GameEventBus eventBus) {
         HBox layout = new HBox(REGION_SPACING);
         layout.getStyleClass().add(ScreenShell.LAYOUT_SIDEBAR_CONTENT_STYLE_CLASS);
 
@@ -95,31 +161,31 @@ public final class ScreenLayoutRenderer {
             sidebar.getChildren().add(actionButton(context, entry, ScreenShell.LAYOUT_SIDEBAR_ENTRY_STYLE_CLASS));
         }
 
-        VBox content = sectionList(model, ScreenShell.LAYOUT_MAIN_CONTENT_STYLE_CLASS);
+        VBox content = sectionList(model, ScreenShell.LAYOUT_MAIN_CONTENT_STYLE_CLASS, eventBus);
         HBox.setHgrow(content, Priority.ALWAYS);
         layout.getChildren().addAll(sidebar, content);
         return layout;
     }
 
-    private static VBox sectionList(ScreenLayoutModel model, String styleClass) {
+    private static VBox sectionList(ScreenLayoutModel model, String styleClass, GameEventBus eventBus) {
         VBox sections = new VBox(SECTION_SPACING);
         sections.getStyleClass().add(styleClass);
         for (ScreenLayoutSection section : model.contentSections()) {
-            sections.getChildren().add(sectionNode(section, null));
+            sections.getChildren().add(sectionNode(section, null, eventBus));
         }
         return sections;
     }
 
-    private static FlowPane previewGrid(ScreenLayoutModel model) {
+    private static FlowPane previewGrid(ScreenLayoutModel model, GameEventBus eventBus) {
         FlowPane grid = new FlowPane(REGION_SPACING, REGION_SPACING);
         grid.getStyleClass().add(ScreenShell.LAYOUT_PREVIEW_GRID_STYLE_CLASS);
         for (ScreenLayoutSection section : model.contentSections()) {
-            grid.getChildren().add(sectionNode(section, ScreenShell.LAYOUT_CARD_STYLE_CLASS));
+            grid.getChildren().add(sectionNode(section, ScreenShell.LAYOUT_CARD_STYLE_CLASS, eventBus));
         }
         return grid;
     }
 
-    private static VBox sectionNode(ScreenLayoutSection section, String styleClass) {
+    private static VBox sectionNode(ScreenLayoutSection section, String styleClass, GameEventBus eventBus) {
         VBox sectionNode = new VBox(SECTION_SPACING);
         sectionNode.setId(section.id());
         sectionNode.getStyleClass().add(ScreenShell.LAYOUT_SECTION_STYLE_CLASS);
@@ -133,23 +199,83 @@ public final class ScreenLayoutRenderer {
         addOptionalText(sectionNode, section.title(), ScreenShell.LAYOUT_SECTION_TITLE_STYLE_CLASS);
         for (int index = 0; index < section.lines().size(); index++) {
             String line = section.lines().get(index);
-            Label label = new Label(line);
-            if (!section.lineIds().isEmpty()) {
-                label.setId(section.lineIds().get(index));
-            }
-            label.getStyleClass().add(ScreenShell.LAYOUT_SECTION_ROW_STYLE_CLASS);
-            if (!section.lineMetadata().isEmpty()) {
-                applyLineStyle(label, section.lineMetadata().get(index));
-            }
-            sectionNode.getChildren().add(label);
+            Map<String, String> metadata = section.lineMetadata().isEmpty() ? Map.of() : section.lineMetadata().get(index);
+            Node lineNode = lineNode(line, lineId(section, index), metadata, eventBus);
+            sectionNode.getChildren().add(lineNode);
+        }
+        if (!section.childSections().isEmpty()) {
+            sectionNode.getChildren().add(childSectionContainer(section, eventBus));
         }
         return sectionNode;
     }
 
-    private static void applyLineStyle(Label label, Map<String, String> metadata) {
+    private static Node childSectionContainer(ScreenLayoutSection section, GameEventBus eventBus) {
+        ScreenLayoutType layoutType = section.layoutType() == null ? ScreenLayoutType.FORM : section.layoutType();
+        if (layoutType == ScreenLayoutType.TWO_COLUMN || layoutType == ScreenLayoutType.SIDEBAR_CONTENT) {
+            HBox children = new HBox(REGION_SPACING);
+            children.getStyleClass().add(ScreenShell.LAYOUT_TWO_COLUMN_STYLE_CLASS);
+            for (ScreenLayoutSection child : section.childSections()) {
+                VBox childNode = sectionNode(child, ScreenShell.LAYOUT_COLUMN_STYLE_CLASS, eventBus);
+                HBox.setHgrow(childNode, Priority.ALWAYS);
+                children.getChildren().add(childNode);
+            }
+            return children;
+        }
+        if (layoutType == ScreenLayoutType.PREVIEW_GRID) {
+            FlowPane children = new FlowPane(REGION_SPACING, REGION_SPACING);
+            children.getStyleClass().add(ScreenShell.LAYOUT_PREVIEW_GRID_STYLE_CLASS);
+            for (ScreenLayoutSection child : section.childSections()) {
+                children.getChildren().add(sectionNode(child, ScreenShell.LAYOUT_CARD_STYLE_CLASS, eventBus));
+            }
+            return children;
+        }
+        VBox children = new VBox(SECTION_SPACING);
+        for (ScreenLayoutSection child : section.childSections()) {
+            children.getChildren().add(sectionNode(child, null, eventBus));
+        }
+        return children;
+    }
+
+    private static Node lineNode(String line, String id, Map<String, String> metadata, GameEventBus eventBus) {
+        String eventName = metadata.get(EVENT_NAME_KEY);
+        if (eventName != null && !eventName.isBlank()) {
+            Button button = new Button(line);
+            button.setMaxWidth(Double.MAX_VALUE);
+            button.getStyleClass().add(ScreenShell.LAYOUT_SECTION_ROW_STYLE_CLASS);
+            if (id != null) {
+                button.setId(id);
+            }
+            applyLineStyle(button, metadata);
+            if (eventBus != null) {
+                button.setOnAction(event -> eventBus.publish(GameEvent.now(eventName, id, eventPayload(metadata))));
+            }
+            return button;
+        }
+        Label label = new Label(line);
+        if (id != null) {
+            label.setId(id);
+        }
+        label.getStyleClass().add(ScreenShell.LAYOUT_SECTION_ROW_STYLE_CLASS);
+        applyLineStyle(label, metadata);
+        return label;
+    }
+
+    private static String lineId(ScreenLayoutSection section, int index) {
+        if (!section.lineIds().isEmpty()) {
+            return section.lineIds().get(index);
+        }
+        return null;
+    }
+
+    private static Map<String, String> eventPayload(Map<String, String> metadata) {
+        String value = metadata.get(ACTION_VALUE_KEY);
+        return value == null ? Map.of() : Map.of("value", value);
+    }
+
+    private static void applyLineStyle(javafx.scene.control.Control control, Map<String, String> metadata) {
         String style = lineStyle(metadata);
         if (!style.isEmpty()) {
-            label.setStyle(style);
+            control.setStyle(style);
         }
     }
 

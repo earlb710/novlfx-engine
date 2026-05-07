@@ -52,7 +52,7 @@ Launch the management app with:
 ./gradlew --no-daemon runManagementApp
 ```
 
-The management app is a button-only launcher for manual authoring and diagnostic screens, including default display values, the screen designer, and the conversation editor.
+The management app is a button-only launcher for manual authoring and diagnostic screens, including default display values, the screen designer, the reloadable JSON screen, and the conversation editor.
 
 Launch the manual conversation editor with:
 
@@ -327,7 +327,7 @@ The `ui` package provides reusable JavaFX surfaces and helpers:
 - `DisplayPreviewBinding` carries image id, source path, layer, and asset-resolution state for display diagnostics and app-owned previews.
 - `ScreenBackgroundFit` names reusable background sizing modes: stretch or center-crop.
 - `ScreenLayoutType`, `ScreenLayoutModel`, and `ScreenLayoutSection` define reusable screen layout intent without JavaFX control state. Use them when a screen needs a stable general structure such as a titled panel, two-column layout, sidebar/content layout, HUD/status overlay, dialogue surface, menu/action list, form, or preview/card grid.
-- `ScreenDesignModel`, `ScreenDesignBlock`, and `ScreenDesignItem` define editable JSON-backed screen designs with stable screen, block, and item ids. Use `ScreenDesignService.addItemToBlock(...)` or `addTemporaryItemToBlock(...)` when code needs to target a block id directly; temporary items render in preview/test mode but `ScreenDesignJson.save(...)` excludes them from persisted JSON. `ScreenDesignJson` saves/loads documents with top-level `id`, `title`, `layoutType`, `metadata`, ordered `blocks`, and ordered saved `items`. Each block carries `id`, optional `title`, optional `styleClass`, and `metadata`; each item carries `id`, `blockId`, `type`, optional `label`, `text`, `value`, `defaultValue`, `styleClass`, and `metadata`.
+- `ScreenDesignModel`, `ScreenDesignBlock`, and `ScreenDesignItem` define editable JSON-backed screen designs with stable screen, block, and item ids. Use `ScreenDesignService.addItemToBlock(...)` or `addTemporaryItemToBlock(...)` when code needs to target a block id directly; temporary items render in preview/test mode but `ScreenDesignJson.save(...)` excludes them from persisted JSON. `ScreenDesignJson` saves/loads documents with top-level `id`, `title`, `layoutType`, `metadata`, ordered `blocks`, and ordered saved `items`. Each block carries `id`, optional `title`, optional block-level `layoutType`, optional `parentBlockId`, optional `styleClass`, and `metadata`; each item carries `id`, `blockId`, `type`, optional `label`, `text`, `value`, `defaultValue`, `styleClass`, and `metadata`.
 - `ConversationDefinition`, `ConversationDefinitionJson`, and `JsonConversationContentModule` define JSON-backed conversation documents for authored visual-novel content using the AltLife exported shape. A conversation file has top-level `name`, `language`, and ordered `conversations`; each conversation carries `id`, `description`, and typed `lines`. Line `type` supports `say` by default, `shout` for uppercase bold text, `whisper` for lowercase italic text, and `choice` for player-selectable variants with per-choice values and conditions. `JsonConversationContentModule` projects that document into reusable content definitions and scene definitions when runtime registration is needed.
 - `ScreenLayoutContract` loads the machine-readable layout contract from `src/main/resources/com/eb/javafx/ui/layout-contract.json`, which lists engine-provided layout types, the default stylesheet, and stable CSS style hooks applications can target.
 - `ScreenInventory`, `ScreenInventoryItem`, `ScreenInventorySource`, `ScreenInventoryScanner`, and `ScreenInventoryAssignmentCategory` provide content-neutral inventory models for application-owned screen/style/control migration scanners. Use them to classify source artifacts as route-backed, reusable-control-backed, deferred, deprecated, excluded, or app-owned without hard-coding source-engine names in the engine.
@@ -351,26 +351,29 @@ Use `ScreenDesignModel` when you want the same reusable layout idea to be editab
 - one `ScreenLayoutType`
 - ordered `blocks`
 - ordered saved `items`
-- optional screen/block/item metadata maps for tool- or app-owned extra data
+- optional screen/block/item metadata maps for tool- or app-owned extra data, including optional screen-level dialog hints such as `dialog`, `dismissOnClickOutside`, and `dismissOnEscape`
 
 Blocks and items are stable editable records:
 
-- each `ScreenDesignBlock` has `id`, optional `title`, optional block-level `layoutType`, optional `parentBlockId`, optional `styleClass`, and `metadata`
-- each `ScreenDesignItem` has `id`, `blockId`, `type`, optional `label`, optional `text`, optional `value`, optional `defaultValue`, optional `styleClass`, and `metadata`
+- each `ScreenDesignBlock` has `id`, optional `title`, optional block-level `layoutType`, optional `parentBlockId`, optional conversation-style `conditions`, optional `styleClass`, and `metadata`
+- each `ScreenDesignItem` has `id`, `blockId`, `type`, optional `label`, optional `text`, optional `value`, optional `defaultValue`, optional `sequence`, optional `styleClass`, and `metadata`
 - `TEXT` and `TEXT_AREA` are read-only display content and do not keep a label
 - `FIELD` and `MULTI_LINE_FIELD` support `label`, `value`, `defaultValue`, and `editable`
 - `BUTTON` uses `label` as the rendered button caption
 
-`ScreenDesignLayoutAdapter` converts a `ScreenDesignModel` into a `ScreenLayoutModel` for preview or runtime rendering. It preserves stable block/item ids, maps field-style items to `label: value/defaultValue` lines, and carries item metadata into the layout so renderer-supported visual metadata can be applied consistently.
+`ScreenDesignLayoutAdapter` converts a `ScreenDesignModel` into a `ScreenLayoutModel` for preview or runtime rendering. It preserves stable block/item ids, converts `parentBlockId` relationships into nested layout sections, maps field-style items to `label: value/defaultValue` lines, sorts block items by optional `sequence` before falling back to authored JSON order, and carries item/block metadata into the layout so renderer-supported visual metadata can be applied consistently. Block `conditions` are preserved in section metadata as a JSON string array, and applications can call the binding overload with a string map so authored text such as `$playerName` or `${playerName}` is resolved during scaffolding. Complex or application-specific controls can still be added programmatically by targeting stable block ids after the JSON scaffold is loaded.
 
 ### Editing a screen manually in JSON
 
 Manual JSON editing is the lowest-level authoring path. It is useful when a design is generated by tools, stored in source control, or adjusted outside the Swing designer. Start from one of the sample files in `examples/screen-designs/`:
 
 - `sample-screen-design.json`
+- `reloadable-test-screen.json`
 - `main-menu-screen-design.json`
 - `quest-log-screen-design.json`
 - `gallery-preview-screen-design.json`
+
+`main-menu-screen-design.json` includes the binding token `$chapterTitle`; pass a binding such as `Map.of("chapterTitle", "Chapter 3: Rooftop Garden")` to `ScreenDesignLayoutAdapter` when previewing or rendering that scaffold.
 
 The top-level JSON shape is:
 
@@ -380,7 +383,10 @@ The top-level JSON shape is:
   "title": "Profile Settings",
   "layoutType": "FORM",
   "metadata": {
-    "description": "Example screen design document"
+    "description": "Example screen design document",
+    "dialog": "true",
+    "dismissOnClickOutside": "true",
+    "dismissOnEscape": "true"
   },
   "blocks": [
     {
@@ -388,6 +394,7 @@ The top-level JSON shape is:
       "title": "Profile",
       "layoutType": null,
       "parentBlockId": null,
+      "conditions": ["profile.ready"],
       "styleClass": "profile-block",
       "metadata": {}
     }
@@ -401,6 +408,7 @@ The top-level JSON shape is:
       "text": null,
       "value": null,
       "defaultValue": "Player",
+      "sequence": 10,
       "editable": true,
       "styleClass": null,
       "metadata": {
@@ -422,18 +430,23 @@ When editing manually:
 - `items` may be empty, but every saved item must point to a valid `blockId`
 - block ids and item ids must be unique
 - nested blocks use `parentBlockId`; root blocks leave it as `null`
+- block `conditions` use the same `$name` / `${name}` marker style as conversation conditions and are preserved for application-owned visibility rules
 - item `type` must be one of `TEXT`, `FIELD`, `MULTI_LINE_FIELD`, `TEXT_AREA`, or `BUTTON`
 - `label` is only meaningful for `FIELD`, `MULTI_LINE_FIELD`, and `BUTTON`
 - `text` is used by `TEXT` and `TEXT_AREA`
 - `defaultValue` is the fallback text shown by `FIELD` and `MULTI_LINE_FIELD` when `value` is null
+- `sequence` is an optional integer ordering hint for items within the same block
 - `editable` is only meaningful for field-style items
 - `styleClass` is a stable CSS hook; `metadata` is a string map for extra tool/renderer-owned values
+- nested containers are represented as blocks with `parentBlockId`; a block-level `layoutType` controls how its child blocks are arranged
+- `$name` and `${name}` tokens in titles, labels, text, values, default values, and metadata can be resolved by passing bindings to `ScreenDesignLayoutAdapter`
+- `BUTTON` item metadata can include `eventName` or `actionEvent`; when rendered with a `GameEventBus`, clicking the button publishes that named event with the item id as the source id
 
 The designer and JSON format currently expose these style-oriented metadata keys:
 
-- screen metadata: `fontFamily`, `fontSize`, `fontStyle`, `color`, `backgroundColor`, `borderStyle`, `borderCorner`, `borderThickness`, `borderColor`
+- screen metadata: `fontFamily`, `fontSize`, `fontStyle`, `color`, `backgroundColor`, `borderStyle`, `borderCorner`, `borderThickness`, `borderColor`, `dialog`, `dismissOnClickOutside`, `dismissOnEscape`
 - block metadata: `fontFamily`, `fontSize`, `fontStyle`, `color`, `backgroundColor`, `transparency`, `borderStyle`, `borderCorner`, `borderThickness`, `borderColor`
-- item metadata: `displayRole`, `fontFamily`, `fontSize`, `fontStyle`, `color`, `backgroundColor`, `transparency`, `labelFontFamily`, `labelFontSize`, `labelFontStyle`, `labelColor`
+- item metadata: `displayRole`, `fontFamily`, `fontSize`, `fontStyle`, `color`, `backgroundColor`, `transparency`, `labelFontFamily`, `labelFontSize`, `labelFontStyle`, `labelColor`, `eventName`, `actionEvent`
 
 These keys are string-valued metadata entries in the saved JSON. Leave a key out to inherit the bundled default display configuration from `src/main/resources/com/eb/javafx/ui/display-defaults.json`, or from any edited preview defaults currently loaded in the screen designer.
 
@@ -468,12 +481,14 @@ Typical designer workflow:
 8. Use **Open Preview** to render the current design through `ScreenLayoutRenderer` with the engine theme and the currently edited default display values.
 9. Use **Promote Temporary** to convert a temporary field into a saved item when it should be persisted.
 
+The management launcher also includes **Reloadable JSON Screen**, which opens `examples/screen-designs/reloadable-test-screen.json` as a live `ScreenLayoutRenderer` view. Edit that JSON file in an external editor or the screen designer, then press **Reload JSON** in the test window to load the latest saved definition and immediately compare the rendered change.
+
 The property editor adapts to the selected item type:
 
-- screen nodes expose screen id, title, layout type, font family, font size/style, text color, background color, and border attributes
-- block nodes expose block id, title, layout type, parent block, font family, font size/style, text color, background color, transparency, and border attributes
-- field-style items expose label, current value, editable, display role, item font family/size/style/color/background/transparency, and label font family/size/style/color
-- non-field items hide label/editable controls and only expose the applicable content plus display role and item font family/size/style/color/background/transparency
+- screen nodes expose screen id, title, layout type, font family, font size/style, text color, background color, border attributes, and dialog/dismiss preview hints
+- block nodes expose block id, title, layout type, parent block, conditions, font family, font size/style, text color, background color, transparency, and border attributes
+- field-style items expose block target, item id, type, sequence, label, current value, editable, display role, item font family/size/style/color/background/transparency, and label font family/size/style/color
+- non-field items hide label/editable controls and only expose the applicable content plus sequence, display role, and item font family/size/style/color/background/transparency
 - `TEXT_AREA` and `MULTI_LINE_FIELD` use a multiline content editor
 
 Temporary items are preview/test helpers. They render in the preview window and can be moved between blocks like saved items, but normal JSON save output omits them. This is useful for prototyping form rows or validation cases without committing them to the authored document.

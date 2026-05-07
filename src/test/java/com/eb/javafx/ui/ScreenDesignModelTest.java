@@ -1,5 +1,6 @@
 package com.eb.javafx.ui;
 
+import com.eb.javafx.scene.ConversationConditionVariables;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -27,9 +28,12 @@ final class ScreenDesignModelTest {
         assertEquals("profile", loaded.blocks().get(0).id());
         assertEquals("summary", loaded.blocks().get(1).id());
         assertEquals("profile", loaded.blocks().get(1).parentBlockId());
+        assertEquals(List.of("profile.ready"), loaded.blocks().get(1).conditions());
         assertEquals(ScreenLayoutType.TWO_COLUMN, loaded.blocks().get(1).layoutType());
         assertEquals("profile.name", loaded.items().get(0).id());
+        assertEquals(10, loaded.items().get(0).sequence());
         assertEquals("summary.text", loaded.items().get(1).id());
+        assertEquals(20, loaded.items().get(1).sequence());
         assertEquals(List.of(), loaded.temporaryItems());
     }
 
@@ -101,12 +105,33 @@ final class ScreenDesignModelTest {
         String unsupportedTypeJson = """
                 {"id":"x","title":"X","layoutType":"FORM","blocks":[{"id":"a"}],"items":[{"id":"i","blockId":"a","type":"UNKNOWN"}]}
                 """;
+        String badConditionJson = """
+                {"id":"x","title":"X","layoutType":"FORM","blocks":[{"id":"a","conditions":["flag=$unknown"]}],"items":[]}
+                """;
 
         assertThrows(IllegalArgumentException.class, () -> ScreenDesignJson.fromJson(duplicateBlockJson, "duplicate"));
         assertThrows(IllegalArgumentException.class, () -> ScreenDesignJson.fromJson(badReferenceJson, "bad-ref"));
         assertThrows(IllegalArgumentException.class, () -> ScreenDesignJson.fromJson(cyclicParentJson, "cycle"));
         assertThrows(IllegalArgumentException.class, () -> ScreenDesignJson.fromJson(selfParentJson, "self-parent"));
         assertThrows(IllegalArgumentException.class, () -> ScreenDesignJson.fromJson(unsupportedTypeJson, "bad-type"));
+        assertThrows(IllegalArgumentException.class, () -> ScreenDesignJson.fromJson(badConditionJson, "bad-condition"));
+    }
+
+    @Test
+    void loadsBlockConditionsWithDeclaredApplicationVariables() {
+        String json = """
+                {
+                  "id":"x",
+                  "title":"X",
+                  "layoutType":"FORM",
+                  "blocks":[{"id":"a","conditions":["flag=$money","flag=${money}_ready"]}],
+                  "items":[]
+                }
+                """;
+
+        ScreenDesignModel design = ScreenDesignJson.fromJson(json, "with-vars", ConversationConditionVariables.declaring(List.of("money")));
+
+        assertEquals(List.of("flag=$money", "flag=${money}_ready"), design.blocks().get(0).conditions());
     }
 
     @Test
@@ -117,6 +142,69 @@ final class ScreenDesignModelTest {
         assertEquals("settings.profile", layout.title());
         assertEquals("profile", layout.contentSections().get(0).id());
         assertEquals(List.of("profile.name"), layout.contentSections().get(0).lineIds());
+        assertEquals("summary", layout.contentSections().get(0).childSections().get(0).id());
+    }
+
+    @Test
+    void adaptsNestedBlocksAsChildSectionsForContainerScaffolding() {
+        ScreenLayoutSection root = ScreenDesignLayoutAdapter.toLayoutModel(design())
+                .contentSections()
+                .get(0);
+
+        assertEquals("profile", root.id());
+        assertEquals(1, root.childSections().size());
+        assertEquals("summary", root.childSections().get(0).id());
+        assertEquals(ScreenLayoutType.TWO_COLUMN, root.childSections().get(0).layoutType());
+        assertEquals(List.of("Ready"), root.childSections().get(0).lines());
+    }
+
+    @Test
+    void resolvesDollarNameBindingsForScreenScaffoldingTextAndActions() {
+        ScreenDesignModel model = new ScreenDesignModel("$screen.id", "Load $playerName", ScreenLayoutType.FORM, Map.of(),
+                List.of(new ScreenDesignBlock("actions", "Actions for ${playerName}")),
+                List.of(
+                        new ScreenDesignItem("status", "actions", ScreenDesignItemType.TEXT,
+                                null, "Welcome $playerName", null, null, null, Map.of()),
+                        new ScreenDesignItem("save", "actions", ScreenDesignItemType.BUTTON,
+                                "Save $playerName", null, "slot-$slot", null, null,
+                                Map.of("eventName", "save.$slot"))),
+                List.of());
+
+        ScreenLayoutModel layout = ScreenDesignLayoutAdapter.toLayoutModel(model, Map.of(
+                "screen.id", "profile",
+                "playerName", "Ava",
+                "slot", "1"));
+        ScreenLayoutSection section = layout.contentSections().get(0);
+
+        assertEquals("Load Ava", layout.title());
+        assertEquals("Actions for Ava", section.title());
+        assertEquals(List.of("Welcome Ava", "Save Ava"), section.lines());
+        assertEquals("save.1", section.lineMetadata().get(1).get("eventName"));
+        assertEquals("slot-1", section.lineMetadata().get(1).get("actionValue"));
+    }
+
+    @Test
+    void adaptsBlockConditionsAndItemSequenceIntoLayoutMetadataAndOrdering() {
+        ScreenDesignModel model = new ScreenDesignModel("x", "X", ScreenLayoutType.FORM, Map.of(
+                "dialog", "true",
+                "dismissOnClickOutside", "true",
+                "dismissOnEscape", "true"),
+                List.of(new ScreenDesignBlock("profile", "Profile", ScreenLayoutType.FORM, null, List.of("flag=$status"), null, Map.of())),
+                List.of(
+                        new ScreenDesignItem("later", "profile", ScreenDesignItemType.TEXT,
+                                null, "Later", null, null, 20, null, Map.of()),
+                        new ScreenDesignItem("sooner", "profile", ScreenDesignItemType.TEXT,
+                                null, "Sooner", null, null, 10, null, Map.of())),
+                List.of());
+
+        ScreenLayoutSection section = ScreenDesignLayoutAdapter.toLayoutModel(model, Map.of("status", "ready"))
+                .contentSections()
+                .get(0);
+
+        assertEquals(List.of("Sooner", "Later"), section.lines());
+        assertEquals("[\"flag=ready\"]", section.metadata().get("conditions"));
+        assertEquals("10", section.lineMetadata().get(0).get("sequence"));
+        assertEquals("true", ScreenDesignLayoutAdapter.toLayoutModel(model).metadata().get("dialog"));
     }
 
     @Test
@@ -264,12 +352,13 @@ final class ScreenDesignModelTest {
         return new ScreenDesignModel("settings.profile", "settings.profile", ScreenLayoutType.FORM, Map.of("area", "settings"),
                 List.of(
                         new ScreenDesignBlock("profile", "Profile", "profile-block", Map.of()),
-                        new ScreenDesignBlock("summary", "Summary", ScreenLayoutType.TWO_COLUMN, "profile", null, Map.of())),
+                        new ScreenDesignBlock("summary", "Summary", ScreenLayoutType.TWO_COLUMN, "profile",
+                                List.of("profile.ready"), null, Map.of())),
                 List.of(
                         new ScreenDesignItem("profile.name", "profile", ScreenDesignItemType.FIELD,
-                                "Name", null, null, "Player", null, Map.of()),
+                                "Name", null, null, "Player", 10, null, Map.of()),
                         new ScreenDesignItem("summary.text", "summary", ScreenDesignItemType.TEXT,
-                                "Summary", "Ready", null, null, null, Map.of())),
+                                "Summary", "Ready", null, null, 20, null, Map.of())),
                 List.of());
     }
 }

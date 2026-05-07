@@ -1,0 +1,97 @@
+{
+  "id": "test.reloadable-json",
+  "title": "Reloadable JSON Screen",
+  "layoutType": "FORM",
+  "metadata": {
+    "description": "Manual test screen definition that can be edited and reloaded.",
+    "backgroundColor": "#0d1b2d",
+    "borderStyle": "solid",
+    "borderCorner": "rounded",
+    "borderThickness": "2",
+    "borderColor": "#4f86c6"
+  },
+  "blocks": [
+    {
+      "id": "instructions",
+      "title": "Edit and Reload",
+      "layoutType": "FORM",
+      "parentBlockId": null,
+      "conditions": [],
+      "styleClass": null,
+      "metadata": {
+        "backgroundColor": "#16263b",
+        "transparency": "0.05",
+        "borderStyle": "solid",
+        "borderCorner": "rounded",
+        "borderThickness": "1",
+        "borderColor": "#82addd"
+      }
+    },
+    {
+      "id": "preview",
+      "title": "Rendered from JSON",
+      "layoutType": "TITLED_PANEL",
+      "parentBlockId": null,
+      "conditions": [],
+      "styleClass": null,
+      "metadata": {
+        "backgroundColor": "#1b2b42",
+        "transparency": "0.1",
+        "borderStyle": "dashed",
+        "borderCorner": "rounded",
+        "borderThickness": "1",
+        "borderColor": "#6d9dd4"
+      }
+    }
+  ],
+  "items": [
+    {
+      "id": "instructions.edit",
+      "blockId": "instructions",
+      "type": "TEXT",
+      "label": null,
+      "text": "Edit this file, then press Reload JSON in the test screen to see the updated layout.",
+      "value": null,
+      "defaultValue": null,
+      "sequence": 10,
+      "editable": false,
+      "styleClass": null,
+      "metadata": {
+        "backgroundColor": "#23354d",
+        "transparency": "0.05"
+      }
+    },
+    {
+      "id": "instructions.path",
+      "blockId": "instructions",
+      "type": "TEXT",
+      "label": null,
+      "text": "Default file: examples/screen-designs/reloadable-test-screen.json",
+      "value": null,
+      "defaultValue": null,
+      "sequence": 20,
+      "editable": false,
+      "styleClass": null,
+      "metadata": {
+        "backgroundColor": "#20324f",
+        "transparency": "0.05"
+      }
+    },
+    {
+      "id": "preview.field",
+      "blockId": "preview",
+      "type": "FIELD",
+      "label": "Sample field",
+      "text": null,
+      "value": null,
+      "defaultValue": "Change me in JSON",
+      "sequence": 10,
+      "editable": false,
+      "styleClass": null,
+      "metadata": {
+        "backgroundColor": "#1f2f4d",
+        "transparency": "0.15"
+      }
+    }
+  ]
+}

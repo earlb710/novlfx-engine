@@ -14,6 +14,8 @@
     {
       "id": "status",
       "title": "Session",
+      "layoutType": "TITLED_PANEL",
+      "parentBlockId": null,
       "styleClass": null,
       "metadata": {
         "backgroundColor": "#1b2b42",
@@ -27,11 +29,43 @@
     {
       "id": "actions",
       "title": "Actions",
+      "layoutType": "MENU_ACTION_LIST",
+      "parentBlockId": null,
       "styleClass": null,
       "metadata": {
         "backgroundColor": "#16263b",
         "transparency": "0.05",
         "borderStyle": "dashed",
+        "borderCorner": "rounded",
+        "borderThickness": "1",
+        "borderColor": "#6d9dd4"
+      }
+    },
+    {
+      "id": "actions.primary",
+      "title": "Primary Actions",
+      "layoutType": "MENU_ACTION_LIST",
+      "parentBlockId": "actions",
+      "styleClass": null,
+      "metadata": {
+        "backgroundColor": "#1b2b42",
+        "transparency": "0.05",
+        "borderStyle": "solid",
+        "borderCorner": "rounded",
+        "borderThickness": "1",
+        "borderColor": "#82addd"
+      }
+    },
+    {
+      "id": "actions.secondary",
+      "title": "Secondary Actions",
+      "layoutType": "MENU_ACTION_LIST",
+      "parentBlockId": "actions",
+      "styleClass": null,
+      "metadata": {
+        "backgroundColor": "#121f31",
+        "transparency": "0.05",
+        "borderStyle": "solid",
         "borderCorner": "rounded",
         "borderThickness": "1",
         "borderColor": "#6d9dd4"
@@ -44,7 +78,7 @@
       "blockId": "status",
       "type": "TEXT",
       "label": "Summary",
-      "text": "Continue from Chapter 3: Rooftop Garden",
+      "text": "Continue from $chapterTitle",
       "value": null,
       "defaultValue": null,
       "styleClass": null,
@@ -55,42 +89,45 @@
     },
     {
       "id": "actions.new-game",
-      "blockId": "actions",
+      "blockId": "actions.primary",
       "type": "BUTTON",
       "label": "New Game",
       "text": null,
-      "value": null,
+      "value": "new-game",
       "defaultValue": null,
       "styleClass": null,
       "metadata": {
+        "eventName": "main-menu.new-game",
         "backgroundColor": "#23354d",
         "transparency": "0.05"
       }
     },
     {
       "id": "actions.load-save",
-      "blockId": "actions",
+      "blockId": "actions.primary",
       "type": "BUTTON",
       "label": "Load Save",
       "text": null,
-      "value": null,
+      "value": "load-save",
       "defaultValue": null,
       "styleClass": null,
       "metadata": {
+        "eventName": "main-menu.load-save",
         "backgroundColor": "#23354d",
         "transparency": "0.05"
       }
     },
     {
       "id": "actions.settings",
-      "blockId": "actions",
+      "blockId": "actions.secondary",
       "type": "BUTTON",
       "label": "Settings",
       "text": null,
-      "value": null,
+      "value": "settings",
       "defaultValue": null,
       "styleClass": null,
       "metadata": {
+        "eventName": "main-menu.settings",
         "backgroundColor": "#23354d",
         "transparency": "0.05"
       }
