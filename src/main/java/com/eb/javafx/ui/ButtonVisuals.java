@@ -45,6 +45,8 @@ public final class ButtonVisuals {
     private static final double BUTTON_ARTWORK_HORIZONTAL_PADDING = 36;
     private static final double BUTTON_ARTWORK_VERTICAL_PADDING = 16;
     private static final double BUTTON_ARTWORK_FONT_SIZE = 20;
+    private static final double BUTTON_ARTWORK_LABEL_OFFSET_X = -2;
+    private static final double BUTTON_ARTWORK_LABEL_OFFSET_Y = -2;
     private static final double BUTTON_ARTWORK_SOURCE_WIDTH = 400;
     private static final double BUTTON_ARTWORK_SOURCE_HEIGHT = 150;
     private static final double BUTTON_ARTWORK_SOURCE_CAP_WIDTH = 75;
@@ -454,8 +456,8 @@ public final class ButtonVisuals {
         private void layoutLabel(double width, double height) {
             label.autosize();
             var bounds = label.getLayoutBounds();
-            label.setLayoutX((width - bounds.getWidth()) / 2 - bounds.getMinX());
-            label.setLayoutY((height - bounds.getHeight()) / 2 - bounds.getMinY());
+            label.setLayoutX((width - bounds.getWidth()) / 2 - bounds.getMinX() + BUTTON_ARTWORK_LABEL_OFFSET_X);
+            label.setLayoutY((height - bounds.getHeight()) / 2 - bounds.getMinY() + BUTTON_ARTWORK_LABEL_OFFSET_Y);
         }
     }
 
@@ -524,7 +526,8 @@ public final class ButtonVisuals {
             double height = getHeight() > 0 ? getHeight() : prefHeight(width);
             label.setWrappingWidth(Math.max(0, width - BUTTON_ARTWORK_HORIZONTAL_PADDING));
             updateArtwork(width, height);
-            super.layoutChildren();
+            artwork.resizeRelocate(0, 0, width, height);
+            layoutLabel(width, height);
         }
 
         private void refreshPreferredSize() {
@@ -555,6 +558,13 @@ public final class ButtonVisuals {
                 rasterHeight = targetHeight;
                 rasterPressed = pressed;
             }
+        }
+
+        private void layoutLabel(double width, double height) {
+            label.autosize();
+            var bounds = label.getLayoutBounds();
+            label.setLayoutX((width - bounds.getWidth()) / 2 - bounds.getMinX() + BUTTON_ARTWORK_LABEL_OFFSET_X);
+            label.setLayoutY((height - bounds.getHeight()) / 2 - bounds.getMinY() + BUTTON_ARTWORK_LABEL_OFFSET_Y);
         }
     }
 

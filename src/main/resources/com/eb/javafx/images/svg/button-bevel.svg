@@ -17,18 +17,21 @@
       <stop style="stop-color:#0f4f9f;stop-opacity:1;" offset="0.55" id="stop2" />
       <stop style="stop-color:#052f6f;stop-opacity:1;" offset="1" id="stop3" />
     </linearGradient>
-    <linearGradient
-       inkscape:collect="always"
-       xlink:href="#buttonBevelGradient"
-       id="buttonBevelFill"
+     <linearGradient
+        inkscape:collect="always"
+        xlink:href="#buttonBevelGradient"
+        id="buttonBevelFill"
        x1="200"
        y1="0"
        x2="200"
-       y2="150"
-       gradientUnits="userSpaceOnUse" />
-  </defs>
-  <path
-     style="fill:url(#buttonBevelFill);stroke-width:1"
-     d="M 30,0 H 370 L 400,30 V 120 L 370,150 H 30 L 0,120 V 30 Z"
-     id="button-shape-bevel" />
+        y2="150"
+        gradientUnits="userSpaceOnUse" />
+    <filter id="buttonBevelSoftEdge" x="-1%" y="-3%" width="102%" height="106%">
+      <feGaussianBlur stdDeviation="0.35" />
+    </filter>
+   </defs>
+   <path
+      style="fill:url(#buttonBevelFill);stroke-width:1;filter:url(#buttonBevelSoftEdge)"
+      d="M 30,0 H 370 L 400,30 V 120 L 370,150 H 30 L 0,120 V 30 Z"
+      id="button-shape-bevel" />
 </svg>

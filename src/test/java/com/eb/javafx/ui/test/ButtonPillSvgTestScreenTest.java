@@ -66,6 +66,10 @@ final class ButtonPillSvgTestScreenTest {
         assertTrue(bevelSvg.contains("width=\"400\""));
         assertTrue(bevelSvg.contains("height=\"150\""));
         assertTrue(bevelSvg.contains("button-shape-bevel"));
+        assertTrue(longSvg.contains("buttonPillSoftEdge"));
+        assertTrue(bevelSvg.contains("buttonBevelSoftEdge"));
+        assertTrue(longSvg.contains("stdDeviation=\"0.35\""));
+        assertTrue(bevelSvg.contains("stdDeviation=\"0.35\""));
     }
 
     @Test
@@ -255,9 +259,9 @@ final class ButtonPillSvgTestScreenTest {
 
         assertEquals(TextAlignment.CENTER, label.getTextAlignment());
         assertTrue(label.getStyleClass().contains(ButtonVisuals.BUTTON_ARTWORK_TEXT_STYLE_CLASS));
-        assertEquals((width - label.getLayoutBounds().getWidth()) / 2 - label.getLayoutBounds().getMinX(),
+        assertEquals((width - label.getLayoutBounds().getWidth()) / 2 - label.getLayoutBounds().getMinX() - 2,
                 label.getLayoutX(), 0.5);
-        assertEquals((height - label.getLayoutBounds().getHeight()) / 2 - label.getLayoutBounds().getMinY(),
+        assertEquals((height - label.getLayoutBounds().getHeight()) / 2 - label.getLayoutBounds().getMinY() - 2,
                 label.getLayoutY(), 0.5);
     }
 
