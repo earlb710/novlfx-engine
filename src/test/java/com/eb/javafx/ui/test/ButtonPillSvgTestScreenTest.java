@@ -34,16 +34,18 @@ final class ButtonPillSvgTestScreenTest {
 
     @Test
     void exposesExpectedButtonPillScreenCopy() {
-        assertEquals("Use this screen to confirm the shared button-pill-normal.svg shape is visibly applied.",
+        assertEquals("Use this screen to confirm the shared SVG button shapes are visibly applied.",
                 ButtonPillSvgTestScreen.DESCRIPTION_TEXT);
-        assertEquals("Buttons below cover short, normal, fixed-width, long-label, and multiline SVG artwork.",
+        assertEquals("Buttons below cover pill and beveled SVG artwork for dynamic and fixed sizes.",
                 ButtonPillSvgTestScreen.DETAIL_TEXT);
         assertEquals("Short", ButtonPillSvgTestScreen.PRIMARY_LABEL);
         assertEquals("Long dynamic text button", ButtonPillSvgTestScreen.SECONDARY_LABEL);
         assertEquals("Fixed width", ButtonPillSvgTestScreen.FIXED_LABEL);
         assertEquals("Multiline\nbutton text", ButtonPillSvgTestScreen.MULTILINE_LABEL);
+        assertEquals("Beveled button", ButtonPillSvgTestScreen.BEVEL_LABEL);
         assertEquals("Back", ButtonPillSvgTestScreen.BACK_LABEL);
         assertTrue(ButtonVisuals.buttonShapePath().startsWith("M "));
+        assertTrue(ButtonVisuals.createBevelShape().getContent().startsWith("M "));
     }
 
     @Test
@@ -53,17 +55,23 @@ final class ButtonPillSvgTestScreenTest {
     }
 
     @Test
-    void buttonPillSvgFilesUseRequestedIntrinsicSizes() throws Exception {
-        String shortSvg = Files.readString(Path.of("src/main/resources/com/eb/javafx/images/svg/button-pill-short.svg"));
-        String normalSvg = Files.readString(Path.of("src/main/resources/com/eb/javafx/images/svg/button-pill-normal.svg"));
+    void buttonSvgFilesUseRequestedIntrinsicSizes() throws Exception {
         String longSvg = Files.readString(Path.of("src/main/resources/com/eb/javafx/images/svg/button-pill-long.svg"));
+        String bevelSvg = Files.readString(Path.of("src/main/resources/com/eb/javafx/images/svg/button-bevel.svg"));
 
-        assertTrue(shortSvg.contains("width=\"100\""));
-        assertTrue(shortSvg.contains("height=\"150\""));
-        assertTrue(normalSvg.contains("width=\"200\""));
-        assertTrue(normalSvg.contains("height=\"150\""));
         assertTrue(longSvg.contains("width=\"400\""));
         assertTrue(longSvg.contains("height=\"150\""));
+        assertTrue(bevelSvg.contains("width=\"400\""));
+        assertTrue(bevelSvg.contains("height=\"150\""));
+        assertTrue(bevelSvg.contains("button-shape-bevel"));
+    }
+
+    @Test
+    void onlyLongPillSvgResourceRemainsPackaged() {
+        assertTrue(Files.exists(Path.of("src/main/resources/com/eb/javafx/images/svg/button-pill-long.svg")));
+        assertFalse(Files.exists(Path.of("src/main/resources/com/eb/javafx/images/svg/button-pill.svg")));
+        assertFalse(Files.exists(Path.of("src/main/resources/com/eb/javafx/images/svg/button-pill-short.svg")));
+        assertFalse(Files.exists(Path.of("src/main/resources/com/eb/javafx/images/svg/button-pill-normal.svg")));
     }
 
     @Test
@@ -84,6 +92,13 @@ final class ButtonPillSvgTestScreenTest {
         assertTrue(ButtonVisuals.buttonArtworkResourceUrl(ButtonPillSvgTestScreen.SECONDARY_LABEL, -1, -1)
                 .endsWith(ButtonVisuals.BUTTON_LONG_ARTWORK_RESOURCE.substring(1)));
         assertTrue(ButtonVisuals.usesLongArtwork(ButtonPillSvgTestScreen.PRIMARY_LABEL, -1, -1));
+    }
+
+    @Test
+    void buttonBevelArtworkUsesPackagedSvgResource() {
+        assertTrue(ButtonVisuals.buttonBevelArtworkResourceUrl()
+                .endsWith(ButtonVisuals.BUTTON_BEVEL_ARTWORK_RESOURCE.substring(1)));
+        assertInstanceOf(StackPane.class, ButtonVisuals.createBevelArtworkGraphic(ButtonPillSvgTestScreen.BEVEL_LABEL));
     }
 
     @Test
@@ -186,6 +201,21 @@ final class ButtonPillSvgTestScreenTest {
         assertEquals(72, middle.getFitHeight());
         assertEquals(36, rightCap.getFitWidth());
         assertEquals(72, rightCap.getFitHeight());
+    }
+
+    @Test
+    void buttonBevelArtworkRasterizesDirectlyAtFixedDimensions() {
+        StackPane graphic = assertInstanceOf(StackPane.class,
+                ButtonVisuals.createBevelArtworkGraphic(ButtonPillSvgTestScreen.BEVEL_LABEL, 240, 60));
+        graphic.resize(240, 60);
+        graphic.layout();
+
+        ImageView imageView = assertInstanceOf(ImageView.class, graphic.getChildren().get(0));
+
+        assertEquals(240, imageView.getFitWidth());
+        assertEquals(60, imageView.getFitHeight());
+        assertEquals(240, imageView.getImage().getWidth());
+        assertEquals(60, imageView.getImage().getHeight());
     }
 
     private static Image rasterizedImage(String text, boolean pressed) {

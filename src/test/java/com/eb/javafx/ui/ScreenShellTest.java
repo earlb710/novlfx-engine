@@ -163,11 +163,11 @@ final class ScreenShellTest {
     }
 
     @Test
-    void buttonVisualsLoadShapeFromNormalButtonPillSvg() throws Exception {
-        String svg = Files.readString(Path.of("src/main/resources/com/eb/javafx/images/svg/button-pill-normal.svg"));
+    void buttonVisualsLoadShapeFromLongButtonPillSvg() throws Exception {
+        String svg = Files.readString(Path.of("src/main/resources/com/eb/javafx/images/svg/button-pill-long.svg"));
 
-        assertTrue(svg.contains("button-shape"));
-        assertTrue(svg.contains("width=\"200\""));
+        assertTrue(svg.contains("button-shape-long"));
+        assertTrue(svg.contains("width=\"400\""));
         assertTrue(svg.contains("height=\"150\""));
         assertTrue(ButtonVisuals.buttonShapePath().startsWith("M "));
         SVGPath shape = ButtonVisuals.createShape();
