@@ -95,9 +95,6 @@ public final class ButtonVisuals {
         artwork.setFitHeight(BUTTON_ARTWORK_HEIGHT);
         artwork.setPreserveRatio(false);
         artwork.setSmooth(true);
-        artwork.setPrefSize(BUTTON_ARTWORK_WIDTH, BUTTON_ARTWORK_HEIGHT);
-        artwork.setMinSize(BUTTON_ARTWORK_WIDTH, BUTTON_ARTWORK_HEIGHT);
-        artwork.setMaxSize(BUTTON_ARTWORK_WIDTH, BUTTON_ARTWORK_HEIGHT);
         artwork.setMouseTransparent(true);
 
         Text label = new Text(text == null ? "" : text);
