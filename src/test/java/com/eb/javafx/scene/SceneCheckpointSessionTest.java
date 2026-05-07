@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -92,6 +93,61 @@ final class SceneCheckpointSessionTest {
     }
 
     @Test
+    void rollForwardCanReplayStoredInputPayloadsThroughConfiguredHandler() {
+        SceneRegistry registry = inputReplayRegistry();
+        SceneExecutor executor = new SceneExecutor(registry);
+        ActionContext context = actionContext();
+        AtomicInteger replayCount = new AtomicInteger();
+        SceneCheckpointSession session = new SceneCheckpointSession(
+                executor,
+                context,
+                checkpoint -> {
+                    replayCount.incrementAndGet();
+                    assertEquals(SceneCheckpointPayloadKind.INPUT_RESULT, checkpoint.payload().kind());
+                    assertEquals("typed-name", checkpoint.payload().value());
+                    assertEquals("name", checkpoint.payload().metadata().get("field"));
+                    return executor.continueFromText(context, checkpoint.state());
+                });
+
+        session.start("intro");
+        session.checkpointCurrentInteractionResult(SceneCheckpointPayload.inputResult("typed-name", Map.of("field", "name")));
+        SceneFlowState current = session.currentResult().state();
+        session.advanceUntilPause(new SceneFlowState(
+                current.activeSceneId(),
+                current.stepIndex() + 1,
+                current.callStack(),
+                current.selectedChoiceIds(),
+                current.pendingUiInterruption()));
+        session.rollbackOneCheckpoint();
+
+        SceneExecutionResult replayed = session.rollForwardUsingStoredCheckpointData();
+
+        assertEquals(1, replayCount.get());
+        assertEquals(SceneExecutionStatus.DISPLAYING_TEXT, replayed.status());
+        assertEquals("after.line", replayed.step().textDefinition());
+        assertEquals(1, session.checkpointLog().cursor());
+    }
+
+    @Test
+    void defaultInputReplayStillFailsUntilCallerProvidesHandler() {
+        SceneCheckpointSession session = sessionFor(inputReplayRegistry());
+        session.start("intro");
+        session.checkpointCurrentInteractionResult(SceneCheckpointPayload.inputResult("typed-name", Map.of("field", "name")));
+        SceneFlowState current = session.currentResult().state();
+        session.advanceUntilPause(new SceneFlowState(
+                current.activeSceneId(),
+                current.stepIndex() + 1,
+                current.callStack(),
+                current.selectedChoiceIds(),
+                current.pendingUiInterruption()));
+        session.rollbackOneCheckpoint();
+
+        IllegalStateException exception = assertThrows(IllegalStateException.class, session::rollForwardUsingStoredCheckpointData);
+
+        assertEquals("Scene input replay is not yet connected to an executor interaction.", exception.getMessage());
+    }
+
+    @Test
     void presenterIncludesCheckpointNavigationFlags() {
         SceneCheckpointSession session = sessionFor(checkpointRegistry());
         session.start("intro");
@@ -155,6 +211,15 @@ final class SceneCheckpointSessionTest {
                         new SceneChoice("decline", "choice.decline", List.of(), List.of(), null, SceneTransition.jump("declined"), Map.of("value", "decline-value")))))));
         registry.register(SceneDefinition.of("after", List.of(SceneStep.narration("line", "after.line"))));
         registry.register(SceneDefinition.of("declined", List.of(SceneStep.narration("line", "declined.line"))));
+        registry.validateScenes();
+        return registry;
+    }
+
+    private SceneRegistry inputReplayRegistry() {
+        SceneRegistry registry = new SceneRegistry();
+        registry.register(SceneDefinition.of("intro", List.of(
+                SceneStep.narration("line", "intro.line"),
+                SceneStep.narration("after", "after.line"))));
         registry.validateScenes();
         return registry;
     }

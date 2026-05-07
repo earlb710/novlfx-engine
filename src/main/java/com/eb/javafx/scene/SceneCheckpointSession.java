@@ -3,16 +3,29 @@ package com.eb.javafx.scene;
 import com.eb.javafx.gamesupport.ActionContext;
 import com.eb.javafx.util.Validation;
 
+import java.util.function.Function;
+
 /** Checkpoint-aware headless session wrapper around {@link SceneExecutor}. */
 public final class SceneCheckpointSession {
     private final SceneExecutor executor;
     private final ActionContext context;
+    private final Function<SceneCheckpoint, SceneExecutionResult> inputReplayHandler;
     private SceneCheckpointLog checkpointLog = SceneCheckpointLog.empty();
     private SceneExecutionResult currentResult;
 
     public SceneCheckpointSession(SceneExecutor executor, ActionContext context) {
+        this(executor, context, checkpoint -> {
+            throw new IllegalStateException("Scene input replay is not yet connected to an executor interaction.");
+        });
+    }
+
+    public SceneCheckpointSession(
+            SceneExecutor executor,
+            ActionContext context,
+            Function<SceneCheckpoint, SceneExecutionResult> inputReplayHandler) {
         this.executor = Validation.requireNonNull(executor, "Scene executor is required.");
         this.context = Validation.requireNonNull(context, "Action context is required.");
+        this.inputReplayHandler = Validation.requireNonNull(inputReplayHandler, "Scene input replay handler is required.");
     }
 
     public SceneExecutionResult start(String sceneId) {
@@ -66,7 +79,9 @@ public final class SceneCheckpointSession {
         SceneExecutionResult result = switch (payload.kind()) {
             case TEXT_CONTINUATION -> executor.continueFromText(context, checkpoint.state());
             case CHOICE_SELECTION -> executor.selectChoice(context, checkpoint.state(), payload.choiceId());
-            case INPUT_RESULT -> throw new IllegalStateException("Scene input replay is not yet connected to an executor interaction.");
+            case INPUT_RESULT -> Validation.requireNonNull(
+                    inputReplayHandler.apply(checkpoint),
+                    "Scene input replay handler must return a result.");
         };
         return setCurrentResult(result);
     }
