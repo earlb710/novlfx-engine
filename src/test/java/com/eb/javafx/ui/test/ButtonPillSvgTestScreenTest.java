@@ -6,6 +6,9 @@ import com.eb.javafx.testscreen.TestScreenApplication;
 import com.eb.javafx.ui.ButtonVisuals;
 import com.eb.javafx.ui.UiTheme;
 import javafx.application.Platform;
+import javafx.scene.Node;
+import javafx.scene.image.ImageView;
+import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
 import org.junit.jupiter.api.Test;
 
@@ -15,6 +18,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
@@ -39,6 +43,20 @@ final class ButtonPillSvgTestScreenTest {
     void buttonPillArtworkUsesPackagedSvgResource() {
         assertTrue(ButtonVisuals.buttonArtworkResourceUrl()
                 .endsWith(ButtonVisuals.BUTTON_SHAPE_RESOURCE.substring(1)));
+    }
+
+    @Test
+    void buttonPillArtworkUsesRasterizedImageView() throws Exception {
+        runOnJavaFxThread(() -> {
+            StackPane graphic = assertInstanceOf(StackPane.class, ButtonVisuals.createArtworkGraphic("Play"));
+            Node artwork = graphic.getChildren().get(0);
+            ImageView imageView = assertInstanceOf(ImageView.class, artwork);
+
+            assertEquals(ButtonVisuals.BUTTON_ARTWORK_WIDTH, imageView.getFitWidth());
+            assertEquals(ButtonVisuals.BUTTON_ARTWORK_HEIGHT, imageView.getFitHeight());
+            assertEquals(ButtonVisuals.BUTTON_ARTWORK_WIDTH, imageView.getImage().getWidth());
+            assertEquals(ButtonVisuals.BUTTON_ARTWORK_HEIGHT, imageView.getImage().getHeight());
+        });
     }
 
     @Test

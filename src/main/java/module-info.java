@@ -3,7 +3,6 @@ module com.novlfx.engine {
     requires javafx.controls;
     requires javafx.media;
     requires javafx.swing;
-    requires javafx.web;
     requires java.desktop;
     requires batik.all;
     requires org.fxyz3d.core;

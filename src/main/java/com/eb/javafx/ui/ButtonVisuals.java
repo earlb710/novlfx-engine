@@ -1,16 +1,16 @@
 package com.eb.javafx.ui;
 
-import javafx.application.Platform;
+import com.eb.javafx.util.VectorImage;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.ContentDisplay;
 import javafx.scene.control.Button;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.shape.SVGPath;
 import javafx.scene.text.Text;
-import javafx.scene.web.WebView;
-import javafx.concurrent.Worker;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -34,6 +34,7 @@ public final class ButtonVisuals {
     private static final System.Logger LOGGER = System.getLogger(ButtonVisuals.class.getName());
     private static final String SHAPE_PATH = loadShapePath();
     private static final String ARTWORK_RESOURCE_URL = loadArtworkResourceUrl();
+    private static final Image ARTWORK_IMAGE = loadArtworkImage();
 
     private ButtonVisuals() {
     }
@@ -86,22 +87,18 @@ public final class ButtonVisuals {
     }
 
     public static Node createArtworkGraphic(String text) {
-        if (ARTWORK_RESOURCE_URL.isBlank()) {
+        if (ARTWORK_IMAGE == null) {
             return null;
         }
-        WebView artwork = new WebView();
+        ImageView artwork = new ImageView(ARTWORK_IMAGE);
+        artwork.setFitWidth(BUTTON_ARTWORK_WIDTH);
+        artwork.setFitHeight(BUTTON_ARTWORK_HEIGHT);
+        artwork.setPreserveRatio(false);
+        artwork.setSmooth(true);
         artwork.setPrefSize(BUTTON_ARTWORK_WIDTH, BUTTON_ARTWORK_HEIGHT);
         artwork.setMinSize(BUTTON_ARTWORK_WIDTH, BUTTON_ARTWORK_HEIGHT);
         artwork.setMaxSize(BUTTON_ARTWORK_WIDTH, BUTTON_ARTWORK_HEIGHT);
         artwork.setMouseTransparent(true);
-        artwork.setContextMenuEnabled(false);
-        artwork.getEngine().setJavaScriptEnabled(true);
-        artwork.getEngine().getLoadWorker().stateProperty().addListener((observable, oldState, newState) -> {
-            if (newState == Worker.State.SUCCEEDED) {
-                configureArtworkViewport(artwork);
-            }
-        });
-        artwork.getEngine().load(ARTWORK_RESOURCE_URL);
 
         Text label = new Text(text == null ? "" : text);
         label.getStyleClass().add(BUTTON_ARTWORK_TEXT_STYLE_CLASS);
@@ -113,31 +110,6 @@ public final class ButtonVisuals {
         graphic.setMinSize(BUTTON_ARTWORK_WIDTH, BUTTON_ARTWORK_HEIGHT);
         graphic.setMaxSize(BUTTON_ARTWORK_WIDTH, BUTTON_ARTWORK_HEIGHT);
         return graphic;
-    }
-
-    private static void configureArtworkViewport(WebView artwork) {
-        try {
-            artwork.getEngine().executeScript(
-                    "var root = document.documentElement;"
-                            + "if (root) {"
-                            + " root.style.overflow='hidden';"
-                            + " root.style.margin='0';"
-                            + " root.style.padding='0';"
-                            + " root.style.width='" + (int) BUTTON_ARTWORK_WIDTH + "px';"
-                            + " root.style.height='" + (int) BUTTON_ARTWORK_HEIGHT + "px';"
-                            + "}"
-                            + "if (document.body) {"
-                            + " document.body.style.overflow='hidden';"
-                            + " document.body.style.margin='0';"
-                            + " document.body.style.padding='0';"
-                            + "}");
-        } catch (RuntimeException exception) {
-            LOGGER.log(System.Logger.Level.DEBUG, "Unable to configure SVG artwork viewport", exception);
-        }
-        Platform.runLater(() -> artwork.lookupAll(".scroll-bar").forEach(scrollBar -> {
-            scrollBar.setManaged(false);
-            scrollBar.setVisible(false);
-        }));
     }
 
     private static String loadShapePath() {
@@ -165,6 +137,20 @@ public final class ButtonVisuals {
             return "";
         }
         return resource.toExternalForm();
+    }
+
+    private static Image loadArtworkImage() {
+        String svg = loadSvgResource();
+        if (svg.isEmpty()) {
+            return null;
+        }
+        try {
+            return VectorImage.rasterize(svg, (int) BUTTON_ARTWORK_WIDTH, (int) BUTTON_ARTWORK_HEIGHT);
+        } catch (RuntimeException exception) {
+            LOGGER.log(System.Logger.Level.WARNING, "Button artwork resource failed to rasterize: "
+                    + BUTTON_SHAPE_RESOURCE, exception);
+            return null;
+        }
     }
 
     private static String loadSvgResource() {
