@@ -8,6 +8,7 @@ import com.eb.javafx.ui.UiTheme;
 import javafx.application.Platform;
 import javafx.scene.Node;
 import javafx.scene.layout.StackPane;
+import javafx.scene.paint.ImagePattern;
 import javafx.scene.shape.SVGPath;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
@@ -51,7 +52,8 @@ final class ButtonPillSvgTestScreenTest {
         assertTrue(stack.getChildren().get(0) instanceof SVGPath);
         SVGPath artwork = (SVGPath) stack.getChildren().get(0);
         assertEquals(ButtonVisuals.buttonShapePath(), artwork.getContent());
-        assertEquals(1.0, artwork.getStrokeWidth());
+        assertTrue(artwork.getFill() instanceof ImagePattern);
+        assertNull(artwork.getStroke());
 
         assertTrue(stack.getChildren().get(1) instanceof Text);
         Text label = (Text) stack.getChildren().get(1);
