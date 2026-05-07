@@ -18,7 +18,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -51,6 +53,7 @@ public final class ButtonVisuals {
     private static final Pattern MESH_GRADIENT_PATTERN = Pattern.compile(
             "<meshgradient\\b[^>]*\\bid\\s*=\\s*(['\"])(.*?)\\1[^>]*>.*?</meshgradient>",
             Pattern.DOTALL);
+    private static final Pattern STOP_STYLE_PATTERN = Pattern.compile("<stop\\b[^>]*\\bstyle\\s*=\\s*(['\"])(.*?)\\1", Pattern.DOTALL);
     private static final Pattern SCRIPT_PATTERN = Pattern.compile("<script\\b[^>]*>.*?</script>", Pattern.DOTALL);
     private static final Pattern SVG_TAG_PATTERN = Pattern.compile("<svg\\b(?![^>]*\\bpreserveAspectRatio\\s*=)", Pattern.CASE_INSENSITIVE);
     private static final System.Logger LOGGER = System.getLogger(ButtonVisuals.class.getName());
@@ -88,6 +91,10 @@ public final class ButtonVisuals {
         double fixedHeight = positiveSizeOrUnset(button.getPrefHeight());
         Node artwork = createArtworkGraphic(button.getText(), fixedWidth, fixedHeight);
         if (artwork != null) {
+            if (artwork instanceof RasterizedArtwork rasterizedArtwork) {
+                button.pressedProperty().addListener((observable, wasPressed, isPressed) ->
+                        rasterizedArtwork.setPressed(Boolean.TRUE.equals(isPressed)));
+            }
             button.setGraphic(artwork);
             button.setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
             double targetWidth = fixedWidth > 0 ? fixedWidth : artwork.prefWidth(-1);
@@ -137,11 +144,15 @@ public final class ButtonVisuals {
     }
 
     public static Node createArtworkGraphic(String text, double width, double height) {
+        return createArtworkGraphic(text, width, height, false);
+    }
+
+    public static Node createArtworkGraphic(String text, double width, double height, boolean pressed) {
         ArtworkResource artworkResource = selectArtworkResource(text, width, height);
         if (artworkResource.svg().isBlank()) {
             return null;
         }
-        return new RasterizedArtwork(text, width, height, artworkResource);
+        return new RasterizedArtwork(text, width, height, artworkResource, pressed);
     }
 
     private static String loadShapePath() {
@@ -166,13 +177,14 @@ public final class ButtonVisuals {
         URL resource = ButtonVisuals.class.getResource(resourcePath);
         if (resource == null) {
             LOGGER.log(System.Logger.Level.WARNING, "Button artwork resource is missing: {0}", resourcePath);
-            return new ArtworkResource(resourcePath, "", "");
+            return new ArtworkResource(resourcePath, "", "", "");
         }
         String svg = loadSvgResource(resourcePath);
         if (svg.isEmpty()) {
-            return new ArtworkResource(resourcePath, resource.toExternalForm(), "");
+            return new ArtworkResource(resourcePath, resource.toExternalForm(), "", "");
         }
-        return new ArtworkResource(resourcePath, resource.toExternalForm(), prepareArtworkSvgForBatik(svg));
+        String preparedSvg = prepareArtworkSvgForBatik(svg);
+        return new ArtworkResource(resourcePath, resource.toExternalForm(), preparedSvg, reverseGradientStopStyles(preparedSvg));
     }
 
     private static String prepareArtworkSvgForBatik(String svg) {
@@ -185,18 +197,36 @@ public final class ButtonVisuals {
         return SVG_TAG_PATTERN.matcher(prepared).replaceFirst("<svg preserveAspectRatio=\"none\"");
     }
 
-    private static Image rasterizeArtwork(ArtworkResource artworkResource, int width, int height) {
-        if (artworkResource.svg().isBlank() || width <= 0 || height <= 0) {
+    private static String reverseGradientStopStyles(String svg) {
+        Matcher matcher = STOP_STYLE_PATTERN.matcher(svg);
+        List<StyleSpan> spans = new ArrayList<>();
+        while (matcher.find()) {
+            spans.add(new StyleSpan(matcher.start(2), matcher.end(2), matcher.group(2)));
+        }
+        if (spans.size() < 2) {
+            return svg;
+        }
+        StringBuilder reversed = new StringBuilder(svg);
+        for (int index = spans.size() - 1; index >= 0; index--) {
+            StyleSpan span = spans.get(index);
+            reversed.replace(span.start(), span.end(), spans.get(spans.size() - 1 - index).style());
+        }
+        return reversed.toString();
+    }
+
+    private static Image rasterizeArtwork(ArtworkResource artworkResource, int width, int height, boolean pressed) {
+        String svg = pressed ? artworkResource.pressedSvg() : artworkResource.svg();
+        if (svg.isBlank() || width <= 0 || height <= 0) {
             return null;
         }
-        RasterSize size = new RasterSize(artworkResource.resourcePath(), width, height);
+        RasterSize size = new RasterSize(artworkResource.resourcePath(), pressed, width, height);
         synchronized (RASTER_CACHE) {
             Image cached = RASTER_CACHE.get(size);
             if (cached != null) {
                 return cached;
             }
             try {
-                Image image = VectorImage.rasterize(artworkResource.svg(), width, height);
+                Image image = VectorImage.rasterize(svg, width, height);
                 RASTER_CACHE.put(size, image);
                 return image;
             } catch (RuntimeException exception) {
@@ -231,10 +261,13 @@ public final class ButtonVisuals {
         return Double.isFinite(size) && size > 0 ? size : Region.USE_COMPUTED_SIZE;
     }
 
-    private record RasterSize(String resourcePath, int width, int height) {
+    private record StyleSpan(int start, int end, String style) {
     }
 
-    private record ArtworkResource(String resourcePath, String url, String svg) {
+    private record RasterSize(String resourcePath, boolean pressed, int width, int height) {
+    }
+
+    private record ArtworkResource(String resourcePath, String url, String svg, String pressedSvg) {
     }
 
     private static final class RasterizedArtwork extends StackPane {
@@ -243,13 +276,16 @@ public final class ButtonVisuals {
         private final double fixedWidth;
         private final double fixedHeight;
         private final ArtworkResource artworkResource;
+        private boolean pressed;
         private int rasterWidth;
         private int rasterHeight;
+        private boolean rasterPressed;
 
-        private RasterizedArtwork(String text, double width, double height, ArtworkResource artworkResource) {
+        private RasterizedArtwork(String text, double width, double height, ArtworkResource artworkResource, boolean pressed) {
             this.fixedWidth = positiveSizeOrUnset(width);
             this.fixedHeight = positiveSizeOrUnset(height);
             this.artworkResource = artworkResource;
+            this.pressed = pressed;
 
             artwork.setPreserveRatio(false);
             artwork.setSmooth(true);
@@ -263,6 +299,14 @@ public final class ButtonVisuals {
             getStyleClass().add(BUTTON_ARTWORK_STYLE_CLASS);
             setAlignment(Pos.CENTER);
             refreshPreferredSize();
+        }
+
+        private void setPressed(boolean pressed) {
+            if (this.pressed == pressed) {
+                return;
+            }
+            this.pressed = pressed;
+            requestLayout();
         }
 
         @Override
@@ -316,16 +360,17 @@ public final class ButtonVisuals {
         private void updateArtwork(double width, double height) {
             int targetWidth = Math.max(1, (int) Math.ceil(width));
             int targetHeight = Math.max(1, (int) Math.ceil(height));
-            if (targetWidth == rasterWidth && targetHeight == rasterHeight) {
+            if (targetWidth == rasterWidth && targetHeight == rasterHeight && pressed == rasterPressed) {
                 return;
             }
-            Image image = rasterizeArtwork(artworkResource, targetWidth, targetHeight);
+            Image image = rasterizeArtwork(artworkResource, targetWidth, targetHeight, pressed);
             if (image != null) {
                 artwork.setImage(image);
                 artwork.setFitWidth(targetWidth);
                 artwork.setFitHeight(targetHeight);
                 rasterWidth = targetWidth;
                 rasterHeight = targetHeight;
+                rasterPressed = pressed;
             }
         }
     }

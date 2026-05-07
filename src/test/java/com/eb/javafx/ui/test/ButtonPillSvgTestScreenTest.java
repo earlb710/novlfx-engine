@@ -115,6 +115,24 @@ final class ButtonPillSvgTestScreenTest {
     }
 
     @Test
+    void buttonPillArtworkSwapsGradientDirectionWhenPressed() {
+        Image normalImage = rasterizedImage(ButtonPillSvgTestScreen.SECONDARY_LABEL, false);
+        Image pressedImage = rasterizedImage(ButtonPillSvgTestScreen.SECONDARY_LABEL, true);
+        int centerX = Math.max(0, (int) Math.round(normalImage.getWidth() / 2) - 1);
+        int topY = 4;
+        int bottomY = Math.max(topY + 1, (int) normalImage.getHeight() - 5);
+
+        double normalDelta = brightness(normalImage.getPixelReader().getColor(centerX, topY))
+                - brightness(normalImage.getPixelReader().getColor(centerX, bottomY));
+        double pressedDelta = brightness(pressedImage.getPixelReader().getColor(centerX, topY))
+                - brightness(pressedImage.getPixelReader().getColor(centerX, bottomY));
+
+        assertTrue(Math.abs(normalDelta) > 0.05, "Normal button artwork should have a visible vertical gradient.");
+        assertTrue(Math.abs(pressedDelta) > 0.05, "Pressed button artwork should have a visible vertical gradient.");
+        assertTrue(normalDelta * pressedDelta < 0, "Pressed artwork should reverse the normal gradient direction.");
+    }
+
+    @Test
     void buttonPillArtworkRasterizesDirectlyAtFixedDimensions() {
         StackPane graphic = assertInstanceOf(StackPane.class, ButtonVisuals.createArtworkGraphic("Multi\nLine", 220, 72));
         graphic.resize(220, 72);
@@ -127,6 +145,21 @@ final class ButtonPillSvgTestScreenTest {
         assertEquals(72, imageView.getFitHeight());
         assertEquals(220, imageView.getImage().getWidth());
         assertEquals(72, imageView.getImage().getHeight());
+    }
+
+    private static Image rasterizedImage(String text, boolean pressed) {
+        StackPane graphic = assertInstanceOf(StackPane.class,
+                ButtonVisuals.createArtworkGraphic(text, -1, -1, pressed));
+        double width = graphic.prefWidth(-1);
+        double height = graphic.prefHeight(width);
+        graphic.resize(width, height);
+        graphic.layout();
+        ImageView imageView = assertInstanceOf(ImageView.class, graphic.getChildren().get(0));
+        return imageView.getImage();
+    }
+
+    private static double brightness(Color color) {
+        return color.getRed() + color.getGreen() + color.getBlue();
     }
 
     @Test
