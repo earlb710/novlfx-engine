@@ -257,12 +257,6 @@ public final class ButtonVisuals {
             super.layoutChildren();
         }
 
-        @Override
-        public void applyCss() {
-            super.applyCss();
-            refreshPreferredSize();
-        }
-
         private void refreshPreferredSize() {
             if (fixedWidth > 0) {
                 label.setWrappingWidth(Math.max(0, fixedWidth - BUTTON_ARTWORK_HORIZONTAL_PADDING));
