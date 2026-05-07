@@ -107,8 +107,18 @@ public final class ConversationDefinition {
             text = Validation.requireNonNull(text, "Conversation variant text is required.");
             value = Validation.requireNonNull(value, "Conversation variant value cannot be null.");
             weight = Validation.requirePositive(weight, "Conversation variant weight must be positive.");
-            conditions = List.copyOf(Validation.requireNonNull(conditions, "Conversation variant conditions are required."));
+            conditions = validatedConditions(conditions);
             tooltipText = Validation.requireNonNull(tooltipText, "Conversation variant tooltip text cannot be null.");
+        }
+
+        private static List<String> validatedConditions(List<String> conditions) {
+            List<String> checkedConditions = List.copyOf(Validation.requireNonNull(conditions, "Conversation variant conditions are required."));
+            for (int index = 0; index < checkedConditions.size(); index++) {
+                ConversationConditionSyntax.validateCondition(
+                        checkedConditions.get(index),
+                        "Conversation variant condition " + (index + 1));
+            }
+            return checkedConditions;
         }
     }
 }

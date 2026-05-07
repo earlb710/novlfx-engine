@@ -189,6 +189,66 @@ final class ConversationDefinitionJsonTest {
     }
 
     @Test
+    void allowsFixedConversationVariablesInConditionValues() {
+        String json = """
+                {
+                  "name": "Variable Conditions",
+                  "language": "en",
+                  "conversations": [{
+                    "id": "game.debug.variable_conditions.block_0001",
+                    "description": "Extracted dialogue block.",
+                    "lines": [{
+                      "speaker": "guide",
+                      "listener": "hero",
+                      "type": "choice",
+                      "variants": [
+                        {"text": "Ask", "weight": 1.0, "conditions": ["context=met_$line.speaker", "context=${conversation.id}_complete"]}
+                      ]
+                    }]
+                  }]
+                }
+                """;
+
+        ConversationDefinition parsed = ConversationDefinitionJson.fromJson(json, "variable conditions");
+
+        assertEquals(List.of("context=met_$line.speaker", "context=${conversation.id}_complete"),
+                parsed.conversations().get(0).lines().get(0).variants().get(0).conditions());
+    }
+
+    @Test
+    void rejectsUnknownConversationVariablesInConditions() {
+        String json = """
+                {
+                  "name": "Bad Variable Conditions",
+                  "language": "en",
+                  "conversations": [{
+                    "id": "game.debug.bad_variable_conditions.block_0001",
+                    "description": "Extracted dialogue block.",
+                    "lines": [{
+                      "speaker": "guide",
+                      "listener": "",
+                      "type": "choice",
+                      "variants": [
+                        {"text": "Ask", "weight": 1.0, "conditions": ["context=$unknown"]}
+                      ]
+                    }]
+                  }]
+                }
+                """;
+
+        assertThrows(IllegalArgumentException.class,
+                () -> ConversationDefinitionJson.fromJson(json, "bad variable conditions"));
+    }
+
+    @Test
+    void rejectsMalformedConversationVariablesInConditions() {
+        assertThrows(IllegalArgumentException.class,
+                () -> new ConversationVariant("Ask", 1.0, List.of("context=$")));
+        assertThrows(IllegalArgumentException.class,
+                () -> new ConversationVariant("Ask", 1.0, List.of("context=${line.speaker")));
+    }
+
+    @Test
     void rejectsMissingAltLifeConversationFields() {
         String json = """
                 {

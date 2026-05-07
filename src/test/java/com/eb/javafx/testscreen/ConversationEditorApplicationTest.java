@@ -218,6 +218,18 @@ final class ConversationEditorApplicationTest {
     }
 
     @Test
+    void validationReportsInvalidConditionVariableSyntax() {
+        assertThrows(IllegalArgumentException.class, () -> ConversationEditorApplication.updateVariantKeepingTooltipAndValue(
+                ConversationEditorApplication.sampleConversation(),
+                0,
+                0,
+                0,
+                "Updated variant",
+                1.0,
+                List.of("context=$unknown")));
+    }
+
+    @Test
     void addLineChangesSelectedConversationLines() {
         ConversationDefinition added = ConversationEditorApplication.addLine(ConversationEditorApplication.sampleConversation(), 0);
 
