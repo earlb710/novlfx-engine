@@ -76,6 +76,8 @@ Condition values can reference fixed conversation variables with `$name` or `${n
 - `variant.text`, `variant.value`, `variant.weight`, `variant.tooltipText`
 - `choice.text`, `choice.value`, `choice.tooltipText`
 
+Use `variant.*` when referring to the authored JSON variant fields. Use `choice.*` when referring to the generated runtime choice values for `choice` lines.
+
 Example choice line:
 
 ```json

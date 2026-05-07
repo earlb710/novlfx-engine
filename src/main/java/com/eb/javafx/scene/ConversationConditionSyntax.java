@@ -83,7 +83,7 @@ public final class ConversationConditionSyntax {
             return true;
         }
         char next = condition.charAt(index);
-        return !Character.isLetterOrDigit(next) && next != '_' && next != '.' && next != '-';
+        return !Character.isLetterOrDigit(next) && next != '_' && next != '.';
     }
 
     private static void validateVariableName(String variableName, String description) {
