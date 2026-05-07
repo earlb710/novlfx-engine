@@ -10,7 +10,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 final class ManagementApplicationTest {
     @Test
     void managementLauncherListsAuthoringScreens() {
-        assertEquals(List.of("Default App Values", "Screen Designer", "Conversation Editor", "Manage Code Tables"),
+        assertEquals(List.of("Default App Values", "Screen Designer", "Reloadable JSON Screen",
+                        "Conversation Editor", "Manage Code Tables"),
                 ManagementApplication.managementActionLabels());
     }
 
