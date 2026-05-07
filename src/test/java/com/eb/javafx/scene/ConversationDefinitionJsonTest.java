@@ -6,6 +6,8 @@ import com.eb.javafx.scene.ConversationDefinition.ConversationBlock;
 import com.eb.javafx.scene.ConversationDefinition.ConversationLine;
 import com.eb.javafx.scene.ConversationDefinition.ConversationVariant;
 import com.eb.javafx.scene.ConversationDefinition.LineType;
+import com.eb.javafx.text.TextVariableCatalog;
+import com.eb.javafx.text.TextVariableType;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Files;
@@ -272,7 +274,14 @@ final class ConversationDefinitionJsonTest {
                 }
                 """;
 
-        ConversationConditionVariables variables = ConversationConditionVariables.declaring(List.of("money"));
+        TextVariableCatalog catalog = TextVariableCatalog.fromJson("""
+                {
+                  "variables": [
+                    {"name": "money", "valueType": "number"}
+                  ]
+                }
+                """, "application variable catalog");
+        ConversationConditionVariables variables = ConversationConditionVariables.catalog(catalog);
         ConversationDefinition parsed = ConversationDefinitionJson.fromJson(json, "application variable conditions", variables);
 
         assertEquals(List.of("context=$money", "context=${money}_available"),
@@ -283,9 +292,10 @@ final class ConversationDefinitionJsonTest {
 
     @Test
     void replacesDeclaredApplicationVariablesWithLookupHandlerValues() {
-        ConversationConditionVariables variables = ConversationConditionVariables.withResolver(
-                List.of("money"),
-                name -> Optional.of("100"));
+        ConversationConditionVariables variables = ConversationConditionVariables.catalog(
+                TextVariableCatalog.of(List.of(
+                                new TextVariableCatalog.VariableDefinition("money", TextVariableType.NUMBER)))
+                        .withResolver(name -> Optional.of("100")));
 
         assertEquals("context=100", ConversationConditionSyntax.replaceVariables("context=$money", variables));
         assertEquals("context=100_available",
@@ -314,9 +324,10 @@ final class ConversationDefinitionJsonTest {
                   }]
                 }
                 """;
-        ConversationConditionVariables variables = ConversationConditionVariables.withResolver(
-                List.of("money"),
-                name -> Optional.of("100"));
+        ConversationConditionVariables variables = ConversationConditionVariables.catalog(
+                TextVariableCatalog.of(List.of(
+                                new TextVariableCatalog.VariableDefinition("money", TextVariableType.NUMBER)))
+                        .withResolver(name -> Optional.of("100")));
         ConversationDefinition parsed = ConversationDefinitionJson.fromJson(json, "application variable projection", variables);
 
         JsonConversationContentModule module = new JsonConversationContentModule(parsed, variables);

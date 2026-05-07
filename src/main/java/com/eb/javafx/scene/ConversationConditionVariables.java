@@ -1,30 +1,32 @@
 package com.eb.javafx.scene;
 
+import com.eb.javafx.text.TextVariableCatalog;
 import com.eb.javafx.text.TextVariableResolver;
+import com.eb.javafx.text.TextVariableType;
 import com.eb.javafx.util.Validation;
 
 import java.util.Collection;
 import java.util.Optional;
 import java.util.Set;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /** Declares application-owned conversation condition variables and their optional lookup handler. */
 public final class ConversationConditionVariables {
-    /** Application variable names start with a letter and then allow letters, digits, underscores (_), or dots (.). */
-    private static final Pattern VARIABLE_NAME_PATTERN = Pattern.compile("[A-Za-z][A-Za-z0-9_.]*");
-    private static final ConversationConditionVariables FIXED = new ConversationConditionVariables(Set.of(), name -> Optional.empty());
+    private static final ConversationConditionVariables FIXED = new ConversationConditionVariables(TextVariableCatalog.empty());
 
-    private final Set<String> applicationVariableNames;
-    private final TextVariableResolver resolver;
+    private final TextVariableCatalog applicationVariableCatalog;
 
-    private ConversationConditionVariables(Collection<String> applicationVariableNames, TextVariableResolver resolver) {
-        this.applicationVariableNames = Set.copyOf(Validation.requireNonNull(applicationVariableNames,
-                        "Conversation application variable names are required.")
-                .stream()
-                .map(ConversationConditionVariables::validatedVariableName)
-                .collect(Collectors.toSet()));
-        this.resolver = Validation.requireNonNull(resolver, "Conversation condition variable resolver is required.");
+    private ConversationConditionVariables(TextVariableCatalog applicationVariableCatalog) {
+        TextVariableCatalog checkedCatalog = Validation.requireNonNull(
+                applicationVariableCatalog,
+                "Conversation application variable catalog is required.");
+        checkedCatalog.variableNames().forEach(variableName -> {
+            if (ConversationConditionSyntax.variableNames().contains(variableName)) {
+                throw new IllegalArgumentException("Conversation application variable conflicts with a fixed variable name: "
+                        + variableName);
+            }
+        });
+        this.applicationVariableCatalog = checkedCatalog;
     }
 
     public static ConversationConditionVariables fixed() {
@@ -32,53 +34,54 @@ public final class ConversationConditionVariables {
     }
 
     public static ConversationConditionVariables declaring(Collection<String> applicationVariableNames) {
-        return new ConversationConditionVariables(applicationVariableNames, name -> Optional.empty());
+        return catalog(TextVariableCatalog.of(Validation.requireNonNull(
+                        applicationVariableNames,
+                        "Conversation application variable names are required.")
+                .stream()
+                .map(name -> new TextVariableCatalog.VariableDefinition(name, TextVariableType.STRING))
+                .toList()));
     }
 
     public static ConversationConditionVariables withResolver(
             Collection<String> applicationVariableNames,
             TextVariableResolver resolver) {
-        return new ConversationConditionVariables(applicationVariableNames, resolver);
+        return catalog(TextVariableCatalog.of(Validation.requireNonNull(
+                        applicationVariableNames,
+                        "Conversation application variable names are required.")
+                .stream()
+                .map(name -> new TextVariableCatalog.VariableDefinition(name, TextVariableType.STRING))
+                .toList()).withResolver(resolver));
+    }
+
+    public static ConversationConditionVariables catalog(TextVariableCatalog applicationVariableCatalog) {
+        return new ConversationConditionVariables(applicationVariableCatalog);
     }
 
     public Set<String> applicationVariableNames() {
-        return applicationVariableNames;
+        return applicationVariableCatalog.variableNames();
+    }
+
+    public TextVariableCatalog applicationVariableCatalog() {
+        return applicationVariableCatalog;
     }
 
     public Set<String> declaredVariableNames() {
         return java.util.stream.Stream.concat(
                         ConversationConditionSyntax.variableNames().stream(),
-                        applicationVariableNames.stream())
+                        applicationVariableCatalog.variableNames().stream())
                 .collect(Collectors.toUnmodifiableSet());
     }
 
     public boolean isDeclared(String variableName) {
         String checkedVariableName = Validation.requireNonBlank(variableName, "Conversation condition variable name is required.");
         return ConversationConditionSyntax.variableNames().contains(checkedVariableName)
-                || applicationVariableNames.contains(checkedVariableName);
+                || applicationVariableCatalog.isDeclared(checkedVariableName);
     }
 
     public Optional<String> resolve(String variableName) {
         String checkedVariableName = Validation.requireNonBlank(variableName, "Conversation condition variable name is required.");
-        return applicationVariableNames.contains(checkedVariableName)
-                ? resolver.resolve(checkedVariableName)
+        return applicationVariableCatalog.isDeclared(checkedVariableName)
+                ? applicationVariableCatalog.resolve(checkedVariableName)
                 : Optional.empty();
-    }
-
-    private static String validatedVariableName(String variableName) {
-        String checkedVariableName = Validation.requireNonBlank(variableName,
-                "Conversation application variable name is required.").trim();
-        if (checkedVariableName.startsWith("$")) {
-            throw new IllegalArgumentException("Conversation application variable names must omit the '$' prefix: "
-                    + checkedVariableName);
-        }
-        if (!VARIABLE_NAME_PATTERN.matcher(checkedVariableName).matches()) {
-            throw new IllegalArgumentException("Invalid conversation application variable name: " + checkedVariableName);
-        }
-        if (ConversationConditionSyntax.variableNames().contains(checkedVariableName)) {
-            throw new IllegalArgumentException("Conversation application variable conflicts with a fixed variable name: "
-                    + checkedVariableName);
-        }
-        return checkedVariableName;
     }
 }

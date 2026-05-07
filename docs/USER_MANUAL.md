@@ -78,7 +78,18 @@ Condition values can reference fixed conversation variables with `$name` or `${n
 
 Use `variant.*` when referring to the authored JSON variant fields. Use `choice.*` when referring to the generated runtime choice values for `choice` lines.
 
-Application code can also declare additional condition variable names before loading conversation JSON. For example, a game can declare `money` so authored JSON may use `$money` or `${money}` even if the backing `mc.money` field is only provided by the game later. Use a `ConversationConditionVariables` instance with `ConversationDefinitionJson.load(...)` or `fromJson(...)` to allow those application names, and pass the same instance to `JsonConversationContentModule` when variable references should be replaced through the supplied lookup handler during scene projection.
+Application code can also declare additional variable names in a reusable text variable catalog before loading conversation JSON. The catalog is not conversation-specific and can be reused anywhere else that wants declared variable names plus a resolver. A game can keep a JSON catalog such as:
+
+```json
+{
+  "variables": [
+    {"name": "money", "valueType": "number"},
+    {"name": "player.name", "valueType": "string"}
+  ]
+}
+```
+
+Anything not declared in that catalog is treated as an error. For example, a game can declare `money` so authored JSON may use `$money` or `${money}` even if the backing `mc.money` field is only provided by the game later. Load the catalog with `TextVariableCatalog.load(...)`, attach a `TextVariableResolver` with `withResolver(...)`, wrap it in `ConversationConditionVariables.catalog(...)`, then pass that to `ConversationDefinitionJson.load(...)` or `fromJson(...)`. Pass the same `ConversationConditionVariables` instance to `JsonConversationContentModule` when condition variable references should be replaced through the supplied lookup handler during scene projection.
 
 Example choice line:
 
