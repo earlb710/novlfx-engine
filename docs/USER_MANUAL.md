@@ -372,6 +372,8 @@ Manual JSON editing is the lowest-level authoring path. It is useful when a desi
 - `quest-log-screen-design.json`
 - `gallery-preview-screen-design.json`
 
+`main-menu-screen-design.json` includes the binding token `$chapterTitle`; pass a binding such as `Map.of("chapterTitle", "Chapter 3: Rooftop Garden")` to `ScreenDesignLayoutAdapter` when previewing or rendering that scaffold.
+
 The top-level JSON shape is:
 
 ```json

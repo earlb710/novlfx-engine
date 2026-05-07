@@ -185,7 +185,7 @@ public final class ScreenDesignLayoutAdapter {
             case TEXT_AREA -> prefix + (item.text() == null ? item.id() : resolve(item.text(), bindings));
             case FIELD -> prefix + label + ": " + resolve(fallback(item.value(), item.defaultValue()), bindings);
             case MULTI_LINE_FIELD -> prefix + label + ": " + resolve(fallback(item.value(), item.defaultValue()), bindings);
-            case BUTTON -> prefix + label;
+            case BUTTON -> hasEvent(item) ? prefix + label : prefix + "[" + label + "]";
         };
     }
 
@@ -221,5 +221,9 @@ public final class ScreenDesignLayoutAdapter {
             return first;
         }
         return second == null || second.isBlank() ? null : second;
+    }
+
+    private static boolean hasEvent(ScreenDesignItem item) {
+        return firstNonBlank(item.metadata().get(EVENT_NAME_KEY), item.metadata().get(ACTION_EVENT_KEY)) != null;
     }
 }
