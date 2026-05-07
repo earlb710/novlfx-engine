@@ -314,6 +314,11 @@ public final class ButtonVisuals {
         label.setLayoutY((height - bounds.getHeight()) / 2 - bounds.getMinY() + BUTTON_ARTWORK_LABEL_OFFSET_Y);
     }
 
+    private static void offsetArtworkLabel(Text label) {
+        label.setLayoutX(label.getLayoutX() + BUTTON_ARTWORK_LABEL_OFFSET_X);
+        label.setLayoutY(label.getLayoutY() + BUTTON_ARTWORK_LABEL_OFFSET_Y);
+    }
+
     private record StyleSpan(int start, int end, String style) {
     }
 
@@ -527,8 +532,8 @@ public final class ButtonVisuals {
             double height = getHeight() > 0 ? getHeight() : prefHeight(width);
             label.setWrappingWidth(Math.max(0, width - BUTTON_ARTWORK_HORIZONTAL_PADDING));
             updateArtwork(width, height);
-            artwork.resizeRelocate(0, 0, width, height);
-            layoutArtworkLabel(label, width, height);
+            super.layoutChildren();
+            offsetArtworkLabel(label);
         }
 
         private void refreshPreferredSize() {
@@ -560,7 +565,6 @@ public final class ButtonVisuals {
                 rasterPressed = pressed;
             }
         }
-
     }
 
     private static String loadSvgResource(String resourcePath) {
