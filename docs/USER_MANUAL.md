@@ -351,17 +351,17 @@ Use `ScreenDesignModel` when you want the same reusable layout idea to be editab
 - one `ScreenLayoutType`
 - ordered `blocks`
 - ordered saved `items`
-- optional screen/block/item metadata maps for tool- or app-owned extra data
+- optional screen/block/item metadata maps for tool- or app-owned extra data, including optional screen-level dialog hints such as `dialog`, `dismissOnClickOutside`, and `dismissOnEscape`
 
 Blocks and items are stable editable records:
 
-- each `ScreenDesignBlock` has `id`, optional `title`, optional block-level `layoutType`, optional `parentBlockId`, optional `styleClass`, and `metadata`
-- each `ScreenDesignItem` has `id`, `blockId`, `type`, optional `label`, optional `text`, optional `value`, optional `defaultValue`, optional `styleClass`, and `metadata`
+- each `ScreenDesignBlock` has `id`, optional `title`, optional block-level `layoutType`, optional `parentBlockId`, optional conversation-style `conditions`, optional `styleClass`, and `metadata`
+- each `ScreenDesignItem` has `id`, `blockId`, `type`, optional `label`, optional `text`, optional `value`, optional `defaultValue`, optional `sequence`, optional `styleClass`, and `metadata`
 - `TEXT` and `TEXT_AREA` are read-only display content and do not keep a label
 - `FIELD` and `MULTI_LINE_FIELD` support `label`, `value`, `defaultValue`, and `editable`
 - `BUTTON` uses `label` as the rendered button caption
 
-`ScreenDesignLayoutAdapter` converts a `ScreenDesignModel` into a `ScreenLayoutModel` for preview or runtime rendering. It preserves stable block/item ids, converts `parentBlockId` relationships into nested layout sections, maps field-style items to `label: value/defaultValue` lines, and carries item metadata into the layout so renderer-supported visual metadata can be applied consistently. Applications can call the binding overload with a string map so authored text such as `$playerName` or `${playerName}` is resolved during scaffolding. Complex or application-specific controls can still be added programmatically by targeting stable block ids after the JSON scaffold is loaded.
+`ScreenDesignLayoutAdapter` converts a `ScreenDesignModel` into a `ScreenLayoutModel` for preview or runtime rendering. It preserves stable block/item ids, converts `parentBlockId` relationships into nested layout sections, maps field-style items to `label: value/defaultValue` lines, sorts block items by optional `sequence` before falling back to authored JSON order, and carries item/block metadata into the layout so renderer-supported visual metadata can be applied consistently. Block `conditions` are preserved in section metadata as a JSON string array, and applications can call the binding overload with a string map so authored text such as `$playerName` or `${playerName}` is resolved during scaffolding. Complex or application-specific controls can still be added programmatically by targeting stable block ids after the JSON scaffold is loaded.
 
 ### Editing a screen manually in JSON
 
@@ -382,7 +382,10 @@ The top-level JSON shape is:
   "title": "Profile Settings",
   "layoutType": "FORM",
   "metadata": {
-    "description": "Example screen design document"
+    "description": "Example screen design document",
+    "dialog": "true",
+    "dismissOnClickOutside": "true",
+    "dismissOnEscape": "true"
   },
   "blocks": [
     {
@@ -390,6 +393,7 @@ The top-level JSON shape is:
       "title": "Profile",
       "layoutType": null,
       "parentBlockId": null,
+      "conditions": ["profile.ready"],
       "styleClass": "profile-block",
       "metadata": {}
     }
@@ -403,6 +407,7 @@ The top-level JSON shape is:
       "text": null,
       "value": null,
       "defaultValue": "Player",
+      "sequence": 10,
       "editable": true,
       "styleClass": null,
       "metadata": {
@@ -424,10 +429,12 @@ When editing manually:
 - `items` may be empty, but every saved item must point to a valid `blockId`
 - block ids and item ids must be unique
 - nested blocks use `parentBlockId`; root blocks leave it as `null`
+- block `conditions` use the same `$name` / `${name}` marker style as conversation conditions and are preserved for application-owned visibility rules
 - item `type` must be one of `TEXT`, `FIELD`, `MULTI_LINE_FIELD`, `TEXT_AREA`, or `BUTTON`
 - `label` is only meaningful for `FIELD`, `MULTI_LINE_FIELD`, and `BUTTON`
 - `text` is used by `TEXT` and `TEXT_AREA`
 - `defaultValue` is the fallback text shown by `FIELD` and `MULTI_LINE_FIELD` when `value` is null
+- `sequence` is an optional integer ordering hint for items within the same block
 - `editable` is only meaningful for field-style items
 - `styleClass` is a stable CSS hook; `metadata` is a string map for extra tool/renderer-owned values
 - nested containers are represented as blocks with `parentBlockId`; a block-level `layoutType` controls how its child blocks are arranged
@@ -436,7 +443,7 @@ When editing manually:
 
 The designer and JSON format currently expose these style-oriented metadata keys:
 
-- screen metadata: `fontFamily`, `fontSize`, `fontStyle`, `color`, `backgroundColor`, `borderStyle`, `borderCorner`, `borderThickness`, `borderColor`
+- screen metadata: `fontFamily`, `fontSize`, `fontStyle`, `color`, `backgroundColor`, `borderStyle`, `borderCorner`, `borderThickness`, `borderColor`, `dialog`, `dismissOnClickOutside`, `dismissOnEscape`
 - block metadata: `fontFamily`, `fontSize`, `fontStyle`, `color`, `backgroundColor`, `transparency`, `borderStyle`, `borderCorner`, `borderThickness`, `borderColor`
 - item metadata: `displayRole`, `fontFamily`, `fontSize`, `fontStyle`, `color`, `backgroundColor`, `transparency`, `labelFontFamily`, `labelFontSize`, `labelFontStyle`, `labelColor`, `eventName`, `actionEvent`
 
@@ -475,10 +482,10 @@ Typical designer workflow:
 
 The property editor adapts to the selected item type:
 
-- screen nodes expose screen id, title, layout type, font family, font size/style, text color, background color, and border attributes
-- block nodes expose block id, title, layout type, parent block, font family, font size/style, text color, background color, transparency, and border attributes
-- field-style items expose label, current value, editable, display role, item font family/size/style/color/background/transparency, and label font family/size/style/color
-- non-field items hide label/editable controls and only expose the applicable content plus display role and item font family/size/style/color/background/transparency
+- screen nodes expose screen id, title, layout type, font family, font size/style, text color, background color, border attributes, and dialog/dismiss preview hints
+- block nodes expose block id, title, layout type, parent block, conditions, font family, font size/style, text color, background color, transparency, and border attributes
+- field-style items expose block target, item id, type, sequence, label, current value, editable, display role, item font family/size/style/color/background/transparency, and label font family/size/style/color
+- non-field items hide label/editable controls and only expose the applicable content plus sequence, display role, and item font family/size/style/color/background/transparency
 - `TEXT_AREA` and `MULTI_LINE_FIELD` use a multiline content editor
 
 Temporary items are preview/test helpers. They render in the preview window and can be moved between blocks like saved items, but normal JSON save output omits them. This is useful for prototyping form rows or validation cases without committing them to the authored document.

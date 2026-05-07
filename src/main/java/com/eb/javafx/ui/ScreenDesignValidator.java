@@ -23,7 +23,8 @@ public final class ScreenDesignValidator {
             ConversationConditionVariables conditionVariables) {
         Validation.requireNonNull(design, "Screen design is required.");
         Validation.requireNonNull(conditionVariables, "Screen design condition variables are required.");
-        List<ScreenDesignValidationProblem> problems = validateStructureRaw(design.blocks(), design.items(), design.temporaryItems());
+        List<ScreenDesignValidationProblem> problems = new ArrayList<>(
+                validateStructureRaw(design.blocks(), design.items(), design.temporaryItems()));
         validateBlockConditions(design.blocks(), conditionVariables, problems);
         return List.copyOf(problems);
     }
