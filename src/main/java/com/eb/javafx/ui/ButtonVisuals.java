@@ -314,11 +314,6 @@ public final class ButtonVisuals {
         label.setLayoutY((height - bounds.getHeight()) / 2 - bounds.getMinY() + BUTTON_ARTWORK_LABEL_OFFSET_Y);
     }
 
-    private static void offsetArtworkLabel(Text label) {
-        label.setLayoutX(label.getLayoutX() + BUTTON_ARTWORK_LABEL_OFFSET_X);
-        label.setLayoutY(label.getLayoutY() + BUTTON_ARTWORK_LABEL_OFFSET_Y);
-    }
-
     private record StyleSpan(int start, int end, String style) {
     }
 
@@ -533,7 +528,7 @@ public final class ButtonVisuals {
             label.setWrappingWidth(Math.max(0, width - BUTTON_ARTWORK_HORIZONTAL_PADDING));
             updateArtwork(width, height);
             super.layoutChildren();
-            offsetArtworkLabel(label);
+            layoutArtworkLabel(label, width, height);
         }
 
         private void refreshPreferredSize() {
