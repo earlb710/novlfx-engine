@@ -103,4 +103,5 @@ final class ScreenLayoutRendererTest {
         assertTrue(ScreenLayoutRenderer.dismissOnClickOutside(dialog));
         assertTrue(ScreenLayoutRenderer.dismissOnEscape(dialog));
     }
+
 }

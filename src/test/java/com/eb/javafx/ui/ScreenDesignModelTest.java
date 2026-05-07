@@ -275,7 +275,7 @@ final class ScreenDesignModelTest {
 
         assertEquals("", layout.metadata().get("backgroundColor"));
         assertEquals("", layout.metadata().get("borderStyle"));
-        assertEquals("#143869", layout.contentSections().get(0).metadata().get("backgroundColor"));
+        assertEquals("#1d3a2a", layout.contentSections().get(0).metadata().get("backgroundColor"));
         assertEquals("0", layout.contentSections().get(0).metadata().get("transparency"));
         assertEquals("solid", layout.contentSections().get(0).metadata().get("borderStyle"));
     }
