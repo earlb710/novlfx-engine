@@ -40,9 +40,9 @@ public final class ButtonVisuals {
     private static final int MAX_RASTER_CACHE_SIZE = 128;
     private static final String ARTWORK_FALLBACK_GRADIENT = """
             <linearGradient id="%s" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2="48">
-              <stop offset="0" style="stop-color:#ffffff;stop-opacity:1"/>
-              <stop offset="0.5" style="stop-color:#000000;stop-opacity:1"/>
-              <stop offset="1" style="stop-color:#ffffff;stop-opacity:1"/>
+              <stop offset="0" style="stop-color:#9dccff;stop-opacity:1"/>
+              <stop offset="0.5" style="stop-color:#0f4f9f;stop-opacity:1"/>
+              <stop offset="1" style="stop-color:#052f6f;stop-opacity:1"/>
             </linearGradient>
             """;
     private static final Pattern PATH_DATA_PATTERN = Pattern.compile("<path\\b[^>]*\\bd\\s*=\\s*(['\"])(.*?)\\1", Pattern.DOTALL);
@@ -51,6 +51,7 @@ public final class ButtonVisuals {
             "<meshgradient\\b[^>]*\\bid\\s*=\\s*(['\"])(.*?)\\1[^>]*>.*?</meshgradient>",
             Pattern.DOTALL);
     private static final Pattern SCRIPT_PATTERN = Pattern.compile("<script\\b[^>]*>.*?</script>", Pattern.DOTALL);
+    private static final Pattern SVG_TAG_PATTERN = Pattern.compile("<svg\\b(?![^>]*\\bpreserveAspectRatio\\s*=)", Pattern.CASE_INSENSITIVE);
     private static final System.Logger LOGGER = System.getLogger(ButtonVisuals.class.getName());
     private static final String SHAPE_PATH = loadShapePath();
     private static final String ARTWORK_RESOURCE_URL = loadArtworkResourceUrl();
@@ -174,7 +175,8 @@ public final class ButtonVisuals {
         if (matcher.find()) {
             prepared = matcher.replaceFirst(Matcher.quoteReplacement(ARTWORK_FALLBACK_GRADIENT.formatted(matcher.group(2))));
         }
-        return SCRIPT_PATTERN.matcher(prepared).replaceAll("");
+        prepared = SCRIPT_PATTERN.matcher(prepared).replaceAll("");
+        return SVG_TAG_PATTERN.matcher(prepared).replaceFirst("<svg preserveAspectRatio=\"none\"");
     }
 
     private static Image rasterizeArtwork(int width, int height) {

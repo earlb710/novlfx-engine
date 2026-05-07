@@ -7,8 +7,10 @@ import com.eb.javafx.ui.ButtonVisuals;
 import com.eb.javafx.ui.UiTheme;
 import javafx.application.Platform;
 import javafx.scene.Node;
+import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.StackPane;
+import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 import org.junit.jupiter.api.Test;
 
@@ -81,6 +83,29 @@ final class ButtonPillSvgTestScreenTest {
         assertTrue(longWidth > shortWidth, "Long dynamic button should be wider than short button.");
         assertTrue(multilineHeight > ButtonVisuals.BUTTON_ARTWORK_HEIGHT,
                 "Multiline button should be taller than a single-line button.");
+    }
+
+    @Test
+    void buttonPillArtworkStretchesBluePillAcrossLongTextWidth() {
+        StackPane graphic = assertInstanceOf(StackPane.class,
+                ButtonVisuals.createArtworkGraphic(ButtonPillSvgTestScreen.SECONDARY_LABEL));
+        double width = graphic.prefWidth(-1);
+        double height = graphic.prefHeight(width);
+        graphic.resize(width, height);
+        graphic.layout();
+
+        ImageView imageView = assertInstanceOf(ImageView.class, graphic.getChildren().get(0));
+        Image image = imageView.getImage();
+        int centerY = Math.max(0, (int) Math.round(image.getHeight() / 2) - 1);
+        Color leftCenter = image.getPixelReader().getColor(2, centerY);
+        Color rightCenter = image.getPixelReader().getColor((int) image.getWidth() - 3, centerY);
+        Color middleCenter = image.getPixelReader().getColor((int) image.getWidth() / 2, centerY);
+
+        assertTrue(leftCenter.getOpacity() > 0.9, "Long button artwork should reach the left edge.");
+        assertTrue(rightCenter.getOpacity() > 0.9, "Long button artwork should reach the right edge.");
+        assertTrue(middleCenter.getBlue() > middleCenter.getRed()
+                        && middleCenter.getBlue() > middleCenter.getGreen(),
+                "Button artwork should use a blue gradient.");
     }
 
     @Test
