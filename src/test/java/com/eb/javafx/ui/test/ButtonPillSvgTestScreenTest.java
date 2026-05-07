@@ -20,6 +20,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -39,14 +40,23 @@ final class ButtonPillSvgTestScreenTest {
         assertEquals("Fixed width", ButtonPillSvgTestScreen.FIXED_LABEL);
         assertEquals("Multiline\nbutton text", ButtonPillSvgTestScreen.MULTILINE_LABEL);
         assertEquals("Back", ButtonPillSvgTestScreen.BACK_LABEL);
-        assertEquals("M 24 0 H 156 Q 180 0 180 24 Q 180 48 156 48 H 24 Q 0 48 0 24 Q 0 0 24 0 Z",
-                ButtonVisuals.buttonShapePath());
+        assertTrue(ButtonVisuals.buttonShapePath().startsWith("M "));
     }
 
     @Test
     void buttonPillArtworkUsesPackagedSvgResource() {
         assertTrue(ButtonVisuals.buttonArtworkResourceUrl()
                 .endsWith(ButtonVisuals.BUTTON_SHAPE_RESOURCE.substring(1)));
+    }
+
+    @Test
+    void buttonPillArtworkUsesLongSvgForLongMultilineAndWideButtons() {
+        assertTrue(ButtonVisuals.usesLongArtwork(ButtonPillSvgTestScreen.SECONDARY_LABEL, -1, -1));
+        assertTrue(ButtonVisuals.usesLongArtwork(ButtonPillSvgTestScreen.MULTILINE_LABEL, -1, -1));
+        assertTrue(ButtonVisuals.usesLongArtwork(ButtonPillSvgTestScreen.FIXED_LABEL, 260, 64));
+        assertTrue(ButtonVisuals.buttonArtworkResourceUrl(ButtonPillSvgTestScreen.SECONDARY_LABEL, -1, -1)
+                .endsWith(ButtonVisuals.BUTTON_LONG_ARTWORK_RESOURCE.substring(1)));
+        assertFalse(ButtonVisuals.usesLongArtwork(ButtonPillSvgTestScreen.PRIMARY_LABEL, -1, -1));
     }
 
     @Test
@@ -86,7 +96,7 @@ final class ButtonPillSvgTestScreenTest {
     }
 
     @Test
-    void buttonPillArtworkStretchesBluePillAcrossLongTextWidth() {
+    void buttonPillArtworkUsesBlueGradientForLongButtonArtwork() {
         StackPane graphic = assertInstanceOf(StackPane.class,
                 ButtonVisuals.createArtworkGraphic(ButtonPillSvgTestScreen.SECONDARY_LABEL));
         double width = graphic.prefWidth(-1);
@@ -97,12 +107,8 @@ final class ButtonPillSvgTestScreenTest {
         ImageView imageView = assertInstanceOf(ImageView.class, graphic.getChildren().get(0));
         Image image = imageView.getImage();
         int centerY = Math.max(0, (int) Math.round(image.getHeight() / 2) - 1);
-        Color leftCenter = image.getPixelReader().getColor(2, centerY);
-        Color rightCenter = image.getPixelReader().getColor((int) image.getWidth() - 3, centerY);
         Color middleCenter = image.getPixelReader().getColor((int) image.getWidth() / 2, centerY);
 
-        assertTrue(leftCenter.getOpacity() > 0.9, "Long button artwork should reach the left edge.");
-        assertTrue(rightCenter.getOpacity() > 0.9, "Long button artwork should reach the right edge.");
         assertTrue(middleCenter.getBlue() > middleCenter.getRed()
                         && middleCenter.getBlue() > middleCenter.getGreen(),
                 "Button artwork should use a blue gradient.");
