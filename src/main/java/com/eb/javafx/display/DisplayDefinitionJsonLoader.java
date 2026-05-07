@@ -2,11 +2,13 @@ package com.eb.javafx.display;
 
 import com.eb.javafx.util.JsonData;
 import com.eb.javafx.util.Validation;
+import javafx.animation.Animation;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -35,6 +37,14 @@ public final class DisplayDefinitionJsonLoader {
         }
         for (Object entry : JsonData.optionalList(root, "layeredCharacters", "root.layeredCharacters")) {
             registry.registerLayeredCharacter(parseLayeredCharacter(JsonData.requireObject(entry, "root.layeredCharacters[]")));
+        }
+        for (Object entry : JsonData.optionalList(root, "animations", "root.animations")) {
+            registry.registerAnimation(parseAnimation(JsonData.requireObject(entry, "root.animations[]"), sourceName));
+        }
+        for (String script : JsonData.optionalStringList(root, "animationScripts", "root.animationScripts")) {
+            for (AuthoredDisplayAnimation animation : AuthoredDisplayAnimationParser.parseDocument(script, sourceName)) {
+                registry.registerAnimation(animation.compile());
+            }
         }
     }
 
@@ -67,5 +77,142 @@ public final class DisplayDefinitionJsonLoader {
                 JsonData.optionalObject(object, "metadata", "layered display metadata")
                         .map(metadata -> JsonData.stringMap(metadata, "layered display metadata"))
                         .orElse(Map.of()));
+    }
+
+    private static DisplayAnimation parseAnimation(Map<String, Object> object, String sourceName) {
+        String id = JsonData.requiredString(object, "id", "display animation id");
+        int repeatCount = optionalRepeatCount(object, "repeatCount", 1, "display animation repeatCount");
+        boolean autoReverse = JsonData.optionalBoolean(object, "autoReverse", false, "display animation autoReverse");
+        if (object.containsKey("script") && object.get("script") != null) {
+            return parseScriptedAnimation(object.get("script"), id, sourceName, repeatCount, autoReverse);
+        }
+        return new DisplayAnimation(id, parseAnimationSteps(object), repeatCount, autoReverse);
+    }
+
+    private static DisplayAnimation parseScriptedAnimation(
+            Object scriptValue,
+            String id,
+            String sourceName,
+            int repeatCount,
+            boolean autoReverse) {
+        if (scriptValue instanceof String script) {
+            return AuthoredDisplayAnimationParser.parseAnimation(id, script, sourceName, 1, repeatCount, autoReverse).compile();
+        }
+        List<String> scriptLines = new ArrayList<>();
+        int index = 0;
+        for (Object line : JsonData.requireList(scriptValue, "display animation script")) {
+            if (!(line instanceof String scriptLine) || scriptLine.isBlank()) {
+                throw new IllegalArgumentException("Expected non-blank JSON string for display animation script[" + index + "].");
+            }
+            scriptLines.add(scriptLine);
+            index++;
+        }
+        return AuthoredDisplayAnimationParser.parseAnimation(id, scriptLines, sourceName, 1, repeatCount, autoReverse).compile();
+    }
+
+    private static List<DisplayAnimationStep> parseAnimationSteps(Map<String, Object> object) {
+        List<DisplayAnimationStep> steps = new ArrayList<>();
+        int index = 0;
+        for (Object entry : JsonData.requiredList(object, "steps", "display animation steps")) {
+            steps.add(parseAnimationStep(JsonData.requireObject(entry, "display animation steps[" + index + "]")));
+            index++;
+        }
+        return List.copyOf(steps);
+    }
+
+    private static DisplayAnimationStep parseAnimationStep(Map<String, Object> object) {
+        return new DisplayAnimationStep(
+                optionalLong(object, "durationMillis", 0L, "display animation step durationMillis"),
+                optionalLong(object, "pauseBeforeMillis", 0L, "display animation step pauseBeforeMillis"),
+                JsonData.optionalDouble(object, "targetOpacity", 1.0, "display animation step targetOpacity"),
+                JsonData.optionalDouble(object, "targetScaleX", 1.0, "display animation step targetScaleX"),
+                JsonData.optionalDouble(object, "targetScaleY", 1.0, "display animation step targetScaleY"),
+                JsonData.optionalDouble(object, "targetTranslateX", 0.0, "display animation step targetTranslateX"),
+                JsonData.optionalDouble(object, "targetTranslateY", 0.0, "display animation step targetTranslateY"),
+                JsonData.optionalDouble(object, "targetRotate", 0.0, "display animation step targetRotate"),
+                optionalBounds(object, "targetClip", "display animation step targetClip"),
+                optionalBounds(object, "targetViewport", "display animation step targetViewport"),
+                optionalEffects(object),
+                JsonData.enumValue(DisplayInterpolation.class,
+                        JsonData.optionalString(object, "interpolation", "display animation step interpolation")
+                                .orElse(DisplayInterpolation.LINEAR.name()),
+                        "display animation interpolation"));
+    }
+
+    private static DisplayRectangleBounds optionalBounds(Map<String, Object> object, String prefix, String description) {
+        String xKey = prefix + "X";
+        String yKey = prefix + "Y";
+        String widthKey = prefix + "Width";
+        String heightKey = prefix + "Height";
+        if (!hasAny(object, xKey, yKey, widthKey, heightKey)) {
+            return null;
+        }
+        if (!hasAny(object, xKey) || !hasAny(object, yKey) || !hasAny(object, widthKey) || !hasAny(object, heightKey)) {
+            throw new IllegalArgumentException(description + " requires X, Y, Width, and Height.");
+        }
+        return new DisplayRectangleBounds(
+                JsonData.optionalDouble(object, xKey, 0.0, description + "X"),
+                JsonData.optionalDouble(object, yKey, 0.0, description + "Y"),
+                JsonData.optionalDouble(object, widthKey, 0.0, description + "Width"),
+                JsonData.optionalDouble(object, heightKey, 0.0, description + "Height"));
+    }
+
+    private static DisplayEffectTargets optionalEffects(Map<String, Object> object) {
+        boolean blurEnabled = hasAny(object, "targetBlurRadius");
+        boolean dropShadowEnabled = hasAny(object, "targetDropShadowRadius", "targetDropShadowOffsetX", "targetDropShadowOffsetY");
+        boolean colorAdjustEnabled = hasAny(object,
+                "targetColorAdjustHue",
+                "targetColorAdjustSaturation",
+                "targetColorAdjustBrightness",
+                "targetColorAdjustContrast");
+        if (!blurEnabled && !dropShadowEnabled && !colorAdjustEnabled) {
+            return DisplayEffectTargets.NONE;
+        }
+        return new DisplayEffectTargets(
+                blurEnabled,
+                JsonData.optionalDouble(object, "targetBlurRadius", 0.0, "display animation step targetBlurRadius"),
+                dropShadowEnabled,
+                JsonData.optionalDouble(object, "targetDropShadowRadius", 0.0, "display animation step targetDropShadowRadius"),
+                JsonData.optionalDouble(object, "targetDropShadowOffsetX", 0.0, "display animation step targetDropShadowOffsetX"),
+                JsonData.optionalDouble(object, "targetDropShadowOffsetY", 0.0, "display animation step targetDropShadowOffsetY"),
+                colorAdjustEnabled,
+                JsonData.optionalDouble(object, "targetColorAdjustHue", 0.0, "display animation step targetColorAdjustHue"),
+                JsonData.optionalDouble(object, "targetColorAdjustSaturation", 0.0, "display animation step targetColorAdjustSaturation"),
+                JsonData.optionalDouble(object, "targetColorAdjustBrightness", 0.0, "display animation step targetColorAdjustBrightness"),
+                JsonData.optionalDouble(object, "targetColorAdjustContrast", 0.0, "display animation step targetColorAdjustContrast"));
+    }
+
+    private static boolean hasAny(Map<String, Object> object, String... keys) {
+        for (String key : keys) {
+            if (object.containsKey(key) && object.get(key) != null) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static int optionalRepeatCount(Map<String, Object> object, String key, int defaultValue, String description) {
+        if (!object.containsKey(key) || object.get(key) == null) {
+            return defaultValue;
+        }
+        Object value = object.get(key);
+        if (value instanceof String stringValue && "indefinite".equalsIgnoreCase(stringValue)) {
+            return Animation.INDEFINITE;
+        }
+        if (value instanceof Integer integer) {
+            return integer;
+        }
+        throw new IllegalArgumentException("Expected JSON integer or \"indefinite\" for " + description + ".");
+    }
+
+    private static long optionalLong(Map<String, Object> object, String key, long defaultValue, String description) {
+        if (!object.containsKey(key) || object.get(key) == null) {
+            return defaultValue;
+        }
+        Object value = object.get(key);
+        if (value instanceof Integer integer) {
+            return integer.longValue();
+        }
+        throw new IllegalArgumentException("Expected JSON integer for " + description + ".");
     }
 }

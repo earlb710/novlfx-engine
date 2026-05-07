@@ -62,7 +62,7 @@ Provide generic screens, screen view models, shell/navigation helpers, theme sup
 
 ### `display`
 
-Provide image asset definitions, display layers, transforms, interpolation, animation steps, animation playback, and registries for display bindings. Display code should model generic composition and playback behavior rather than project-specific characters or assets.
+Provide image asset definitions, display layers, transforms, interpolation, animation steps, authored ATL-style animation scripts, animation playback, and registries for display bindings. Display code should model generic composition and playback behavior rather than project-specific characters or assets, and scripted animation support should stay data-only rather than evaluating application code.
 
 ### `audio`
 
@@ -108,7 +108,7 @@ Recent reusable TODO extraction work has expanded the scene-flow and save seams 
 - `AudioAdapterPolicy`, `AudioAssetResolver`, `AudioFadeRequest`, `AudioCrossfadeRequest`, and `AudioPlaybackLifecycleEvent` define media-adapter expectations for asset discovery, fades, crossfades, preloading, and player pools without bundling concrete audio.
 - `TextEffect`, `StyledTextSpan`, `TextVariableResolver`, and `TextTemplateProcessor` provide rendering-neutral rich-text/effect metadata and variable replacement hooks.
 - `HudStatusContainerViewModel`, `HudStatusGroupViewModel`, and `HudStatusRowViewModel` provide reusable HUD/status overlay models while keeping game-specific status values app-owned.
-- `ReusableGameplaySnapshot` and `ReusableGameplaySnapshotDocuments` compose the reusable gameplay save slice—scene-flow state, game time, generic progress, inventory, wardrobe, character state, journal/quest state, and location occupancy—while preserving application-owned save sections outside the engine.
+- `ReusableGameplaySnapshot` and `ReusableGameplaySnapshotDocuments` compose the reusable gameplay save slice—scene-flow state, scene checkpoint history, game time, generic progress, inventory, wardrobe, character state, journal/quest state, and location occupancy—while preserving application-owned save sections outside the engine.
 - Test-only `com.eb.javafx.testsupport` helpers cover record assertions, route descriptor assertions, and generic scene-flow fixtures for downstream application tests.
 
 Validation for this repository should continue to use the checked-in Gradle wrapper:

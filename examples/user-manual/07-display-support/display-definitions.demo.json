@@ -26,5 +26,41 @@
         "mood": "neutral"
       }
     }
+  ],
+  "animations": [
+    {
+      "id": "hero.bob",
+      "repeatCount": 2,
+      "autoReverse": true,
+      "script": [
+        "move 180 translateX 0 translateY -8 ease_out",
+        "rotate 90 -3 ease_in",
+        "blur 90 radius 2 ease_out",
+        "dropShadow 90 radius 4 offsetX 1 offsetY 2 ease_out",
+        "colorAdjust 90 saturation 0.15 brightness 0.05 ease_out",
+        "move 180 translateX 0 translateY 0 ease_both",
+        "rotate 90 0 ease_out"
+      ]
+    },
+    {
+      "id": "hero.fade-in",
+      "steps": [
+        {
+          "durationMillis": 240,
+          "targetOpacity": 1.0,
+          "targetScaleX": 1.0,
+          "targetScaleY": 1.0,
+          "targetTranslateX": 0,
+          "targetTranslateY": 0,
+          "targetRotate": 0,
+          "targetClipX": 0,
+          "targetClipY": 0,
+          "targetClipWidth": 320,
+          "targetClipHeight": 480,
+          "targetBlurRadius": 0,
+          "interpolation": "ease_out"
+        }
+      ]
+    }
   ]
 }

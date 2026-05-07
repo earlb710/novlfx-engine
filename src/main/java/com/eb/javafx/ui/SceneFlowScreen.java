@@ -4,9 +4,10 @@ import com.eb.javafx.gamesupport.ActionContext;
 import com.eb.javafx.routing.RouteContext;
 import com.eb.javafx.routing.SceneRouter;
 import com.eb.javafx.scene.EnginePlaceholderSceneModule;
+import com.eb.javafx.scene.SceneCheckpointSession;
 import com.eb.javafx.scene.SceneExecutionResult;
+import com.eb.javafx.scene.SceneExecutionStatus;
 import com.eb.javafx.scene.SceneExecutor;
-import com.eb.javafx.scene.SceneFlowState;
 import com.eb.javafx.scene.ScenePresenter;
 import com.eb.javafx.scene.SceneViewModel;
 import javafx.scene.Scene;
@@ -39,11 +40,39 @@ public final class SceneFlowScreen {
                 context.randomService(),
                 context.gameSupportService().gameClock());
         SceneExecutor executor = context.sceneExecutor();
-        SceneExecutionResult result = executor.advanceUntilPause(actionContext, SceneFlowState.start(sceneId));
-        SceneViewModel viewModel = new ScenePresenter().present(actionContext, result);
-        VBox content = SceneFlowView.createContent(viewModel, null);
-        Button back = ScreenNavigation.button(context, "Back to main menu", SceneRouter.MAIN_MENU_ROUTE);
-        content.getChildren().add(back);
+        SceneCheckpointSession session = new SceneCheckpointSession(executor, actionContext);
+        session.start(sceneId);
+        ScenePresenter presenter = new ScenePresenter();
+        VBox content = new VBox(ScreenShell.BODY_SPACING);
+        Button mainMenu = ScreenNavigation.button(context, "Back to main menu", SceneRouter.MAIN_MENU_ROUTE);
+        renderCheckpointScene(actionContext, session, presenter, content, mainMenu);
         return context.themedScene(ScreenShell.titled(context.contentRegistry().definition(titleDefinition), content));
+    }
+
+    private static void renderCheckpointScene(
+            ActionContext actionContext,
+            SceneCheckpointSession session,
+            ScenePresenter presenter,
+            VBox content,
+            Button mainMenu) {
+        SceneViewModel viewModel = presenter.present(actionContext, session.currentResult(), session.checkpointLog());
+        VBox sceneContent = SceneFlowView.createContent(viewModel, choiceId -> {
+            session.selectChoice(choiceId);
+            renderCheckpointScene(actionContext, session, presenter, content, mainMenu);
+        }, () -> {
+            if (session.rollbackAllowed()) {
+                session.rollbackOneCheckpoint();
+                renderCheckpointScene(actionContext, session, presenter, content, mainMenu);
+            }
+        }, () -> {
+            SceneExecutionResult current = session.currentResult();
+            if (session.rollForwardAllowed()) {
+                session.rollForwardUsingStoredCheckpointData();
+            } else if (current != null && current.status() == SceneExecutionStatus.DISPLAYING_TEXT) {
+                session.continueFromText();
+            }
+            renderCheckpointScene(actionContext, session, presenter, content, mainMenu);
+        });
+        content.getChildren().setAll(sceneContent, mainMenu);
     }
 }

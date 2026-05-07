@@ -15,6 +15,10 @@ import java.util.Map;
  */
 public final class ScenePresenter {
     public SceneViewModel present(ActionContext context, SceneExecutionResult result) {
+        return present(context, result, null);
+    }
+
+    public SceneViewModel present(ActionContext context, SceneExecutionResult result, SceneCheckpointLog checkpointLog) {
         SceneStep step = result.step();
         List<String> selectedChoiceIds = result.state().selectedChoiceIds();
         List<SceneChoiceViewModel> choices = step == null ? List.of() : step.choices().stream()
@@ -39,6 +43,10 @@ public final class ScenePresenter {
         List<SceneEffectPreviewViewModel> effectPreviews = step == null
                 ? List.of()
                 : previewMetadata(step.metadata(), step.displayReference() == null ? step.id() : step.displayReference());
+        boolean rollbackAvailable = checkpointLog != null && checkpointLog.rollbackAllowed();
+        boolean rollForwardAvailable = checkpointLog != null && checkpointLog.rollForwardAllowed();
+        boolean rollbackFixed = checkpointLog != null && checkpointLog.rollbackFixed();
+        String rollbackBlockedReason = rollbackBlockedReason(checkpointLog, rollbackAvailable);
         return new SceneViewModel(
                 result.status(),
                 result.state().activeSceneId(),
@@ -51,7 +59,22 @@ public final class ScenePresenter {
                 dialogueRows,
                 statusRows,
                 effectPreviews,
-                selectedChoiceIds);
+                selectedChoiceIds,
+                rollbackAvailable,
+                rollForwardAvailable,
+                rollbackFixed,
+                rollbackBlockedReason);
+    }
+
+    private String rollbackBlockedReason(SceneCheckpointLog checkpointLog, boolean rollbackAvailable) {
+        if (checkpointLog == null || rollbackAvailable) {
+            return null;
+        }
+        SceneCheckpoint currentCheckpoint = checkpointLog.currentCheckpoint();
+        if (currentCheckpoint == null || !currentCheckpoint.rollbackBlocked()) {
+            return null;
+        }
+        return "Rollback is blocked at this checkpoint.";
     }
 
     private List<SceneStatusRowViewModel> statusRows(SceneExecutionResult result, SceneStep step, List<String> selectedChoiceIds) {

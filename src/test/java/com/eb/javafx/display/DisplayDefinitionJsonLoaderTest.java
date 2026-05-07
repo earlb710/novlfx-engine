@@ -36,6 +36,77 @@ final class DisplayDefinitionJsonLoaderTest {
     }
 
     @Test
+    void loadsStructuredAndScriptedAnimationsFromJson() {
+        ImageDisplayRegistry registry = new ImageDisplayRegistry();
+
+        DisplayDefinitionJsonLoader.loadInto("""
+                {
+                  "animations": [
+                    {
+                      "id": "speaker.fade",
+                      "repeatCount": 2,
+                      "autoReverse": true,
+                      "script": [
+                        "pause 100",
+                        "fade 200 opacity 0.5 ease_out"
+                      ]
+                    },
+                    {
+                      "id": "speaker.step",
+                      "steps": [
+                        {
+                          "durationMillis": 300,
+                          "pauseBeforeMillis": 25,
+                          "targetOpacity": 0.8,
+                          "targetScaleX": 1.1,
+                          "targetScaleY": 1.2,
+                          "targetTranslateX": 4,
+                          "targetTranslateY": -2,
+                          "targetRotate": 30,
+                          "targetClipX": 1,
+                          "targetClipY": 2,
+                          "targetClipWidth": 30,
+                          "targetClipHeight": 40,
+                          "targetViewportX": 5,
+                          "targetViewportY": 6,
+                          "targetViewportWidth": 70,
+                          "targetViewportHeight": 80,
+                          "targetBlurRadius": 8,
+                          "targetDropShadowRadius": 5,
+                          "targetDropShadowOffsetX": 2,
+                          "targetDropShadowOffsetY": -3,
+                          "targetColorAdjustHue": 0.1,
+                          "targetColorAdjustSaturation": 0.2,
+                          "targetColorAdjustBrightness": -0.1,
+                          "targetColorAdjustContrast": 0.3,
+                          "interpolation": "ease_both"
+                        }
+                      ]
+                    }
+                  ],
+                  "animationScripts": [
+                    "animation speaker.slide\\nmove 150 translateX 8 translateY 0 linear\\nend"
+                  ]
+                }
+                """, "test-display.json", registry);
+
+        assertEquals(3, registry.animations().size());
+        assertEquals(2, registry.animation("speaker.fade").repeatCount());
+        assertEquals(true, registry.animation("speaker.fade").autoReverse());
+        assertEquals(100, registry.animation("speaker.fade").steps().get(0).pauseBeforeMillis());
+        assertEquals(0.5, registry.animation("speaker.fade").steps().get(1).targetOpacity());
+        assertEquals(25, registry.animation("speaker.step").steps().get(0).pauseBeforeMillis());
+        assertEquals(30.0, registry.animation("speaker.step").steps().get(0).targetRotate());
+        assertEquals(30.0, registry.animation("speaker.step").steps().get(0).targetClipBounds().width());
+        assertEquals(80.0, registry.animation("speaker.step").steps().get(0).targetViewportBounds().height());
+        assertEquals(8.0, registry.animation("speaker.step").steps().get(0).targetEffects().blurRadius());
+        assertEquals(-3.0, registry.animation("speaker.step").steps().get(0).targetEffects().dropShadowOffsetY());
+        assertEquals(0.3, registry.animation("speaker.step").steps().get(0).targetEffects().colorAdjustContrast());
+        assertEquals(DisplayInterpolation.EASE_BOTH, registry.animation("speaker.step").steps().get(0).interpolation());
+        assertEquals(8.0, registry.animation("speaker.slide").steps().get(0).targetTranslateX());
+    }
+
+    @Test
     void rejectsFractionalIntegerFields() {
         ImageDisplayRegistry registry = new ImageDisplayRegistry();
 
@@ -46,5 +117,22 @@ final class DisplayDefinitionJsonLoaderTest {
                   ]
                 }
                 """, "test-display.json", registry));
+    }
+
+    @Test
+    void rejectsDuplicateAnimationIdsFromJson() {
+        ImageDisplayRegistry registry = new ImageDisplayRegistry();
+
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
+                DisplayDefinitionJsonLoader.loadInto("""
+                        {
+                          "animations": [
+                            {"id": "duplicate", "script": ["pause 1"]},
+                            {"id": "duplicate", "script": ["pause 2"]}
+                          ]
+                        }
+                        """, "test-display.json", registry));
+
+        assertEquals("Duplicate display animation id: duplicate", exception.getMessage());
     }
 }

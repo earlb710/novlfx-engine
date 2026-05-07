@@ -21,6 +21,10 @@ public final class SceneViewModel {
     private final List<SceneStatusRowViewModel> statusRows;
     private final List<SceneEffectPreviewViewModel> effectPreviews;
     private final List<String> selectedChoiceIds;
+    private final boolean rollbackAvailable;
+    private final boolean rollForwardAvailable;
+    private final boolean rollbackFixed;
+    private final String rollbackBlockedReason;
 
     public SceneViewModel(SceneExecutionStatus status, String sceneId, String stepId, String speakerId, String textDefinition, String displayReference, List<SceneChoiceViewModel> choices, String message) {
         this(status, sceneId, stepId, speakerId, textDefinition, displayReference, choices, message, List.of(), List.of(), List.of(), List.of());
@@ -39,6 +43,27 @@ public final class SceneViewModel {
             List<SceneStatusRowViewModel> statusRows,
             List<SceneEffectPreviewViewModel> effectPreviews,
             List<String> selectedChoiceIds) {
+        this(status, sceneId, stepId, speakerId, textDefinition, displayReference, choices, message,
+                dialogueRows, statusRows, effectPreviews, selectedChoiceIds, false, false, false, null);
+    }
+
+    public SceneViewModel(
+            SceneExecutionStatus status,
+            String sceneId,
+            String stepId,
+            String speakerId,
+            String textDefinition,
+            String displayReference,
+            List<SceneChoiceViewModel> choices,
+            String message,
+            List<SceneDialogueRowViewModel> dialogueRows,
+            List<SceneStatusRowViewModel> statusRows,
+            List<SceneEffectPreviewViewModel> effectPreviews,
+            List<String> selectedChoiceIds,
+            boolean rollbackAvailable,
+            boolean rollForwardAvailable,
+            boolean rollbackFixed,
+            String rollbackBlockedReason) {
         this.status = status;
         this.sceneId = sceneId;
         this.stepId = stepId;
@@ -51,6 +76,10 @@ public final class SceneViewModel {
         this.statusRows = List.copyOf(statusRows);
         this.effectPreviews = List.copyOf(effectPreviews);
         this.selectedChoiceIds = List.copyOf(selectedChoiceIds);
+        this.rollbackAvailable = rollbackAvailable;
+        this.rollForwardAvailable = rollForwardAvailable;
+        this.rollbackFixed = rollbackFixed;
+        this.rollbackBlockedReason = rollbackBlockedReason;
     }
 
     public SceneExecutionStatus status() {
@@ -99,5 +128,21 @@ public final class SceneViewModel {
 
     public List<String> selectedChoiceIds() {
         return selectedChoiceIds;
+    }
+
+    public boolean rollbackAvailable() {
+        return rollbackAvailable;
+    }
+
+    public boolean rollForwardAvailable() {
+        return rollForwardAvailable;
+    }
+
+    public boolean rollbackFixed() {
+        return rollbackFixed;
+    }
+
+    public String rollbackBlockedReason() {
+        return rollbackBlockedReason;
     }
 }

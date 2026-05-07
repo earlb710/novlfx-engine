@@ -475,13 +475,32 @@ Use `ImageDisplayRegistry` as the central registry for reusable visual definitio
 - `DisplayLayer` values for render ordering
 - `DisplayTransform` values for placement, scale, opacity, and other reusable transform data
 - `LayeredCharacterDefinition` values for composed character displays
-- `DisplayAnimation` and `DisplayAnimationStep` definitions
+- `DisplayAnimation` and `DisplayAnimationStep` definitions, including authored ATL-style animation scripts
 
 Use `DisplayAnimationPlayer` to model animation playback state and interpolation. `DisplayInterpolation` identifies supported interpolation behavior.
 
+Authored animations can be loaded from display JSON through the `animations` root field. Each animation has a stable `id`, optional `repeatCount` (`1` by default or `"indefinite"`), optional `autoReverse`, and either explicit `steps` or a compact `script`. Script commands are line-oriented data only; they do not evaluate application code, filesystem paths, callbacks, or expressions. Supported commands are:
+
+- `pause <durationMillis>`
+- `fade <durationMillis> opacity <0..1> [linear|ease_in|ease_out|ease_both|discrete]`
+- `move <durationMillis> translateX <x> translateY <y> [interpolation]`
+- `scale <durationMillis> <uniformScale> [interpolation]`
+- `scale <durationMillis> scaleX <x> scaleY <y> [interpolation]`
+- `rotate <durationMillis> <degrees> [interpolation]`
+- `rotate <durationMillis> rotate <degrees> [interpolation]`
+- `clip <durationMillis> x <x> y <y> width <width> height <height> [interpolation]`
+- `viewport <durationMillis> x <x> y <y> width <width> height <height> [interpolation]` for `ImageView` nodes
+- `blur <durationMillis> <radius> [interpolation]`
+- `blur <durationMillis> radius <radius> [interpolation]`
+- `dropShadow <durationMillis> radius <radius> offsetX <x> offsetY <y> [interpolation]`
+- `colorAdjust <durationMillis> [hue <-1..1>] [saturation <-1..1>] [brightness <-1..1>] [contrast <-1..1>] [interpolation]`
+- `step <durationMillis> [pauseBefore <millis>] [opacity <0..1>] [scaleX <x>] [scaleY <y>] [translateX <x>] [translateY <y>] [rotate <degrees>] [clipX <x>] [clipY <y>] [clipWidth <width>] [clipHeight <height>] [viewportX <x>] [viewportY <y>] [viewportWidth <width>] [viewportHeight <height>] [blurRadius <radius>] [shadowRadius <radius>] [shadowOffsetX <x>] [shadowOffsetY <y>] [hue <-1..1>] [saturation <-1..1>] [brightness <-1..1>] [contrast <-1..1>] [interpolation]`
+
+Standalone script resources can also be supplied through `animationScripts`, where each block starts with `animation <id>`, can include `repeat <count|indefinite>` and `autoreverse <true|false>`, and ends with `end`. The reusable JavaFX player also has room for capabilities that are not exposed in this ATL subset yet, including blend modes, cache/rendering hints, transform origins/pivots, 3D rotation axes and depth transforms, path motion, custom timelines, and event/callback hooks. Advanced Ren'Py ATL features such as arbitrary Python expressions, conditional blocks, events, callbacks, parallel composition, anchor math, and custom warpers are intentionally outside this reusable engine boundary for now.
+
 The registry can resolve image paths from a checked-out game tree through `GameAssetLocator`, but concrete image assets remain application-owned.
 
-Use `DisplayDefinitionJsonLoader` to load app-owned display JSON into an `ImageDisplayRegistry`, or wrap that loading in `JsonDisplayContentModule` for bootstrap registration. The supported root fields are `transforms`, `images`, and `layeredCharacters`; authored image files and IDs remain outside the engine. Applications can store this JSON path under a named `ApplicationResourceConfig` resource such as `displayDefinitions`.
+Use `DisplayDefinitionJsonLoader` to load app-owned display JSON into an `ImageDisplayRegistry`, or wrap that loading in `JsonDisplayContentModule` for bootstrap registration. The supported root fields are `transforms`, `images`, `layeredCharacters`, `animations`, and `animationScripts`; authored image files and IDs remain outside the engine. Applications can store this JSON path under a named `ApplicationResourceConfig` resource such as `displayDefinitions`.
 
 Example/demo code: [`examples/user-manual/07-display-support/display-definitions.demo.json`](../examples/user-manual/07-display-support/display-definitions.demo.json)
 
@@ -588,7 +607,7 @@ Use `GameStateFactory` to create base `GameState` instances. `GameState` current
 
 Use `SaveLoadService` for reusable save-slot workflows. It supports slot summaries and JSON persistence behavior suitable for engine-level tests and extension by application code. `SaveLoadSummaryScreen` and `SaveLoadSummaryViewModel` expose the current save schema version and configured save directory as reusable diagnostic UI data. Use `SaveSnapshotCodec` and `SaveSnapshotSection` when an application wants to compose engine-owned state slices, such as scene-flow progress, into its own save document; the application still owns the outer save schema and any project-specific state fields.
 
-Use `ReusableGameplaySnapshot` and `ReusableGameplaySnapshotDocuments` for the reusable vertical-slice save contract: scene-flow state, game time, generic progress, inventory, wardrobe, character state, journal/quest state, and location occupancy. The helper validates those required engine-owned sections while preserving additional application-owned sections for AltLife or other ports. Snapshot values such as `InventorySnapshot`, `WardrobeSnapshot`, `CharacterStatesSnapshot`, `JournalSnapshot`, and `LocationOccupancySnapshot` expose hydration helpers that rebuild the matching mutable engine state after an application validates its outer save document.
+Use `ReusableGameplaySnapshot` and `ReusableGameplaySnapshotDocuments` for the reusable vertical-slice save contract: scene-flow state, scene checkpoint history, game time, generic progress, inventory, wardrobe, character state, journal/quest state, and location occupancy. The helper validates those required engine-owned sections while preserving additional application-owned sections for AltLife or other ports. Snapshot values such as `InventorySnapshot`, `WardrobeSnapshot`, `CharacterStatesSnapshot`, `JournalSnapshot`, and `LocationOccupancySnapshot` expose hydration helpers that rebuild the matching mutable engine state after an application validates its outer save document.
 
 `SaveLoadService.SaveSchema` reports the current save schema version and directory, while `SaveLoadService.SaveSlotSummary` summarizes one slot number and whether it currently has data. Use `SaveSnapshotRegistry` to register required or optional snapshot sections and validate composed `SaveSnapshotDocument` objects. If an application needs to load older section payloads, register a `SaveSnapshotSectionMigration` so the registry can migrate sections to the current version during compose/decompose.
 

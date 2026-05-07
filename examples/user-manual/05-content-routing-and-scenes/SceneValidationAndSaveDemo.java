@@ -1,5 +1,6 @@
 import com.eb.javafx.save.SaveSnapshotDocument;
 import com.eb.javafx.save.SaveSnapshotSection;
+import com.eb.javafx.scene.SceneCheckpointLog;
 import com.eb.javafx.scene.SceneDefinition;
 import com.eb.javafx.scene.SceneFlowSnapshotDocuments;
 import com.eb.javafx.scene.SceneFlowState;
@@ -32,9 +33,10 @@ public final class SceneValidationAndSaveDemo {
 
         SceneFlowState state = new SceneFlowState("intro", 1,
                 List.of(new SceneReturnPoint("menu", 0)), List.of(), null);
-        SaveSnapshotDocument document = SceneFlowSnapshotDocuments.compose(state, List.of(
+        SaveSnapshotDocument document = SceneFlowSnapshotDocuments.compose(state, SceneCheckpointLog.empty(), List.of(
                 new SaveSnapshotSection("appPreview", 1, "{\"label\":\"Demo\"}")));
         System.out.println("Sections: " + document.sections().size());
         System.out.println("Restored scene: " + SceneFlowSnapshotDocuments.restore(document).activeSceneId());
+        System.out.println("Restored checkpoints: " + SceneFlowSnapshotDocuments.restoreCheckpointLog(document).checkpoints().size());
     }
 }

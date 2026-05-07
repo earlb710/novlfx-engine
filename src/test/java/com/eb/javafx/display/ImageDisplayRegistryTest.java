@@ -2,6 +2,8 @@ package com.eb.javafx.display;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -60,5 +62,21 @@ final class ImageDisplayRegistryTest {
                 new LayeredCharacterDefinition("bad", java.util.List.of(), null, java.util.Map.of()));
 
         assertEquals("Layered display draw order is required.", exception.getMessage());
+    }
+
+    @Test
+    void animationRegistrationRejectsDuplicateIds() {
+        ImageDisplayRegistry registry = new ImageDisplayRegistry();
+        DisplayAnimation animation = new DisplayAnimation(
+                "same",
+                List.of(new DisplayAnimationStep(1, 0, 1.0, 1.0, 1.0, 0.0, 0.0, DisplayInterpolation.LINEAR)),
+                1,
+                false);
+
+        registry.registerAnimation(animation);
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
+                registry.registerAnimation(animation));
+
+        assertEquals("Duplicate display animation id: same", exception.getMessage());
     }
 }

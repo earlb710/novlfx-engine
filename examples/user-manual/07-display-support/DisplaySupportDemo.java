@@ -3,8 +3,6 @@ import com.eb.javafx.content.ContentRegistry;
 import com.eb.javafx.content.JsonDisplayContentModule;
 import com.eb.javafx.display.DisplayAnimation;
 import com.eb.javafx.display.DisplayAnimationPlayer;
-import com.eb.javafx.display.DisplayAnimationStep;
-import com.eb.javafx.display.DisplayInterpolation;
 import com.eb.javafx.display.GameAssetLocator;
 import com.eb.javafx.display.ImageDisplayRegistry;
 import com.eb.javafx.util.PathUtils;
@@ -12,10 +10,9 @@ import com.eb.javafx.util.PathUtils;
 import javafx.animation.Animation;
 
 import java.nio.file.Path;
-import java.util.List;
 
 /**
- * Demonstrates loading display definitions, resolving image metadata, and registering an animation definition.
+ * Demonstrates loading display definitions, resolving image metadata, and using an authored animation definition.
  *
  * <p>Expected output prints display IDs, image lookup details, asset resolution state, and animation timing data.</p>
  */
@@ -40,14 +37,6 @@ public final class DisplaySupportDemo {
         JsonDisplayContentModule displayModule = new JsonDisplayContentModule(definitionsPath);
         displayModule.register(contentRegistry, imageDisplayRegistry);
         displayModule.validate(contentRegistry, imageDisplayRegistry);
-
-        imageDisplayRegistry.registerAnimation(new DisplayAnimation(
-                "hero.bob",
-                List.of(
-                        new DisplayAnimationStep(180, 0, 1.0, 1.0, 1.0, 0.0, -8.0, DisplayInterpolation.EASE_OUT),
-                        new DisplayAnimationStep(180, 0, 1.0, 1.0, 1.0, 0.0, 0.0, DisplayInterpolation.EASE_BOTH)),
-                2,
-                true));
 
         GameAssetLocator assetLocator = new GameAssetLocator(repoRoot, imageAssetRoot);
         DisplayAnimation bobAnimation = imageDisplayRegistry.animation("hero.bob");

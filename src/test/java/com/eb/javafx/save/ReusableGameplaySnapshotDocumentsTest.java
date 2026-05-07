@@ -3,9 +3,14 @@ package com.eb.javafx.save;
 import com.eb.javafx.gamesupport.GameDateTime;
 import com.eb.javafx.progress.ProgressSnapshot;
 import com.eb.javafx.progress.ProgressSnapshotCodec;
+import com.eb.javafx.scene.SceneCheckpoint;
+import com.eb.javafx.scene.SceneCheckpointLog;
+import com.eb.javafx.scene.SceneCheckpointLogJson;
+import com.eb.javafx.scene.SceneCheckpointPayload;
 import com.eb.javafx.scene.SceneFlowState;
 import com.eb.javafx.scene.SceneFlowStateJson;
 import com.eb.javafx.scene.SceneReturnPoint;
+import com.eb.javafx.scene.SceneStepType;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -19,8 +24,27 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 final class ReusableGameplaySnapshotDocumentsTest {
     @Test
     void composesAndRestoresReusableGameplaySlicesWithAppOwnedSections() {
+        SceneFlowState sceneFlowState = new SceneFlowState(
+                "intro",
+                2,
+                List.of(new SceneReturnPoint("caller", 1)),
+                List.of("choice.accept"),
+                null);
+        SceneCheckpointLog checkpointLog = new SceneCheckpointLog(List.of(
+                new SceneCheckpoint(
+                        0,
+                        sceneFlowState,
+                        "intro",
+                        2,
+                        "choice",
+                        SceneStepType.CHOICE,
+                        SceneCheckpointPayload.choiceSelection("choice.accept", "choice.accept"),
+                        false,
+                        false,
+                        Map.of("source", "test"))), 0, -1, false);
         ReusableGameplaySnapshot snapshot = new ReusableGameplaySnapshot(
-                new SceneFlowState("intro", 2, List.of(new SceneReturnPoint("caller", 1)), List.of("choice.accept"), null),
+                sceneFlowState,
+                checkpointLog,
                 new GameDateTime(3, "evening"),
                 new ProgressSnapshot(Set.of("met.character"), Map.of("trust", 2), Set.of("intro.done"), Set.of("route.office")),
                 new InventorySnapshot(Map.of("keycard", 1)),
@@ -39,6 +63,7 @@ final class ReusableGameplaySnapshotDocumentsTest {
                 new SaveSnapshotSection("appState", 1, "{\"domain\":\"owned-by-app\"}")));
 
         assertTrue(document.section(SceneFlowStateJson.SNAPSHOT_SECTION_ID).isPresent());
+        assertTrue(document.section(SceneCheckpointLogJson.SNAPSHOT_SECTION_ID).isPresent());
         assertTrue(document.section(ProgressSnapshotCodec.SECTION_ID).isPresent());
         assertTrue(document.section(InventorySnapshotCodec.SECTION_ID).isPresent());
         assertTrue(document.section(WardrobeSnapshotCodec.SECTION_ID).isPresent());
@@ -50,6 +75,8 @@ final class ReusableGameplaySnapshotDocumentsTest {
         ReusableGameplaySnapshot restored = ReusableGameplaySnapshotDocuments.restore(document);
         assertEquals("intro", restored.sceneFlowState().activeSceneId());
         assertEquals(2, restored.sceneFlowState().stepIndex());
+        assertEquals(1, restored.sceneCheckpointLog().checkpoints().size());
+        assertEquals("choice.accept", restored.sceneCheckpointLog().currentCheckpoint().payload().choiceId());
         assertEquals(3, restored.gameTime().day());
         assertEquals("evening", restored.gameTime().timeSlotId());
         assertTrue(restored.progress().flags().contains("met.character"));
@@ -80,11 +107,29 @@ final class ReusableGameplaySnapshotDocumentsTest {
         SaveSnapshotDocument document = ReusableGameplaySnapshotDocuments.compose(snapshot, List.of());
         ReusableGameplaySnapshot restored = ReusableGameplaySnapshotDocuments.restore(document);
 
+        assertTrue(document.section(SceneCheckpointLogJson.SNAPSHOT_SECTION_ID).isPresent());
+        assertTrue(restored.sceneCheckpointLog().checkpoints().isEmpty());
         assertTrue(restored.inventory().quantities().isEmpty());
         assertTrue(restored.wardrobe().unlockedWearableIds().isEmpty());
         assertTrue(restored.characters().characters().isEmpty());
         assertTrue(restored.journal().unlockedEntryIds().isEmpty());
         assertTrue(restored.locationOccupancy().characterLocations().isEmpty());
+    }
+
+    @Test
+    void restoreDefaultsMissingCheckpointSectionToEmptyLogForOlderSaves() {
+        ReusableGameplaySnapshot snapshot = new ReusableGameplaySnapshot(
+                new SceneFlowState("intro", 0, List.of(), List.of(), null),
+                new GameDateTime(1, "morning"),
+                new ProgressSnapshot(Set.of(), Map.of(), Set.of(), Set.of()));
+        SaveSnapshotDocument currentDocument = ReusableGameplaySnapshotDocuments.compose(snapshot, List.of());
+        SaveSnapshotDocument olderDocument = new SaveSnapshotDocument(currentDocument.sections().stream()
+                .filter(section -> !SceneCheckpointLogJson.SNAPSHOT_SECTION_ID.equals(section.sectionId()))
+                .toList());
+
+        ReusableGameplaySnapshot restored = ReusableGameplaySnapshotDocuments.restore(olderDocument);
+
+        assertTrue(restored.sceneCheckpointLog().checkpoints().isEmpty());
     }
 
     @Test
