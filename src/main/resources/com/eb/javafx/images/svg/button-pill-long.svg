@@ -17,21 +17,21 @@
       <stop style="stop-color:#0f4f9f;stop-opacity:1;" offset="0.55" id="stop2" />
       <stop style="stop-color:#052f6f;stop-opacity:1;" offset="1" id="stop3" />
     </linearGradient>
-     <linearGradient
-        inkscape:collect="always"
-        xlink:href="#buttonPillGradient"
-        id="buttonPillFill"
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#buttonPillGradient"
+       id="buttonPillFill"
        x1="200"
        y1="0"
        x2="200"
-        y2="150"
-        gradientUnits="userSpaceOnUse" />
+       y2="150"
+       gradientUnits="userSpaceOnUse" />
     <filter id="buttonPillSoftEdge" x="-1%" y="-3%" width="102%" height="106%">
       <feGaussianBlur stdDeviation="0.35" />
     </filter>
-   </defs>
-   <path
-      style="fill:url(#buttonPillFill);stroke-width:1;filter:url(#buttonPillSoftEdge)"
-      d="M 75,150 H 325 A 75,75 0 0 0 325,0 H 75 A 75,75 0 0 0 75,150 Z"
-      id="button-shape-long" />
+  </defs>
+  <path
+     style="fill:url(#buttonPillFill);stroke-width:1;filter:url(#buttonPillSoftEdge)"
+     d="M 75,150 H 325 A 75,75 0 0 0 325,0 H 75 A 75,75 0 0 0 75,150 Z"
+     id="button-shape-long" />
 </svg>
