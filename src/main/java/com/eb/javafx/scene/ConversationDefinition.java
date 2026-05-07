@@ -5,6 +5,7 @@ import com.eb.javafx.util.UtilString;
 
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 
 /**
  * Data-only authored conversation document using the AltLife exported JSON shape.
@@ -160,6 +161,36 @@ public final class ConversationDefinition {
                         checkedConditionVariables);
             }
             return checkedConditions;
+        }
+
+        @Override
+        public boolean equals(Object object) {
+            if (this == object) {
+                return true;
+            }
+            if (!(object instanceof ConversationVariant other)) {
+                return false;
+            }
+            return Double.compare(weight, other.weight) == 0
+                    && text.equals(other.text)
+                    && value.equals(other.value)
+                    && conditions.equals(other.conditions)
+                    && tooltipText.equals(other.tooltipText);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(text, value, weight, conditions, tooltipText);
+        }
+
+        @Override
+        public String toString() {
+            return "ConversationVariant[text=" + text
+                    + ", value=" + value
+                    + ", weight=" + weight
+                    + ", conditions=" + conditions
+                    + ", tooltipText=" + tooltipText
+                    + "]";
         }
     }
 }

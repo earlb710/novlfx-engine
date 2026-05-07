@@ -74,6 +74,10 @@ public final class ConversationConditionVariables {
         if (!VARIABLE_NAME_PATTERN.matcher(checkedVariableName).matches()) {
             throw new IllegalArgumentException("Invalid conversation application variable name: " + checkedVariableName);
         }
+        if (ConversationConditionSyntax.variableNames().contains(checkedVariableName)) {
+            throw new IllegalArgumentException("Conversation application variable conflicts with a fixed variable name: "
+                    + checkedVariableName);
+        }
         return checkedVariableName;
     }
 }

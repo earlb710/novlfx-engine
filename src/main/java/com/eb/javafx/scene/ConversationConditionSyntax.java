@@ -5,7 +5,7 @@ import com.eb.javafx.util.Validation;
 import java.util.Comparator;
 import java.util.Set;
 
-/** Validates authored conversation condition strings and their fixed variable references. */
+/** Validates authored conversation condition strings and their declared variable references. */
 public final class ConversationConditionSyntax {
     private static final Set<String> VARIABLE_NAMES = Set.of(
             "conversation.id",
@@ -95,7 +95,7 @@ public final class ConversationConditionSyntax {
             }
             String variableName = condition.substring(nameStart + 1, nameEnd);
             validateVariableName(variableName, description, variables);
-            return new VariableReference(variableName, markerIndex, nameEnd + 1, condition.substring(markerIndex, nameEnd + 1));
+            return new VariableReference(variableName, nameEnd + 1, condition.substring(markerIndex, nameEnd + 1));
         }
         // Match longer unbraced variable names before shorter aliases, e.g. line.speaker before speaker.
         String variableName = variables.declaredVariableNames().stream()
@@ -106,7 +106,7 @@ public final class ConversationConditionSyntax {
                 .orElseThrow(() -> new IllegalArgumentException(description
                         + " references an unknown conversation variable near: "
                         + condition.substring(markerIndex)));
-        return new VariableReference(variableName, markerIndex, nameStart + variableName.length(),
+        return new VariableReference(variableName, nameStart + variableName.length(),
                 condition.substring(markerIndex, nameStart + variableName.length()));
     }
 
@@ -127,6 +127,6 @@ public final class ConversationConditionSyntax {
         }
     }
 
-    private record VariableReference(String name, int startIndex, int endIndex, String sourceText) {
+    private record VariableReference(String name, int endIndex, String sourceText) {
     }
 }
