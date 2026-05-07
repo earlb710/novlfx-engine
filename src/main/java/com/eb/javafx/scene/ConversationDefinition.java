@@ -99,6 +99,7 @@ public final class ConversationDefinition {
         }
     }
 
+    /** Immutable variant class with constructor-specific condition variable validation. */
     public static final class ConversationVariant {
         private final String text;
         private final String value;
