@@ -45,6 +45,7 @@ public final class ButtonVisuals {
     private static final double BUTTON_ARTWORK_HORIZONTAL_PADDING = 36;
     private static final double BUTTON_ARTWORK_VERTICAL_PADDING = 16;
     private static final double BUTTON_ARTWORK_FONT_SIZE = 20;
+    // Compensates for the rasterized SVG text appearing slightly right and low.
     private static final double BUTTON_ARTWORK_LABEL_OFFSET_X = -2;
     private static final double BUTTON_ARTWORK_LABEL_OFFSET_Y = -2;
     private static final double BUTTON_ARTWORK_SOURCE_WIDTH = 400;

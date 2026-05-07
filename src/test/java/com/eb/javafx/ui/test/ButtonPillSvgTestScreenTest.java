@@ -68,6 +68,8 @@ final class ButtonPillSvgTestScreenTest {
         assertTrue(bevelSvg.contains("button-shape-bevel"));
         assertTrue(longSvg.contains("buttonPillSoftEdge"));
         assertTrue(bevelSvg.contains("buttonBevelSoftEdge"));
+        assertTrue(longSvg.contains("filter:url(#buttonPillSoftEdge)"));
+        assertTrue(bevelSvg.contains("filter:url(#buttonBevelSoftEdge)"));
         assertTrue(longSvg.contains("stdDeviation=\"0.35\""));
         assertTrue(bevelSvg.contains("stdDeviation=\"0.35\""));
     }
