@@ -26,6 +26,7 @@ public final class ScreenDesignLayoutAdapter {
     static final String EVENT_NAME_KEY = "eventName";
     static final String ACTION_EVENT_KEY = "actionEvent";
     static final String ACTION_VALUE_KEY = "actionValue";
+    // Matches $name and ${name}; names may contain letters, numbers, underscore, dot, or hyphen after the first letter.
     private static final Pattern BINDING_PATTERN = Pattern.compile("\\$\\{?([A-Za-z][A-Za-z0-9_.-]*)}?");
 
     private ScreenDesignLayoutAdapter() {

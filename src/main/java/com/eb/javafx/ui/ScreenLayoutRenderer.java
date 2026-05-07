@@ -221,13 +221,6 @@ public final class ScreenLayoutRenderer {
         }
     }
 
-    private static void applyLineStyle(Label label, Map<String, String> metadata) {
-        String style = lineStyle(metadata);
-        if (!style.isEmpty()) {
-            label.setStyle(style);
-        }
-    }
-
     private static void applyContainerStyle(javafx.scene.layout.Region region, Map<String, String> metadata) {
         String style = containerStyle(metadata);
         if (!style.isEmpty()) {
