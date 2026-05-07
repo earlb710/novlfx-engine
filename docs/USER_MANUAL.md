@@ -69,7 +69,12 @@ Each line has `speaker`, `listener`, optional `type`, and one or more `variants`
 - `whisper`: converts the selected variant text to lowercase, escapes authored text, and wraps it in `<i></i>`.
 - `choice`: treats each variant as a player-selectable choice. Each choice variant can carry its own `value`; if `value` is empty or omitted, the runtime projection uses the zero-based variant index as the choice value. A variant can also carry its own `conditions` array; the editor builds each condition from a condition type such as `context` or `time of day`, the `=` operand, and a selected value, then stores it as a compact string such as `context=has_key` or `time of day=evening`. The runtime projection stores the choice value and those conditions with the generated scene choice metadata.
 
-Condition values can reference fixed conversation variables with `$name` or `${name}` syntax. Supported variables include `conversation.id`, `conversation.name`, `conversation.language`, `line.speaker`, `line.listener`, `line.type`, `variant.text`, `variant.value`, `variant.weight`, `variant.tooltipText`, `choice.text`, `choice.value`, and `choice.tooltipText`; malformed or unknown `$` variables are rejected when JSON is loaded.
+Condition values can reference fixed conversation variables with `$name` or `${name}` syntax. Use `${name}` when adding suffix text immediately after the variable. Malformed or unknown `$` variables are rejected when JSON is loaded. Supported variables are:
+
+- `conversation.id`, `conversation.name`, `conversation.language`
+- `line.speaker`, `line.listener`, `line.type`
+- `variant.text`, `variant.value`, `variant.weight`, `variant.tooltipText`
+- `choice.text`, `choice.value`, `choice.tooltipText`
 
 Example choice line:
 

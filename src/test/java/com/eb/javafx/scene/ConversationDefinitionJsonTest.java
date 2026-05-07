@@ -238,6 +238,8 @@ final class ConversationDefinitionJsonTest {
 
         assertThrows(IllegalArgumentException.class,
                 () -> ConversationDefinitionJson.fromJson(json, "bad variable conditions"));
+        assertThrows(IllegalArgumentException.class,
+                () -> new ConversationVariant("Ask", 1.0, List.of("context=$text_value")));
     }
 
     @Test

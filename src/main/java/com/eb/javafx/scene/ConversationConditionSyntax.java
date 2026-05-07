@@ -29,6 +29,7 @@ public final class ConversationConditionSyntax {
             "value",
             "weight",
             "tooltipText");
+    // Match longer unbraced variable names before shorter aliases, e.g. line.speaker before speaker.
     private static final List<String> VARIABLE_NAMES_BY_LENGTH = VARIABLE_NAMES.stream()
             .sorted(Comparator.comparingInt(String::length).reversed())
             .toList();
@@ -68,12 +69,21 @@ public final class ConversationConditionSyntax {
             return nameEnd + 1;
         }
         String variableName = VARIABLE_NAMES_BY_LENGTH.stream()
-                .filter(name -> condition.startsWith(name, nameStart))
+                .filter(name -> condition.startsWith(name, nameStart)
+                        && isVariableBoundary(condition, nameStart + name.length()))
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException(description
                         + " references an unknown conversation variable near: "
                         + condition.substring(markerIndex)));
         return nameStart + variableName.length();
+    }
+
+    private static boolean isVariableBoundary(String condition, int index) {
+        if (index >= condition.length()) {
+            return true;
+        }
+        char next = condition.charAt(index);
+        return !Character.isLetterOrDigit(next) && next != '_' && next != '.' && next != '-';
     }
 
     private static void validateVariableName(String variableName, String description) {
