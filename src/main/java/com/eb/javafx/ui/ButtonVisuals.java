@@ -29,11 +29,14 @@ import java.util.regex.Pattern;
  * Shared button visual defaults for routed and test screens.
  */
 public final class ButtonVisuals {
-    public static final String BUTTON_SHAPE_RESOURCE = "/com/eb/javafx/images/svg/button-pill.svg";
+    public static final String BUTTON_SHORT_ARTWORK_RESOURCE = "/com/eb/javafx/images/svg/button-pill-short.svg";
+    public static final String BUTTON_NORMAL_ARTWORK_RESOURCE = "/com/eb/javafx/images/svg/button-pill-normal.svg";
     public static final String BUTTON_LONG_ARTWORK_RESOURCE = "/com/eb/javafx/images/svg/button-pill-long.svg";
+    public static final String BUTTON_SHAPE_RESOURCE = BUTTON_NORMAL_ARTWORK_RESOURCE;
     public static final String BUTTON_STYLE_CLASS = "svg-button";
     public static final String BUTTON_ARTWORK_STYLE_CLASS = "svg-button-artwork";
     public static final String BUTTON_ARTWORK_TEXT_STYLE_CLASS = "svg-button-artwork-text";
+    public static final double BUTTON_SHORT_ARTWORK_WIDTH = 120;
     public static final double BUTTON_ARTWORK_WIDTH = 180;
     public static final double BUTTON_ARTWORK_HEIGHT = 48;
     private static final double BUTTON_ARTWORK_MIN_WIDTH = 48;
@@ -58,7 +61,8 @@ public final class ButtonVisuals {
     private static final Pattern SVG_TAG_PATTERN = Pattern.compile("<svg\\b(?![^>]*\\bpreserveAspectRatio\\s*=)", Pattern.CASE_INSENSITIVE);
     private static final System.Logger LOGGER = System.getLogger(ButtonVisuals.class.getName());
     private static final String SHAPE_PATH = loadShapePath();
-    private static final ArtworkResource SHORT_ARTWORK = loadArtworkResource(BUTTON_SHAPE_RESOURCE);
+    private static final ArtworkResource SHORT_ARTWORK = loadArtworkResource(BUTTON_SHORT_ARTWORK_RESOURCE);
+    private static final ArtworkResource NORMAL_ARTWORK = loadArtworkResource(BUTTON_NORMAL_ARTWORK_RESOURCE);
     private static final ArtworkResource LONG_ARTWORK = loadArtworkResource(BUTTON_LONG_ARTWORK_RESOURCE);
     private static final Map<RasterSize, Image> RASTER_CACHE = new LinkedHashMap<>(16, 0.75f, true) {
         @Override
@@ -119,7 +123,7 @@ public final class ButtonVisuals {
     }
 
     public static String buttonArtworkResourceUrl() {
-        return SHORT_ARTWORK.url();
+        return NORMAL_ARTWORK.url();
     }
 
     public static String buttonArtworkResourceUrl(String text, double width, double height) {
@@ -128,6 +132,10 @@ public final class ButtonVisuals {
 
     public static boolean usesLongArtwork(String text, double width, double height) {
         return selectArtworkResource(text, width, height) == LONG_ARTWORK;
+    }
+
+    public static boolean usesShortArtwork(String text, double width, double height) {
+        return selectArtworkResource(text, width, height) == SHORT_ARTWORK;
     }
 
     public static SVGPath createShape() {
@@ -238,7 +246,10 @@ public final class ButtonVisuals {
     }
 
     private static ArtworkResource selectArtworkResource(String text, double width, double height) {
-        return usesLongArtworkInternal(text, width, height) ? LONG_ARTWORK : SHORT_ARTWORK;
+        if (usesLongArtworkInternal(text, width, height)) {
+            return LONG_ARTWORK;
+        }
+        return usesShortArtworkInternal(text, width) ? SHORT_ARTWORK : NORMAL_ARTWORK;
     }
 
     private static boolean usesLongArtworkInternal(String text, double width, double height) {
@@ -255,6 +266,18 @@ public final class ButtonVisuals {
         probe.setFont(Font.font(Font.getDefault().getFamily(), FontWeight.BOLD, BUTTON_ARTWORK_FONT_SIZE));
         double preferredWidth = Math.ceil(probe.getLayoutBounds().getWidth() + BUTTON_ARTWORK_HORIZONTAL_PADDING);
         return preferredWidth > BUTTON_ARTWORK_WIDTH;
+    }
+
+    private static boolean usesShortArtworkInternal(String text, double width) {
+        double fixedWidth = positiveSizeOrUnset(width);
+        if (fixedWidth > 0) {
+            return fixedWidth <= BUTTON_SHORT_ARTWORK_WIDTH;
+        }
+        String buttonText = text == null ? "" : text;
+        Text probe = new Text(buttonText);
+        probe.setFont(Font.font(Font.getDefault().getFamily(), FontWeight.BOLD, BUTTON_ARTWORK_FONT_SIZE));
+        double preferredWidth = Math.ceil(probe.getLayoutBounds().getWidth() + BUTTON_ARTWORK_HORIZONTAL_PADDING);
+        return preferredWidth <= BUTTON_SHORT_ARTWORK_WIDTH;
     }
 
     private static double positiveSizeOrUnset(double size) {

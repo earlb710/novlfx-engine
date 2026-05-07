@@ -31,9 +31,9 @@ final class ButtonPillSvgTestScreenTest {
 
     @Test
     void exposesExpectedButtonPillScreenCopy() {
-        assertEquals("Use this screen to confirm the shared button-pill.svg shape is visibly applied.",
+        assertEquals("Use this screen to confirm the shared button-pill-normal.svg shape is visibly applied.",
                 ButtonPillSvgTestScreen.DESCRIPTION_TEXT);
-        assertEquals("Buttons below cover text-sized, fixed-width, long-label, and multiline SVG artwork.",
+        assertEquals("Buttons below cover short, normal, fixed-width, long-label, and multiline SVG artwork.",
                 ButtonPillSvgTestScreen.DETAIL_TEXT);
         assertEquals("Short", ButtonPillSvgTestScreen.PRIMARY_LABEL);
         assertEquals("Long dynamic text button", ButtonPillSvgTestScreen.SECONDARY_LABEL);
@@ -46,14 +46,23 @@ final class ButtonPillSvgTestScreenTest {
     @Test
     void buttonPillArtworkUsesPackagedSvgResource() {
         assertTrue(ButtonVisuals.buttonArtworkResourceUrl()
-                .endsWith(ButtonVisuals.BUTTON_SHAPE_RESOURCE.substring(1)));
+                .endsWith(ButtonVisuals.BUTTON_NORMAL_ARTWORK_RESOURCE.substring(1)));
     }
 
     @Test
-    void buttonPillArtworkUsesLongSvgForLongMultilineAndWideButtons() {
+    void buttonPillArtworkSelectsShortNormalAndLongSvgResources() {
+        String normalLabel = "Medium label";
+
+        assertTrue(ButtonVisuals.usesShortArtwork(ButtonPillSvgTestScreen.PRIMARY_LABEL, -1, -1));
+        assertFalse(ButtonVisuals.usesShortArtwork(normalLabel, -1, -1));
         assertTrue(ButtonVisuals.usesLongArtwork(ButtonPillSvgTestScreen.SECONDARY_LABEL, -1, -1));
         assertTrue(ButtonVisuals.usesLongArtwork(ButtonPillSvgTestScreen.MULTILINE_LABEL, -1, -1));
         assertTrue(ButtonVisuals.usesLongArtwork(ButtonPillSvgTestScreen.FIXED_LABEL, 260, 64));
+        assertFalse(ButtonVisuals.usesLongArtwork(normalLabel, -1, -1));
+        assertTrue(ButtonVisuals.buttonArtworkResourceUrl(ButtonPillSvgTestScreen.PRIMARY_LABEL, -1, -1)
+                .endsWith(ButtonVisuals.BUTTON_SHORT_ARTWORK_RESOURCE.substring(1)));
+        assertTrue(ButtonVisuals.buttonArtworkResourceUrl(normalLabel, -1, -1)
+                .endsWith(ButtonVisuals.BUTTON_NORMAL_ARTWORK_RESOURCE.substring(1)));
         assertTrue(ButtonVisuals.buttonArtworkResourceUrl(ButtonPillSvgTestScreen.SECONDARY_LABEL, -1, -1)
                 .endsWith(ButtonVisuals.BUTTON_LONG_ARTWORK_RESOURCE.substring(1)));
         assertFalse(ButtonVisuals.usesLongArtwork(ButtonPillSvgTestScreen.PRIMARY_LABEL, -1, -1));

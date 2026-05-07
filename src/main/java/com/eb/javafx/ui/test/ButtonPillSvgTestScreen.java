@@ -19,9 +19,9 @@ import javafx.scene.layout.VBox;
  */
 public final class ButtonPillSvgTestScreen {
     static final String DESCRIPTION_TEXT =
-            "Use this screen to confirm the shared button-pill.svg shape is visibly applied.";
+            "Use this screen to confirm the shared button-pill-normal.svg shape is visibly applied.";
     static final String DETAIL_TEXT =
-            "Buttons below cover text-sized, fixed-width, long-label, and multiline SVG artwork.";
+            "Buttons below cover short, normal, fixed-width, long-label, and multiline SVG artwork.";
     static final String PRIMARY_LABEL = "Short";
     static final String SECONDARY_LABEL = "Long dynamic text button";
     static final String FIXED_LABEL = "Fixed width";
