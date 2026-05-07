@@ -39,7 +39,7 @@ final class DefaultDisplayValuesApplicationTest {
 
     @Test
     void defaultAppValuesTabsStartWithApplicationAndDisplayValues() {
-        assertEquals(List.of("Application Values", "Display Values", "Default CSS", "Layouts"),
+        assertEquals(List.of("Application Values", "Lookup Variables", "Display Values", "Default CSS", "Layouts"),
                 DefaultDisplayValuesApplication.tabLabels());
     }
 
@@ -100,6 +100,20 @@ final class DefaultDisplayValuesApplicationTest {
     }
 
     @Test
+    void lookupVariablesExposeFieldsTypesAndDefaultRows() {
+        assertEquals(List.of("Name", "Value Type"),
+                DefaultDisplayValuesApplication.lookupVariableFieldLabels());
+        assertEquals(List.of("string", "number", "boolean"),
+                DefaultDisplayValuesApplication.lookupVariableTypeOptions());
+        assertEquals(List.of("Add Variable", "Remove Variable"),
+                DefaultDisplayValuesApplication.lookupVariableRowActionLabels());
+        assertEquals(List.of("Save", "Reset"),
+                DefaultDisplayValuesApplication.lookupVariableActionLabels());
+        assertEquals(List.of(new DefaultDisplayValuesApplication.LookupVariable("", "string")),
+                DefaultDisplayValuesApplication.lookupVariables());
+    }
+
+    @Test
     void applicationVariablesTableModelUsesHelperFields() {
         DefaultTableModel model = DefaultDisplayValuesApplication.applicationVariablesTableModel(List.of(
                 new DefaultDisplayValuesApplication.ApplicationVariable("enabled", "bool", "true", "Feature flag")));
@@ -129,6 +143,19 @@ final class DefaultDisplayValuesApplicationTest {
         assertEquals("conversation", model.getValueAt(0, 0));
         assertEquals("content/conversations", model.getValueAt(0, 1));
         assertEquals("intro.json", model.getValueAt(0, 2));
+    }
+
+    @Test
+    void lookupVariablesTableModelUsesHelperFields() {
+        DefaultTableModel model = DefaultDisplayValuesApplication.lookupVariablesTableModel(List.of(
+                new DefaultDisplayValuesApplication.LookupVariable("money", "number")));
+
+        assertEquals(2, model.getColumnCount());
+        assertEquals("Name", model.getColumnName(0));
+        assertEquals("Value Type", model.getColumnName(1));
+        assertEquals(1, model.getRowCount());
+        assertEquals("money", model.getValueAt(0, 0));
+        assertEquals("number", model.getValueAt(0, 1));
     }
 
     @Test
@@ -170,6 +197,25 @@ final class DefaultDisplayValuesApplicationTest {
     }
 
     @Test
+    void lookupVariablesEditorPanelIsTitledBlock() {
+        JPanel panel = DefaultDisplayValuesApplication.lookupVariablesEditorPanel(
+                DefaultDisplayValuesApplication.lookupVariables());
+
+        assertTrue(panel.getBorder() instanceof TitledBorder);
+        assertEquals("Lookup Variable Catalog", ((TitledBorder) panel.getBorder()).getTitle());
+    }
+
+    @Test
+    void lookupVariablesEditorPanelIncludesAddAndRemoveActionsBelowTable() {
+        JPanel panel = DefaultDisplayValuesApplication.lookupVariablesEditorPanel(
+                DefaultDisplayValuesApplication.lookupVariables());
+        JPanel actions = (JPanel) ((BorderLayout) panel.getLayout()).getLayoutComponent(BorderLayout.SOUTH);
+
+        assertEquals("Add Variable", ((JButton) actions.getComponent(0)).getText());
+        assertEquals("Remove Variable", ((JButton) actions.getComponent(1)).getText());
+    }
+
+    @Test
     void applicationVariableActionsAddDefaultRowsAndRemoveSelectedRows() {
         JPanel panel = DefaultDisplayValuesApplication.applicationVariablesPanel(
                 DefaultDisplayValuesApplication.applicationVariables());
@@ -206,6 +252,24 @@ final class DefaultDisplayValuesApplicationTest {
     }
 
     @Test
+    void lookupVariableActionsAddDefaultRowsAndRemoveSelectedRows() {
+        JPanel panel = DefaultDisplayValuesApplication.lookupVariablesEditorPanel(
+                DefaultDisplayValuesApplication.lookupVariables());
+        JTable table = tableFromPanel(panel);
+        JPanel actions = (JPanel) ((BorderLayout) panel.getLayout()).getLayoutComponent(BorderLayout.SOUTH);
+        DefaultTableModel model = (DefaultTableModel) table.getModel();
+
+        assertEquals(1, model.getRowCount());
+        ((JButton) actions.getComponent(0)).doClick();
+        assertEquals(2, model.getRowCount());
+        assertEquals("string", model.getValueAt(1, 1));
+
+        table.setRowSelectionInterval(0, 0);
+        ((JButton) actions.getComponent(1)).doClick();
+        assertEquals(1, model.getRowCount());
+    }
+
+    @Test
     void applicationVariableRemoveActionRemovesLastRowWhenNothingSelected() {
         DefaultTableModel model = DefaultDisplayValuesApplication.applicationVariablesTableModel(List.of(
                 new DefaultDisplayValuesApplication.ApplicationVariable("one", "string", "1", ""),
@@ -229,6 +293,29 @@ final class DefaultDisplayValuesApplicationTest {
 
         assertEquals(1, model.getRowCount());
         assertEquals("code table", model.getValueAt(0, 0));
+    }
+
+    @Test
+    void lookupVariableRemoveActionRemovesLastRowWhenNothingSelected() {
+        DefaultTableModel model = DefaultDisplayValuesApplication.lookupVariablesTableModel(List.of(
+                new DefaultDisplayValuesApplication.LookupVariable("money", "number"),
+                new DefaultDisplayValuesApplication.LookupVariable("player.name", "string")));
+        JTable table = new JTable(model);
+
+        DefaultDisplayValuesApplication.removeLookupVariableRows(table);
+
+        assertEquals(1, model.getRowCount());
+        assertEquals("money", model.getValueAt(0, 0));
+    }
+
+    @Test
+    void lookupVariablesTabIncludesSaveAndResetActions() {
+        JPanel panel = DefaultDisplayValuesApplication.lookupVariablesPanel(
+                DefaultDisplayValuesApplication.lookupVariables());
+        JPanel actions = (JPanel) ((BorderLayout) panel.getLayout()).getLayoutComponent(BorderLayout.SOUTH);
+
+        assertEquals("Save", ((JButton) actions.getComponent(0)).getText());
+        assertEquals("Reset", ((JButton) actions.getComponent(1)).getText());
     }
 
     @Test

@@ -1,5 +1,6 @@
 package com.eb.javafx.testscreen;
 
+import com.eb.javafx.text.TextVariableType;
 import com.eb.javafx.util.Validation;
 import com.eb.javafx.ui.DisplayDefaults;
 import com.eb.javafx.util.JsonData;
@@ -33,6 +34,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.function.Consumer;
 
@@ -44,6 +46,7 @@ public final class DefaultDisplayValuesApplication {
             new DisplayResource("Layouts", "/com/eb/javafx/ui/layout-contract.json", false));
     private DisplayDefaults displayDefaults = DisplayDefaults.defaults();
     private List<ApplicationConfigField> editedApplicationConfigFields = applicationConfigFields();
+    private List<LookupVariable> editedLookupVariables = lookupVariables();
     private final JLabel statusLabel = new JLabel("Editing default app values.");
 
     public static void main(String[] args) {
@@ -67,6 +70,13 @@ public final class DefaultDisplayValuesApplication {
                 updatedFields -> {
                     editedApplicationConfigFields = updatedFields;
                     statusLabel.setText("Updated application values for this management screen.");
+                },
+                frame));
+        tabs.addTab("Lookup Variables", lookupVariablesPanel(
+                editedLookupVariables,
+                updatedVariables -> {
+                    editedLookupVariables = updatedVariables;
+                    statusLabel.setText("Updated lookup variables for this management screen.");
                 },
                 frame));
         tabs.addTab("Display Values", ScreenDesignerApplication.defaultValuesEditorPanel(
@@ -191,6 +201,28 @@ public final class DefaultDisplayValuesApplication {
         return List.of("Add Load", "Remove Load");
     }
 
+    static List<String> lookupVariableFieldLabels() {
+        return List.of("Name", "Value Type");
+    }
+
+    static List<String> lookupVariableTypeOptions() {
+        return List.of(TextVariableType.values()).stream()
+                .map(type -> type.name().toLowerCase(Locale.ROOT))
+                .toList();
+    }
+
+    static List<LookupVariable> lookupVariables() {
+        return List.of(new LookupVariable("", lookupVariableTypeOptions().get(0)));
+    }
+
+    static List<String> lookupVariableRowActionLabels() {
+        return List.of("Add Variable", "Remove Variable");
+    }
+
+    static List<String> lookupVariableActionLabels() {
+        return List.of("Save", "Reset");
+    }
+
     static JPanel applicationVariablesPanel(List<ApplicationVariable> variables) {
         Validation.requireNonNull(variables, "Application variables are required.");
         JPanel panel = new JPanel(new BorderLayout(6, 6));
@@ -211,6 +243,69 @@ public final class DefaultDisplayValuesApplication {
         actions.add(remove);
         panel.add(actions, BorderLayout.SOUTH);
         return panel;
+    }
+
+    static JPanel lookupVariablesPanel(List<LookupVariable> variables) {
+        return lookupVariablesPanel(variables, ignored -> {
+        }, null);
+    }
+
+    private static JPanel lookupVariablesPanel(
+            List<LookupVariable> variables,
+            Consumer<List<LookupVariable>> saveAction,
+            Component messageParent) {
+        Validation.requireNonNull(variables, "Lookup variables are required.");
+        Validation.requireNonNull(saveAction, "Lookup variable save action is required.");
+        JPanel panel = new JPanel(new BorderLayout(8, 8));
+        panel.add(new JLabel("<html>Lookup variable catalog definitions for this management screen. "
+                + "Declare each variable name and the type it resolves to.</html>"), BorderLayout.NORTH);
+        LookupVariableTableEditor editor = lookupVariablesEditor(variables);
+        panel.add(editor.panel(), BorderLayout.CENTER);
+        JPanel actions = new JPanel(new GridLayout(1, 2, 6, 0));
+        JButton save = new JButton(lookupVariableActionLabels().get(0));
+        JButton reset = new JButton(lookupVariableActionLabels().get(1));
+        save.addActionListener(event -> {
+            try {
+                saveAction.accept(lookupVariables(editor.table()));
+            } catch (RuntimeException exception) {
+                JOptionPane.showMessageDialog(
+                        messageParent,
+                        exception.getMessage(),
+                        "Lookup Variables Error",
+                        JOptionPane.ERROR_MESSAGE);
+            }
+        });
+        reset.addActionListener(event -> resetLookupVariables(editor.model(), variables));
+        actions.add(save);
+        actions.add(reset);
+        panel.add(actions, BorderLayout.SOUTH);
+        return panel;
+    }
+
+    static JPanel lookupVariablesEditorPanel(List<LookupVariable> variables) {
+        return lookupVariablesEditor(variables).panel();
+    }
+
+    private static LookupVariableTableEditor lookupVariablesEditor(List<LookupVariable> variables) {
+        Validation.requireNonNull(variables, "Lookup variables are required.");
+        JPanel panel = new JPanel(new BorderLayout(6, 6));
+        panel.setBorder(BorderFactory.createTitledBorder("Lookup Variable Catalog"));
+        DefaultTableModel model = lookupVariablesTableModel(variables);
+        JTable table = new JTable(model);
+        table.getColumnModel().getColumn(1).setCellEditor(new DefaultCellEditor(
+                new JComboBox<>(lookupVariableTypeOptions().toArray(String[]::new))));
+        table.setFillsViewportHeight(true);
+        table.setPreferredScrollableViewportSize(new Dimension(640, 120));
+        panel.add(new JScrollPane(table), BorderLayout.CENTER);
+        JPanel actions = new JPanel(new GridLayout(1, 2, 6, 0));
+        JButton add = new JButton(lookupVariableRowActionLabels().get(0));
+        JButton remove = new JButton(lookupVariableRowActionLabels().get(1));
+        add.addActionListener(event -> addLookupVariableRow(model));
+        remove.addActionListener(event -> removeLookupVariableRows(table));
+        actions.add(add);
+        actions.add(remove);
+        panel.add(actions, BorderLayout.SOUTH);
+        return new LookupVariableTableEditor(panel, table, model);
     }
 
     static JPanel loadFilesPanel(List<ApplicationLoad> loads) {
@@ -257,10 +352,25 @@ public final class DefaultDisplayValuesApplication {
         return model;
     }
 
+    static DefaultTableModel lookupVariablesTableModel(List<LookupVariable> variables) {
+        Validation.requireNonNull(variables, "Lookup variables are required.");
+        DefaultTableModel model = new DefaultTableModel(lookupVariableFieldLabels().toArray(String[]::new), 0);
+        variables.forEach(variable -> model.addRow(new Object[]{
+                variable.name(),
+                variable.valueType()}));
+        return model;
+    }
+
     static void addApplicationVariableRow(DefaultTableModel model) {
         Validation.requireNonNull(model, "Application variables table model is required.");
         ApplicationVariable variable = applicationVariables().get(0);
         model.addRow(new Object[]{variable.name(), variable.type(), variable.value(), variable.description()});
+    }
+
+    static void addLookupVariableRow(DefaultTableModel model) {
+        Validation.requireNonNull(model, "Lookup variables table model is required.");
+        LookupVariable variable = lookupVariables().get(0);
+        model.addRow(new Object[]{variable.name(), variable.valueType()});
     }
 
     static void addApplicationLoadRow(DefaultTableModel model) {
@@ -276,6 +386,11 @@ public final class DefaultDisplayValuesApplication {
 
     static void removeApplicationLoadRows(JTable table) {
         Validation.requireNonNull(table, "Application loads table is required.");
+        removeSelectedOrLastRow(table);
+    }
+
+    static void removeLookupVariableRows(JTable table) {
+        Validation.requireNonNull(table, "Lookup variables table is required.");
         removeSelectedOrLastRow(table);
     }
 
@@ -328,6 +443,25 @@ public final class DefaultDisplayValuesApplication {
             return;
         }
         throw new IllegalArgumentException("Unsupported application value editor: " + editor.getClass().getName());
+    }
+
+    private static List<LookupVariable> lookupVariables(JTable table) {
+        if (!(table.getModel() instanceof DefaultTableModel model)) {
+            throw new IllegalArgumentException("Lookup variables table model is required.");
+        }
+        List<LookupVariable> variables = new ArrayList<>();
+        for (int row = 0; row < model.getRowCount(); row++) {
+            variables.add(new LookupVariable(
+                    String.valueOf(model.getValueAt(row, 0)),
+                    String.valueOf(model.getValueAt(row, 1))));
+        }
+        return List.copyOf(variables);
+    }
+
+    private static void resetLookupVariables(DefaultTableModel model, List<LookupVariable> variables) {
+        Validation.requireNonNull(model, "Lookup variables table model is required.");
+        model.setRowCount(0);
+        variables.forEach(variable -> model.addRow(new Object[]{variable.name(), variable.valueType()}));
     }
 
     private static GridBagConstraints fieldConstraints(int row, int column, double weightx) {
@@ -384,6 +518,7 @@ public final class DefaultDisplayValuesApplication {
     static List<String> tabLabels() {
         List<String> labels = new ArrayList<>();
         labels.add("Application Values");
+        labels.add("Lookup Variables");
         labels.add("Display Values");
         displayResources().stream()
                 .map(DisplayResource::label)
@@ -438,6 +573,16 @@ public final class DefaultDisplayValuesApplication {
         }
     }
 
+    record LookupVariable(String name, String valueType) {
+        LookupVariable {
+            name = Validation.requireNonNull(name, "Lookup variable name is required.");
+            valueType = Validation.requireNonBlank(valueType, "Lookup variable type is required.");
+            if (!lookupVariableTypeOptions().contains(valueType)) {
+                throw new IllegalArgumentException("Unsupported lookup variable type: " + valueType);
+            }
+        }
+    }
+
     record ApplicationLoad(String type, String path, String fileName) {
         ApplicationLoad {
             type = Validation.requireNonBlank(type, "Application load type is required.");
@@ -454,5 +599,8 @@ public final class DefaultDisplayValuesApplication {
             label = Validation.requireNonBlank(label, "Application config field label is required.");
             value = Validation.requireNonNull(value, "Application config field value is required.");
         }
+    }
+
+    private record LookupVariableTableEditor(JPanel panel, JTable table, DefaultTableModel model) {
     }
 }
