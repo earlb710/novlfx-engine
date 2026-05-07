@@ -1,5 +1,6 @@
 package com.eb.javafx.scene;
 
+import com.eb.javafx.save.GameplayStateSnapshot;
 import com.eb.javafx.util.ImmutableCollections;
 import com.eb.javafx.util.Validation;
 
@@ -16,6 +17,7 @@ public final class SceneCheckpoint {
     private final SceneCheckpointPayload payload;
     private final boolean rollbackBlocked;
     private final boolean rollbackFixed;
+    private final GameplayStateSnapshot gameStateSnapshot;
     private final Map<String, String> metadata;
 
     public SceneCheckpoint(
@@ -28,6 +30,32 @@ public final class SceneCheckpoint {
             SceneCheckpointPayload payload,
             boolean rollbackBlocked,
             boolean rollbackFixed,
+            Map<String, String> metadata) {
+        this(
+                sequence,
+                state,
+                sceneId,
+                stepIndex,
+                stepId,
+                stepType,
+                payload,
+                rollbackBlocked,
+                rollbackFixed,
+                null,
+                metadata);
+    }
+
+    public SceneCheckpoint(
+            int sequence,
+            SceneFlowState state,
+            String sceneId,
+            int stepIndex,
+            String stepId,
+            SceneStepType stepType,
+            SceneCheckpointPayload payload,
+            boolean rollbackBlocked,
+            boolean rollbackFixed,
+            GameplayStateSnapshot gameStateSnapshot,
             Map<String, String> metadata) {
         if (sequence < 0) {
             throw new IllegalArgumentException("Scene checkpoint sequence must not be negative.");
@@ -44,10 +72,20 @@ public final class SceneCheckpoint {
         this.payload = payload;
         this.rollbackBlocked = rollbackBlocked;
         this.rollbackFixed = rollbackFixed;
+        this.gameStateSnapshot = gameStateSnapshot;
         this.metadata = ImmutableCollections.copyMap(metadata);
     }
 
     public static SceneCheckpoint fromResult(int sequence, SceneExecutionResult result, boolean rollbackBlocked, boolean rollbackFixed) {
+        return fromResult(sequence, result, rollbackBlocked, rollbackFixed, null);
+    }
+
+    public static SceneCheckpoint fromResult(
+            int sequence,
+            SceneExecutionResult result,
+            boolean rollbackBlocked,
+            boolean rollbackFixed,
+            GameplayStateSnapshot gameStateSnapshot) {
         Validation.requireNonNull(result, "Scene execution result is required.");
         SceneStep step = Validation.requireNonNull(result.step(), "Scene checkpoint step is required.");
         return new SceneCheckpoint(
@@ -60,6 +98,7 @@ public final class SceneCheckpoint {
                 null,
                 rollbackBlocked,
                 rollbackFixed,
+                gameStateSnapshot,
                 Map.of());
     }
 
@@ -99,20 +138,24 @@ public final class SceneCheckpoint {
         return rollbackFixed;
     }
 
+    public GameplayStateSnapshot gameStateSnapshot() {
+        return gameStateSnapshot;
+    }
+
     public Map<String, String> metadata() {
         return metadata;
     }
 
     public SceneCheckpoint withPayload(SceneCheckpointPayload payload) {
-        return new SceneCheckpoint(sequence, state, sceneId, stepIndex, stepId, stepType, payload, rollbackBlocked, rollbackFixed, metadata);
+        return new SceneCheckpoint(sequence, state, sceneId, stepIndex, stepId, stepType, payload, rollbackBlocked, rollbackFixed, gameStateSnapshot, metadata);
     }
 
     public SceneCheckpoint withRollbackBlocked(boolean rollbackBlocked) {
-        return new SceneCheckpoint(sequence, state, sceneId, stepIndex, stepId, stepType, payload, rollbackBlocked, rollbackFixed, metadata);
+        return new SceneCheckpoint(sequence, state, sceneId, stepIndex, stepId, stepType, payload, rollbackBlocked, rollbackFixed, gameStateSnapshot, metadata);
     }
 
     public SceneCheckpoint withRollbackFixed(boolean rollbackFixed) {
-        return new SceneCheckpoint(sequence, state, sceneId, stepIndex, stepId, stepType, payload, rollbackBlocked, rollbackFixed, metadata);
+        return new SceneCheckpoint(sequence, state, sceneId, stepIndex, stepId, stepType, payload, rollbackBlocked, rollbackFixed, gameStateSnapshot, metadata);
     }
 
     boolean matches(SceneExecutionResult result) {

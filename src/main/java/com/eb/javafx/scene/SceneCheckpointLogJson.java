@@ -1,5 +1,7 @@
 package com.eb.javafx.scene;
 
+import com.eb.javafx.save.GameplayStateSnapshot;
+import com.eb.javafx.save.GameplayStateSnapshotJson;
 import com.eb.javafx.save.SaveSnapshotCodec;
 import com.eb.javafx.save.SaveSnapshotSection;
 import com.eb.javafx.util.JsonData;
@@ -89,6 +91,9 @@ public final class SceneCheckpointLogJson {
                 JsonData.optionalObject(object, "payload", "scene checkpoint payload").map(SceneCheckpointLogJson::payloadFromObject).orElse(null),
                 JsonData.optionalBoolean(object, "rollbackBlocked", false, "scene checkpoint rollback blocked flag"),
                 JsonData.optionalBoolean(object, "rollbackFixed", false, "scene checkpoint rollback fixed flag"),
+                JsonData.optionalObject(object, "gameStateSnapshot", "scene checkpoint game state snapshot")
+                        .map(snapshot -> GameplayStateSnapshotJson.fromObject(snapshot, "scene checkpoint game state snapshot"))
+                        .orElse(null),
                 JsonData.optionalObject(object, "metadata", "scene checkpoint metadata").map(metadata -> JsonData.stringMap(metadata, "scene checkpoint metadata")).orElse(Map.of()));
     }
 
@@ -129,7 +134,9 @@ public final class SceneCheckpointLogJson {
         appendPayload(json, checkpoint.payload());
         json.append(", \"rollbackBlocked\": ").append(checkpoint.rollbackBlocked())
                 .append(", \"rollbackFixed\": ").append(checkpoint.rollbackFixed())
-                .append(", \"metadata\": ");
+                .append(", \"gameStateSnapshot\": ");
+        appendGameStateSnapshot(json, checkpoint.gameStateSnapshot());
+        json.append(", \"metadata\": ");
         appendStringMap(json, checkpoint.metadata());
         json.append('}');
     }
@@ -184,5 +191,13 @@ public final class SceneCheckpointLogJson {
             index++;
         }
         json.append('}');
+    }
+
+    private static void appendGameStateSnapshot(StringBuilder json, GameplayStateSnapshot snapshot) {
+        if (snapshot == null) {
+            json.append("null");
+            return;
+        }
+        json.append(GameplayStateSnapshotJson.toJson(snapshot));
     }
 }

@@ -1,6 +1,7 @@
 package com.eb.javafx.scene;
 
 import com.eb.javafx.gamesupport.ActionContext;
+import com.eb.javafx.gamesupport.ActionResult;
 import com.eb.javafx.gamesupport.CodeDefinition;
 import com.eb.javafx.gamesupport.CodeTableDefinition;
 import com.eb.javafx.gamesupport.GameClock;
@@ -62,6 +63,35 @@ final class SceneCheckpointSessionTest {
         assertEquals(SceneExecutionStatus.DISPLAYING_TEXT, rolledForward.status());
         assertEquals("after.line", rolledForward.step().textDefinition());
         assertEquals(2, session.checkpointLog().cursor());
+    }
+
+    @Test
+    void rollbackRestoresCheckpointGameplayStateAndRollForwardReplaysStateChanges() {
+        ActionContext context = actionContext();
+        SceneCheckpointSession session = new SceneCheckpointSession(
+                new SceneExecutor(gameplayStateRegistry()),
+                context);
+
+        session.start("intro");
+        session.continueFromText();
+        session.selectChoice("take-keycard");
+
+        assertEquals(1, context.gameState().inventory().quantity("keycard"));
+        assertTrue(context.gameState().progress().hasFlag("has.keycard"));
+        assertEquals("second", context.gameClock().currentTime().timeSlotId());
+
+        SceneExecutionResult rolledBack = session.rollbackOneCheckpoint();
+
+        assertEquals(SceneExecutionStatus.WAITING_FOR_CHOICE, rolledBack.status());
+        assertEquals(0, context.gameState().inventory().quantity("keycard"));
+        assertFalse(context.gameState().progress().hasFlag("has.keycard"));
+        assertEquals("first", context.gameClock().currentTime().timeSlotId());
+
+        session.rollForwardUsingStoredCheckpointData();
+
+        assertEquals(1, context.gameState().inventory().quantity("keycard"));
+        assertTrue(context.gameState().progress().hasFlag("has.keycard"));
+        assertEquals("second", context.gameClock().currentTime().timeSlotId());
     }
 
     @Test
@@ -181,6 +211,8 @@ final class SceneCheckpointSessionTest {
         assertEquals(session.checkpointLog().checkpoints().size(), roundTrip.checkpoints().size());
         assertTrue(roundTrip.rollbackFixed());
         assertEquals("advance", roundTrip.checkpoints().get(1).payload().choiceId());
+        assertNotNull(roundTrip.checkpoints().get(0).gameStateSnapshot());
+        assertEquals("first", roundTrip.checkpoints().get(0).gameStateSnapshot().gameTime().timeSlotId());
     }
 
     @Test
@@ -220,6 +252,29 @@ final class SceneCheckpointSessionTest {
         registry.register(SceneDefinition.of("intro", List.of(
                 SceneStep.narration("line", "intro.line"),
                 SceneStep.narration("after", "after.line"))));
+        registry.validateScenes();
+        return registry;
+    }
+
+    private SceneRegistry gameplayStateRegistry() {
+        SceneRegistry registry = new SceneRegistry();
+        SceneChoice takeKeycardChoice = new SceneChoice(
+                "take-keycard",
+                "choice.take-keycard",
+                List.of(),
+                List.of(context -> {
+                    context.gameState().inventory().restoreQuantity("keycard", 1);
+                    context.gameState().progress().setFlag("has.keycard", true);
+                    context.gameClock().advanceSlot();
+                    return ActionResult.success("Took keycard.");
+                }),
+                null,
+                SceneTransition.jump("after"),
+                Map.of("value", "take-keycard"));
+        registry.register(SceneDefinition.of("intro", List.of(
+                SceneStep.narration("line", "intro.line"),
+                SceneStep.choice("choice", List.of(takeKeycardChoice)))));
+        registry.register(SceneDefinition.of("after", List.of(SceneStep.narration("line", "after.line"))));
         registry.validateScenes();
         return registry;
     }

@@ -64,7 +64,9 @@ public final class SceneCheckpointSession {
 
     public SceneExecutionResult rollbackOneCheckpoint() {
         checkpointLog = checkpointLog.rollbackOneCheckpoint();
-        return setCurrentResultWithoutRecording(executor.advanceUntilPause(context, requireCurrentCheckpoint().state()));
+        SceneCheckpoint checkpoint = requireCurrentCheckpoint();
+        restoreGameState(checkpoint);
+        return setCurrentResultWithoutRecording(executor.advanceUntilPause(context, checkpoint.state()));
     }
 
     public boolean rollForwardAllowed() {
@@ -76,6 +78,7 @@ public final class SceneCheckpointSession {
         SceneCheckpointPayload payload = Validation.requireNonNull(
                 checkpoint.payload(),
                 "Current scene checkpoint has no replay payload.");
+        restoreGameState(checkpoint);
         SceneExecutionResult result = switch (payload.kind()) {
             case TEXT_CONTINUATION -> executor.continueFromText(context, checkpoint.state());
             case CHOICE_SELECTION -> executor.selectChoice(context, checkpoint.state(), payload.choiceId());
@@ -104,7 +107,7 @@ public final class SceneCheckpointSession {
 
     private SceneExecutionResult setCurrentResult(SceneExecutionResult result) {
         currentResult = result;
-        checkpointLog = checkpointLog.recordVisibleBoundary(result);
+        checkpointLog = checkpointLog.recordVisibleBoundary(result, context.gameState().snapshot(context.gameClock()));
         return result;
     }
 
@@ -115,5 +118,11 @@ public final class SceneCheckpointSession {
 
     private SceneCheckpoint requireCurrentCheckpoint() {
         return Validation.requireNonNull(checkpointLog.currentCheckpoint(), "No current scene checkpoint is available.");
+    }
+
+    private void restoreGameState(SceneCheckpoint checkpoint) {
+        if (checkpoint.gameStateSnapshot() != null) {
+            context.gameState().restore(checkpoint.gameStateSnapshot(), context.gameClock());
+        }
     }
 }

@@ -1,5 +1,6 @@
 package com.eb.javafx.scene;
 
+import com.eb.javafx.save.GameplayStateSnapshot;
 import com.eb.javafx.util.Validation;
 
 import java.util.ArrayList;
@@ -58,6 +59,10 @@ public final class SceneCheckpointLog {
     }
 
     public SceneCheckpointLog recordVisibleBoundary(SceneExecutionResult result) {
+        return recordVisibleBoundary(result, null);
+    }
+
+    public SceneCheckpointLog recordVisibleBoundary(SceneExecutionResult result, GameplayStateSnapshot gameStateSnapshot) {
         if (!isCheckpointBoundary(result)) {
             return this;
         }
@@ -68,7 +73,7 @@ public final class SceneCheckpointLog {
             return new SceneCheckpointLog(checkpoints, cursor + 1, rollbackBarrierIndex, rollbackFixed);
         }
         List<SceneCheckpoint> updated = new ArrayList<>(checkpoints.subList(0, cursor + 1));
-        updated.add(SceneCheckpoint.fromResult(updated.size(), result, false, rollbackFixed));
+        updated.add(SceneCheckpoint.fromResult(updated.size(), result, false, rollbackFixed, gameStateSnapshot));
         int barrier = Math.min(rollbackBarrierIndex, updated.size() - 1);
         return new SceneCheckpointLog(updated, updated.size() - 1, barrier, rollbackFixed);
     }
