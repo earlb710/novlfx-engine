@@ -93,7 +93,7 @@ public final class ButtonVisuals {
         if (artwork != null) {
             if (artwork instanceof RasterizedArtwork rasterizedArtwork) {
                 button.pressedProperty().addListener((observable, wasPressed, isPressed) ->
-                        rasterizedArtwork.setPressed(Boolean.TRUE.equals(isPressed)));
+                        rasterizedArtwork.setArtworkPressed(Boolean.TRUE.equals(isPressed)));
             }
             button.setGraphic(artwork);
             button.setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
@@ -301,7 +301,7 @@ public final class ButtonVisuals {
             refreshPreferredSize();
         }
 
-        private void setPressed(boolean pressed) {
+        private void setArtworkPressed(boolean pressed) {
             if (this.pressed == pressed) {
                 return;
             }
