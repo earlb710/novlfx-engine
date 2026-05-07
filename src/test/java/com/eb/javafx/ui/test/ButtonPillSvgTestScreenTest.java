@@ -46,15 +46,35 @@ final class ButtonPillSvgTestScreenTest {
     }
 
     @Test
-    void buttonPillArtworkUsesRasterizedImageView() {
+    void buttonPillArtworkUsesRasterizedImageViewAtTextSizedDimensions() {
         StackPane graphic = assertInstanceOf(StackPane.class, ButtonVisuals.createArtworkGraphic("Play"));
+        double width = graphic.prefWidth(-1);
+        double height = graphic.prefHeight(width);
+        graphic.resize(width, height);
+        graphic.layout();
+
         Node artwork = graphic.getChildren().get(0);
         ImageView imageView = assertInstanceOf(ImageView.class, artwork);
 
-        assertEquals(ButtonVisuals.BUTTON_ARTWORK_WIDTH, imageView.getFitWidth());
-        assertEquals(ButtonVisuals.BUTTON_ARTWORK_HEIGHT, imageView.getFitHeight());
-        assertEquals(ButtonVisuals.BUTTON_ARTWORK_WIDTH, imageView.getImage().getWidth());
-        assertEquals(ButtonVisuals.BUTTON_ARTWORK_HEIGHT, imageView.getImage().getHeight());
+        assertEquals(width, imageView.getFitWidth());
+        assertEquals(height, imageView.getFitHeight());
+        assertEquals(width, imageView.getImage().getWidth());
+        assertEquals(height, imageView.getImage().getHeight());
+    }
+
+    @Test
+    void buttonPillArtworkRasterizesDirectlyAtFixedDimensions() {
+        StackPane graphic = assertInstanceOf(StackPane.class, ButtonVisuals.createArtworkGraphic("Multi\nLine", 220, 72));
+        graphic.resize(220, 72);
+        graphic.layout();
+
+        Node artwork = graphic.getChildren().get(0);
+        ImageView imageView = assertInstanceOf(ImageView.class, artwork);
+
+        assertEquals(220, imageView.getFitWidth());
+        assertEquals(72, imageView.getFitHeight());
+        assertEquals(220, imageView.getImage().getWidth());
+        assertEquals(72, imageView.getImage().getHeight());
     }
 
     @Test
