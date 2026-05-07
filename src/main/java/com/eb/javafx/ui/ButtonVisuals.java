@@ -130,7 +130,7 @@ public final class ButtonVisuals {
         if (stops.size() < 4) {
             LOGGER.log(System.Logger.Level.WARNING, "Button artwork resource does not include four mesh stop colors: {0}",
                     BUTTON_SHAPE_RESOURCE);
-            return Color.BLACK;
+            return Color.TRANSPARENT;
         }
         return createMeshFill(stops.get(0), stops.get(1), stops.get(2), stops.get(3));
     }
