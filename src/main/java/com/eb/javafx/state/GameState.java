@@ -13,6 +13,7 @@ import com.eb.javafx.save.GameplayStateSnapshot;
 import com.eb.javafx.save.InventorySnapshot;
 import com.eb.javafx.save.JournalSnapshot;
 import com.eb.javafx.save.LocationOccupancySnapshot;
+import com.eb.javafx.save.SaveSnapshotSection;
 import com.eb.javafx.save.WardrobeSnapshot;
 import com.eb.javafx.text.DialogHistory;
 import com.eb.javafx.util.Validation;
@@ -20,6 +21,8 @@ import com.eb.javafx.util.Validation;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 /**
  * Minimal mutable game state placeholder for the JavaFX bootstrap slice.
@@ -37,6 +40,7 @@ public final class GameState {
     private final Map<String, CharacterState> characterStates = new LinkedHashMap<>();
     private JournalState journal = new JournalState();
     private LocationOccupancy locationOccupancy = new LocationOccupancy();
+    private final Map<String, CustomRollbackSnapshotSection> customRollbackSections = new LinkedHashMap<>();
 
     /** Creates placeholder mutable state with the route selected by static content. */
     public GameState(String startupRoute) {
@@ -100,6 +104,18 @@ public final class GameState {
         return locationOccupancy;
     }
 
+    /** Registers an application-owned state section that participates in checkpoint rollback snapshots. */
+    public void registerRollbackSnapshotSection(
+            String sectionId,
+            Supplier<SaveSnapshotSection> snapshotSupplier,
+            Consumer<SaveSnapshotSection> restoreConsumer) {
+        CustomRollbackSnapshotSection section = new CustomRollbackSnapshotSection(
+                sectionId,
+                snapshotSupplier,
+                restoreConsumer);
+        customRollbackSections.put(section.sectionId(), section);
+    }
+
     /** Captures all reusable mutable gameplay state with the current game-clock value. */
     public GameplayStateSnapshot snapshot(GameClock gameClock) {
         return snapshot(Validation.requireNonNull(gameClock, "Game clock is required.").currentTime());
@@ -114,7 +130,10 @@ public final class GameState {
                 WardrobeSnapshot.fromState(wardrobe),
                 CharacterStatesSnapshot.fromStates(characterStates.values()),
                 JournalSnapshot.fromState(journal),
-                LocationOccupancySnapshot.fromState(locationOccupancy));
+                LocationOccupancySnapshot.fromState(locationOccupancy),
+                customRollbackSections.values().stream()
+                        .map(CustomRollbackSnapshotSection::snapshot)
+                        .toList());
     }
 
     /** Restores reusable mutable gameplay state and game time from a checkpoint/save snapshot. */
@@ -137,5 +156,35 @@ public final class GameState {
         checkedSnapshot.characters().toStates().forEach(this::putCharacterState);
         journal = checkedSnapshot.journal().toState();
         locationOccupancy = checkedSnapshot.locationOccupancy().toState();
+        checkedSnapshot.customSections().forEach(section -> {
+            CustomRollbackSnapshotSection customSection = customRollbackSections.get(section.sectionId());
+            if (customSection != null) {
+                customSection.restore(section);
+            }
+        });
+    }
+
+    private record CustomRollbackSnapshotSection(
+            String sectionId,
+            Supplier<SaveSnapshotSection> snapshotSupplier,
+            Consumer<SaveSnapshotSection> restoreConsumer) {
+        private CustomRollbackSnapshotSection {
+            sectionId = Validation.requireNonBlank(sectionId, "Custom rollback snapshot section id is required.");
+            snapshotSupplier = Validation.requireNonNull(snapshotSupplier, "Custom rollback snapshot supplier is required.");
+            restoreConsumer = Validation.requireNonNull(restoreConsumer, "Custom rollback restore consumer is required.");
+        }
+
+        private SaveSnapshotSection snapshot() {
+            SaveSnapshotSection section =
+                    Validation.requireNonNull(snapshotSupplier.get(), "Custom rollback snapshot section is required.");
+            if (!sectionId.equals(section.sectionId())) {
+                throw new IllegalStateException("Custom rollback snapshot section id mismatch: " + section.sectionId());
+            }
+            return section;
+        }
+
+        private void restore(SaveSnapshotSection section) {
+            restoreConsumer.accept(section);
+        }
     }
 }

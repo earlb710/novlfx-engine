@@ -7,7 +7,9 @@ import com.eb.javafx.gamesupport.CodeTableDefinition;
 import com.eb.javafx.gamesupport.GameClock;
 import com.eb.javafx.random.GameRandomService;
 import com.eb.javafx.save.SaveSnapshotDocument;
+import com.eb.javafx.save.SaveSnapshotSection;
 import com.eb.javafx.state.GameState;
+import com.eb.javafx.util.JsonData;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -68,8 +70,16 @@ final class SceneCheckpointSessionTest {
     @Test
     void rollbackRestoresCheckpointGameplayStateAndRollForwardReplaysStateChanges() {
         ActionContext context = actionContext();
+        AtomicInteger customPoints = new AtomicInteger();
+        context.gameState().registerRollbackSnapshotSection(
+                "app.customPoints",
+                () -> new SaveSnapshotSection("app.customPoints", 1, "{\"points\": " + customPoints.get() + "}"),
+                section -> customPoints.set(JsonData.requiredInt(
+                        JsonData.rootObject(section.payloadJson(), section.sectionId()),
+                        "points",
+                        "custom points")));
         SceneCheckpointSession session = new SceneCheckpointSession(
-                new SceneExecutor(gameplayStateRegistry()),
+                new SceneExecutor(gameplayStateRegistry(customPoints)),
                 context);
 
         session.start("intro");
@@ -79,6 +89,7 @@ final class SceneCheckpointSessionTest {
         assertEquals(1, context.gameState().inventory().quantity("keycard"));
         assertTrue(context.gameState().progress().hasFlag("has.keycard"));
         assertEquals("second", context.gameClock().currentTime().timeSlotId());
+        assertEquals(7, customPoints.get());
 
         SceneExecutionResult rolledBack = session.rollbackOneCheckpoint();
 
@@ -86,12 +97,14 @@ final class SceneCheckpointSessionTest {
         assertEquals(0, context.gameState().inventory().quantity("keycard"));
         assertFalse(context.gameState().progress().hasFlag("has.keycard"));
         assertEquals("first", context.gameClock().currentTime().timeSlotId());
+        assertEquals(0, customPoints.get());
 
         session.rollForwardUsingStoredCheckpointData();
 
         assertEquals(1, context.gameState().inventory().quantity("keycard"));
         assertTrue(context.gameState().progress().hasFlag("has.keycard"));
         assertEquals("second", context.gameClock().currentTime().timeSlotId());
+        assertEquals(7, customPoints.get());
     }
 
     @Test
@@ -216,6 +229,35 @@ final class SceneCheckpointSessionTest {
     }
 
     @Test
+    void checkpointJsonPreservesCustomRollbackSnapshotSections() {
+        ActionContext context = actionContext();
+        AtomicInteger customPoints = new AtomicInteger(3);
+        context.gameState().registerRollbackSnapshotSection(
+                "app.customPoints",
+                () -> new SaveSnapshotSection("app.customPoints", 1, "{\"points\": " + customPoints.get() + "}"),
+                section -> customPoints.set(JsonData.requiredInt(
+                        JsonData.rootObject(section.payloadJson(), section.sectionId()),
+                        "points",
+                        "custom points")));
+        SceneCheckpointSession session = new SceneCheckpointSession(
+                new SceneExecutor(gameplayStateRegistry(customPoints)),
+                context);
+
+        session.start("intro");
+
+        SceneCheckpointLog roundTrip = SceneCheckpointLogJson.fromJson(
+                SceneCheckpointLogJson.toJson(session.checkpointLog()),
+                "checkpoint-log");
+
+        SaveSnapshotSection customSection = roundTrip.currentCheckpoint()
+                .gameStateSnapshot()
+                .customSections()
+                .get(0);
+        assertEquals("app.customPoints", customSection.sectionId());
+        assertEquals("{\"points\": 3}", customSection.payloadJson());
+    }
+
+    @Test
     void sceneFlowSnapshotDocumentsCanIncludeCheckpointLog() {
         SceneCheckpointSession session = sessionFor(checkpointRegistry());
         session.start("intro");
@@ -256,7 +298,7 @@ final class SceneCheckpointSessionTest {
         return registry;
     }
 
-    private SceneRegistry gameplayStateRegistry() {
+    private SceneRegistry gameplayStateRegistry(AtomicInteger customPoints) {
         SceneRegistry registry = new SceneRegistry();
         SceneChoice takeKeycardChoice = new SceneChoice(
                 "take-keycard",
@@ -266,6 +308,7 @@ final class SceneCheckpointSessionTest {
                     context.gameState().inventory().restoreQuantity("keycard", 1);
                     context.gameState().progress().setFlag("has.keycard", true);
                     context.gameClock().advanceSlot();
+                    customPoints.set(7);
                     return ActionResult.success("Took keycard.");
                 }),
                 null,

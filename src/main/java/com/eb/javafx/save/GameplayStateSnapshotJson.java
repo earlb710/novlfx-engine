@@ -33,7 +33,8 @@ public final class GameplayStateSnapshotJson {
                 + "\"wardrobe\": " + WARDROBE_CODEC.toJson(checkedSnapshot.wardrobe()) + ", "
                 + "\"characters\": " + CHARACTERS_CODEC.toJson(checkedSnapshot.characters()) + ", "
                 + "\"journal\": " + JOURNAL_CODEC.toJson(checkedSnapshot.journal()) + ", "
-                + "\"locationOccupancy\": " + LOCATION_OCCUPANCY_CODEC.toJson(checkedSnapshot.locationOccupancy())
+                + "\"locationOccupancy\": " + LOCATION_OCCUPANCY_CODEC.toJson(checkedSnapshot.locationOccupancy()) + ", "
+                + "\"customSections\": " + customSectionsJson(checkedSnapshot.customSections())
                 + "}";
     }
 
@@ -52,7 +53,8 @@ public final class GameplayStateSnapshotJson {
                 JOURNAL_CODEC.fromJson(objectJson(JsonData.requireObject(root.get("journal"), "checkpoint journal")), sourceName + ".journal"),
                 LOCATION_OCCUPANCY_CODEC.fromJson(
                         objectJson(JsonData.requireObject(root.get("locationOccupancy"), "checkpoint location occupancy")),
-                        sourceName + ".locationOccupancy"));
+                        sourceName + ".locationOccupancy"),
+                customSectionsFromList(JsonData.optionalList(root, "customSections", "checkpoint custom sections")));
     }
 
     private static GameDateTime timeFromObject(Map<String, Object> object) {
@@ -65,6 +67,26 @@ public final class GameplayStateSnapshotJson {
         return object.entrySet().stream()
                 .map(entry -> JsonStrings.quote(entry.getKey()) + ": " + valueJson(entry.getValue()))
                 .collect(Collectors.joining(", ", "{", "}"));
+    }
+
+    private static List<SaveSnapshotSection> customSectionsFromList(List<Object> values) {
+        return values.stream()
+                .map(entry -> JsonData.requireObject(entry, "checkpoint custom section"))
+                .map(object -> new SaveSnapshotSection(
+                        JsonData.requiredString(object, "sectionId", "checkpoint custom section id"),
+                        JsonData.requiredInt(object, "schemaVersion", "checkpoint custom section schema version"),
+                        JsonData.requiredString(object, "payloadJson", "checkpoint custom section payload JSON")))
+                .toList();
+    }
+
+    private static String customSectionsJson(List<SaveSnapshotSection> sections) {
+        return sections.stream()
+                .map(section -> "{"
+                        + "\"sectionId\": " + JsonStrings.quote(section.sectionId()) + ", "
+                        + "\"schemaVersion\": " + section.schemaVersion() + ", "
+                        + "\"payloadJson\": " + JsonStrings.quote(section.payloadJson())
+                        + "}")
+                .collect(Collectors.joining(", ", "[", "]"));
     }
 
     private static String valueJson(Object value) {
