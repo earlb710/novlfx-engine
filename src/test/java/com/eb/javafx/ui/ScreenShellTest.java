@@ -118,6 +118,9 @@ final class ScreenShellTest {
 
         assertEquals(640, background.getPrefWidth());
         assertEquals(360, background.getPrefHeight());
+        BorderPane aliasScreen = new BorderPane();
+        assertSame(aliasScreen, ScreenShell.setBackgroundSvg(aliasScreen, ButtonVisuals.BUTTON_LONG_ARTWORK_RESOURCE)
+                .getChildren().get(1));
     }
 
     @Test

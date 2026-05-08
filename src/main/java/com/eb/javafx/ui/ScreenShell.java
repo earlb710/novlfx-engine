@@ -482,6 +482,17 @@ public final class ScreenShell {
     }
 
     /**
+     * Creates a screen root with a full-screen SVG background behind the supplied content.
+     *
+     * @param screen screen content to layer above the background
+     * @param svgResourcePath packaged SVG resource path
+     * @return stack pane containing the background and screen content
+     */
+    public static StackPane setBackgroundSvg(Region screen, String svgResourcePath) {
+        return withBackgroundSvg(screen, svgResourcePath);
+    }
+
+    /**
      * Creates a full-screen SVG background node.
      *
      * <p>The returned node is not clickable and has no border or padding.</p>
