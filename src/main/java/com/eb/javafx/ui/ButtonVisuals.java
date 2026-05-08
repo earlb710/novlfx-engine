@@ -338,7 +338,7 @@ public final class ButtonVisuals {
                 return cached;
             }
             try {
-                Image image = renderArtworkWithAvailableSvgRenderer(svg, width, height);
+                Image image = renderSvgArtwork(svg, width, height);
                 RASTER_CACHE.put(size, image);
                 return image;
             } catch (RuntimeException exception) {
@@ -349,7 +349,7 @@ public final class ButtonVisuals {
         }
     }
 
-    private static Image renderArtworkWithAvailableSvgRenderer(String svg, int width, int height) {
+    private static Image renderSvgArtwork(String svg, int width, int height) {
         if (!GraphicsEnvironment.isHeadless()) {
             try {
                 LoaderParameters parameters = LoaderParameters.createWidthParameters(width);
