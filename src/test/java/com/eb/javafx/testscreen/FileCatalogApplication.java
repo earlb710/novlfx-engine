@@ -30,6 +30,7 @@ import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
+import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
@@ -37,11 +38,13 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 /** Manual Swing viewer for cataloging game files by directory. */
 public final class FileCatalogApplication {
     static final String CATALOG_FILE_NAME = "file-catalog.json";
+    static final String CATALOG_LOG_FILE_NAME = "file-catalog.log";
 
     private final JTextField startFolderField = new JTextField(gameRootDirectory().toString());
     private final DefaultTreeModel directoryTreeModel = new DefaultTreeModel(new DefaultMutableTreeNode());
@@ -144,6 +147,7 @@ public final class FileCatalogApplication {
         FileCatalog previousCatalog = loadCatalog(startFolder).orElse(null);
         FileCatalog updatedCatalog = createCatalog(startFolder);
         saveCatalog(updatedCatalog);
+        appendCatalogLog(updatedCatalog);
         catalog = updatedCatalog;
         refreshCatalogTree();
         CatalogDifference difference = CatalogDifference.between(previousCatalog, updatedCatalog);
@@ -191,7 +195,7 @@ public final class FileCatalogApplication {
         for (CatalogFile file : directory.files()) {
             fileTableModel.addRow(List.of(
                     file.name(),
-                    Long.toString(file.size()),
+                    formatKilobytes(file.size()),
                     file.modifiedAt()).toArray());
         }
     }
@@ -266,6 +270,27 @@ public final class FileCatalogApplication {
         }
     }
 
+    static Path catalogLogPath(Path startFolder) {
+        return Validation.requireNonNull(startFolder, "Catalog start folder is required.")
+                .toAbsolutePath()
+                .normalize()
+                .resolve(CATALOG_LOG_FILE_NAME);
+    }
+
+    static void appendCatalogLog(FileCatalog catalog) {
+        Validation.requireNonNull(catalog, "File catalog is required.");
+        try {
+            Files.writeString(
+                    catalogLogPath(Path.of(catalog.startLocation())),
+                    logEntry(catalog) + System.lineSeparator(),
+                    StandardCharsets.UTF_8,
+                    StandardOpenOption.CREATE,
+                    StandardOpenOption.APPEND);
+        } catch (IOException exception) {
+            throw new IllegalArgumentException("Unable to append file catalog log.", exception);
+        }
+    }
+
     static java.util.Optional<FileCatalog> loadCatalog(Path startFolder) {
         Path catalogPath = catalogPath(startFolder);
         if (!Files.isRegularFile(catalogPath)) {
@@ -303,7 +328,7 @@ public final class FileCatalogApplication {
     }
 
     static List<String> detailColumnLabels() {
-        return List.of("Name", "Size", "Date");
+        return List.of("Name", "Size (K)", "Date");
     }
 
     static List<String> managementLabels() {
@@ -311,13 +336,24 @@ public final class FileCatalogApplication {
     }
 
     static String statusText(FileCatalog catalog) {
-        return catalog.startLocation() + " | " + catalog.totalFiles() + " file(s), " + catalog.totalSize() + " bytes.";
+        return catalog.startLocation() + " | " + catalog.totalFiles() + " file(s), " + formatKilobytes(catalog.totalSize()) + ".";
     }
 
     static String directorySummary(CatalogDirectory directory) {
         String label = directory.path().isBlank() ? directory.name() : directory.path();
         return label
-                + " | " + directory.fileCount() + " file(s), " + directory.totalSize() + " bytes.";
+                + " | " + directory.fileCount() + " file(s), " + formatKilobytes(directory.totalSize()) + ".";
+    }
+
+    static String logEntry(FileCatalog catalog) {
+        Validation.requireNonNull(catalog, "File catalog is required.");
+        return catalog.generatedAt()
+                + " | total files: " + catalog.totalFiles()
+                + " | total size: " + formatKilobytes(catalog.totalSize());
+    }
+
+    static String formatKilobytes(long bytes) {
+        return String.format(Locale.ROOT, "%.2f K", bytes / 1024.0);
     }
 
     private static void appendDirectory(StringBuilder json, CatalogDirectory directory, String indent) {
@@ -471,11 +507,17 @@ public final class FileCatalogApplication {
 
         String message() {
             return "Catalog updated. Total file difference: " + signed(fileDifference)
-                    + "; total size difference: " + signed(sizeDifference) + " bytes.";
+                    + "; total size difference: " + signedKilobytes(sizeDifference) + ".";
         }
 
         private static String signed(long value) {
             return value > 0 ? "+" + value : Long.toString(value);
+        }
+
+        private static String signedKilobytes(long value) {
+            return value > 0
+                    ? "+" + formatKilobytes(value)
+                    : value < 0 ? "-" + formatKilobytes(Math.abs(value)) : formatKilobytes(0);
         }
     }
 

@@ -20,7 +20,7 @@ final class FileCatalogApplicationTest {
     void fileCatalogManagementLabelsDescribeScreenControls() {
         assertEquals(List.of("Start Folder", "Browse Folder", "Update Catalog", "Directories", "Files"),
                 FileCatalogApplication.managementLabels());
-        assertEquals(List.of("Name", "Size", "Date"), FileCatalogApplication.detailColumnLabels());
+        assertEquals(List.of("Name", "Size (K)", "Date"), FileCatalogApplication.detailColumnLabels());
     }
 
     @Test
@@ -77,6 +77,20 @@ final class FileCatalogApplicationTest {
     }
 
     @Test
+    void appendCatalogLogRecordsEachRunWithDateAndTotalSizeInK() throws Exception {
+        Files.writeString(tempDirectory.resolve("root.txt"), "root", StandardCharsets.UTF_8);
+        FileCatalogApplication.FileCatalog catalog = FileCatalogApplication.createCatalog(tempDirectory);
+
+        FileCatalogApplication.appendCatalogLog(catalog);
+        FileCatalogApplication.appendCatalogLog(catalog);
+
+        List<String> lines = Files.readAllLines(FileCatalogApplication.catalogLogPath(tempDirectory), StandardCharsets.UTF_8);
+        assertEquals(2, lines.size());
+        assertEquals(catalog.generatedAt() + " | total files: 1 | total size: 0.00 K", lines.get(0));
+        assertEquals(lines.get(0), lines.get(1));
+    }
+
+    @Test
     void catalogDifferenceReportsFileAndSizeDelta() {
         FileCatalogApplication.CatalogDirectory previousDirectory = new FileCatalogApplication.CatalogDirectory(
                 "game", "", 1, 4, List.of(new FileCatalogApplication.CatalogFile("a.txt", 4, "2026-05-08T00:00:00Z")),
@@ -89,7 +103,21 @@ final class FileCatalogApplicationTest {
                 new FileCatalogApplication.FileCatalog("game", "2026-05-08T00:00:00Z", 1, 4, previousDirectory),
                 new FileCatalogApplication.FileCatalog("game", "2026-05-08T00:00:01Z", 2, 10, updatedDirectory));
 
-        assertEquals("Catalog updated. Total file difference: +1; total size difference: +6 bytes.",
+        assertEquals("Catalog updated. Total file difference: +1; total size difference: +0.01 K.",
                 difference.message());
+    }
+
+    @Test
+    void statusAndDirectorySummariesShowSizesInK() {
+        FileCatalogApplication.CatalogDirectory directory = new FileCatalogApplication.CatalogDirectory(
+                "game", "game/sub", 2, 1536,
+                List.of(new FileCatalogApplication.CatalogFile("a.txt", 512, "2026-05-08T00:00:00Z")),
+                List.of());
+        FileCatalogApplication.FileCatalog catalog = new FileCatalogApplication.FileCatalog(
+                "game", "2026-05-08T00:00:01Z", 2, 1536, directory);
+
+        assertEquals("game | 2 file(s), 1.50 K.", FileCatalogApplication.statusText(catalog));
+        assertEquals("game/sub | 2 file(s), 1.50 K.", FileCatalogApplication.directorySummary(directory));
+        assertEquals("1.50 K", FileCatalogApplication.formatKilobytes(1536));
     }
 }
