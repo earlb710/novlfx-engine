@@ -16,6 +16,7 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import org.junit.jupiter.api.Test;
 
+import java.awt.GraphicsEnvironment;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -24,6 +25,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -71,32 +73,35 @@ final class SvgBackgroundTestScreenTest {
 
     @Test
     void usesSelectedResourceWithSvgBackgroundHelper() {
-        StackPane root = SvgBackgroundTestScreen.createRoot("SVG Background Test", () -> {
-        });
-        assertEquals(2, root.getChildren().size());
-        Region background = assertInstanceOf(Region.class, root.getChildren().get(0));
-        BorderPane screen = assertInstanceOf(BorderPane.class, root.getChildren().get(1));
-        VBox panel = assertInstanceOf(VBox.class, screen.getCenter());
-        @SuppressWarnings("unchecked")
-        ComboBox<SvgBackgroundTestScreen.BackgroundOption> backgroundChoices =
-                assertInstanceOf(ComboBox.class, panel.getChildren().get(2));
-        Label details = assertInstanceOf(Label.class, panel.getChildren().get(3));
+        assumeTrue(!GraphicsEnvironment.isHeadless(), "JavaFX chooser test requires a display.");
+        assertDoesNotThrow(() -> runOnJavaFxThread(() -> {
+            StackPane root = SvgBackgroundTestScreen.createRoot("SVG Background Test", () -> {
+            });
+            assertEquals(2, root.getChildren().size());
+            Region background = assertInstanceOf(Region.class, root.getChildren().get(0));
+            BorderPane screen = assertInstanceOf(BorderPane.class, root.getChildren().get(1));
+            VBox panel = assertInstanceOf(VBox.class, screen.getCenter());
+            @SuppressWarnings("unchecked")
+            ComboBox<SvgBackgroundTestScreen.BackgroundOption> backgroundChoices =
+                    assertInstanceOf(ComboBox.class, panel.getChildren().get(2));
+            Label details = assertInstanceOf(Label.class, panel.getChildren().get(3));
 
-        assertTrue(background.getStyleClass().contains(ScreenShell.SCREEN_BACKGROUND_SVG_STYLE_CLASS));
-        assertTrue(background.isMouseTransparent());
-        assertTrue(background.prefWidthProperty().isBound());
-        assertTrue(background.prefHeightProperty().isBound());
-        assertSame(screen, root.getChildren().get(1));
-        assertEquals(SvgBackgroundTestScreen.BACKGROUND_OPTIONS.get(0), backgroundChoices.getValue());
-        assertEquals(SvgBackgroundTestScreen.BACKGROUND_OPTIONS.get(0).detailText(), details.getText());
+            assertTrue(background.getStyleClass().contains(ScreenShell.SCREEN_BACKGROUND_SVG_STYLE_CLASS));
+            assertTrue(background.isMouseTransparent());
+            assertTrue(background.prefWidthProperty().isBound());
+            assertTrue(background.prefHeightProperty().isBound());
+            assertSame(screen, root.getChildren().get(1));
+            assertEquals(SvgBackgroundTestScreen.BACKGROUND_OPTIONS.get(0), backgroundChoices.getValue());
+            assertEquals(SvgBackgroundTestScreen.BACKGROUND_OPTIONS.get(0).detailText(), details.getText());
 
-        backgroundChoices.getSelectionModel().select(1);
+            backgroundChoices.getSelectionModel().select(1);
 
-        Region replacement = assertInstanceOf(Region.class, root.getChildren().get(0));
-        assertNotNull(replacement);
-        assertTrue(replacement.prefWidthProperty().isBound());
-        assertTrue(replacement.prefHeightProperty().isBound());
-        assertEquals(SvgBackgroundTestScreen.BACKGROUND_OPTIONS.get(1).detailText(), details.getText());
+            Region replacement = assertInstanceOf(Region.class, root.getChildren().get(0));
+            assertNotNull(replacement);
+            assertTrue(replacement.prefWidthProperty().isBound());
+            assertTrue(replacement.prefHeightProperty().isBound());
+            assertEquals(SvgBackgroundTestScreen.BACKGROUND_OPTIONS.get(1).detailText(), details.getText());
+        }));
     }
 
     @Test

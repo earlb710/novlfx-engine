@@ -132,8 +132,8 @@ final class ScreenShellTest {
 
         assertEquals(640, background.getPrefWidth());
         assertEquals(360, background.getPrefHeight());
-        assertEquals(640, backgroundImage.getWidth());
-        assertEquals(360, backgroundImage.getHeight());
+        assertEquals(640, backgroundImage.getFitWidth());
+        assertEquals(360, backgroundImage.getFitHeight());
         assertEquals(640, overlay.getPrefWidth());
         assertEquals(360, overlay.getPrefHeight());
         BorderPane aliasScreen = new BorderPane();
