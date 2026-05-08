@@ -51,6 +51,8 @@ final class FileCatalogApplicationTest {
         Files.writeString(gitDirectory.resolve("ignored.txt"), "ignored", StandardCharsets.UTF_8);
         Path ideaDirectory = Files.createDirectory(tempDirectory.resolve(".idea"));
         Files.writeString(ideaDirectory.resolve("ignored.xml"), "ignored", StandardCharsets.UTF_8);
+        Path githubDirectory = Files.createDirectory(tempDirectory.resolve(".github"));
+        Files.writeString(githubDirectory.resolve("workflow.yml"), "ignored", StandardCharsets.UTF_8);
 
         FileCatalogApplication.FileCatalog catalog = FileCatalogApplication.createCatalog(tempDirectory);
         String json = FileCatalogApplication.toJson(catalog);
@@ -59,6 +61,7 @@ final class FileCatalogApplicationTest {
         assertTrue(json.contains("included.txt"));
         assertFalse(json.contains(".git"));
         assertFalse(json.contains(".idea"));
+        assertFalse(json.contains(".github"));
         assertFalse(json.contains(FileCatalogApplication.CATALOG_FILE_NAME));
     }
 
@@ -119,5 +122,33 @@ final class FileCatalogApplicationTest {
         assertEquals("game | 2 file(s), 1.50 K.", FileCatalogApplication.statusText(catalog));
         assertEquals("game/sub | 2 file(s), 1.50 K.", FileCatalogApplication.directorySummary(directory));
         assertEquals("1.50 K", FileCatalogApplication.formatKilobytes(1536));
+    }
+
+    @Test
+    void directoryFileRowsIncludeAllDescendantFilesForSelectedFolder() {
+        FileCatalogApplication.CatalogDirectory directory = new FileCatalogApplication.CatalogDirectory(
+                "game", "",
+                3,
+                1536,
+                List.of(new FileCatalogApplication.CatalogFile("root.txt", 512, "2026-05-08T00:00:00Z")),
+                List.of(new FileCatalogApplication.CatalogDirectory(
+                        "sub",
+                        "sub",
+                        2,
+                        1024,
+                        List.of(new FileCatalogApplication.CatalogFile("child.txt", 256, "2026-05-08T00:00:00Z")),
+                        List.of(new FileCatalogApplication.CatalogDirectory(
+                                "nested",
+                                "sub/nested",
+                                1,
+                                768,
+                                List.of(new FileCatalogApplication.CatalogFile("deep.txt", 768, "2026-05-08T00:00:00Z")),
+                                List.of())))));
+
+        assertEquals(List.of(
+                        List.of("root.txt", "0.50 K", "2026-05-08T00:00:00Z"),
+                        List.of("sub/child.txt", "0.25 K", "2026-05-08T00:00:00Z"),
+                        List.of("sub/nested/deep.txt", "0.75 K", "2026-05-08T00:00:00Z")),
+                FileCatalogApplication.directoryFileRows(directory));
     }
 }

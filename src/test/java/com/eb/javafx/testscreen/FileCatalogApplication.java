@@ -192,11 +192,8 @@ public final class FileCatalogApplication {
             return;
         }
         directorySummaryLabel.setText(directorySummary(directory));
-        for (CatalogFile file : directory.files()) {
-            fileTableModel.addRow(List.of(
-                    file.name(),
-                    formatKilobytes(file.size()),
-                    file.modifiedAt()).toArray());
+        for (List<String> row : directoryFileRows(directory)) {
+            fileTableModel.addRow(row.toArray());
         }
     }
 
@@ -352,6 +349,16 @@ public final class FileCatalogApplication {
                 + " | total size: " + formatKilobytes(catalog.totalSize());
     }
 
+    static List<List<String>> directoryFileRows(CatalogDirectory directory) {
+        Validation.requireNonNull(directory, "Catalog directory is required.");
+        List<FileRow> rows = new ArrayList<>();
+        collectFileRows(directory, "", rows);
+        return rows.stream()
+                .sorted(Comparator.comparing(FileRow::path))
+                .map(row -> List.of(row.path(), formatKilobytes(row.size()), row.modifiedAt()))
+                .toList();
+    }
+
     static String formatKilobytes(long bytes) {
         return String.format(Locale.ROOT, "%.2f K", bytes / 1024.0);
     }
@@ -428,11 +435,22 @@ public final class FileCatalogApplication {
     private static boolean isIgnoredPath(Path path) {
         for (Path name : path) {
             String segment = name.toString();
-            if (segment.equals(".git") || segment.equals(".idea")) {
+            if (segment.equals(".git") || segment.equals(".idea") || segment.equals(".github")) {
                 return true;
             }
         }
         return false;
+    }
+
+    private static void collectFileRows(CatalogDirectory directory, String prefix, List<FileRow> rows) {
+        for (CatalogFile file : directory.files()) {
+            String path = prefix.isBlank() ? file.name() : prefix + "/" + file.name();
+            rows.add(new FileRow(path, file.size(), file.modifiedAt()));
+        }
+        for (CatalogDirectory child : directory.children()) {
+            String childPrefix = prefix.isBlank() ? child.name() : prefix + "/" + child.name();
+            collectFileRows(child, childPrefix, rows);
+        }
     }
 
     private static MutableDirectory directoryFor(MutableDirectory root, Path relativeDirectory) {
@@ -492,6 +510,9 @@ public final class FileCatalogApplication {
             name = Validation.requireNonBlank(name, "Catalog file name is required.");
             modifiedAt = Validation.requireNonBlank(modifiedAt, "Catalog file date is required.");
         }
+    }
+
+    private record FileRow(String path, long size, String modifiedAt) {
     }
 
     record CatalogDifference(int fileDifference, long sizeDifference) {
