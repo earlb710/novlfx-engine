@@ -57,7 +57,7 @@ public final class SvgBackgroundTestScreen {
         BorderPane screen = new BorderPane();
         screen.setTop(header);
         screen.setCenter(panel);
-        BorderPane.setMargin(header, ScreenShell.OUTER_INSETS_WITHOUT_BOTTOM);
+        BorderPane.setMargin(header, new Insets(24, 24, 0, 24));
         BorderPane.setMargin(panel, new Insets(0, 24, 24, 24));
 
         return ScreenShell.setBackgroundSvg(screen, BACKGROUND_RESOURCE);
