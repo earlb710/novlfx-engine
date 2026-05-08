@@ -48,20 +48,18 @@ final class SvgBackgroundTestScreenTest {
     }
 
     @Test
-    void createsScreenWithSvgBackgroundBehindContent() {
-        StackPane root = SvgBackgroundTestScreen.createRoot("SVG Background Test", () -> {
-        });
+    void usesGradientResourceWithSvgBackgroundHelper() {
+        BorderPane screen = new BorderPane();
+        StackPane root = ScreenShell.setBackgroundSvg(screen, SvgBackgroundTestScreen.BACKGROUND_RESOURCE);
 
         assertEquals(2, root.getChildren().size());
         Region background = assertInstanceOf(Region.class, root.getChildren().get(0));
-        BorderPane screen = assertInstanceOf(BorderPane.class, root.getChildren().get(1));
 
         assertTrue(background.getStyleClass().contains(ScreenShell.SCREEN_BACKGROUND_SVG_STYLE_CLASS));
         assertTrue(background.isMouseTransparent());
         assertTrue(background.prefWidthProperty().isBound());
         assertTrue(background.prefHeightProperty().isBound());
-        assertTrue(screen.getTop() != null);
-        assertTrue(screen.getCenter() != null);
+        assertTrue(root.getChildren().get(1) == screen);
     }
 
     @Test
