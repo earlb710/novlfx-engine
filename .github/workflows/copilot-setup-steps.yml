@@ -13,6 +13,7 @@ jobs:
   copilot-setup-steps:
     runs-on: ubuntu-latest
     environment: copilot
+    timeout-minutes: 20
 
     permissions:
       contents: read
@@ -37,3 +38,16 @@ jobs:
               printf '    insteadOf = https://github.com/earlb710/AltLife\n'
             } >> "${git_config}"
           fi
+
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+
+      - name: Warm Gradle dependencies
+        run: ./gradlew --no-daemon compileJava testClasses
