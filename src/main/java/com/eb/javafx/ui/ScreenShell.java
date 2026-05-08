@@ -46,7 +46,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import javax.swing.SwingUtilities;
 
 /**
@@ -110,6 +110,7 @@ public final class ScreenShell {
     private static final Color DEFAULT_FOOTER_BACKGROUND_COLOR = Color.rgb(10, 20, 38);
     private static final Color DEFAULT_FOOTER_BORDER_COLOR = Color.web("#143869");
     private static final CornerRadii FOOTER_CORNER_RADII = new CornerRadii(999);
+    private static final int MIN_CANVAS_DIMENSION = 1;
     private static final String FOOTER_BACKGROUND_COLOR_PROPERTY = "screenFooterBackgroundColor";
     private static final String FOOTER_BACKGROUND_TRANSPARENCY_PROPERTY = "screenFooterBackgroundTransparency";
     private static final String FOOTER_BORDER_STYLE_PROPERTY = "screenFooterBorderStyle";
@@ -761,8 +762,8 @@ public final class ScreenShell {
         private final SwingNode swingNode = new SwingNode();
         private final JSVGCanvas canvas = new JSVGCanvas();
         private final AtomicBoolean resizePending = new AtomicBoolean();
-        private final AtomicInteger pendingCanvasWidth = new AtomicInteger(1);
-        private final AtomicInteger pendingCanvasHeight = new AtomicInteger(1);
+        private final AtomicReference<Dimension> pendingCanvasSize = new AtomicReference<>(
+                new Dimension(MIN_CANVAS_DIMENSION, MIN_CANVAS_DIMENSION));
         private int currentCanvasWidth = -1;
         private int currentCanvasHeight = -1;
         private boolean contentInstalled;
@@ -797,8 +798,8 @@ public final class ScreenShell {
             if (!contentInstalled) {
                 return;
             }
-            int canvasWidth = Math.max(1, (int) Math.ceil(width));
-            int canvasHeight = Math.max(1, (int) Math.ceil(height));
+            int canvasWidth = Math.max(MIN_CANVAS_DIMENSION, (int) Math.ceil(width));
+            int canvasHeight = Math.max(MIN_CANVAS_DIMENSION, (int) Math.ceil(height));
             if (canvasWidth == currentCanvasWidth && canvasHeight == currentCanvasHeight) {
                 return;
             }
@@ -808,25 +809,28 @@ public final class ScreenShell {
         }
 
         private void scheduleCanvasResize(int canvasWidth, int canvasHeight) {
-            pendingCanvasWidth.set(canvasWidth);
-            pendingCanvasHeight.set(canvasHeight);
+            pendingCanvasSize.set(new Dimension(canvasWidth, canvasHeight));
             if (!resizePending.compareAndSet(false, true)) {
                 return;
             }
-            SwingUtilities.invokeLater(() -> {
-                int width = pendingCanvasWidth.get();
-                int height = pendingCanvasHeight.get();
-                Dimension size = new Dimension(width, height);
+            SwingUtilities.invokeLater(this::applyPendingCanvasResize);
+        }
+
+        private void applyPendingCanvasResize() {
+            while (true) {
+                Dimension size = pendingCanvasSize.get();
                 canvas.setMinimumSize(size);
                 canvas.setPreferredSize(size);
                 canvas.setSize(size);
                 canvas.revalidate();
                 canvas.repaint();
-                resizePending.set(false);
-                if (pendingCanvasWidth.get() != width || pendingCanvasHeight.get() != height) {
-                    scheduleCanvasResize(pendingCanvasWidth.get(), pendingCanvasHeight.get());
+                if (pendingCanvasSize.get().equals(size)) {
+                    resizePending.set(false);
+                    if (pendingCanvasSize.get().equals(size) || !resizePending.compareAndSet(false, true)) {
+                        return;
+                    }
                 }
-            });
+            }
         }
 
         @Override
