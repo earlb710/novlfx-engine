@@ -83,19 +83,19 @@ public final class SvgBackgroundTestScreen {
         screen.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
 
         StackPane root = new StackPane();
-        Region background = backgroundLayer(backgroundChoices.getValue().resourcePath(), root);
+        Region background = createBackgroundLayer(backgroundChoices.getValue().resourcePath(), root);
         root.getChildren().addAll(background, screen);
         backgroundChoices.valueProperty().addListener((observable, oldValue, newValue) -> {
             if (newValue == null) {
                 return;
             }
             details.setText(newValue.detailText());
-            root.getChildren().set(0, backgroundLayer(newValue.resourcePath(), root));
+            root.getChildren().set(0, createBackgroundLayer(newValue.resourcePath(), root));
         });
         return root;
     }
 
-    private static Region backgroundLayer(String resourcePath, StackPane root) {
+    private static Region createBackgroundLayer(String resourcePath, StackPane root) {
         Region background = ScreenShell.backgroundSvg(resourcePath);
         background.prefWidthProperty().bind(root.widthProperty());
         background.prefHeightProperty().bind(root.heightProperty());

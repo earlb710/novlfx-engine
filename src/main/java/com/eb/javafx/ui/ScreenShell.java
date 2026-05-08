@@ -706,7 +706,6 @@ public final class ScreenShell {
                 height = Math.max(height, screen.getBounds().getHeight() * screen.getOutputScaleY());
             }
         } catch (IllegalStateException ignored) {
-            return new Dimension2D(width, height);
         }
         return new Dimension2D(width, height);
     }
