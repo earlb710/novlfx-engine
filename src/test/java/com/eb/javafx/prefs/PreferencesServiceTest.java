@@ -37,6 +37,8 @@ final class PreferencesServiceTest {
         preferences.putBoolean("accessibility.reducedMotion", true);
         preferences.put("input.mode", "keyboard");
         preferences.putDouble("audio.masterVolume", -1.0);
+        preferences.putDouble("audio.musicVolume", 2.0);
+        preferences.putDouble("audio.soundVolume", 0.25);
 
         PreferencesService service = new PreferencesService();
         service.load();
@@ -58,6 +60,8 @@ final class PreferencesServiceTest {
         assertTrue(service.reducedMotion());
         assertEquals("keyboard", service.inputMode());
         assertEquals(0.0, service.masterVolume());
+        assertEquals(1.0, service.musicVolume());
+        assertEquals(0.25, service.soundVolume());
     }
 
     @Test
@@ -102,6 +106,7 @@ final class PreferencesServiceTest {
         service.saveAccessibilityPreferences(true, true);
         service.saveInputMode("invalid");
         service.saveMasterVolume(2.0);
+        service.saveAudioChannelVolumes(0.25, 0.75);
         service.saveFooterShortcutDisplay(PreferencesService.FooterShortcutDisplay.HIDE);
 
         assertFalse(service.showPortrait());
@@ -119,6 +124,20 @@ final class PreferencesServiceTest {
         assertTrue(service.reducedMotion());
         assertEquals("mouse", service.inputMode());
         assertEquals(1.0, service.masterVolume());
+        assertEquals(0.25, service.musicVolume());
+        assertEquals(0.75, service.soundVolume());
+    }
+
+    @Test
+    void saveIndividualAudioChannelVolumesClampsValues() {
+        PreferencesService service = new PreferencesService();
+        service.load();
+
+        service.saveMusicVolume(-1.0);
+        service.saveSoundVolume(2.0);
+
+        assertEquals(0.0, service.musicVolume());
+        assertEquals(1.0, service.soundVolume());
     }
 
     @Test

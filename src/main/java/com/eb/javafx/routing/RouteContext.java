@@ -1,6 +1,7 @@
 package com.eb.javafx.routing;
 
 import com.eb.javafx.content.ContentRegistry;
+import com.eb.javafx.audio.AudioService;
 import com.eb.javafx.display.ImageDisplayRegistry;
 import com.eb.javafx.gamesupport.GameSupportService;
 import com.eb.javafx.prefs.PreferencesService;
@@ -29,6 +30,7 @@ public final class RouteContext {
     private final SaveLoadService saveLoadService;
     private final GameRandomService randomService;
     private final GameSupportService gameSupportService;
+    private final AudioService audioService;
     private final GameState gameState;
     private final SceneRegistry sceneRegistry;
     private final SceneExecutor sceneExecutor;
@@ -44,7 +46,7 @@ public final class RouteContext {
             UiTheme uiTheme,
             SceneRouter sceneRouter) {
         this(primaryStage, preferencesService, contentRegistry, imageDisplayRegistry, saveLoadService,
-                null, null, null, new SceneRegistry(), null, uiTheme, sceneRouter);
+                null, null, null, null, new SceneRegistry(), null, uiTheme, sceneRouter);
     }
 
     public RouteContext(
@@ -60,6 +62,24 @@ public final class RouteContext {
             SceneExecutor sceneExecutor,
             UiTheme uiTheme,
             SceneRouter sceneRouter) {
+        this(primaryStage, preferencesService, contentRegistry, imageDisplayRegistry, saveLoadService, randomService,
+                gameSupportService, null, gameState, sceneRegistry, sceneExecutor, uiTheme, sceneRouter);
+    }
+
+    public RouteContext(
+            Stage primaryStage,
+            PreferencesService preferencesService,
+            ContentRegistry contentRegistry,
+            ImageDisplayRegistry imageDisplayRegistry,
+            SaveLoadService saveLoadService,
+            GameRandomService randomService,
+            GameSupportService gameSupportService,
+            AudioService audioService,
+            GameState gameState,
+            SceneRegistry sceneRegistry,
+            SceneExecutor sceneExecutor,
+            UiTheme uiTheme,
+            SceneRouter sceneRouter) {
         this.primaryStage = primaryStage;
         this.preferencesService = preferencesService;
         this.contentRegistry = contentRegistry;
@@ -67,6 +87,7 @@ public final class RouteContext {
         this.saveLoadService = saveLoadService;
         this.randomService = randomService;
         this.gameSupportService = gameSupportService;
+        this.audioService = audioService;
         this.gameState = gameState;
         this.sceneRegistry = sceneRegistry;
         this.sceneExecutor = sceneExecutor == null && sceneRegistry != null ? new SceneExecutor(sceneRegistry) : sceneExecutor;
@@ -100,6 +121,10 @@ public final class RouteContext {
 
     public GameSupportService gameSupportService() {
         return gameSupportService;
+    }
+
+    public AudioService audioService() {
+        return audioService;
     }
 
     public GameState gameState() {

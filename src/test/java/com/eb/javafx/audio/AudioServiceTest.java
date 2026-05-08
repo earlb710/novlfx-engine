@@ -25,6 +25,7 @@ final class AudioServiceTest {
     void initializeRegistersDefaultChannelsAndMasterVolume() {
         PreferencesService preferencesService = new PreferencesService();
         preferencesService.saveMasterVolume(0.5);
+        preferencesService.saveAudioChannelVolumes(0.25, 0.75);
         preferencesService.load();
 
         AudioService service = new AudioService();
@@ -33,6 +34,8 @@ final class AudioServiceTest {
         assertTrue(service.isInitialized());
         assertEquals(4, service.channels().size());
         assertEquals(0.5, service.masterVolume());
+        assertEquals(0.25, service.channelVolume(AudioService.MUSIC_CHANNEL));
+        assertEquals(0.75, service.channelVolume(AudioService.SOUND_CHANNEL));
         assertTrue(service.channels().get(AudioService.MUSIC_CHANNEL).loopingAllowed());
         assertFalse(service.channels().get(AudioService.SOUND_CHANNEL).loopingAllowed());
     }

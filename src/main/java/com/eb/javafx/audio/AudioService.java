@@ -51,6 +51,8 @@ public final class AudioService {
         registerChannel(new AudioChannelDefinition(SOUND_CHANNEL, "Short one-shot UI and gameplay sounds.", false, 8, 1.0));
         registerChannel(new AudioChannelDefinition(EFFECTS_CHANNEL, "Reusable environmental and scene effects.", true, 4, 1.0));
         registerChannel(new AudioChannelDefinition(INTIMATE_EFFECTS_CHANNEL, "Dedicated migrated effect channel.", true, 2, 1.0));
+        channelVolumes.put(MUSIC_CHANNEL, preferencesService.musicVolume());
+        channelVolumes.put(SOUND_CHANNEL, preferencesService.soundVolume());
         initializationGuard.markInitialized();
     }
 

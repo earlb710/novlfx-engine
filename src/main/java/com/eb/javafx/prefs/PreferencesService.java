@@ -28,6 +28,8 @@ public final class PreferencesService {
     private static final String REDUCED_MOTION_KEY = "accessibility.reducedMotion";
     private static final String INPUT_MODE_KEY = "input.mode";
     private static final String MASTER_VOLUME_KEY = "audio.masterVolume";
+    private static final String MUSIC_VOLUME_KEY = "audio.musicVolume";
+    private static final String SOUND_VOLUME_KEY = "audio.soundVolume";
 
     private final Preferences preferences = Preferences.userNodeForPackage(PreferencesService.class);
     private int windowWidth;
@@ -46,6 +48,8 @@ public final class PreferencesService {
     private boolean reducedMotion;
     private String inputMode;
     private double masterVolume;
+    private double musicVolume;
+    private double soundVolume;
 
     /**
      * Loads startup preferences with conservative defaults for the first shell.
@@ -70,6 +74,8 @@ public final class PreferencesService {
         reducedMotion = preferences.getBoolean(REDUCED_MOTION_KEY, false);
         inputMode = validatedInputMode(preferences.get(INPUT_MODE_KEY, "mouse"));
         masterVolume = clamp(preferences.getDouble(MASTER_VOLUME_KEY, 1.0), 0.0, 1.0);
+        musicVolume = clamp(preferences.getDouble(MUSIC_VOLUME_KEY, 1.0), 0.0, 1.0);
+        soundVolume = clamp(preferences.getDouble(SOUND_VOLUME_KEY, 1.0), 0.0, 1.0);
     }
 
     /** Returns the configured starting width for JavaFX scenes. */
@@ -160,6 +166,16 @@ public final class PreferencesService {
     /** Returns the early startup master volume for future audio service wiring. */
     public double masterVolume() {
         return masterVolume;
+    }
+
+    /** Returns the persisted music channel volume multiplier. */
+    public double musicVolume() {
+        return musicVolume;
+    }
+
+    /** Returns the persisted sound channel volume multiplier. */
+    public double soundVolume() {
+        return soundVolume;
     }
 
     /** Persists a clamped window size separately from save-game state. */
@@ -254,6 +270,26 @@ public final class PreferencesService {
     public void saveMasterVolume(double masterVolume) {
         this.masterVolume = clamp(masterVolume, 0.0, 1.0);
         preferences.putDouble(MASTER_VOLUME_KEY, this.masterVolume);
+    }
+
+    /** Persists clamped music and sound channel volumes for the default preferences screen. */
+    public void saveAudioChannelVolumes(double musicVolume, double soundVolume) {
+        this.musicVolume = clamp(musicVolume, 0.0, 1.0);
+        this.soundVolume = clamp(soundVolume, 0.0, 1.0);
+        preferences.putDouble(MUSIC_VOLUME_KEY, this.musicVolume);
+        preferences.putDouble(SOUND_VOLUME_KEY, this.soundVolume);
+    }
+
+    /** Persists a clamped music channel volume. */
+    public void saveMusicVolume(double musicVolume) {
+        this.musicVolume = clamp(musicVolume, 0.0, 1.0);
+        preferences.putDouble(MUSIC_VOLUME_KEY, this.musicVolume);
+    }
+
+    /** Persists a clamped sound channel volume. */
+    public void saveSoundVolume(double soundVolume) {
+        this.soundVolume = clamp(soundVolume, 0.0, 1.0);
+        preferences.putDouble(SOUND_VOLUME_KEY, this.soundVolume);
     }
 
     private int clamp(int value, int minimum, int maximum) {

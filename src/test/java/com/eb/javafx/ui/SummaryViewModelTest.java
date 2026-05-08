@@ -20,6 +20,7 @@ final class SummaryViewModelTest {
         PreferencesService preferencesService = new PreferencesService();
         preferencesService.load();
         preferencesService.saveUiOpacity(0.42, 0.75);
+        preferencesService.saveAudioChannelVolumes(0.25, 0.75);
 
         PreferencesSummaryViewModel viewModel = PreferencesSummaryScreen.viewModel("Preferences", preferencesService);
 
@@ -27,13 +28,24 @@ final class SummaryViewModelTest {
         assertEquals("Window", viewModel.rows().get(0).label());
         assertEquals("HUD alpha", viewModel.rows().get(1).label());
         assertEquals("0.42", viewModel.rows().get(1).value());
-        assertEquals(15, viewModel.rows().size());
+        assertEquals(17, viewModel.rows().size());
         assertEquals("Footer shortcut display", viewModel.rows().get(6).label());
-        assertEquals("Theme set", viewModel.rows().get(9).label());
-        assertEquals("Ocean", viewModel.rows().get(9).value());
-        assertEquals("Theme variant", viewModel.rows().get(10).label());
+        assertEquals("Music volume", viewModel.rows().get(9).label());
+        assertEquals("25%", viewModel.rows().get(9).value());
+        assertEquals("Sound volume", viewModel.rows().get(10).label());
+        assertEquals("75%", viewModel.rows().get(10).value());
+        assertEquals("Theme color", viewModel.rows().get(11).label());
+        assertEquals("Ocean", viewModel.rows().get(11).value());
+        assertEquals("Theme variant", viewModel.rows().get(12).label());
         assertEquals("HUD alpha: 0.42", viewModel.screenViewModel().lines().get(1));
         assertEquals("Back to main menu", viewModel.actions().get(0).label());
+    }
+
+    @Test
+    void preferencesVolumeLabelsRenderAsPercentages() {
+        assertEquals("0%", PreferencesSummaryScreen.percentLabel(0.0));
+        assertEquals("50%", PreferencesSummaryScreen.percentLabel(0.5));
+        assertEquals("100%", PreferencesSummaryScreen.percentLabel(1.0));
     }
 
     @Test
