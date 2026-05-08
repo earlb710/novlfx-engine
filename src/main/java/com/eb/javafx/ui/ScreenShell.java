@@ -7,6 +7,7 @@ import com.eb.javafx.state.GameState;
 import com.eb.javafx.util.Validation;
 import com.eb.javafx.util.VectorImage;
 import javafx.application.Platform;
+import javafx.geometry.Dimension2D;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
@@ -31,14 +32,11 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
-import org.girod.javafx.svgimage.SVGImageRegion;
-import org.girod.javafx.svgimage.SVGLoader;
-import org.girod.javafx.svgimage.xml.parsers.SVGParsingException;
+import javafx.stage.Screen;
 
+import java.net.URL;
 import java.io.IOException;
 import java.io.InputStream;
-import java.awt.GraphicsEnvironment;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -105,6 +103,8 @@ public final class ScreenShell {
     private static final Color DEFAULT_FOOTER_BACKGROUND_COLOR = Color.rgb(10, 20, 38);
     private static final Color DEFAULT_FOOTER_BORDER_COLOR = Color.web("#143869");
     private static final CornerRadii FOOTER_CORNER_RADII = new CornerRadii(999);
+    private static final int BACKGROUND_SVG_RASTER_MIN_WIDTH = 1920;
+    private static final int BACKGROUND_SVG_RASTER_MIN_HEIGHT = 1080;
     private static final String FOOTER_BACKGROUND_COLOR_PROPERTY = "screenFooterBackgroundColor";
     private static final String FOOTER_BACKGROUND_TRANSPARENCY_PROPERTY = "screenFooterBackgroundTransparency";
     private static final String FOOTER_BORDER_STYLE_PROPERTY = "screenFooterBorderStyle";
@@ -680,22 +680,35 @@ public final class ScreenShell {
         }
     }
 
-    private static Region loadBackgroundSvgRegion(String resourcePath) {
+    private static Image loadBackgroundSvgImage(String resourcePath) {
         URL resource = resolveResource(resourcePath);
-        try (InputStream ignored = resource.openStream()) {
+        try (InputStream inputStream = resource.openStream()) {
+            VectorImage image = VectorImage.fromInputStream(inputStream);
+            image.getSvgDocument().getDocumentElement().setAttribute("preserveAspectRatio", "none");
+            Dimension2D rasterSize = backgroundSvgRasterSize(image);
+            return image.toRasterImage((int) Math.ceil(rasterSize.getWidth()), (int) Math.ceil(rasterSize.getHeight()));
         } catch (IOException exception) {
             throw new IllegalArgumentException("Failed to load SVG background resource: " + resourcePath, exception);
-        }
-        if (GraphicsEnvironment.isHeadless()) {
-            return new Region();
-        }
-        try {
-            SVGImageRegion region = SVGLoader.load(resource).createRegion();
-            region.setConform(false);
-            return region;
-        } catch (SVGParsingException exception) {
+        } catch (IllegalArgumentException | IllegalStateException exception) {
             throw new IllegalArgumentException("SVG background resource has invalid format: " + resourcePath, exception);
         }
+    }
+
+    private static Dimension2D backgroundSvgRasterSize(VectorImage image) {
+        double width = Math.max(BACKGROUND_SVG_RASTER_MIN_WIDTH, image.getWidth());
+        double height = Math.max(BACKGROUND_SVG_RASTER_MIN_HEIGHT, image.getHeight());
+        if (!Platform.isFxApplicationThread()) {
+            return new Dimension2D(width, height);
+        }
+        try {
+            for (Screen screen : Screen.getScreens()) {
+                width = Math.max(width, screen.getBounds().getWidth() * screen.getOutputScaleX());
+                height = Math.max(height, screen.getBounds().getHeight() * screen.getOutputScaleY());
+            }
+        } catch (IllegalStateException ignored) {
+            return new Dimension2D(width, height);
+        }
+        return new Dimension2D(width, height);
     }
 
     private static URL resolveResource(String resourcePath) {
@@ -758,24 +771,28 @@ public final class ScreenShell {
     }
 
     private static final class SvgBackground extends Region {
-        private final Region svgRegion;
+        private final ImageView imageView;
 
         private SvgBackground(String svgResourcePath) {
-            svgRegion = loadBackgroundSvgRegion(svgResourcePath);
+            imageView = new ImageView(loadBackgroundSvgImage(svgResourcePath));
             getStyleClass().add(SCREEN_BACKGROUND_SVG_STYLE_CLASS);
             setMinSize(0, 0);
             setBorder(Border.EMPTY);
             setBackground(Background.EMPTY);
             setMouseTransparent(true);
             setFocusTraversable(false);
-            svgRegion.setMouseTransparent(true);
-            svgRegion.setFocusTraversable(false);
-            getChildren().add(svgRegion);
+            imageView.setMouseTransparent(true);
+            imageView.setFocusTraversable(false);
+            imageView.setPreserveRatio(false);
+            imageView.setSmooth(true);
+            imageView.fitWidthProperty().bind(widthProperty());
+            imageView.fitHeightProperty().bind(heightProperty());
+            getChildren().add(imageView);
         }
 
         @Override
         protected void layoutChildren() {
-            svgRegion.resizeRelocate(0, 0, getWidth(), getHeight());
+            imageView.resizeRelocate(0, 0, getWidth(), getHeight());
         }
 
         @Override

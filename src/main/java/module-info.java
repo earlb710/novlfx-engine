@@ -5,7 +5,6 @@ module com.novlfx.engine {
     requires javafx.swing;
     requires java.desktop;
     requires batik.all;
-    requires org.girod.javafx.svgimage;
     requires org.fxyz3d.core;
     requires xml.apis.ext;
 

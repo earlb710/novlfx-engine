@@ -7,8 +7,8 @@ import com.eb.javafx.prefs.PreferencesService;
 import com.eb.javafx.prefs.PreferencesService.FooterShortcutDisplay;
 import com.eb.javafx.state.GameState;
 import com.eb.javafx.util.VectorImage;
-import javafx.geometry.Pos;
 import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.image.WritableImage;
 import javafx.scene.layout.BackgroundImage;
 import javafx.scene.layout.BackgroundPosition;
@@ -21,13 +21,11 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.geometry.Pos;
 import javafx.scene.paint.Color;
-import javafx.scene.image.ImageView;
 import javafx.scene.shape.SVGPath;
-import org.girod.javafx.svgimage.SVGImageRegion;
 import org.junit.jupiter.api.Test;
 
-import java.awt.GraphicsEnvironment;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -123,14 +121,10 @@ final class ScreenShellTest {
         assertTrue(background.prefHeightProperty().isBound());
         assertTrue(overlay.prefWidthProperty().isBound());
         assertTrue(overlay.prefHeightProperty().isBound());
-        Region backgroundImage = (Region) background.getChildrenUnmodifiable().get(0);
-        if (!GraphicsEnvironment.isHeadless()) {
-            assertTrue(backgroundImage instanceof SVGImageRegion);
-            assertFalse(((SVGImageRegion) backgroundImage).isConform());
-        } else {
-            assertFalse(backgroundImage instanceof SVGImageRegion);
-            assertTrue(backgroundImage.getChildrenUnmodifiable().isEmpty());
-        }
+        ImageView backgroundImage = (ImageView) background.getChildrenUnmodifiable().get(0);
+        assertFalse(backgroundImage.isPreserveRatio());
+        assertTrue(backgroundImage.fitWidthProperty().isBound());
+        assertTrue(backgroundImage.fitHeightProperty().isBound());
 
         root.resize(640, 360);
         background.resize(640, 360);
