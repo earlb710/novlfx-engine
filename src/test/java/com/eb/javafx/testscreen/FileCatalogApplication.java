@@ -435,7 +435,7 @@ public final class FileCatalogApplication {
     private static boolean isIgnoredPath(Path path) {
         for (Path name : path) {
             String segment = name.toString();
-            if (segment.equals(".git") || segment.equals(".idea") || segment.equals(".github")) {
+            if (segment.equals(".git") || segment.equals(".idea") || segment.equals(".github") || segment.equals("build")) {
                 return true;
             }
         }

@@ -44,7 +44,7 @@ final class FileCatalogApplicationTest {
     }
 
     @Test
-    void createCatalogSkipsGitIdeaAndCatalogFiles() throws Exception {
+    void createCatalogSkipsIgnoredDirectoriesAndCatalogFiles() throws Exception {
         Files.writeString(tempDirectory.resolve("included.txt"), "included", StandardCharsets.UTF_8);
         Files.writeString(tempDirectory.resolve(FileCatalogApplication.CATALOG_FILE_NAME), "old", StandardCharsets.UTF_8);
         Path gitDirectory = Files.createDirectory(tempDirectory.resolve(".git"));
@@ -53,6 +53,8 @@ final class FileCatalogApplicationTest {
         Files.writeString(ideaDirectory.resolve("ignored.xml"), "ignored", StandardCharsets.UTF_8);
         Path githubDirectory = Files.createDirectory(tempDirectory.resolve(".github"));
         Files.writeString(githubDirectory.resolve("workflow.yml"), "ignored", StandardCharsets.UTF_8);
+        Path buildDirectory = Files.createDirectory(tempDirectory.resolve("build"));
+        Files.writeString(buildDirectory.resolve("generated.bin"), "ignored", StandardCharsets.UTF_8);
 
         FileCatalogApplication.FileCatalog catalog = FileCatalogApplication.createCatalog(tempDirectory);
         String json = FileCatalogApplication.toJson(catalog);
@@ -62,6 +64,7 @@ final class FileCatalogApplicationTest {
         assertFalse(json.contains(".git"));
         assertFalse(json.contains(".idea"));
         assertFalse(json.contains(".github"));
+        assertFalse(json.contains("\"build\""));
         assertFalse(json.contains(FileCatalogApplication.CATALOG_FILE_NAME));
     }
 
