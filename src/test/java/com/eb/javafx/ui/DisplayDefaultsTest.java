@@ -19,13 +19,14 @@ final class DisplayDefaultsTest {
         assertEquals("", defaults.screen().get("borderCorner"));
         assertEquals("", defaults.screen().get("borderThickness"));
         assertEquals("", defaults.screen().get("borderColor"));
-        assertEquals("#143869", defaults.block().get("backgroundColor"));
+        assertEquals("#1d3a2a", defaults.block().get("backgroundColor"));
         assertEquals("0", defaults.block().get("transparency"));
         assertEquals("28", defaults.itemDefaults(DisplayDefaults.ROLE_HEADING).get("fontSize"));
         assertEquals("transparent", defaults.itemDefaults(DisplayDefaults.ROLE_TEXT).get("backgroundColor"));
-        assertEquals("#0a1426", defaults.itemDefaults(DisplayDefaults.ROLE_BUTTON).get("backgroundColor"));
-        assertEquals("#143869", defaults.itemDefaults(DisplayDefaults.ROLE_BUTTON).get("hoverBackgroundColor"));
-        assertEquals("#0099cc", defaults.itemDefaults(DisplayDefaults.ROLE_BUTTON).get("pressedBackgroundColor"));
+        assertEquals("#4f9a73", defaults.block().get("borderColor"));
+        assertEquals("transparent", defaults.itemDefaults(DisplayDefaults.ROLE_BUTTON).get("backgroundColor"));
+        assertEquals("transparent", defaults.itemDefaults(DisplayDefaults.ROLE_BUTTON).get("hoverBackgroundColor"));
+        assertEquals("transparent", defaults.itemDefaults(DisplayDefaults.ROLE_BUTTON).get("pressedBackgroundColor"));
         assertEquals("bold", defaults.labelDefaults(DisplayDefaults.ROLE_FIELD_LABEL).get("fontStyle"));
     }
 

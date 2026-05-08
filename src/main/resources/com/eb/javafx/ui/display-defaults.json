@@ -13,12 +13,12 @@
   "block": {
     "fontSize": "16",
     "color": "#ffffff",
-    "backgroundColor": "#143869",
+    "backgroundColor": "#1d3a2a",
     "transparency": "0",
     "borderStyle": "solid",
     "borderCorner": "rounded",
     "borderThickness": "1",
-    "borderColor": "#143869"
+    "borderColor": "#4f9a73"
   },
   "items": {
     "text": {
@@ -51,9 +51,9 @@
       "fontSize": "20",
       "fontStyle": "bold",
       "color": "#ffffff",
-      "backgroundColor": "#0a1426",
-      "hoverBackgroundColor": "#143869",
-      "pressedBackgroundColor": "#0099cc",
+      "backgroundColor": "transparent",
+      "hoverBackgroundColor": "transparent",
+      "pressedBackgroundColor": "transparent",
       "transparency": "0"
     }
   },

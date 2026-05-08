@@ -22,10 +22,14 @@ public final class PreferencesService {
     private static final String FOOTER_SHORTCUT_DISPLAY_KEY = "ui.footerShortcutDisplay";
     private static final String FONT_FAMILY_KEY = "ui.fontFamily";
     private static final String FONT_SCALE_KEY = "ui.fontScale";
+    private static final String THEME_FAMILY_KEY = "ui.themeFamily";
+    private static final String THEME_VARIANT_KEY = "ui.themeVariant";
     private static final String HIGH_CONTRAST_KEY = "accessibility.highContrast";
     private static final String REDUCED_MOTION_KEY = "accessibility.reducedMotion";
     private static final String INPUT_MODE_KEY = "input.mode";
     private static final String MASTER_VOLUME_KEY = "audio.masterVolume";
+    private static final String MUSIC_VOLUME_KEY = "audio.musicVolume";
+    private static final String SOUND_VOLUME_KEY = "audio.soundVolume";
 
     private final Preferences preferences = Preferences.userNodeForPackage(PreferencesService.class);
     private int windowWidth;
@@ -38,10 +42,14 @@ public final class PreferencesService {
     private FooterShortcutDisplay footerShortcutDisplay;
     private String fontFamily;
     private double fontScale;
+    private ThemeFamily themeFamily;
+    private ThemeVariant themeVariant;
     private boolean highContrast;
     private boolean reducedMotion;
     private String inputMode;
     private double masterVolume;
+    private double musicVolume;
+    private double soundVolume;
 
     /**
      * Loads startup preferences with conservative defaults for the first shell.
@@ -60,10 +68,14 @@ public final class PreferencesService {
         footerShortcutDisplay = validatedFooterShortcutDisplay(footerShortcutDisplayPreferenceValue());
         fontFamily = preferences.get(FONT_FAMILY_KEY, "System");
         fontScale = clamp(preferences.getDouble(FONT_SCALE_KEY, 1.0), 0.75, 2.0);
+        themeFamily = validatedThemeFamily(preferences.get(THEME_FAMILY_KEY, ThemeFamily.OCEAN.preferenceValue()));
+        themeVariant = validatedThemeVariant(preferences.get(THEME_VARIANT_KEY, ThemeVariant.DARK.preferenceValue()));
         highContrast = preferences.getBoolean(HIGH_CONTRAST_KEY, false);
         reducedMotion = preferences.getBoolean(REDUCED_MOTION_KEY, false);
         inputMode = validatedInputMode(preferences.get(INPUT_MODE_KEY, "mouse"));
         masterVolume = clamp(preferences.getDouble(MASTER_VOLUME_KEY, 1.0), 0.0, 1.0);
+        musicVolume = clamp(preferences.getDouble(MUSIC_VOLUME_KEY, 1.0), 0.0, 1.0);
+        soundVolume = clamp(preferences.getDouble(SOUND_VOLUME_KEY, 1.0), 0.0, 1.0);
     }
 
     /** Returns the configured starting width for JavaFX scenes. */
@@ -126,6 +138,16 @@ public final class PreferencesService {
         return fontScale;
     }
 
+    /** Returns the preferred UI theme family. */
+    public ThemeFamily themeFamily() {
+        return themeFamily;
+    }
+
+    /** Returns the preferred UI theme variant. */
+    public ThemeVariant themeVariant() {
+        return themeVariant;
+    }
+
     /** Returns whether high-contrast JavaFX styling should be preferred. */
     public boolean highContrast() {
         return highContrast;
@@ -144,6 +166,16 @@ public final class PreferencesService {
     /** Returns the early startup master volume for future audio service wiring. */
     public double masterVolume() {
         return masterVolume;
+    }
+
+    /** Returns the persisted music channel volume multiplier. */
+    public double musicVolume() {
+        return musicVolume;
+    }
+
+    /** Returns the persisted sound channel volume multiplier. */
+    public double soundVolume() {
+        return soundVolume;
     }
 
     /** Persists a clamped window size separately from save-game state. */
@@ -207,6 +239,19 @@ public final class PreferencesService {
         preferences.putDouble(FONT_SCALE_KEY, this.fontScale);
     }
 
+    /** Persists the selected theme family and variant. */
+    public void saveThemePreferences(ThemeFamily themeFamily, ThemeVariant themeVariant) {
+        this.themeFamily = themeFamily == null ? ThemeFamily.OCEAN : themeFamily;
+        this.themeVariant = themeVariant == null ? ThemeVariant.DARK : themeVariant;
+        preferences.put(THEME_FAMILY_KEY, this.themeFamily.preferenceValue());
+        preferences.put(THEME_VARIANT_KEY, this.themeVariant.preferenceValue());
+    }
+
+    /** Persists validated theme identifiers, falling back to ocean/dark for unknown values. */
+    public void saveThemePreferences(String themeFamily, String themeVariant) {
+        saveThemePreferences(validatedThemeFamily(themeFamily), validatedThemeVariant(themeVariant));
+    }
+
     /** Persists accessibility preferences and updates the loaded model. */
     public void saveAccessibilityPreferences(boolean highContrast, boolean reducedMotion) {
         preferences.putBoolean(HIGH_CONTRAST_KEY, highContrast);
@@ -227,6 +272,26 @@ public final class PreferencesService {
         preferences.putDouble(MASTER_VOLUME_KEY, this.masterVolume);
     }
 
+    /** Persists clamped music and sound channel volumes for the default preferences screen. */
+    public void saveAudioChannelVolumes(double musicVolume, double soundVolume) {
+        this.musicVolume = clamp(musicVolume, 0.0, 1.0);
+        this.soundVolume = clamp(soundVolume, 0.0, 1.0);
+        preferences.putDouble(MUSIC_VOLUME_KEY, this.musicVolume);
+        preferences.putDouble(SOUND_VOLUME_KEY, this.soundVolume);
+    }
+
+    /** Persists a clamped music channel volume. */
+    public void saveMusicVolume(double musicVolume) {
+        this.musicVolume = clamp(musicVolume, 0.0, 1.0);
+        preferences.putDouble(MUSIC_VOLUME_KEY, this.musicVolume);
+    }
+
+    /** Persists a clamped sound channel volume. */
+    public void saveSoundVolume(double soundVolume) {
+        this.soundVolume = clamp(soundVolume, 0.0, 1.0);
+        preferences.putDouble(SOUND_VOLUME_KEY, this.soundVolume);
+    }
+
     private int clamp(int value, int minimum, int maximum) {
         return Math.max(minimum, Math.min(maximum, value));
     }
@@ -240,6 +305,24 @@ public final class PreferencesService {
             return value;
         }
         return "mouse";
+    }
+
+    private ThemeFamily validatedThemeFamily(String value) {
+        for (ThemeFamily family : ThemeFamily.values()) {
+            if (family.preferenceValue().equals(value)) {
+                return family;
+            }
+        }
+        return ThemeFamily.OCEAN;
+    }
+
+    private ThemeVariant validatedThemeVariant(String value) {
+        for (ThemeVariant variant : ThemeVariant.values()) {
+            if (variant.preferenceValue().equals(value)) {
+                return variant;
+            }
+        }
+        return ThemeVariant.DARK;
     }
 
     private String footerShortcutDisplayPreferenceValue() {
@@ -274,6 +357,50 @@ public final class PreferencesService {
         private final String label;
 
         FooterShortcutDisplay(String preferenceValue, String label) {
+            this.preferenceValue = preferenceValue;
+            this.label = label;
+        }
+
+        public String preferenceValue() {
+            return preferenceValue;
+        }
+
+        public String label() {
+            return label;
+        }
+    }
+
+    public enum ThemeFamily {
+        OCEAN("ocean", "Ocean"),
+        FOREST("forest", "Forest"),
+        SUNSET("sunset", "Sunset"),
+        VIOLET("violet", "Violet");
+
+        private final String preferenceValue;
+        private final String label;
+
+        ThemeFamily(String preferenceValue, String label) {
+            this.preferenceValue = preferenceValue;
+            this.label = label;
+        }
+
+        public String preferenceValue() {
+            return preferenceValue;
+        }
+
+        public String label() {
+            return label;
+        }
+    }
+
+    public enum ThemeVariant {
+        DARK("dark", "Dark"),
+        LIGHT_PASTEL("light-pastel", "Light pastel");
+
+        private final String preferenceValue;
+        private final String label;
+
+        ThemeVariant(String preferenceValue, String label) {
             this.preferenceValue = preferenceValue;
             this.label = label;
         }

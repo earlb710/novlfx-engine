@@ -84,6 +84,15 @@ final class ScreenLayoutRendererTest {
     }
 
     @Test
+    void rendererRemovesBackgroundFromLayoutOnlyContainerSections() {
+        assertEquals("-fx-border-style: dashed; -fx-border-color: #0099cc; ",
+                ScreenLayoutRenderer.containerStyle(Map.of(
+                        "backgroundColor", "#143869",
+                        "borderStyle", "dashed",
+                        "borderColor", "#0099cc"), true));
+    }
+
+    @Test
     void rendererReadsDialogWindowIndicatorsFromLayoutMetadata() {
         ScreenLayoutModel dialog = new ScreenLayoutModel(
                 ScreenLayoutType.DIALOGUE,
@@ -103,4 +112,5 @@ final class ScreenLayoutRendererTest {
         assertTrue(ScreenLayoutRenderer.dismissOnClickOutside(dialog));
         assertTrue(ScreenLayoutRenderer.dismissOnEscape(dialog));
     }
+
 }

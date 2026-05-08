@@ -17,12 +17,38 @@ final class UiThemeTest {
     void clearTestPreferences() throws BackingStoreException {
         preferences.clear();
         preferences.flush();
+        PreferencesService preferencesService = new PreferencesService();
+        preferencesService.load();
+        new UiTheme().initialize(preferencesService);
     }
 
     @Test
     void initializeLoadsThemeTokensFromPreferencesAndDefaults() {
         preferences.put("ui.fontFamily", "Theme Test Font");
         preferences.putDouble("ui.fontScale", 1.5);
+        preferences.put("ui.themeFamily", "violet");
+        preferences.put("ui.themeVariant", "light-pastel");
+        PreferencesService preferencesService = new PreferencesService();
+        preferencesService.load();
+
+        UiTheme theme = new UiTheme();
+        theme.initialize(preferencesService);
+
+        assertEquals("Theme Test Font", theme.fontFamily());
+        assertEquals("#775fc1", theme.accentColor());
+        assertEquals("#43395a", theme.textColor());
+        assertEquals("rgba(240, 232, 255, 0.92)", theme.panelBackground());
+        assertEquals("#e6dafd", theme.hoverBackground());
+        assertEquals(1.5, theme.fontScale());
+        assertTrue(theme.stylesheet().startsWith("file:"));
+        assertTrue(theme.stylesheetContent().contains("-fx-background-color: #faf6ff;"));
+        assertTrue(theme.stylesheetContent().contains("-fx-text-fill: #775fc1;"));
+    }
+
+    @Test
+    void initializeKeepsHighContrastOverrideForAnyThemeSelection() {
+        preferences.put("ui.themeFamily", "forest");
+        preferences.put("ui.themeVariant", "light-pastel");
         preferences.putBoolean("accessibility.highContrast", true);
         preferences.putBoolean("accessibility.reducedMotion", true);
         PreferencesService preferencesService = new PreferencesService();
@@ -31,14 +57,11 @@ final class UiThemeTest {
         UiTheme theme = new UiTheme();
         theme.initialize(preferencesService);
 
-        assertEquals("Theme Test Font", theme.fontFamily());
         assertEquals("#ffff66", theme.accentColor());
         assertEquals("#ffffff", theme.textColor());
-        assertEquals("#000000", theme.panelBackground());
         assertEquals("#333300", theme.hoverBackground());
-        assertEquals(1.5, theme.fontScale());
         assertTrue(theme.highContrast());
         assertTrue(theme.reducedMotion());
-        assertTrue(theme.stylesheet().endsWith("/com/eb/javafx/ui/default.css"));
+        assertTrue(theme.stylesheetContent().contains("-fx-background-color: #000000;"));
     }
 }

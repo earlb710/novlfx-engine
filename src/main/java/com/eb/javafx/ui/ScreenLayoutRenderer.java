@@ -195,7 +195,7 @@ public final class ScreenLayoutRenderer {
         if (section.styleClass() != null && !section.styleClass().isBlank()) {
             sectionNode.getStyleClass().add(section.styleClass());
         }
-        applyContainerStyle(sectionNode, section.metadata());
+        applyContainerStyle(sectionNode, section.metadata(), isLayoutOnlyContainer(section));
         addOptionalText(sectionNode, section.title(), ScreenShell.LAYOUT_SECTION_TITLE_STYLE_CLASS);
         for (int index = 0; index < section.lines().size(); index++) {
             String line = section.lines().get(index);
@@ -207,6 +207,12 @@ public final class ScreenLayoutRenderer {
             sectionNode.getChildren().add(childSectionContainer(section, eventBus));
         }
         return sectionNode;
+    }
+
+    private static boolean isLayoutOnlyContainer(ScreenLayoutSection section) {
+        return (section.title() == null || section.title().isBlank())
+                && section.lines().isEmpty()
+                && !section.childSections().isEmpty();
     }
 
     private static Node childSectionContainer(ScreenLayoutSection section, GameEventBus eventBus) {
@@ -279,11 +285,15 @@ public final class ScreenLayoutRenderer {
         }
     }
 
-    private static void applyContainerStyle(javafx.scene.layout.Region region, Map<String, String> metadata) {
-        String style = containerStyle(metadata);
+    private static void applyContainerStyle(javafx.scene.layout.Region region, Map<String, String> metadata, boolean hideBackground) {
+        String style = containerStyle(metadata, hideBackground);
         if (!style.isEmpty()) {
             region.setStyle(style);
         }
+    }
+
+    private static void applyContainerStyle(javafx.scene.layout.Region region, Map<String, String> metadata) {
+        applyContainerStyle(region, metadata, false);
     }
 
     static String lineStyle(Map<String, String> metadata) {
@@ -298,8 +308,14 @@ public final class ScreenLayoutRenderer {
     }
 
     static String containerStyle(Map<String, String> metadata) {
+        return containerStyle(metadata, false);
+    }
+
+    static String containerStyle(Map<String, String> metadata, boolean hideBackground) {
         StringBuilder style = new StringBuilder();
-        appendBackgroundColor(style, metadata.get("backgroundColor"));
+        if (!hideBackground) {
+            appendBackgroundColor(style, metadata.get("backgroundColor"));
+        }
         appendOpacity(style, metadata.get("transparency"));
         appendBorderStyle(style, metadata.get("borderStyle"));
         appendBorderRadius(style, metadata.get("borderCorner"));
@@ -437,7 +453,7 @@ public final class ScreenLayoutRenderer {
 
     private static Button actionButton(RouteContext context, ScreenActionViewModel action, String styleClass) {
         Button button = context == null
-                ? ButtonVisuals.apply(new Button(action.label()))
+                ? ButtonVisuals.applySvgArtwork(new Button(action.label()))
                 : ScreenNavigation.button(context, action.label(), action.routeId());
         button.getStyleClass().add(styleClass);
         button.setDisable(!action.enabled());

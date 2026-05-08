@@ -325,9 +325,9 @@ final class ScreenDesignerApplicationTest {
                 com.eb.javafx.ui.DisplayDefaults.defaults(),
                 buttonType);
 
-        assertEquals("#0a1426", attributes.get("backgroundColor"));
-        assertEquals("#143869", attributes.get("hoverBackgroundColor"));
-        assertEquals("#0099cc", attributes.get("pressedBackgroundColor"));
+        assertEquals("transparent", attributes.get("backgroundColor"));
+        assertEquals("transparent", attributes.get("hoverBackgroundColor"));
+        assertEquals("transparent", attributes.get("pressedBackgroundColor"));
     }
 
     @Test

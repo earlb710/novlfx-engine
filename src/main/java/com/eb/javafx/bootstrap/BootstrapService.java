@@ -249,6 +249,7 @@ public final class BootstrapService {
                 saveLoadService,
                 randomService,
                 gameSupportService,
+                audioService,
                 newGameState,
                 sceneRegistry,
                 sceneExecutor,
