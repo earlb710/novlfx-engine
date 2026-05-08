@@ -7,6 +7,7 @@ import com.eb.javafx.state.GameState;
 import com.eb.javafx.util.Validation;
 import com.eb.javafx.util.VectorImage;
 import javafx.application.Platform;
+import javafx.geometry.Dimension2D;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
@@ -31,6 +32,7 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
+import javafx.stage.Screen;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -682,14 +684,31 @@ public final class ScreenShell {
         URL resource = resolveResource(resourcePath);
         try (InputStream inputStream = resource.openStream()) {
             VectorImage image = VectorImage.fromInputStream(inputStream);
-            int width = Math.max(BACKGROUND_SVG_RASTER_MIN_WIDTH, (int) Math.ceil(image.getWidth()));
-            int height = Math.max(BACKGROUND_SVG_RASTER_MIN_HEIGHT, (int) Math.ceil(image.getHeight()));
-            return image.toRasterImage(width, height);
+            image.getSvgDocument().getDocumentElement().setAttribute("preserveAspectRatio", "none");
+            Dimension2D size = backgroundSvgRasterSize(image);
+            return image.toRasterImage((int) Math.ceil(size.getWidth()), (int) Math.ceil(size.getHeight()));
         } catch (IOException exception) {
             throw new IllegalArgumentException("Failed to load SVG background resource: " + resourcePath, exception);
         } catch (IllegalArgumentException exception) {
             throw new IllegalArgumentException("SVG background resource has invalid format: " + resourcePath, exception);
         }
+    }
+
+    private static Dimension2D backgroundSvgRasterSize(VectorImage image) {
+        double width = Math.max(BACKGROUND_SVG_RASTER_MIN_WIDTH, image.getWidth());
+        double height = Math.max(BACKGROUND_SVG_RASTER_MIN_HEIGHT, image.getHeight());
+        if (!Platform.isFxApplicationThread()) {
+            return new Dimension2D(width, height);
+        }
+        try {
+            for (Screen screen : Screen.getScreens()) {
+                width = Math.max(width, screen.getBounds().getWidth() * screen.getOutputScaleX());
+                height = Math.max(height, screen.getBounds().getHeight() * screen.getOutputScaleY());
+            }
+        } catch (IllegalStateException exception) {
+            return new Dimension2D(width, height);
+        }
+        return new Dimension2D(width, height);
     }
 
     private static URL resolveResource(String resourcePath) {
