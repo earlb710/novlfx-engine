@@ -110,7 +110,7 @@ public final class ScreenShell {
     private static final Color DEFAULT_FOOTER_BACKGROUND_COLOR = Color.rgb(10, 20, 38);
     private static final Color DEFAULT_FOOTER_BORDER_COLOR = Color.web("#143869");
     private static final CornerRadii FOOTER_CORNER_RADII = new CornerRadii(999);
-    private static final int MIN_CANVAS_DIMENSION = 1;
+    private static final int MIN_SVG_CANVAS_DIMENSION = 1;
     private static final String FOOTER_BACKGROUND_COLOR_PROPERTY = "screenFooterBackgroundColor";
     private static final String FOOTER_BACKGROUND_TRANSPARENCY_PROPERTY = "screenFooterBackgroundTransparency";
     private static final String FOOTER_BORDER_STYLE_PROPERTY = "screenFooterBorderStyle";
@@ -690,6 +690,7 @@ public final class ScreenShell {
         URL resource = resolveResource(resourcePath);
         try (InputStream inputStream = resource.openStream()) {
             SVGDocument document = VectorImage.fromInputStream(inputStream).getSvgDocument();
+            // Full-screen background SVGs should stretch to the current scene size.
             document.getDocumentElement().setAttribute("preserveAspectRatio", "none");
             return document;
         } catch (IOException exception) {
@@ -763,7 +764,7 @@ public final class ScreenShell {
         private final JSVGCanvas canvas = new JSVGCanvas();
         private final AtomicBoolean resizePending = new AtomicBoolean();
         private final AtomicReference<Dimension> pendingCanvasSize = new AtomicReference<>(
-                new Dimension(MIN_CANVAS_DIMENSION, MIN_CANVAS_DIMENSION));
+                new Dimension(MIN_SVG_CANVAS_DIMENSION, MIN_SVG_CANVAS_DIMENSION));
         private int currentCanvasWidth = -1;
         private int currentCanvasHeight = -1;
         private boolean contentInstalled;
@@ -798,8 +799,8 @@ public final class ScreenShell {
             if (!contentInstalled) {
                 return;
             }
-            int canvasWidth = Math.max(MIN_CANVAS_DIMENSION, (int) Math.ceil(width));
-            int canvasHeight = Math.max(MIN_CANVAS_DIMENSION, (int) Math.ceil(height));
+            int canvasWidth = Math.max(MIN_SVG_CANVAS_DIMENSION, (int) Math.ceil(width));
+            int canvasHeight = Math.max(MIN_SVG_CANVAS_DIMENSION, (int) Math.ceil(height));
             if (canvasWidth == currentCanvasWidth && canvasHeight == currentCanvasHeight) {
                 return;
             }
