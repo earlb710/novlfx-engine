@@ -41,6 +41,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -464,36 +465,45 @@ public final class ScreenShell {
     }
 
     /**
-     * Wraps a full-screen SVG background behind a screen root.
+     * Wraps one or more full-screen SVG backgrounds behind a screen root.
      *
-     * <p>The SVG background is mouse-transparent, borderless, and resized with the returned
-     * stack pane. Use the returned pane as the scene root so the SVG covers the entire screen.</p>
+     * <p>Each SVG background is mouse-transparent, borderless, and resized with the returned
+     * stack pane. Backgrounds are layered in argument order behind the screen content. Use the
+     * returned pane as the scene root so the SVG layers cover the entire screen.</p>
      *
      * @param screen screen content to layer above the background
-     * @param svgResourcePath packaged SVG resource path
-     * @return stack pane containing the background and screen content
+     * @param svgResourcePath first packaged SVG resource path
+     * @param additionalSvgResourcePaths additional packaged SVG resource paths to layer above the first
+     * @return stack pane containing the background layers and screen content
      */
-    public static StackPane withBackgroundSvg(Region screen, String svgResourcePath) {
+    public static StackPane withBackgroundSvg(
+            Region screen,
+            String svgResourcePath,
+            String... additionalSvgResourcePaths) {
         Validation.requireNonNull(screen, "Screen background content is required.");
-        Region background = backgroundSvg(svgResourcePath);
-        StackPane root = new StackPane(background, screen);
+        List<Region> backgrounds = backgroundSvgLayers(svgResourcePath, additionalSvgResourcePaths);
+        StackPane root = new StackPane();
+        root.getChildren().addAll(backgrounds);
+        root.getChildren().add(screen);
         root.setMinSize(0, 0);
-        background.prefWidthProperty().bind(root.widthProperty());
-        background.prefHeightProperty().bind(root.heightProperty());
-        background.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
+        backgrounds.forEach(background -> configureBackgroundLayer(background, root));
         screen.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
         return root;
     }
 
     /**
-     * Creates a screen root with a full-screen SVG background behind the supplied content.
+     * Creates a screen root with one or more full-screen SVG backgrounds behind the supplied content.
      *
      * @param screen screen content to layer above the background
-     * @param svgResourcePath packaged SVG resource path
-     * @return stack pane containing the background and screen content
+     * @param svgResourcePath first packaged SVG resource path
+     * @param additionalSvgResourcePaths additional packaged SVG resource paths to layer above the first
+     * @return stack pane containing the background layers and screen content
      */
-    public static StackPane setBackgroundSvg(Region screen, String svgResourcePath) {
-        return withBackgroundSvg(screen, svgResourcePath);
+    public static StackPane setBackgroundSvg(
+            Region screen,
+            String svgResourcePath,
+            String... additionalSvgResourcePaths) {
+        return withBackgroundSvg(screen, svgResourcePath, additionalSvgResourcePaths);
     }
 
     /**
@@ -506,6 +516,23 @@ public final class ScreenShell {
      */
     public static Region backgroundSvg(String svgResourcePath) {
         return new SvgBackground(svgResourcePath);
+    }
+
+    private static List<Region> backgroundSvgLayers(String svgResourcePath, String... additionalSvgResourcePaths) {
+        List<Region> backgrounds = new ArrayList<>();
+        backgrounds.add(backgroundSvg(svgResourcePath));
+        if (additionalSvgResourcePaths != null) {
+            for (String additionalSvgResourcePath : additionalSvgResourcePaths) {
+                backgrounds.add(backgroundSvg(additionalSvgResourcePath));
+            }
+        }
+        return backgrounds;
+    }
+
+    private static void configureBackgroundLayer(Region background, StackPane root) {
+        background.prefWidthProperty().bind(root.widthProperty());
+        background.prefHeightProperty().bind(root.heightProperty());
+        background.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
     }
 
     private static List<FooterOption> replaceFooterOption(

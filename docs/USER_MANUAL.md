@@ -350,6 +350,21 @@ The `ui` package provides reusable JavaFX surfaces and helpers:
 
 Both styles rasterize the SVG artwork to the requested button size, support pressed-state gradient reversal, and keep the button text centered horizontally and vertically, including multiline labels. The text node exposes the `svg-button-artwork-text` style class, so applications can set the caption color in CSS with `-fx-fill`, for example by overriding `.svg-button-artwork-text` or state selectors such as `.svg-button:hover .svg-button-artwork-text`. The SVG artwork fill/gradient itself comes from the SVG resource; use a different SVG resource or engine extension if an application needs to recolor the button body rather than the caption.
 
+### SVG screen backgrounds
+
+`ScreenShell` provides SVG background helpers for whole-screen artwork. Use `ScreenShell.setBackgroundSvg(screen, "/path/background.svg")` or `ScreenShell.withBackgroundSvg(...)` to wrap an existing screen region in a `StackPane` with the SVG behind the content. The SVG background is not clickable, has no border or padding, and resizes with the returned root; use that returned root as the scene root when the artwork should cover the full screen.
+
+Pass two or more resource paths to layer SVG backgrounds in order:
+
+```java
+StackPane root = ScreenShell.setBackgroundSvg(
+        screen,
+        "/com/example/images/background-base.svg",
+        "/com/example/images/background-overlay.svg");
+```
+
+The first SVG is the back-most layer, each additional SVG is placed above it, and the screen content is placed above all background layers.
+
 ### Screen layouts, reusable screens, and editable screen designs
 
 Use `ScreenViewModel` when the screen can be described as a title, a small number of informational lines, and route-backed actions. Use `ScreenLayoutModel` when the screen needs a more explicit structure with named sections, form-style rows, menu/action lists, dialogue/status panels, preview cards, or a sidebar/content split. `ScreenLayoutRenderer` turns that UI-neutral layout data into JavaFX nodes and applies the stable engine style hooks from `default.css`.
