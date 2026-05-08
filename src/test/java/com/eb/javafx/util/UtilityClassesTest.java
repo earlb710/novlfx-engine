@@ -63,6 +63,14 @@ final class UtilityClassesTest {
     }
 
     @Test
+    void simpleJsonParsesLargeIntegerValues() {
+        Map<String, Object> root = JsonData.rootObject("{\"small\": 42, \"large\": 3000000000}", "test");
+
+        assertEquals(42, root.get("small"));
+        assertEquals(3_000_000_000L, root.get("large"));
+    }
+
+    @Test
     void immutableCollectionsCopyDefensively() {
         Map<String, String> source = new LinkedHashMap<>();
         source.put("first", "1");

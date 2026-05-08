@@ -11,7 +11,7 @@ final class ManagementApplicationTest {
     @Test
     void managementLauncherListsAuthoringScreens() {
         assertEquals(List.of("Default App Values", "Screen Designer", "Reloadable JSON Screen",
-                        "Conversation Editor", "Manage Code Tables"),
+                        "Conversation Editor", "Manage Code Tables", "File Catalog"),
                 ManagementApplication.managementActionLabels());
     }
 
