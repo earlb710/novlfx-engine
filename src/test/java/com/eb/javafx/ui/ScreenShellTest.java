@@ -7,8 +7,8 @@ import com.eb.javafx.prefs.PreferencesService;
 import com.eb.javafx.prefs.PreferencesService.FooterShortcutDisplay;
 import com.eb.javafx.state.GameState;
 import com.eb.javafx.util.VectorImage;
-import javafx.geometry.Pos;
 import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.image.WritableImage;
 import javafx.scene.layout.BackgroundImage;
 import javafx.scene.layout.BackgroundPosition;
@@ -21,8 +21,8 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.geometry.Pos;
 import javafx.scene.paint.Color;
-import javafx.scene.image.ImageView;
 import javafx.scene.shape.SVGPath;
 import org.junit.jupiter.api.Test;
 
@@ -121,11 +121,19 @@ final class ScreenShellTest {
         assertTrue(background.prefHeightProperty().isBound());
         assertTrue(overlay.prefWidthProperty().isBound());
         assertTrue(overlay.prefHeightProperty().isBound());
+        ImageView backgroundImage = (ImageView) background.getChildrenUnmodifiable().get(0);
+        assertFalse(backgroundImage.isPreserveRatio());
+        assertTrue(backgroundImage.fitWidthProperty().isBound());
+        assertTrue(backgroundImage.fitHeightProperty().isBound());
 
         root.resize(640, 360);
+        background.resize(640, 360);
+        background.layout();
 
         assertEquals(640, background.getPrefWidth());
         assertEquals(360, background.getPrefHeight());
+        assertEquals(640, backgroundImage.getFitWidth());
+        assertEquals(360, backgroundImage.getFitHeight());
         assertEquals(640, overlay.getPrefWidth());
         assertEquals(360, overlay.getPrefHeight());
         BorderPane aliasScreen = new BorderPane();

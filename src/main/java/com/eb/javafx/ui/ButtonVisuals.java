@@ -16,7 +16,11 @@ import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.scene.text.Text;
 import javafx.scene.text.TextAlignment;
+import org.girod.javafx.svgimage.LoaderParameters;
+import org.girod.javafx.svgimage.SVGContent;
+import org.girod.javafx.svgimage.SVGImage;
 
+import java.awt.GraphicsEnvironment;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
@@ -334,7 +338,7 @@ public final class ButtonVisuals {
                 return cached;
             }
             try {
-                Image image = VectorImage.rasterize(svg, width, height);
+                Image image = renderSvgArtwork(svg, width, height);
                 RASTER_CACHE.put(size, image);
                 return image;
             } catch (RuntimeException exception) {
@@ -343,6 +347,24 @@ public final class ButtonVisuals {
                 return null;
             }
         }
+    }
+
+    private static Image renderSvgArtwork(String svg, int width, int height) {
+        if (!GraphicsEnvironment.isHeadless()) {
+            try {
+                // Width-only loading preserves the SVG's own coordinate system before the final snapshot scales it
+                // to the exact button bounds, including stretched heights for fixed-size button artwork.
+                LoaderParameters parameters = LoaderParameters.createWidthParameters(width);
+                SVGImage svgImage = new SVGImage(new SVGContent(svg, parameters));
+                Image image = svgImage.toImageScaled(width, height);
+                if (image != null) {
+                    return image;
+                }
+            } catch (RuntimeException exception) {
+                LOGGER.log(System.Logger.Level.DEBUG, "fxsvgimage button artwork rendering failed; falling back to Batik.", exception);
+            }
+        }
+        return VectorImage.rasterize(svg, width, height);
     }
 
     private static double positiveSizeOrUnset(double size) {
