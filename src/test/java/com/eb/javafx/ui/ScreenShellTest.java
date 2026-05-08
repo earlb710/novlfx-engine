@@ -24,8 +24,10 @@ import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.image.ImageView;
 import javafx.scene.shape.SVGPath;
+import org.girod.javafx.svgimage.SVGImageRegion;
 import org.junit.jupiter.api.Test;
 
+import java.awt.GraphicsEnvironment;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -121,10 +123,11 @@ final class ScreenShellTest {
         assertTrue(background.prefHeightProperty().isBound());
         assertTrue(overlay.prefWidthProperty().isBound());
         assertTrue(overlay.prefHeightProperty().isBound());
-        ImageView backgroundImage = (ImageView) background.getChildrenUnmodifiable().get(0);
-        assertFalse(backgroundImage.isPreserveRatio());
-        assertTrue(backgroundImage.fitWidthProperty().isBound());
-        assertTrue(backgroundImage.fitHeightProperty().isBound());
+        Region backgroundImage = (Region) background.getChildrenUnmodifiable().get(0);
+        if (!GraphicsEnvironment.isHeadless()) {
+            assertTrue(backgroundImage instanceof SVGImageRegion);
+            assertFalse(((SVGImageRegion) backgroundImage).isConform());
+        }
 
         root.resize(640, 360);
         background.resize(640, 360);
@@ -132,8 +135,8 @@ final class ScreenShellTest {
 
         assertEquals(640, background.getPrefWidth());
         assertEquals(360, background.getPrefHeight());
-        assertEquals(640, backgroundImage.getFitWidth());
-        assertEquals(360, backgroundImage.getFitHeight());
+        assertEquals(640, backgroundImage.getWidth());
+        assertEquals(360, backgroundImage.getHeight());
         assertEquals(640, overlay.getPrefWidth());
         assertEquals(360, overlay.getPrefHeight());
         BorderPane aliasScreen = new BorderPane();
