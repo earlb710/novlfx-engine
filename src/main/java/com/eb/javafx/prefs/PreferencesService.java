@@ -348,6 +348,7 @@ public final class PreferencesService {
         return FooterShortcutDisplay.TOOLTIP_ONLY;
     }
 
+    /** User preference for whether footer shortcut text is visible, hidden, or represented by tooltips only. */
     public enum FooterShortcutDisplay {
         DISPLAY("display", "Display"),
         HIDE("hide", "Do not display"),
@@ -370,6 +371,7 @@ public final class PreferencesService {
         }
     }
 
+    /** Supported UI theme color families persisted as user preference values. */
     public enum ThemeFamily {
         OCEAN("ocean", "Ocean"),
         FOREST("forest", "Forest"),
@@ -393,6 +395,7 @@ public final class PreferencesService {
         }
     }
 
+    /** Supported UI theme brightness variants persisted as user preference values. */
     public enum ThemeVariant {
         DARK("dark", "Dark"),
         LIGHT_PASTEL("light-pastel", "Light pastel");

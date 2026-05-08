@@ -6,7 +6,13 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-/** Mutable generic inventory quantities keyed by item id. */
+/**
+ * Mutable per-save inventory quantities keyed by catalog item id.
+ *
+ * <p>{@link #add(String, int, InventoryCatalog)} validates the item against the supplied catalog and caps the updated
+ * quantity at the item's maximum stack size. Removal never lets quantities fall below zero, and restore methods are
+ * intended for trusted save snapshots.</p>
+ */
 public final class InventoryState {
     private final Map<String, Integer> quantities = new LinkedHashMap<>();
 
@@ -15,7 +21,7 @@ public final class InventoryState {
     }
 
     public void add(String itemId, int quantity, InventoryCatalog catalog) {
-        String checkedItemId = requireKnownItem(itemId, catalog);
+        String checkedItemId = CatalogValidation.requireKnownInventoryItem(itemId, catalog);
         Validation.requirePositive(quantity, "Inventory quantity must be positive.");
         InventoryItemDefinition item = catalog.item(checkedItemId).orElseThrow();
         int updated = Math.min(item.maxStack(), quantity(checkedItemId) + quantity);
@@ -23,7 +29,7 @@ public final class InventoryState {
     }
 
     public void remove(String itemId, int quantity) {
-        String checkedItemId = Validation.requireNonBlank(itemId, "Inventory item id is required.");
+        String checkedItemId = CatalogValidation.requireInventoryItemId(itemId);
         Validation.requirePositive(quantity, "Inventory quantity must be positive.");
         int updated = Math.max(0, quantity(checkedItemId) - quantity);
         if (updated == 0) {
@@ -35,7 +41,7 @@ public final class InventoryState {
 
     public void restoreQuantity(String itemId, int quantity) {
         quantities.put(
-                Validation.requireNonBlank(itemId, "Inventory item id is required."),
+                CatalogValidation.requireInventoryItemId(itemId),
                 Validation.requirePositive(quantity, "Inventory quantity must be positive."));
     }
 
@@ -43,12 +49,4 @@ public final class InventoryState {
         return Collections.unmodifiableMap(quantities);
     }
 
-    private static String requireKnownItem(String itemId, InventoryCatalog catalog) {
-        String checkedItemId = Validation.requireNonBlank(itemId, "Inventory item id is required.");
-        InventoryCatalog checkedCatalog = Validation.requireNonNull(catalog, "Inventory catalog is required.");
-        if (checkedCatalog.item(checkedItemId).isEmpty()) {
-            throw new IllegalArgumentException("Unknown inventory item: " + checkedItemId);
-        }
-        return checkedItemId;
-    }
 }

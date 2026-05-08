@@ -9,7 +9,13 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-/** Validation helpers for editable screen designs. */
+/**
+ * Validation helpers for editable screen designs.
+ *
+ * <p>Public validation starts from a full {@link ScreenDesignModel} and checks both structural relationships and
+ * authored condition expressions. Package-private raw helpers keep tests and loaders able to validate already-split
+ * block and item lists without constructing a complete model first.</p>
+ */
 public final class ScreenDesignValidator {
     private ScreenDesignValidator() {
     }

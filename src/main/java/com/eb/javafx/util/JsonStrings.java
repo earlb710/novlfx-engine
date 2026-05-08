@@ -88,6 +88,7 @@ public final class JsonStrings {
         }
     }
 
+    /** Parsed JSON string value and the source index immediately after the closing quote. */
     public static final class ParsedString {
         private final String value;
         private final int endIndex;

@@ -14,7 +14,12 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
 
-/** Reusable catalog of declared application variable names, their value kinds, and an optional lookup handler. */
+/**
+ * Reusable catalog of declared application variable names, their value kinds, and an optional lookup handler.
+ *
+ * <p>The catalog validates variable names before text templates use them, records the expected value type for each
+ * name, and delegates runtime replacement to a caller-supplied {@link TextVariableResolver}.</p>
+ */
 public final class TextVariableCatalog {
     /** Application variable names start with a letter and then allow letters, digits, underscores (_), or dots (.). */
     private static final Pattern VARIABLE_NAME_PATTERN = Pattern.compile("[A-Za-z][A-Za-z0-9_.]*");
@@ -128,6 +133,7 @@ public final class TextVariableCatalog {
         return checkedVariableName;
     }
 
+    /** One declared text-template variable and the kind of value the resolver should provide for it. */
     public record VariableDefinition(String name, TextVariableType valueType) {
         public VariableDefinition {
             name = validatedVariableName(name);
