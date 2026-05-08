@@ -127,6 +127,9 @@ final class ScreenShellTest {
         if (!GraphicsEnvironment.isHeadless()) {
             assertTrue(backgroundImage instanceof SVGImageRegion);
             assertFalse(((SVGImageRegion) backgroundImage).isConform());
+        } else {
+            assertFalse(backgroundImage instanceof SVGImageRegion);
+            assertTrue(backgroundImage.getChildrenUnmodifiable().isEmpty());
         }
 
         root.resize(640, 360);

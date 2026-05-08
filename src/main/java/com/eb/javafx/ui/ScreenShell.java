@@ -682,6 +682,10 @@ public final class ScreenShell {
 
     private static Region loadBackgroundSvgRegion(String resourcePath) {
         URL resource = resolveResource(resourcePath);
+        try (InputStream ignored = resource.openStream()) {
+        } catch (IOException exception) {
+            throw new IllegalArgumentException("Failed to load SVG background resource: " + resourcePath, exception);
+        }
         if (GraphicsEnvironment.isHeadless()) {
             return new Region();
         }
