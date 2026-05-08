@@ -352,6 +352,8 @@ public final class ButtonVisuals {
     private static Image renderSvgArtwork(String svg, int width, int height) {
         if (!GraphicsEnvironment.isHeadless()) {
             try {
+                // Width-only loading preserves the SVG's own coordinate system before the final snapshot scales it
+                // to the exact button bounds, including stretched heights for fixed-size button artwork.
                 LoaderParameters parameters = LoaderParameters.createWidthParameters(width);
                 SVGImage svgImage = new SVGImage(new SVGContent(svg, parameters));
                 Image image = svgImage.toImageScaled(width, height);
