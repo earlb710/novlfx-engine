@@ -23,9 +23,7 @@ public final class InventorySnapshotCodec implements SaveSnapshotCodec<Inventory
     @Override
     public String toJson(InventorySnapshot snapshot) {
         InventorySnapshot checkedSnapshot = Validation.requireNonNull(snapshot, "Inventory snapshot is required.");
-        return "{\n"
-                + "  \"quantities\": " + SnapshotJson.integerMap(checkedSnapshot.quantities()) + "\n"
-                + "}";
+        return SnapshotJson.object(SnapshotJson.field("quantities", SnapshotJson.integerMap(checkedSnapshot.quantities())));
     }
 
     @Override

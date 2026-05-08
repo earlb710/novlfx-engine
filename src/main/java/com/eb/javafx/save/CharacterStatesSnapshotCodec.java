@@ -26,12 +26,11 @@ public final class CharacterStatesSnapshotCodec implements SaveSnapshotCodec<Cha
     @Override
     public String toJson(CharacterStatesSnapshot snapshot) {
         CharacterStatesSnapshot checkedSnapshot = Validation.requireNonNull(snapshot, "Character states snapshot is required.");
-        return "{\n"
-                + "  \"characters\": " + checkedSnapshot.characters().stream()
-                .map(CharacterStatesSnapshotCodec::characterJson)
-                .collect(Collectors.joining(", ", "[", "]"))
-                + "\n"
-                + "}";
+        return SnapshotJson.object(SnapshotJson.field(
+                "characters",
+                checkedSnapshot.characters().stream()
+                        .map(CharacterStatesSnapshotCodec::characterJson)
+                        .collect(Collectors.joining(", ", "[", "]"))));
     }
 
     @Override

@@ -25,7 +25,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
-/** Renders parsed visual-novel text tokens into JavaFX rich text nodes. */
+/**
+ * Renders parsed visual-novel text tokens into JavaFX rich text nodes.
+ *
+ * <p>The renderer maps style tags to JavaFX {@link Text} properties, can resolve inline icon tokens through an
+ * {@link ImageDisplayRegistry}, and optionally attaches kinetic effect animations to rendered nodes for callers that
+ * want animated previews.</p>
+ */
 public final class JavaFxRichTextRenderer {
     private static final String EFFECT_PROPERTY = "novlfx.text.effects";
     private static final String ICON_PROPERTY = "novlfx.text.iconId";

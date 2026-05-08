@@ -861,6 +861,7 @@ public final class ScreenShell {
         }
     }
 
+    /** One footer action rendered by the shell with icon, shortcut, tooltip, and enabled state metadata. */
     public record FooterOption(
             String id,
             String icon,

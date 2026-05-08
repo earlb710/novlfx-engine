@@ -7,7 +7,12 @@ import com.eb.javafx.util.Validation;
 import java.util.List;
 import java.util.Map;
 
-/** Reusable character template with generic stats and metadata only. */
+/**
+ * Reusable character definition used to seed per-save {@link CharacterState} instances.
+ *
+ * <p>{@code baseStats} supplies the initial immutable stat block for new runtime state, while tags and metadata remain
+ * authoring/catalog descriptors that can be interpreted by app-specific systems.</p>
+ */
 public record CharacterTemplate(
         String id,
         String displayName,

@@ -15,6 +15,23 @@ final class SnapshotJson {
     private SnapshotJson() {
     }
 
+    static String object(Field... fields) {
+        return java.util.Arrays.stream(fields)
+                .map(field -> "  " + JsonStrings.quote(field.name()) + ": " + field.json())
+                .collect(Collectors.joining(",\n", "{\n", "\n}"));
+    }
+
+    static Field field(String name, String json) {
+        return new Field(name, json);
+    }
+
+    record Field(String name, String json) {
+        Field {
+            Validation.requireNonBlank(name, "Snapshot JSON field name is required.");
+            Validation.requireNonNull(json, "Snapshot JSON field value is required.");
+        }
+    }
+
     static String stringArray(Collection<String> values) {
         return values.stream()
                 .map(JsonStrings::quote)

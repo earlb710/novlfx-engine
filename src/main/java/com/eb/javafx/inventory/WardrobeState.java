@@ -14,11 +14,7 @@ public final class WardrobeState {
     private final Map<String, OutfitState> outfits = new LinkedHashMap<>();
 
     public void unlock(String itemId, WardrobeCatalog catalog) {
-        String checkedItemId = Validation.requireNonBlank(itemId, "Wearable item id is required.");
-        if (Validation.requireNonNull(catalog, "Wardrobe catalog is required.").wearable(checkedItemId).isEmpty()) {
-            throw new IllegalArgumentException("Unknown wearable item: " + checkedItemId);
-        }
-        unlockedWearableIds.add(checkedItemId);
+        unlockedWearableIds.add(CatalogValidation.requireKnownWearableItem(itemId, catalog));
     }
 
     public boolean isUnlocked(String itemId) {
@@ -26,7 +22,7 @@ public final class WardrobeState {
     }
 
     public void restoreUnlockedWearableId(String itemId) {
-        unlockedWearableIds.add(Validation.requireNonBlank(itemId, "Wearable item id is required."));
+        unlockedWearableIds.add(CatalogValidation.requireWearableItemId(itemId));
     }
 
     public void saveOutfit(String outfitId, OutfitState outfit) {
