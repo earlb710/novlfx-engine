@@ -11,6 +11,7 @@ import com.eb.javafx.ui.SceneFlowScreen;
 import com.eb.javafx.ui.ViewModelScreen;
 import com.eb.javafx.ui.test.CaptureTestScreen;
 import com.eb.javafx.ui.test.ComplexFooterBarTestScreen;
+import com.eb.javafx.ui.test.PreferencesFooterTestScreen;
 
 /** Registers reusable engine-provided routes used by the initial JavaFX shell. */
 public final class DefaultRouteModule implements RouteModule {
@@ -111,6 +112,18 @@ public final class DefaultRouteModule implements RouteModule {
                         context.contentRegistry().definition("ui.complexFooterBarTest.title"),
                         context.preferencesService(),
                         context.uiTheme(),
+                        () -> context.navigateTo(SceneRouter.MAIN_MENU_ROUTE)));
+        router.registerRoute(new RouteDescriptor(
+                        SceneRouter.PREFERENCES_FOOTER_TEST_ROUTE,
+                        "ui.preferencesFooterTest.title",
+                        RouteCategory.SETTINGS,
+                        true,
+                        "Diagnostic screen for opening preferences from the footer preferences icon."),
+                context -> PreferencesFooterTestScreen.createScene(
+                        context.contentRegistry().definition("ui.preferencesFooterTest.title"),
+                        context.preferencesService(),
+                        context.uiTheme(),
+                        () -> context.navigateTo(SceneRouter.PREFERENCES_ROUTE),
                         () -> context.navigateTo(SceneRouter.MAIN_MENU_ROUTE)));
     }
 }
