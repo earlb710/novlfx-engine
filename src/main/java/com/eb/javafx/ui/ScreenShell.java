@@ -36,6 +36,7 @@ import org.apache.batik.swing.JSVGCanvas;
 import org.w3c.dom.svg.SVGDocument;
 
 import java.awt.Dimension;
+import java.awt.GraphicsEnvironment;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
@@ -737,6 +738,7 @@ public final class ScreenShell {
         private final AtomicInteger pendingCanvasHeight = new AtomicInteger(1);
         private int currentCanvasWidth = -1;
         private int currentCanvasHeight = -1;
+        private boolean contentInstalled;
 
         private SvgBackground(String svgResourcePath) {
             SVGDocument document = loadBackgroundSvgDocument(svgResourcePath);
@@ -749,12 +751,15 @@ public final class ScreenShell {
             swingNode.setMouseTransparent(true);
             swingNode.setFocusTraversable(false);
             getChildren().add(swingNode);
-            runOnSwingThread(() -> {
-                canvas.setOpaque(false);
-                canvas.setBackground(new java.awt.Color(0, 0, 0, 0));
-                canvas.setSVGDocument(document);
-                swingNode.setContent(canvas);
-            });
+            if (!GraphicsEnvironment.isHeadless()) {
+                runOnSwingThread(() -> {
+                    canvas.setOpaque(false);
+                    canvas.setBackground(new java.awt.Color(0, 0, 0, 0));
+                    canvas.setSVGDocument(document);
+                    swingNode.setContent(canvas);
+                });
+                contentInstalled = true;
+            }
         }
 
         @Override
@@ -762,6 +767,9 @@ public final class ScreenShell {
             double width = getWidth();
             double height = getHeight();
             swingNode.resizeRelocate(0, 0, width, height);
+            if (!contentInstalled) {
+                return;
+            }
             int canvasWidth = Math.max(1, (int) Math.ceil(width));
             int canvasHeight = Math.max(1, (int) Math.ceil(height));
             if (canvasWidth == currentCanvasWidth && canvasHeight == currentCanvasHeight) {
