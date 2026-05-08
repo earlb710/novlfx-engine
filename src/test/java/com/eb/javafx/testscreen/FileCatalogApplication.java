@@ -461,9 +461,7 @@ public final class FileCatalogApplication {
         for (Path segment : relativeDirectory) {
             String name = segment.toString();
             String childPath = current.path.isBlank() ? name : current.path + "/" + name;
-            current = current.children.computeIfAbsent(name, childName -> {
-                return new MutableDirectory(childName, childPath);
-            });
+            current = current.children.computeIfAbsent(name, childName -> new MutableDirectory(childName, childPath));
         }
         return current;
     }
