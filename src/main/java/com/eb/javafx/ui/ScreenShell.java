@@ -727,6 +727,8 @@ public final class ScreenShell {
     private static final class SvgBackground extends Region {
         private final SwingNode swingNode = new SwingNode();
         private final JSVGCanvas canvas = new JSVGCanvas();
+        private int currentCanvasWidth = -1;
+        private int currentCanvasHeight = -1;
 
         private SvgBackground(String svgResourcePath) {
             SVGDocument document = loadBackgroundSvgDocument(svgResourcePath);
@@ -743,8 +745,8 @@ public final class ScreenShell {
                 canvas.setOpaque(false);
                 canvas.setBackground(new java.awt.Color(0, 0, 0, 0));
                 canvas.setSVGDocument(document);
+                swingNode.setContent(canvas);
             });
-            swingNode.setContent(canvas);
         }
 
         @Override
@@ -754,6 +756,11 @@ public final class ScreenShell {
             swingNode.resizeRelocate(0, 0, width, height);
             int canvasWidth = Math.max(1, (int) Math.ceil(width));
             int canvasHeight = Math.max(1, (int) Math.ceil(height));
+            if (canvasWidth == currentCanvasWidth && canvasHeight == currentCanvasHeight) {
+                return;
+            }
+            currentCanvasWidth = canvasWidth;
+            currentCanvasHeight = canvasHeight;
             SwingUtilities.invokeLater(() -> {
                 Dimension size = new Dimension(canvasWidth, canvasHeight);
                 canvas.setMinimumSize(size);
