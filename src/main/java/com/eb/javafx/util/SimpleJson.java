@@ -205,7 +205,11 @@ public final class SimpleJson {
                 if (floatingPoint) {
                     return Double.parseDouble(number);
                 }
-                return Integer.parseInt(number);
+                try {
+                    return Integer.parseInt(number);
+                } catch (NumberFormatException exception) {
+                    return Long.parseLong(number);
+                }
             } catch (NumberFormatException exception) {
                 throw error("JSON number is out of range.");
             }

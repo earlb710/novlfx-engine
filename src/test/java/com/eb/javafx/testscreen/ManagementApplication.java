@@ -34,7 +34,11 @@ public final class ManagementApplication {
             new ManagementAction(
                     "Manage Code Tables",
                     "Open the category code table JSON viewer.",
-                    () -> CodeTableManagementApplication.main(new String[0])));
+                    () -> CodeTableManagementApplication.main(new String[0])),
+            new ManagementAction(
+                    "File Catalog",
+                    "Catalog game files by directory.",
+                    () -> FileCatalogApplication.main(new String[0])));
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> new ManagementApplication().show());
