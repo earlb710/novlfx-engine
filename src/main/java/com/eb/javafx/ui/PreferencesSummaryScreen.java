@@ -122,7 +122,7 @@ public final class PreferencesSummaryScreen {
         Button save = ButtonVisuals.applySvgArtwork(new Button("Save"));
         save.setOnAction(event -> {
             volumeSaver.save(context, slider.getValue() / VOLUME_PERCENT_SCALE);
-            context.navigateTo(SceneRouter.PREFERENCES_ROUTE);
+            value.setText(percentLabel(slider.getValue() / VOLUME_PERCENT_SCALE));
         });
         return new HBox(8, label, slider, value, save);
     }
