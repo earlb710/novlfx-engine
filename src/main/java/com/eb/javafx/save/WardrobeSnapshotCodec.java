@@ -26,10 +26,9 @@ public final class WardrobeSnapshotCodec implements SaveSnapshotCodec<WardrobeSn
     @Override
     public String toJson(WardrobeSnapshot snapshot) {
         WardrobeSnapshot checkedSnapshot = Validation.requireNonNull(snapshot, "Wardrobe snapshot is required.");
-        return "{\n"
-                + "  \"unlockedWearableIds\": " + SnapshotJson.stringArray(checkedSnapshot.unlockedWearableIds()) + ",\n"
-                + "  \"outfits\": " + outfitsJson(checkedSnapshot.outfits()) + "\n"
-                + "}";
+        return SnapshotJson.object(
+                SnapshotJson.field("unlockedWearableIds", SnapshotJson.stringArray(checkedSnapshot.unlockedWearableIds())),
+                SnapshotJson.field("outfits", outfitsJson(checkedSnapshot.outfits())));
     }
 
     @Override

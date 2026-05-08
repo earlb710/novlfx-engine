@@ -647,6 +647,7 @@ public final class ScreenShell {
         return DEFAULT_FOOTER_ICON_RESOURCE_DIRECTORY + "/footer-" + checkedId + ".svg";
     }
 
+    /** One footer action rendered by the shell with icon, shortcut, tooltip, and enabled state metadata. */
     public record FooterOption(
             String id,
             String icon,

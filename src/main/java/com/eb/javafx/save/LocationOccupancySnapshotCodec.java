@@ -24,9 +24,9 @@ public final class LocationOccupancySnapshotCodec implements SaveSnapshotCodec<L
     public String toJson(LocationOccupancySnapshot snapshot) {
         LocationOccupancySnapshot checkedSnapshot =
                 Validation.requireNonNull(snapshot, "Location occupancy snapshot is required.");
-        return "{\n"
-                + "  \"characterLocations\": " + SnapshotJson.stringMap(checkedSnapshot.characterLocations()) + "\n"
-                + "}";
+        return SnapshotJson.object(SnapshotJson.field(
+                "characterLocations",
+                SnapshotJson.stringMap(checkedSnapshot.characterLocations())));
     }
 
     @Override

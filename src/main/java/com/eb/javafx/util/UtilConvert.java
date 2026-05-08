@@ -2,6 +2,7 @@ package com.eb.javafx.util;
 
 import static com.eb.javafx.util.UtilString.lpad;
 
+/** Numeric, byte-array, radix, hexadecimal, and bit-string conversion helpers used by legacy utility callers. */
 public final class UtilConvert {
 
     private UtilConvert() { // static class

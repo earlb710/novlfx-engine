@@ -37,6 +37,7 @@ public final class ConversationDefinition {
         return conversations;
     }
 
+    /** One ordered conversation block with author-facing description text and dialogue lines. */
     public record ConversationBlock(String id, String description, List<ConversationLine> lines) {
         public ConversationBlock {
             id = Validation.requireNonBlank(id, "Conversation id is required.");
@@ -45,6 +46,7 @@ public final class ConversationDefinition {
         }
     }
 
+    /** Authored dialogue presentation modes and their JSON token values. */
     public enum LineType {
         SHOUT("shout"),
         SAY("say"),
@@ -86,6 +88,7 @@ public final class ConversationDefinition {
         }
     }
 
+    /** One speaker/listener line with a presentation type and one or more candidate variants. */
     public record ConversationLine(String speaker, String listener, LineType type, List<ConversationVariant> variants) {
         public ConversationLine(String speaker, String listener, List<ConversationVariant> variants) {
             this(speaker, listener, LineType.SAY, variants);

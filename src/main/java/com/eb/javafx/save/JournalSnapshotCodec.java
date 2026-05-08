@@ -24,10 +24,9 @@ public final class JournalSnapshotCodec implements SaveSnapshotCodec<JournalSnap
     @Override
     public String toJson(JournalSnapshot snapshot) {
         JournalSnapshot checkedSnapshot = Validation.requireNonNull(snapshot, "Journal snapshot is required.");
-        return "{\n"
-                + "  \"unlockedEntryIds\": " + SnapshotJson.stringArray(checkedSnapshot.unlockedEntryIds()) + ",\n"
-                + "  \"readEntryIds\": " + SnapshotJson.stringArray(checkedSnapshot.readEntryIds()) + "\n"
-                + "}";
+        return SnapshotJson.object(
+                SnapshotJson.field("unlockedEntryIds", SnapshotJson.stringArray(checkedSnapshot.unlockedEntryIds())),
+                SnapshotJson.field("readEntryIds", SnapshotJson.stringArray(checkedSnapshot.readEntryIds())));
     }
 
     @Override

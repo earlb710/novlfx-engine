@@ -224,6 +224,7 @@ public final class ComplexFooterBarTestScreen {
         }
     }
 
+    /** Small deterministic conversation model used by the complex footer-bar manual test screen. */
     public static final class TestConversationModel {
         private static final String DIALOG_ID = "complex-footer-bar-test";
         private final List<TestConversationLine> lines;
@@ -394,6 +395,7 @@ public final class ComplexFooterBarTestScreen {
         }
     }
 
+    /** One selectable test conversation branch shown by the complex footer-bar manual screen. */
     public record TestConversationChoice(String id, String text) {
     }
 

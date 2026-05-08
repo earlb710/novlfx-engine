@@ -8,7 +8,13 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 
-/** Mutable per-save generic character state with stats, relationships, flags, and metadata. */
+/**
+ * Mutable per-save character state derived from a reusable character template.
+ *
+ * <p>The state keeps the template id for lookup, copies or mutates runtime stats through {@link CharacterStatBlock},
+ * and stores save-specific relationship counters, flags, and string metadata. Stat and relationship mutations validate
+ * their identifiers while reads default missing numeric values to zero.</p>
+ */
 public final class CharacterState {
     private final String characterId;
     private final String templateId;
