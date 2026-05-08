@@ -121,11 +121,19 @@ final class ScreenShellTest {
         assertTrue(background.prefHeightProperty().isBound());
         assertTrue(overlay.prefWidthProperty().isBound());
         assertTrue(overlay.prefHeightProperty().isBound());
+        ImageView backgroundImage = (ImageView) background.getChildrenUnmodifiable().get(0);
+        assertFalse(backgroundImage.isPreserveRatio());
+        assertTrue(backgroundImage.fitWidthProperty().isBound());
+        assertTrue(backgroundImage.fitHeightProperty().isBound());
 
         root.resize(640, 360);
+        background.resize(640, 360);
+        background.layout();
 
         assertEquals(640, background.getPrefWidth());
         assertEquals(360, background.getPrefHeight());
+        assertEquals(640, backgroundImage.getFitWidth());
+        assertEquals(360, backgroundImage.getFitHeight());
         assertEquals(640, overlay.getPrefWidth());
         assertEquals(360, overlay.getPrefHeight());
         BorderPane aliasScreen = new BorderPane();

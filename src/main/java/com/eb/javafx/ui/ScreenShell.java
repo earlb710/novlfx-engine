@@ -7,7 +7,6 @@ import com.eb.javafx.state.GameState;
 import com.eb.javafx.util.Validation;
 import com.eb.javafx.util.VectorImage;
 import javafx.application.Platform;
-import javafx.embed.swing.SwingNode;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
@@ -32,22 +31,14 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
-import org.apache.batik.swing.JSVGCanvas;
-import org.w3c.dom.svg.SVGDocument;
 
-import java.awt.Dimension;
-import java.awt.GraphicsEnvironment;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
-import javax.swing.SwingUtilities;
 
 /**
  * Shared layout for reusable screen content with JavaFX frames.
@@ -110,7 +101,8 @@ public final class ScreenShell {
     private static final Color DEFAULT_FOOTER_BACKGROUND_COLOR = Color.rgb(10, 20, 38);
     private static final Color DEFAULT_FOOTER_BORDER_COLOR = Color.web("#143869");
     private static final CornerRadii FOOTER_CORNER_RADII = new CornerRadii(999);
-    private static final int MIN_SVG_CANVAS_DIMENSION = 1;
+    private static final int BACKGROUND_SVG_RASTER_MIN_WIDTH = 1920;
+    private static final int BACKGROUND_SVG_RASTER_MIN_HEIGHT = 1080;
     private static final String FOOTER_BACKGROUND_COLOR_PROPERTY = "screenFooterBackgroundColor";
     private static final String FOOTER_BACKGROUND_TRANSPARENCY_PROPERTY = "screenFooterBackgroundTransparency";
     private static final String FOOTER_BORDER_STYLE_PROPERTY = "screenFooterBorderStyle";
@@ -686,13 +678,13 @@ public final class ScreenShell {
         }
     }
 
-    private static SVGDocument loadBackgroundSvgDocument(String resourcePath) {
+    private static Image loadBackgroundSvgImage(String resourcePath) {
         URL resource = resolveResource(resourcePath);
         try (InputStream inputStream = resource.openStream()) {
-            SVGDocument document = VectorImage.fromInputStream(inputStream).getSvgDocument();
-            // Full-screen background SVGs should stretch to the current scene size.
-            document.getDocumentElement().setAttribute("preserveAspectRatio", "none");
-            return document;
+            VectorImage image = VectorImage.fromInputStream(inputStream);
+            int width = Math.max(BACKGROUND_SVG_RASTER_MIN_WIDTH, (int) Math.ceil(image.getWidth()));
+            int height = Math.max(BACKGROUND_SVG_RASTER_MIN_HEIGHT, (int) Math.ceil(image.getHeight()));
+            return image.toRasterImage(width, height);
         } catch (IOException exception) {
             throw new IllegalArgumentException("Failed to load SVG background resource: " + resourcePath, exception);
         } catch (IllegalArgumentException exception) {
@@ -760,79 +752,28 @@ public final class ScreenShell {
     }
 
     private static final class SvgBackground extends Region {
-        private final SwingNode swingNode = new SwingNode();
-        private final JSVGCanvas canvas = new JSVGCanvas();
-        private final AtomicBoolean resizePending = new AtomicBoolean();
-        private final AtomicReference<Dimension> pendingCanvasSize = new AtomicReference<>(
-                new Dimension(MIN_SVG_CANVAS_DIMENSION, MIN_SVG_CANVAS_DIMENSION));
-        private int currentCanvasWidth = -1;
-        private int currentCanvasHeight = -1;
-        private boolean contentInstalled;
+        private final ImageView imageView;
 
         private SvgBackground(String svgResourcePath) {
-            SVGDocument document = loadBackgroundSvgDocument(svgResourcePath);
+            imageView = new ImageView(loadBackgroundSvgImage(svgResourcePath));
             getStyleClass().add(SCREEN_BACKGROUND_SVG_STYLE_CLASS);
             setMinSize(0, 0);
             setBorder(Border.EMPTY);
             setBackground(Background.EMPTY);
             setMouseTransparent(true);
             setFocusTraversable(false);
-            swingNode.setMouseTransparent(true);
-            swingNode.setFocusTraversable(false);
-            getChildren().add(swingNode);
-            if (!GraphicsEnvironment.isHeadless()) {
-                runOnSwingThread(() -> {
-                    canvas.setOpaque(false);
-                    canvas.setBackground(new java.awt.Color(0, 0, 0, 0));
-                    canvas.setSVGDocument(document);
-                    swingNode.setContent(canvas);
-                });
-                contentInstalled = true;
-            }
+            imageView.setMouseTransparent(true);
+            imageView.setFocusTraversable(false);
+            imageView.setPreserveRatio(false);
+            imageView.setSmooth(true);
+            imageView.fitWidthProperty().bind(widthProperty());
+            imageView.fitHeightProperty().bind(heightProperty());
+            getChildren().add(imageView);
         }
 
         @Override
         protected void layoutChildren() {
-            double width = getWidth();
-            double height = getHeight();
-            swingNode.resizeRelocate(0, 0, width, height);
-            if (!contentInstalled) {
-                return;
-            }
-            int canvasWidth = Math.max(MIN_SVG_CANVAS_DIMENSION, (int) Math.ceil(width));
-            int canvasHeight = Math.max(MIN_SVG_CANVAS_DIMENSION, (int) Math.ceil(height));
-            if (canvasWidth == currentCanvasWidth && canvasHeight == currentCanvasHeight) {
-                return;
-            }
-            currentCanvasWidth = canvasWidth;
-            currentCanvasHeight = canvasHeight;
-            scheduleCanvasResize(canvasWidth, canvasHeight);
-        }
-
-        private void scheduleCanvasResize(int canvasWidth, int canvasHeight) {
-            pendingCanvasSize.set(new Dimension(canvasWidth, canvasHeight));
-            if (!resizePending.compareAndSet(false, true)) {
-                return;
-            }
-            SwingUtilities.invokeLater(this::applyPendingCanvasResize);
-        }
-
-        private void applyPendingCanvasResize() {
-            // Continue until the Swing canvas has applied the latest JavaFX layout size.
-            while (true) {
-                Dimension size = pendingCanvasSize.get();
-                canvas.setMinimumSize(size);
-                canvas.setPreferredSize(size);
-                canvas.setSize(size);
-                canvas.revalidate();
-                canvas.repaint();
-                if (pendingCanvasSize.get().equals(size)) {
-                    resizePending.set(false);
-                    if (pendingCanvasSize.get().equals(size) || !resizePending.compareAndSet(false, true)) {
-                        return;
-                    }
-                }
-            }
+            imageView.resizeRelocate(0, 0, getWidth(), getHeight());
         }
 
         @Override
@@ -843,21 +784,6 @@ public final class ScreenShell {
         @Override
         protected double computePrefHeight(double width) {
             return 0;
-        }
-    }
-
-    private static void runOnSwingThread(Runnable action) {
-        if (SwingUtilities.isEventDispatchThread()) {
-            action.run();
-            return;
-        }
-        try {
-            SwingUtilities.invokeAndWait(action);
-        } catch (InterruptedException exception) {
-            Thread.currentThread().interrupt();
-            throw new IllegalStateException("Interrupted while initializing SVG background.", exception);
-        } catch (InvocationTargetException exception) {
-            throw new IllegalStateException("Failed to initialize SVG background.", exception.getCause());
         }
     }
 
