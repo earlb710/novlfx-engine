@@ -818,6 +818,7 @@ public final class ScreenShell {
         }
 
         private void applyPendingCanvasResize() {
+            // Continue until the Swing canvas has applied the latest JavaFX layout size.
             while (true) {
                 Dimension size = pendingCanvasSize.get();
                 canvas.setMinimumSize(size);

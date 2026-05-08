@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
@@ -59,7 +60,7 @@ final class SvgBackgroundTestScreenTest {
         assertTrue(background.isMouseTransparent());
         assertTrue(background.prefWidthProperty().isBound());
         assertTrue(background.prefHeightProperty().isBound());
-        assertTrue(root.getChildren().get(1) == screen);
+        assertSame(screen, root.getChildren().get(1));
     }
 
     @Test
