@@ -87,6 +87,7 @@ public final class SvgBackgroundTestScreen {
         root.getChildren().addAll(background, screen);
         backgroundChoices.valueProperty().addListener((observable, oldValue, newValue) -> {
             if (newValue == null) {
+                // Guard against the selection model being cleared programmatically.
                 return;
             }
             details.setText(newValue.detailText());

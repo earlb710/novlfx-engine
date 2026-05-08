@@ -35,6 +35,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 final class SvgBackgroundTestScreenTest {
+    private static final int GRADIENT_BACKGROUND_INDEX = 0;
+    private static final int CIRCLE_BACKGROUND_INDEX = 1;
     private static final AtomicBoolean JAVAFX_STARTED = new AtomicBoolean();
 
     @Test
@@ -91,16 +93,16 @@ final class SvgBackgroundTestScreenTest {
             assertTrue(background.prefWidthProperty().isBound());
             assertTrue(background.prefHeightProperty().isBound());
             assertSame(screen, root.getChildren().get(1));
-            assertEquals(SvgBackgroundTestScreen.BACKGROUND_OPTIONS.get(0), backgroundChoices.getValue());
-            assertEquals(SvgBackgroundTestScreen.BACKGROUND_OPTIONS.get(0).detailText(), details.getText());
+            assertEquals(SvgBackgroundTestScreen.BACKGROUND_OPTIONS.get(GRADIENT_BACKGROUND_INDEX), backgroundChoices.getValue());
+            assertEquals(SvgBackgroundTestScreen.BACKGROUND_OPTIONS.get(GRADIENT_BACKGROUND_INDEX).detailText(), details.getText());
 
-            backgroundChoices.getSelectionModel().select(1);
+            backgroundChoices.getSelectionModel().select(CIRCLE_BACKGROUND_INDEX);
 
             Region replacement = assertInstanceOf(Region.class, root.getChildren().get(0));
             assertNotNull(replacement);
             assertTrue(replacement.prefWidthProperty().isBound());
             assertTrue(replacement.prefHeightProperty().isBound());
-            assertEquals(SvgBackgroundTestScreen.BACKGROUND_OPTIONS.get(1).detailText(), details.getText());
+            assertEquals(SvgBackgroundTestScreen.BACKGROUND_OPTIONS.get(CIRCLE_BACKGROUND_INDEX).detailText(), details.getText());
         }));
     }
 

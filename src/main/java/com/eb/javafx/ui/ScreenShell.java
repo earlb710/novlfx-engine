@@ -706,6 +706,7 @@ public final class ScreenShell {
                 height = Math.max(height, screen.getBounds().getHeight() * screen.getOutputScaleY());
             }
         } catch (IllegalStateException ignored) {
+            // Screen enumeration can fail before the JavaFX toolkit is fully initialized.
         }
         return new Dimension2D(width, height);
     }
