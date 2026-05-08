@@ -38,10 +38,13 @@ import org.w3c.dom.svg.SVGDocument;
 import java.awt.Dimension;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.swing.SwingUtilities;
 
 /**
@@ -660,8 +663,10 @@ public final class ScreenShell {
             SVGDocument document = VectorImage.fromInputStream(inputStream).getSvgDocument();
             document.getDocumentElement().setAttribute("preserveAspectRatio", "none");
             return document;
-        } catch (IOException | IllegalArgumentException exception) {
-            throw new IllegalArgumentException("Screen SVG background resource is invalid: " + resourcePath, exception);
+        } catch (IOException exception) {
+            throw new IllegalArgumentException("Failed to load SVG background resource: " + resourcePath, exception);
+        } catch (IllegalArgumentException exception) {
+            throw new IllegalArgumentException("SVG background resource has invalid format: " + resourcePath, exception);
         }
     }
 
@@ -727,6 +732,9 @@ public final class ScreenShell {
     private static final class SvgBackground extends Region {
         private final SwingNode swingNode = new SwingNode();
         private final JSVGCanvas canvas = new JSVGCanvas();
+        private final AtomicBoolean resizePending = new AtomicBoolean();
+        private final AtomicInteger pendingCanvasWidth = new AtomicInteger(1);
+        private final AtomicInteger pendingCanvasHeight = new AtomicInteger(1);
         private int currentCanvasWidth = -1;
         private int currentCanvasHeight = -1;
 
@@ -741,7 +749,7 @@ public final class ScreenShell {
             swingNode.setMouseTransparent(true);
             swingNode.setFocusTraversable(false);
             getChildren().add(swingNode);
-            SwingUtilities.invokeLater(() -> {
+            runOnSwingThread(() -> {
                 canvas.setOpaque(false);
                 canvas.setBackground(new java.awt.Color(0, 0, 0, 0));
                 canvas.setSVGDocument(document);
@@ -761,13 +769,28 @@ public final class ScreenShell {
             }
             currentCanvasWidth = canvasWidth;
             currentCanvasHeight = canvasHeight;
+            scheduleCanvasResize(canvasWidth, canvasHeight);
+        }
+
+        private void scheduleCanvasResize(int canvasWidth, int canvasHeight) {
+            pendingCanvasWidth.set(canvasWidth);
+            pendingCanvasHeight.set(canvasHeight);
+            if (!resizePending.compareAndSet(false, true)) {
+                return;
+            }
             SwingUtilities.invokeLater(() -> {
-                Dimension size = new Dimension(canvasWidth, canvasHeight);
+                int width = pendingCanvasWidth.get();
+                int height = pendingCanvasHeight.get();
+                Dimension size = new Dimension(width, height);
                 canvas.setMinimumSize(size);
                 canvas.setPreferredSize(size);
                 canvas.setSize(size);
                 canvas.revalidate();
                 canvas.repaint();
+                resizePending.set(false);
+                if (pendingCanvasWidth.get() != width || pendingCanvasHeight.get() != height) {
+                    scheduleCanvasResize(pendingCanvasWidth.get(), pendingCanvasHeight.get());
+                }
             });
         }
 
@@ -779,6 +802,21 @@ public final class ScreenShell {
         @Override
         protected double computePrefHeight(double width) {
             return 0;
+        }
+    }
+
+    private static void runOnSwingThread(Runnable action) {
+        if (SwingUtilities.isEventDispatchThread()) {
+            action.run();
+            return;
+        }
+        try {
+            SwingUtilities.invokeAndWait(action);
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("Interrupted while initializing SVG background.", exception);
+        } catch (InvocationTargetException exception) {
+            throw new IllegalStateException("Failed to initialize SVG background.", exception.getCause());
         }
     }
 
