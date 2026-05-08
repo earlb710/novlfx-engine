@@ -18,6 +18,8 @@ import javafx.scene.layout.Border;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.BorderStrokeStyle;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Region;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.image.ImageView;
@@ -95,6 +97,51 @@ final class ScreenShellTest {
                 ScreenShell.backgroundImage(image, null));
         assertThrows(IllegalArgumentException.class, () ->
                 ScreenShell.setBackgroundImage(null, image, ScreenBackgroundFit.STRETCH));
+    }
+
+    @Test
+    void backgroundSvgWrapsWholeScreenBehindContentWithoutBorderOrMouseInput() {
+        BorderPane screen = new BorderPane();
+
+        StackPane root = ScreenShell.withBackgroundSvg(
+                screen,
+                ButtonVisuals.BUTTON_LONG_ARTWORK_RESOURCE,
+                ButtonVisuals.BUTTON_BEVEL_ARTWORK_RESOURCE);
+        Region background = (Region) root.getChildren().get(0);
+        Region overlay = (Region) root.getChildren().get(1);
+
+        assertSame(screen, root.getChildren().get(2));
+        assertTrue(background.getStyleClass().contains(ScreenShell.SCREEN_BACKGROUND_SVG_STYLE_CLASS));
+        assertTrue(background.isMouseTransparent());
+        assertTrue(overlay.isMouseTransparent());
+        assertEquals(Border.EMPTY, background.getBorder());
+        assertEquals(Border.EMPTY, overlay.getBorder());
+        assertEquals(0, background.getPadding().getTop());
+        assertTrue(background.prefWidthProperty().isBound());
+        assertTrue(background.prefHeightProperty().isBound());
+        assertTrue(overlay.prefWidthProperty().isBound());
+        assertTrue(overlay.prefHeightProperty().isBound());
+
+        root.resize(640, 360);
+
+        assertEquals(640, background.getPrefWidth());
+        assertEquals(360, background.getPrefHeight());
+        assertEquals(640, overlay.getPrefWidth());
+        assertEquals(360, overlay.getPrefHeight());
+        BorderPane aliasScreen = new BorderPane();
+        assertSame(aliasScreen, ScreenShell.setBackgroundSvg(
+                aliasScreen,
+                ButtonVisuals.BUTTON_LONG_ARTWORK_RESOURCE,
+                ButtonVisuals.BUTTON_BEVEL_ARTWORK_RESOURCE).getChildren().get(2));
+    }
+
+    @Test
+    void backgroundSvgHelpersValidateRequiredResource() {
+        assertThrows(IllegalArgumentException.class, () -> ScreenShell.backgroundSvg(null));
+        assertThrows(IllegalArgumentException.class, () -> ScreenShell.backgroundSvg(" "));
+        assertThrows(IllegalArgumentException.class, () -> ScreenShell.backgroundSvg("/missing-background.svg"));
+        assertThrows(IllegalArgumentException.class, () -> ScreenShell.withBackgroundSvg(null,
+                ButtonVisuals.BUTTON_LONG_ARTWORK_RESOURCE));
     }
 
     @Test

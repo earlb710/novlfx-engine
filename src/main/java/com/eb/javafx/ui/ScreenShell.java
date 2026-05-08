@@ -7,6 +7,7 @@ import com.eb.javafx.state.GameState;
 import com.eb.javafx.util.Validation;
 import com.eb.javafx.util.VectorImage;
 import javafx.application.Platform;
+import javafx.embed.swing.SwingNode;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
@@ -28,14 +29,25 @@ import javafx.scene.layout.BorderWidths;
 import javafx.scene.layout.CornerRadii;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Region;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
+import org.apache.batik.swing.JSVGCanvas;
+import org.w3c.dom.svg.SVGDocument;
 
+import java.awt.Dimension;
+import java.awt.GraphicsEnvironment;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.InvocationTargetException;
+import java.net.URL;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
+import javax.swing.SwingUtilities;
 
 /**
  * Shared layout for reusable screen content with JavaFX frames.
@@ -48,6 +60,7 @@ public final class ScreenShell {
     public static final String SCREEN_ROOT_STYLE_CLASS = "screen-root";
     public static final String SCREEN_TITLE_STYLE_CLASS = "screen-title";
     public static final String SCREEN_PANEL_STYLE_CLASS = "screen-panel";
+    public static final String SCREEN_BACKGROUND_SVG_STYLE_CLASS = "screen-background-svg";
     public static final String SCREEN_FOOTER_BAR_STYLE_CLASS = "screen-footer-bar";
     public static final String SCREEN_FOOTER_OPTION_STYLE_CLASS = "screen-footer-option";
     public static final String SCREEN_FOOTER_OPTION_DISABLED_STYLE_CLASS = "screen-footer-option-disabled";
@@ -97,6 +110,7 @@ public final class ScreenShell {
     private static final Color DEFAULT_FOOTER_BACKGROUND_COLOR = Color.rgb(10, 20, 38);
     private static final Color DEFAULT_FOOTER_BORDER_COLOR = Color.web("#143869");
     private static final CornerRadii FOOTER_CORNER_RADII = new CornerRadii(999);
+    private static final int MIN_SVG_CANVAS_DIMENSION = 1;
     private static final String FOOTER_BACKGROUND_COLOR_PROPERTY = "screenFooterBackgroundColor";
     private static final String FOOTER_BACKGROUND_TRANSPARENCY_PROPERTY = "screenFooterBackgroundTransparency";
     private static final String FOOTER_BORDER_STYLE_PROPERTY = "screenFooterBorderStyle";
@@ -451,6 +465,77 @@ public final class ScreenShell {
         };
     }
 
+    /**
+     * Wraps one or more full-screen SVG backgrounds behind a screen root.
+     *
+     * <p>Each SVG background is mouse-transparent, borderless, and resized with the returned
+     * stack pane. Backgrounds are layered in argument order behind the screen content. Use the
+     * returned pane as the scene root so the SVG layers cover the entire screen.</p>
+     *
+     * @param screen screen content to layer above the background
+     * @param svgResourcePath first packaged SVG resource path
+     * @param additionalSvgResourcePaths additional packaged SVG resource paths to layer above the first
+     * @return stack pane containing the background layers and screen content
+     */
+    public static StackPane withBackgroundSvg(
+            Region screen,
+            String svgResourcePath,
+            String... additionalSvgResourcePaths) {
+        Validation.requireNonNull(screen, "Screen background content is required.");
+        List<Region> backgrounds = backgroundSvgLayers(svgResourcePath, additionalSvgResourcePaths);
+        StackPane root = new StackPane();
+        root.getChildren().addAll(backgrounds);
+        root.getChildren().add(screen);
+        root.setMinSize(0, 0);
+        backgrounds.forEach(background -> configureBackgroundLayer(background, root));
+        screen.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
+        return root;
+    }
+
+    /**
+     * Creates a screen root with one or more full-screen SVG backgrounds behind the supplied content.
+     *
+     * @param screen screen content to layer above the background
+     * @param svgResourcePath first packaged SVG resource path
+     * @param additionalSvgResourcePaths additional packaged SVG resource paths to layer above the first
+     * @return stack pane containing the background layers and screen content
+     */
+    public static StackPane setBackgroundSvg(
+            Region screen,
+            String svgResourcePath,
+            String... additionalSvgResourcePaths) {
+        return withBackgroundSvg(screen, svgResourcePath, additionalSvgResourcePaths);
+    }
+
+    /**
+     * Creates a full-screen SVG background node.
+     *
+     * <p>The returned node is not clickable and has no border or padding.</p>
+     *
+     * @param svgResourcePath packaged SVG resource path
+     * @return resizable SVG background region
+     */
+    public static Region backgroundSvg(String svgResourcePath) {
+        return new SvgBackground(svgResourcePath);
+    }
+
+    private static List<Region> backgroundSvgLayers(String svgResourcePath, String... additionalSvgResourcePaths) {
+        List<Region> backgrounds = new ArrayList<>();
+        backgrounds.add(backgroundSvg(svgResourcePath));
+        if (additionalSvgResourcePaths != null) {
+            for (String additionalSvgResourcePath : additionalSvgResourcePaths) {
+                backgrounds.add(backgroundSvg(additionalSvgResourcePath));
+            }
+        }
+        return backgrounds;
+    }
+
+    private static void configureBackgroundLayer(Region background, StackPane root) {
+        background.prefWidthProperty().bind(root.widthProperty());
+        background.prefHeightProperty().bind(root.heightProperty());
+        background.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
+    }
+
     private static List<FooterOption> replaceFooterOption(
             List<FooterOption> options,
             String id,
@@ -601,6 +686,33 @@ public final class ScreenShell {
         }
     }
 
+    private static SVGDocument loadBackgroundSvgDocument(String resourcePath) {
+        URL resource = resolveResource(resourcePath);
+        try (InputStream inputStream = resource.openStream()) {
+            SVGDocument document = VectorImage.fromInputStream(inputStream).getSvgDocument();
+            // Full-screen background SVGs should stretch to the current scene size.
+            document.getDocumentElement().setAttribute("preserveAspectRatio", "none");
+            return document;
+        } catch (IOException exception) {
+            throw new IllegalArgumentException("Failed to load SVG background resource: " + resourcePath, exception);
+        } catch (IllegalArgumentException exception) {
+            throw new IllegalArgumentException("SVG background resource has invalid format: " + resourcePath, exception);
+        }
+    }
+
+    private static URL resolveResource(String resourcePath) {
+        String checkedPath = Validation.requireNonBlank(resourcePath, "Screen SVG background resource is required.");
+        URL resource = ScreenShell.class.getResource(checkedPath);
+        if (resource == null) {
+            String classLoaderPath = checkedPath.startsWith("/") ? checkedPath.substring(1) : checkedPath;
+            resource = ScreenShell.class.getClassLoader().getResource(classLoaderPath);
+        }
+        if (resource == null) {
+            throw new IllegalArgumentException("Screen SVG background resource is missing: " + checkedPath);
+        }
+        return resource;
+    }
+
     static String footerTextWithoutFallbackIcon(FooterOption option, String displayText) {
         if (displayText.equals(option.icon())) {
             return "";
@@ -645,6 +757,108 @@ public final class ScreenShell {
     public static String defaultFooterIconResourcePath(String id) {
         String checkedId = Validation.requireNonBlank(id, "Footer option id is required.");
         return DEFAULT_FOOTER_ICON_RESOURCE_DIRECTORY + "/footer-" + checkedId + ".svg";
+    }
+
+    private static final class SvgBackground extends Region {
+        private final SwingNode swingNode = new SwingNode();
+        private final JSVGCanvas canvas = new JSVGCanvas();
+        private final AtomicBoolean resizePending = new AtomicBoolean();
+        private final AtomicReference<Dimension> pendingCanvasSize = new AtomicReference<>(
+                new Dimension(MIN_SVG_CANVAS_DIMENSION, MIN_SVG_CANVAS_DIMENSION));
+        private int currentCanvasWidth = -1;
+        private int currentCanvasHeight = -1;
+        private boolean contentInstalled;
+
+        private SvgBackground(String svgResourcePath) {
+            SVGDocument document = loadBackgroundSvgDocument(svgResourcePath);
+            getStyleClass().add(SCREEN_BACKGROUND_SVG_STYLE_CLASS);
+            setMinSize(0, 0);
+            setBorder(Border.EMPTY);
+            setBackground(Background.EMPTY);
+            setMouseTransparent(true);
+            setFocusTraversable(false);
+            swingNode.setMouseTransparent(true);
+            swingNode.setFocusTraversable(false);
+            getChildren().add(swingNode);
+            if (!GraphicsEnvironment.isHeadless()) {
+                runOnSwingThread(() -> {
+                    canvas.setOpaque(false);
+                    canvas.setBackground(new java.awt.Color(0, 0, 0, 0));
+                    canvas.setSVGDocument(document);
+                    swingNode.setContent(canvas);
+                });
+                contentInstalled = true;
+            }
+        }
+
+        @Override
+        protected void layoutChildren() {
+            double width = getWidth();
+            double height = getHeight();
+            swingNode.resizeRelocate(0, 0, width, height);
+            if (!contentInstalled) {
+                return;
+            }
+            int canvasWidth = Math.max(MIN_SVG_CANVAS_DIMENSION, (int) Math.ceil(width));
+            int canvasHeight = Math.max(MIN_SVG_CANVAS_DIMENSION, (int) Math.ceil(height));
+            if (canvasWidth == currentCanvasWidth && canvasHeight == currentCanvasHeight) {
+                return;
+            }
+            currentCanvasWidth = canvasWidth;
+            currentCanvasHeight = canvasHeight;
+            scheduleCanvasResize(canvasWidth, canvasHeight);
+        }
+
+        private void scheduleCanvasResize(int canvasWidth, int canvasHeight) {
+            pendingCanvasSize.set(new Dimension(canvasWidth, canvasHeight));
+            if (!resizePending.compareAndSet(false, true)) {
+                return;
+            }
+            SwingUtilities.invokeLater(this::applyPendingCanvasResize);
+        }
+
+        private void applyPendingCanvasResize() {
+            // Continue until the Swing canvas has applied the latest JavaFX layout size.
+            while (true) {
+                Dimension size = pendingCanvasSize.get();
+                canvas.setMinimumSize(size);
+                canvas.setPreferredSize(size);
+                canvas.setSize(size);
+                canvas.revalidate();
+                canvas.repaint();
+                if (pendingCanvasSize.get().equals(size)) {
+                    resizePending.set(false);
+                    if (pendingCanvasSize.get().equals(size) || !resizePending.compareAndSet(false, true)) {
+                        return;
+                    }
+                }
+            }
+        }
+
+        @Override
+        protected double computePrefWidth(double height) {
+            return 0;
+        }
+
+        @Override
+        protected double computePrefHeight(double width) {
+            return 0;
+        }
+    }
+
+    private static void runOnSwingThread(Runnable action) {
+        if (SwingUtilities.isEventDispatchThread()) {
+            action.run();
+            return;
+        }
+        try {
+            SwingUtilities.invokeAndWait(action);
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("Interrupted while initializing SVG background.", exception);
+        } catch (InvocationTargetException exception) {
+            throw new IllegalStateException("Failed to initialize SVG background.", exception.getCause());
+        }
     }
 
     /** One footer action rendered by the shell with icon, shortcut, tooltip, and enabled state metadata. */
