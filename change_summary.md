@@ -15,3 +15,6 @@ Updated preferences-related tests, manual footer-test copy, and the user manual 
 Updated `PreferencesFooterTestScreenTest` to handle an already-initialized JavaFX toolkit when launched from the manual test app.
 Added shared `TestUiScreenSize` limits and capped JavaFX test/support scenes to 800x600.
 Capped Swing-based test/support windows and the screen-designer preview/test harness sizing so test UI windows stay within 800x600.
+
+19. Added `BlockBackgroundImageTestScreen`, a manual JavaFX test screen that renders a 50% transparent `circle-background.svg` behind content and two block sections using 50% transparent `circle2-background.svg` backgrounds.
+20. Added `BlockBackgroundImageTestScreenTest` to verify the layout model metadata and expose the new manual launcher entry from the test screen app.
