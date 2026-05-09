@@ -12,6 +12,7 @@ import javafx.scene.control.Label;
 import javafx.scene.input.KeyCode;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import org.junit.jupiter.api.Test;
 
@@ -48,6 +49,21 @@ final class PreferencesSummaryScreenTest {
         assertTrue(PreferencesSummaryScreen.isCloseShortcut(KeyCode.P, true));
         assertFalse(PreferencesSummaryScreen.isCloseShortcut(KeyCode.P, false));
         assertFalse(PreferencesSummaryScreen.isCloseShortcut(KeyCode.B, true));
+    }
+
+    @Test
+    void settingsBlockWrapsRowsInCardPanel() {
+        Label firstRow = new Label("first");
+        Label secondRow = new Label("second");
+
+        VBox block = PreferencesSummaryScreen.settingsBlock("Audio", firstRow, secondRow);
+
+        assertTrue(block.getStyleClass().contains(ScreenShell.SCREEN_PANEL_STYLE_CLASS));
+        assertTrue(block.getStyleClass().contains(ScreenShell.LAYOUT_CARD_STYLE_CLASS));
+        assertEquals("Audio", ((Label) block.getChildren().get(0)).getText());
+        assertTrue(block.getChildren().get(0).getStyleClass().contains(ScreenShell.LAYOUT_SECTION_TITLE_STYLE_CLASS));
+        assertTrue(block.getChildren().contains(firstRow));
+        assertTrue(block.getChildren().contains(secondRow));
     }
 
     @Test

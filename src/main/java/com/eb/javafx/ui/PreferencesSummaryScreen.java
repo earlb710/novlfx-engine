@@ -40,18 +40,18 @@ public final class PreferencesSummaryScreen {
         PreferencesSummaryViewModel viewModel = viewModel(context);
         Runnable closeAction = () -> context.navigateTo(SceneRouter.MAIN_MENU_ROUTE);
         VBox content = new VBox(10);
-        content.getChildren().add(sectionHeading("Audio"));
-        content.getChildren().add(volumeRow(context, "Master volume", context.preferencesService().masterVolume(),
-                PreferencesSummaryScreen::saveMasterVolume));
-        content.getChildren().add(volumeRow(context, "Music volume", context.preferencesService().musicVolume(),
-                PreferencesSummaryScreen::saveMusicVolume));
-        content.getChildren().add(volumeRow(context, "Sound volume", context.preferencesService().soundVolume(),
-                PreferencesSummaryScreen::saveSoundVolume));
-
-        content.getChildren().add(sectionHeading("Theme color"));
-        content.getChildren().add(themeSelectionRow(context));
-        content.getChildren().add(sectionHeading("Footer display"));
-        content.getChildren().add(footerDisplayRow(context));
+        content.getChildren().add(settingsBlock(
+                "Audio",
+                volumeRow(context, "Master volume", context.preferencesService().masterVolume(),
+                        PreferencesSummaryScreen::saveMasterVolume),
+                volumeRow(context, "Music volume", context.preferencesService().musicVolume(),
+                        PreferencesSummaryScreen::saveMusicVolume),
+                volumeRow(context, "Sound volume", context.preferencesService().soundVolume(),
+                        PreferencesSummaryScreen::saveSoundVolume)));
+        content.getChildren().add(settingsBlock(
+                "Visual",
+                themeSelectionRow(context),
+                footerDisplayRow(context)));
 
         Button closeButton = ScreenNavigation.button(context, CLOSE_LABEL, SceneRouter.MAIN_MENU_ROUTE);
         content.getChildren().add(closeButton);
@@ -117,6 +117,13 @@ public final class PreferencesSummaryScreen {
         return shortcutDown && keyCode == KeyCode.P;
     }
 
+    static VBox settingsBlock(String title, Node... rows) {
+        Node[] blockChildren = new Node[rows.length + 1];
+        blockChildren[0] = sectionHeading(title);
+        System.arraycopy(rows, 0, blockChildren, 1, rows.length);
+        return ScreenShell.styledPanel(ScreenShell.LAYOUT_CARD_STYLE_CLASS, blockChildren);
+    }
+
     static String percentLabel(double volume) {
         return Math.round(volume * VOLUME_PERCENT_SCALE) + "%";
     }
@@ -149,7 +156,9 @@ public final class PreferencesSummaryScreen {
             value.setText(percentLabel(updatedVolume));
             volumeSaver.save(context, updatedVolume);
         });
-        return new HBox(8, label, slider, value);
+        HBox row = new HBox(8, label, slider, value);
+        row.getStyleClass().add(ScreenShell.LAYOUT_SECTION_ROW_STYLE_CLASS);
+        return row;
     }
 
     private static HBox themeSelectionRow(RouteContext context) {
@@ -177,7 +186,9 @@ public final class PreferencesSummaryScreen {
                 applyTheme(context, selected.family(), selected.variant());
             }
         });
-        return new HBox(8, label, comboBox);
+        HBox row = new HBox(8, label, comboBox);
+        row.getStyleClass().add(ScreenShell.LAYOUT_SECTION_ROW_STYLE_CLASS);
+        return row;
     }
 
     private static HBox footerDisplayRow(RouteContext context) {
@@ -208,7 +219,9 @@ public final class PreferencesSummaryScreen {
                 applyCurrentFooterPreferences(context);
             }
         });
-        return new HBox(8, label, comboBox);
+        HBox row = new HBox(8, label, comboBox);
+        row.getStyleClass().add(ScreenShell.LAYOUT_SECTION_ROW_STYLE_CLASS);
+        return row;
     }
 
     private static List<ThemeChoice> themeChoices() {
