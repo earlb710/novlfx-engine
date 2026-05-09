@@ -24,3 +24,5 @@ Capped Swing-based test/support windows and the screen-designer preview/test har
 23. Updated `ScreenLayoutRenderer` and `BlockBackgroundImageTestScreenTest` so block background images are clipped to the configured rounded border shape instead of drawing past the curved edges.
 24. Updated `ScreenLayoutRenderer` so section background image clips are recalculated during layout, keeping rounded and pill border clipping aligned when blocks resize.
 25. Expanded `BlockBackgroundImageTestScreenTest` to resize the rendered root and verify the block background clip keeps matching the block bounds after layout changes.
+26. Moved block background image clipping onto the rendered section container so the clip follows the same node that owns the rounded/pill border during resize.
+27. Made the block background image test screen root and content panel transparent so the configured `circle-background.svg` screen background remains visible behind the layout.
