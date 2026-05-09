@@ -788,6 +788,7 @@ public final class ScreenShell {
         return label.getUserData() instanceof FooterOption option && option.enabled();
     }
 
+    /** Creates a shared tooltip with a shorter delay so hover help appears promptly across reusable UI screens. */
     public static Tooltip createTooltip(String text) {
         Tooltip tooltip = new Tooltip(text);
         tooltip.setShowDelay(DEFAULT_TOOLTIP_SHOW_DELAY);

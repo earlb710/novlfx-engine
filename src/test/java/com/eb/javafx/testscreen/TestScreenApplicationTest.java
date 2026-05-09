@@ -319,7 +319,7 @@ final class TestScreenApplicationTest {
     }
 
     @Test
-    void filteredTestsSupportsNewAndManualCheckboxCombinations() {
+    void filteredTestsSupportsCombinedFilters() {
         List<String> tests = List.of("new auto", "new manual", "old auto", "old manual");
 
         assertEquals(List.of("new auto", "new manual"),
