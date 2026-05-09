@@ -22,3 +22,5 @@ Capped Swing-based test/support windows and the screen-designer preview/test har
 21. Expanded `BlockBackgroundImageTestScreenTest` to verify the richer block metadata and that the rendered layout now includes block action buttons.
 22. Kept the block background image demo on the `circle-background.svg` screen backdrop and expanded each block with extra explanatory text lines.
 23. Updated `ScreenLayoutRenderer` and `BlockBackgroundImageTestScreenTest` so block background images are clipped to the configured rounded border shape instead of drawing past the curved edges.
+24. Updated `ScreenLayoutRenderer` so section background image clips are recalculated during layout, keeping rounded and pill border clipping aligned when blocks resize.
+25. Expanded `BlockBackgroundImageTestScreenTest` to resize the rendered root and verify the block background clip keeps matching the block bounds after layout changes.
