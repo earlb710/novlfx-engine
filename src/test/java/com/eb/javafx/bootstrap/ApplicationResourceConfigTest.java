@@ -22,6 +22,15 @@ final class ApplicationResourceConfigTest {
                 .withDebug(false)
                 .withCategoryCodeTablesPath("data/categories/en.json")
                 .withImageAssetRoot("assets/images")
+                .withDefaultAppBackgroundColor("#101820")
+                .withDefaultAppBackgroundImage("backgrounds/app.png")
+                .withDefaultAppBackgroundImageTransparency("0.2")
+                .withDefaultPreferencesScreenBackgroundColor("#203040")
+                .withDefaultPreferencesScreenBackgroundImage("backgrounds/preferences.png")
+                .withDefaultPreferencesScreenBackgroundImageTransparency("0.35")
+                .withDefaultSaveLoadScreenBackgroundColor("#304050")
+                .withDefaultSaveLoadScreenBackgroundImage("backgrounds/save-load.png")
+                .withDefaultSaveLoadScreenBackgroundImageTransparency("0.5")
                 .putResource("backgrounds", "assets/backgrounds")
                 .putResource("portraits", "assets/portraits");
         Path output = tempDir.resolve("config.json");
@@ -32,6 +41,15 @@ final class ApplicationResourceConfigTest {
         assertFalse(reloaded.debug());
         assertEquals("data/categories/en.json", reloaded.categoryCodeTablesPath());
         assertEquals("assets/images", reloaded.imageAssetRoot());
+        assertEquals("#101820", reloaded.defaultAppBackgroundColor());
+        assertEquals("backgrounds/app.png", reloaded.defaultAppBackgroundImage());
+        assertEquals("0.2", reloaded.defaultAppBackgroundImageTransparency());
+        assertEquals("#203040", reloaded.defaultPreferencesScreenBackgroundColor());
+        assertEquals("backgrounds/preferences.png", reloaded.defaultPreferencesScreenBackgroundImage());
+        assertEquals("0.35", reloaded.defaultPreferencesScreenBackgroundImageTransparency());
+        assertEquals("#304050", reloaded.defaultSaveLoadScreenBackgroundColor());
+        assertEquals("backgrounds/save-load.png", reloaded.defaultSaveLoadScreenBackgroundImage());
+        assertEquals("0.5", reloaded.defaultSaveLoadScreenBackgroundImageTransparency());
         assertEquals(
                 tempDir.resolve("data/categories/en.json").normalize(),
                 reloaded.resolveCategoryCodeTables(tempDir));
@@ -58,6 +76,9 @@ final class ApplicationResourceConfigTest {
         assertEquals("config/category-code-tables.en.json", config.categoryCodeTablesPath());
         assertEquals("game", config.imageAssetRoot());
         assertTrue(config.debug());
+        assertEquals("", config.defaultAppBackgroundColor());
+        assertEquals("", config.defaultPreferencesScreenBackgroundImage());
+        assertEquals("", config.defaultSaveLoadScreenBackgroundImageTransparency());
         assertTrue(config.resourcePath("backgrounds").isPresent());
         assertFalse(config.removeResource("backgrounds").resourcePath("backgrounds").isPresent());
         assertThrows(IllegalArgumentException.class, () -> config.removeResource("missing"));
@@ -76,6 +97,33 @@ final class ApplicationResourceConfigTest {
     }
 
     @Test
+    void configParsesExplicitBackgroundDefaults() {
+        ApplicationResourceConfig config = ApplicationResourceConfig.fromJson("""
+                {
+                  "defaultAppBackgroundColor": "#0f172a",
+                  "defaultAppBackgroundImage": "images/app.png",
+                  "defaultAppBackgroundImageTransparency": "0.15",
+                  "defaultPreferencesScreenBackgroundColor": "#112233",
+                  "defaultPreferencesScreenBackgroundImage": "images/preferences.png",
+                  "defaultPreferencesScreenBackgroundImageTransparency": "0.25",
+                  "defaultSaveLoadScreenBackgroundColor": "#445566",
+                  "defaultSaveLoadScreenBackgroundImage": "images/save-load.png",
+                  "defaultSaveLoadScreenBackgroundImageTransparency": "0.4"
+                }
+                """, "inline");
+
+        assertEquals("#0f172a", config.defaultAppBackgroundColor());
+        assertEquals("images/app.png", config.defaultAppBackgroundImage());
+        assertEquals("0.15", config.defaultAppBackgroundImageTransparency());
+        assertEquals("#112233", config.defaultPreferencesScreenBackgroundColor());
+        assertEquals("images/preferences.png", config.defaultPreferencesScreenBackgroundImage());
+        assertEquals("0.25", config.defaultPreferencesScreenBackgroundImageTransparency());
+        assertEquals("#445566", config.defaultSaveLoadScreenBackgroundColor());
+        assertEquals("images/save-load.png", config.defaultSaveLoadScreenBackgroundImage());
+        assertEquals("0.4", config.defaultSaveLoadScreenBackgroundImageTransparency());
+    }
+
+    @Test
     void factoryRejectsBlankValues() {
         assertThrows(IllegalArgumentException.class, () -> ApplicationResourceConfig.of(" ", "game", Map.of()));
         assertThrows(IllegalArgumentException.class, () -> ApplicationResourceConfig.of("config.json", " ", Map.of()));
@@ -85,6 +133,9 @@ final class ApplicationResourceConfigTest {
                 Map.of("images", " ")));
         assertThrows(IllegalArgumentException.class, () -> ApplicationResourceConfig.fromJson(
                 "{\"debug\":\"true\"}",
+                "inline"));
+        assertThrows(IllegalArgumentException.class, () -> ApplicationResourceConfig.fromJson(
+                "{\"defaultAppBackgroundColor\":false}",
                 "inline"));
     }
 }

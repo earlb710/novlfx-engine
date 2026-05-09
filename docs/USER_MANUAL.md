@@ -175,12 +175,21 @@ Use `BootstrapCompletenessPolicy` when an application has additional reusable st
 
 Do not use guarded services before initialization. Several services use initialization guards and will fail fast if called before bootstrap or explicit initialization.
 
-Applications can also keep an external `config.json` and load it with `ApplicationResourceConfig.load(Path)` when authored resources need to live outside the engine defaults. The config stores a category code-table JSON path, an image asset root, and a generic `resources` map for other overrideable files such as themes or image groups:
+Applications can also keep an external `config.json` and load it with `ApplicationResourceConfig.load(Path)` when authored resources need to live outside the engine defaults. The config stores a category code-table JSON path, an image asset root, optional default background values for the app, preferences, and save/load screens, and a generic `resources` map for other overrideable files such as themes or image groups:
 
 ```json
 {
   "categoryCodeTablesPath": "config/category-code-tables.en.json",
   "imageAssetRoot": "game",
+  "defaultAppBackgroundColor": "#101820",
+  "defaultAppBackgroundImage": "/com/eb/javafx/images/svg/background-gradient-rectangle.svg",
+  "defaultAppBackgroundImageTransparency": "0.15",
+  "defaultPreferencesScreenBackgroundColor": "#10243b",
+  "defaultPreferencesScreenBackgroundImage": "/com/eb/javafx/images/svg/background-gradient-rectangle.svg",
+  "defaultPreferencesScreenBackgroundImageTransparency": "0.2",
+  "defaultSaveLoadScreenBackgroundColor": "#15283f",
+  "defaultSaveLoadScreenBackgroundImage": "/com/eb/javafx/images/svg/background-gradient-rectangle.svg",
+  "defaultSaveLoadScreenBackgroundImageTransparency": "0.25",
   "resources": {
     "sceneDefinitions": "content/scene-definitions.json",
     "displayDefinitions": "content/display-definitions.json",
@@ -206,8 +215,9 @@ BootContext context = new BootstrapService(options).boot(primaryStage);
 
 Use `context.resourceConfig().resolveCategoryCodeTables(context.applicationRoot())` when app-owned content modules need to load generic category JSON during startup.
 Use `context.resourceConfig().resolveResource(context.applicationRoot(), "displayDefinitions")` with `JsonDisplayContentModule` when app-owned display definitions should be loaded during the static content phase, and use named resources such as `sceneDefinitions` to load JSON-authored scene modules from the application side.
+Use the route-specific background getters when the application wants shared startup defaults for app-owned shell, preferences, or save/load screen backgrounds.
 
-The management UI includes a **Default App Values** screen for inspecting these startup defaults and related display resources. The **Application Values** tab presents editable application config fields with local **Save** and **Reset** actions.
+The management UI includes a **Default App Values** screen for inspecting these startup defaults and related display resources. The **Application Values** tab presents editable application config fields with friendly labels, local **Save** and **Reset** actions, browse buttons for file/path-backed fields, and color pickers for color values.
 
 Immediately after that, the **Lookup Variables** tab opens an editable text variable catalog for this management screen session. The catalog uses two fields per row: `name` and `value type`. The value type is limited to `string`, `number`, or `boolean`; use **Add Variable** to append a blank row and **Remove Variable** to delete selected rows, or the last row when nothing is selected. Use the tab-level **Save** and **Reset** buttons to apply or restore the staged catalog rows locally while reviewing startup defaults.
 

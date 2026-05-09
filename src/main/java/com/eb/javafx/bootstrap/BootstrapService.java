@@ -254,7 +254,9 @@ public final class BootstrapService {
                 sceneRegistry,
                 sceneExecutor,
                 uiTheme,
-                sceneRouter);
+                sceneRouter,
+                applicationRoot,
+                resourceConfig);
         List<RouteModule> allRouteModules = new ArrayList<>();
         allRouteModules.add(new DefaultRouteModule());
         allRouteModules.addAll(routeModules);

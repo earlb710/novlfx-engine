@@ -10,7 +10,9 @@ import javax.swing.BorderFactory;
 import javax.swing.DefaultCellEditor;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
+import javax.swing.JColorChooser;
 import javax.swing.JComboBox;
+import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -23,6 +25,7 @@ import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 import javax.swing.table.DefaultTableModel;
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.GridBagConstraints;
@@ -32,6 +35,7 @@ import java.awt.Insets;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
@@ -44,6 +48,7 @@ import java.util.function.Consumer;
 /** Manual editor for engine default display values and viewer for related resources. */
 public final class DefaultDisplayValuesApplication {
     static final String APPLICATION_CONFIG_RESOURCE = "/com/eb/javafx/bootstrap/config.json";
+    private static final String HEX_COLOR_PATTERN = "#[0-9a-fA-F]{6}";
     private static final List<DisplayResource> DISPLAY_RESOURCES = List.of(
             new DisplayResource("Default CSS", "/com/eb/javafx/ui/default.css", true),
             new DisplayResource("Layouts", "/com/eb/javafx/ui/layout-contract.json", false));
@@ -94,9 +99,7 @@ public final class DefaultDisplayValuesApplication {
                 },
                 frame::dispose,
                 frame,
-                "<html>Edit default display values from <code>"
-                        + DisplayDefaults.DEFAULT_RESOURCE
-                        + "</code>. Changes apply only to this management screen.</html>"));
+                displayValuesIntroText()));
         displayResources().forEach(resource -> tabs.addTab(resource.label(), resourcePanel(resource, content -> {
             statusLabel.setText("Updated " + resource.label() + " for this management screen.");
         })));
@@ -115,15 +118,13 @@ public final class DefaultDisplayValuesApplication {
             Consumer<List<ApplicationConfigField>> saveAction,
             Component messageParent) {
         JPanel panel = new JPanel(new BorderLayout(8, 8));
-        panel.add(new JLabel("<html>Application config values from <code>"
-                + APPLICATION_CONFIG_RESOURCE
-                + "</code>. Changes apply only to this management screen.</html>"), BorderLayout.NORTH);
+        panel.add(new JLabel(applicationValuesIntroText()), BorderLayout.NORTH);
         JPanel fieldPanel = new JPanel(new GridBagLayout());
         LinkedHashMap<ApplicationConfigField, Component> editors = new LinkedHashMap<>();
         for (int row = 0; row < fields.size(); row++) {
             ApplicationConfigField field = fields.get(row);
             fieldPanel.add(new JLabel(field.label()), fieldConstraints(row, 0, 0.0));
-            Component editor = editableField(field);
+            Component editor = editableField(field, messageParent);
             editors.put(field, editor);
             fieldPanel.add(editor, fieldConstraints(row, 1, 1.0));
         }
@@ -262,8 +263,7 @@ public final class DefaultDisplayValuesApplication {
         Validation.requireNonNull(variables, "Lookup variables are required.");
         Validation.requireNonNull(saveAction, "Lookup variable save action is required.");
         JPanel panel = new JPanel(new BorderLayout(8, 8));
-        panel.add(new JLabel("<html>Lookup variable catalog definitions for this management screen. "
-                + "Declare each variable name and the type it resolves to.</html>"), BorderLayout.NORTH);
+        panel.add(new JLabel(lookupVariablesIntroText()), BorderLayout.NORTH);
         LookupVariableTableEditor editor = lookupVariablesEditor(variables);
         panel.add(editor.panel(), BorderLayout.CENTER);
         JPanel actions = new JPanel(new GridLayout(1, 2, 6, 0));
@@ -413,18 +413,59 @@ public final class DefaultDisplayValuesApplication {
         }
     }
 
+    static String applicationValuesIntroText() {
+        return "<html>Application config values from <code>"
+                + APPLICATION_CONFIG_RESOURCE
+                + "</code>.</html>";
+    }
+
+    static String lookupVariablesIntroText() {
+        return "<html>Lookup variable catalog definitions. "
+                + "Declare each variable name and the type it resolves to.</html>";
+    }
+
+    static String displayValuesIntroText() {
+        return "<html>Edit default display values from <code>"
+                + DisplayDefaults.DEFAULT_RESOURCE
+                + "</code>.</html>";
+    }
+
     static Component editableField(ApplicationConfigField field) {
-        if ("true".equals(field.value()) || "false".equals(field.value())) {
-            JCheckBox checkBox = new JCheckBox();
-            checkBox.setSelected(Boolean.parseBoolean(field.value()));
-            return checkBox;
-        }
-        return new JTextField(field.value());
+        return editableField(field, null);
+    }
+
+    private static Component editableField(ApplicationConfigField field, Component messageParent) {
+        return switch (field.editorType()) {
+            case BOOLEAN -> booleanField(field.value());
+            case TEXT -> new JTextField(field.value());
+            case COLOR -> {
+                JTextField textField = new JTextField(field.value());
+                yield colorSelector(textField);
+            }
+            case FILE -> {
+                JTextField textField = new JTextField(field.value());
+                yield fileSelector(textField, "Browse...", () -> choosePath(textField, JFileChooser.FILES_ONLY, messageParent));
+            }
+            case DIRECTORY -> {
+                JTextField textField = new JTextField(field.value());
+                yield fileSelector(textField, "Browse...", () -> choosePath(textField, JFileChooser.DIRECTORIES_ONLY, messageParent));
+            }
+        };
+    }
+
+    private static JCheckBox booleanField(String value) {
+        JCheckBox checkBox = new JCheckBox();
+        checkBox.setSelected(Boolean.parseBoolean(value));
+        return checkBox;
     }
 
     private static List<ApplicationConfigField> editedApplicationConfigFields(Map<ApplicationConfigField, Component> editors) {
         return editors.entrySet().stream()
-                .map(entry -> new ApplicationConfigField(entry.getKey().label(), editorValue(entry.getValue())))
+                .map(entry -> new ApplicationConfigField(
+                        entry.getKey().key(),
+                        entry.getKey().label(),
+                        editorValue(entry.getValue()),
+                        entry.getKey().editorType()))
                 .toList();
     }
 
@@ -432,7 +473,8 @@ public final class DefaultDisplayValuesApplication {
         if (editor instanceof JCheckBox checkBox) {
             return Boolean.toString(checkBox.isSelected());
         }
-        if (editor instanceof JTextField textField) {
+        JTextField textField = editorTextField(editor);
+        if (textField != null) {
             return textField.getText();
         }
         throw new IllegalArgumentException("Unsupported application value editor: " + editor.getClass().getName());
@@ -443,11 +485,22 @@ public final class DefaultDisplayValuesApplication {
             checkBox.setSelected(Boolean.parseBoolean(value));
             return;
         }
-        if (editor instanceof JTextField textField) {
+        JTextField textField = editorTextField(editor);
+        if (textField != null) {
             textField.setText(value);
             return;
         }
         throw new IllegalArgumentException("Unsupported application value editor: " + editor.getClass().getName());
+    }
+
+    private static JTextField editorTextField(Component editor) {
+        if (editor instanceof JTextField textField) {
+            return textField;
+        }
+        if (editor instanceof JPanel panel && panel.getComponentCount() > 0 && panel.getComponent(0) instanceof JTextField textField) {
+            return textField;
+        }
+        return null;
     }
 
     private static List<LookupVariable> lookupVariables(JTable table) {
@@ -478,6 +531,70 @@ public final class DefaultDisplayValuesApplication {
         constraints.fill = column == 0 ? GridBagConstraints.NONE : GridBagConstraints.HORIZONTAL;
         constraints.insets = new Insets(3, 3, 3, 3);
         return constraints;
+    }
+
+    private static Component colorSelector(JTextField colorField) {
+        JPanel panel = new JPanel(new BorderLayout(6, 0));
+        JButton choose = new JButton("Choose...");
+        choose.addActionListener(event -> {
+            Color selected = JColorChooser.showDialog(panel, "Choose Color", initialColor(colorField.getText()));
+            if (selected != null) {
+                colorField.setText("#%02x%02x%02x".formatted(selected.getRed(), selected.getGreen(), selected.getBlue()));
+            }
+        });
+        panel.add(colorField, BorderLayout.CENTER);
+        panel.add(choose, BorderLayout.EAST);
+        return panel;
+    }
+
+    private static Component fileSelector(JTextField textField, String buttonLabel, Runnable chooseAction) {
+        JPanel panel = new JPanel(new BorderLayout(6, 0));
+        JButton choose = new JButton(buttonLabel);
+        choose.addActionListener(event -> chooseAction.run());
+        panel.add(textField, BorderLayout.CENTER);
+        panel.add(choose, BorderLayout.EAST);
+        return panel;
+    }
+
+    private static void choosePath(JTextField targetField, int selectionMode, Component messageParent) {
+        JFileChooser chooser = new JFileChooser(initialChooserPath(targetField.getText()).toFile());
+        chooser.setFileSelectionMode(selectionMode);
+        int result = chooser.showOpenDialog(messageParent);
+        if (result == JFileChooser.APPROVE_OPTION && chooser.getSelectedFile() != null) {
+            targetField.setText(chooser.getSelectedFile().toPath().toAbsolutePath().normalize().toString());
+        }
+    }
+
+    private static Path initialChooserPath(String currentValue) {
+        if (currentValue != null && !currentValue.isBlank()) {
+            try {
+                Path path = Path.of(currentValue);
+                Path normalized = path.toAbsolutePath().normalize();
+                Path chooserPath = chooserStartDirectory(normalized);
+                if (chooserPath.toFile().exists()) {
+                    return chooserPath;
+                }
+            } catch (RuntimeException ignored) {
+                // Fall through to current directory.
+            }
+        }
+        return Path.of("").toAbsolutePath().normalize();
+    }
+
+    private static Path chooserStartDirectory(Path path) {
+        if (path.toFile().isDirectory()) {
+            return path;
+        }
+        Path parent = path.getParent();
+        return parent == null ? path : parent;
+    }
+
+    private static Color initialColor(String value) {
+        try {
+            return value != null && value.matches(HEX_COLOR_PATTERN) ? Color.decode(value) : Color.WHITE;
+        } catch (NumberFormatException exception) {
+            return Color.WHITE;
+        }
     }
 
     static JTextArea resourceTextArea(DisplayResource resource) {
@@ -533,18 +650,69 @@ public final class DefaultDisplayValuesApplication {
 
     static List<ApplicationConfigField> applicationConfigFields() {
         Map<String, Object> root = JsonData.rootObject(resourceContents(APPLICATION_CONFIG_RESOURCE), APPLICATION_CONFIG_RESOURCE);
-        LinkedHashMap<String, String> fields = new LinkedHashMap<>();
+        LinkedHashMap<String, ApplicationConfigField> fields = new LinkedHashMap<>();
         root.forEach((key, value) -> {
             if (value instanceof Map<?, ?>) {
                 JsonData.requireObject(value, "application config " + key)
-                        .forEach((nestedKey, nestedValue) -> fields.put(key + "." + nestedKey, String.valueOf(nestedValue)));
+                        .forEach((nestedKey, nestedValue) -> {
+                            String fieldKey = key + "." + nestedKey;
+                            fields.put(fieldKey, applicationConfigField(fieldKey, String.valueOf(nestedValue)));
+                        });
             } else {
-                fields.put(key, String.valueOf(value));
+                fields.put(key, applicationConfigField(key, String.valueOf(value)));
             }
         });
-        return fields.entrySet().stream()
-                .map(entry -> new ApplicationConfigField(entry.getKey(), entry.getValue()))
-                .toList();
+        return List.copyOf(fields.values());
+    }
+
+    private static ApplicationConfigField applicationConfigField(String key, String value) {
+        return new ApplicationConfigField(
+                key,
+                applicationConfigFieldLabel(key),
+                value,
+                applicationConfigFieldEditorType(key, value));
+    }
+
+    static String applicationConfigFieldLabel(String key) {
+        return switch (key) {
+            case "debug" -> "Debug mode";
+            case "categoryCodeTablesPath" -> "Category code tables file";
+            case "imageAssetRoot" -> "Image asset root folder";
+            case "defaultAppBackgroundColor" -> "Default app background color";
+            case "defaultAppBackgroundImage" -> "Default app background image";
+            case "defaultAppBackgroundImageTransparency" -> "Default app background image transparency [0-1]";
+            case "defaultPreferencesScreenBackgroundColor" -> "Default preferences screen background color";
+            case "defaultPreferencesScreenBackgroundImage" -> "Default preferences screen background image";
+            case "defaultPreferencesScreenBackgroundImageTransparency" -> "Default preferences screen background image transparency [0-1]";
+            case "defaultSaveLoadScreenBackgroundColor" -> "Default save/load screen background color";
+            case "defaultSaveLoadScreenBackgroundImage" -> "Default save/load screen background image";
+            case "defaultSaveLoadScreenBackgroundImageTransparency" -> "Default save/load screen background image transparency [0-1]";
+            case "resources.uiTheme" -> "UI theme file";
+            default -> humanizeConfigKey(key);
+        };
+    }
+
+    private static String humanizeConfigKey(String key) {
+        String dotted = key.replace('.', ' ');
+        String spaced = dotted.replaceAll("([a-z])([A-Z])", "$1 $2");
+        String lower = spaced.toLowerCase(Locale.ROOT);
+        return Character.toUpperCase(lower.charAt(0)) + lower.substring(1);
+    }
+
+    private static ApplicationConfigFieldEditorType applicationConfigFieldEditorType(String key, String value) {
+        if ("true".equals(value) || "false".equals(value)) {
+            return ApplicationConfigFieldEditorType.BOOLEAN;
+        }
+        if (key.endsWith("Color")) {
+            return ApplicationConfigFieldEditorType.COLOR;
+        }
+        if ("imageAssetRoot".equals(key)) {
+            return ApplicationConfigFieldEditorType.DIRECTORY;
+        }
+        if (key.endsWith("Path") || key.endsWith("Image") || key.startsWith("resources.")) {
+            return ApplicationConfigFieldEditorType.FILE;
+        }
+        return ApplicationConfigFieldEditorType.TEXT;
     }
 
     static String resourceContents(String resourcePath) {
@@ -599,11 +767,21 @@ public final class DefaultDisplayValuesApplication {
         }
     }
 
-    record ApplicationConfigField(String label, String value) {
+    record ApplicationConfigField(String key, String label, String value, ApplicationConfigFieldEditorType editorType) {
         ApplicationConfigField {
+            key = Validation.requireNonBlank(key, "Application config field key is required.");
             label = Validation.requireNonBlank(label, "Application config field label is required.");
             value = Validation.requireNonNull(value, "Application config field value is required.");
+            editorType = Validation.requireNonNull(editorType, "Application config field editor type is required.");
         }
+    }
+
+    enum ApplicationConfigFieldEditorType {
+        BOOLEAN,
+        TEXT,
+        COLOR,
+        FILE,
+        DIRECTORY
     }
 
     private record LookupVariableTableEditor(JPanel panel, JTable table, DefaultTableModel model) {

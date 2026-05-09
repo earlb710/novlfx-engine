@@ -25,16 +25,43 @@ public final class ApplicationResourceConfig {
     private static final boolean DEFAULT_DEBUG = true;
     private static final String DEFAULT_CATEGORY_CODE_TABLES_PATH = "config/category-code-tables.en.json";
     private static final String DEFAULT_IMAGE_ASSET_ROOT = "game";
+    private static final String DEFAULT_APP_BACKGROUND_COLOR = "";
+    private static final String DEFAULT_APP_BACKGROUND_IMAGE = "";
+    private static final String DEFAULT_APP_BACKGROUND_IMAGE_TRANSPARENCY = "";
+    private static final String DEFAULT_PREFERENCES_SCREEN_BACKGROUND_COLOR = "";
+    private static final String DEFAULT_PREFERENCES_SCREEN_BACKGROUND_IMAGE = "";
+    private static final String DEFAULT_PREFERENCES_SCREEN_BACKGROUND_IMAGE_TRANSPARENCY = "";
+    private static final String DEFAULT_SAVE_LOAD_SCREEN_BACKGROUND_COLOR = "";
+    private static final String DEFAULT_SAVE_LOAD_SCREEN_BACKGROUND_IMAGE = "";
+    private static final String DEFAULT_SAVE_LOAD_SCREEN_BACKGROUND_IMAGE_TRANSPARENCY = "";
 
     private final boolean debug;
     private final String categoryCodeTablesPath;
     private final String imageAssetRoot;
+    private final String defaultAppBackgroundColor;
+    private final String defaultAppBackgroundImage;
+    private final String defaultAppBackgroundImageTransparency;
+    private final String defaultPreferencesScreenBackgroundColor;
+    private final String defaultPreferencesScreenBackgroundImage;
+    private final String defaultPreferencesScreenBackgroundImageTransparency;
+    private final String defaultSaveLoadScreenBackgroundColor;
+    private final String defaultSaveLoadScreenBackgroundImage;
+    private final String defaultSaveLoadScreenBackgroundImageTransparency;
     private final Map<String, String> resources;
 
     private ApplicationResourceConfig(
             boolean debug,
             String categoryCodeTablesPath,
             String imageAssetRoot,
+            String defaultAppBackgroundColor,
+            String defaultAppBackgroundImage,
+            String defaultAppBackgroundImageTransparency,
+            String defaultPreferencesScreenBackgroundColor,
+            String defaultPreferencesScreenBackgroundImage,
+            String defaultPreferencesScreenBackgroundImageTransparency,
+            String defaultSaveLoadScreenBackgroundColor,
+            String defaultSaveLoadScreenBackgroundImage,
+            String defaultSaveLoadScreenBackgroundImageTransparency,
             Map<String, String> resources) {
         this.debug = debug;
         this.categoryCodeTablesPath = Validation.requireNonBlank(
@@ -43,6 +70,33 @@ public final class ApplicationResourceConfig {
         this.imageAssetRoot = Validation.requireNonBlank(
                 imageAssetRoot,
                 "Application resource config image asset root is required.");
+        this.defaultAppBackgroundColor = Validation.requireNonNull(
+                defaultAppBackgroundColor,
+                "Application resource config default app background color is required.");
+        this.defaultAppBackgroundImage = Validation.requireNonNull(
+                defaultAppBackgroundImage,
+                "Application resource config default app background image is required.");
+        this.defaultAppBackgroundImageTransparency = Validation.requireNonNull(
+                defaultAppBackgroundImageTransparency,
+                "Application resource config default app background image transparency is required.");
+        this.defaultPreferencesScreenBackgroundColor = Validation.requireNonNull(
+                defaultPreferencesScreenBackgroundColor,
+                "Application resource config default preferences screen background color is required.");
+        this.defaultPreferencesScreenBackgroundImage = Validation.requireNonNull(
+                defaultPreferencesScreenBackgroundImage,
+                "Application resource config default preferences screen background image is required.");
+        this.defaultPreferencesScreenBackgroundImageTransparency = Validation.requireNonNull(
+                defaultPreferencesScreenBackgroundImageTransparency,
+                "Application resource config default preferences screen background image transparency is required.");
+        this.defaultSaveLoadScreenBackgroundColor = Validation.requireNonNull(
+                defaultSaveLoadScreenBackgroundColor,
+                "Application resource config default save/load screen background color is required.");
+        this.defaultSaveLoadScreenBackgroundImage = Validation.requireNonNull(
+                defaultSaveLoadScreenBackgroundImage,
+                "Application resource config default save/load screen background image is required.");
+        this.defaultSaveLoadScreenBackgroundImageTransparency = Validation.requireNonNull(
+                defaultSaveLoadScreenBackgroundImageTransparency,
+                "Application resource config default save/load screen background image transparency is required.");
         LinkedHashMap<String, String> validatedResources = new LinkedHashMap<>();
         Validation.requireNonNull(resources, "Application resource config resources map is required.")
                 .forEach((key, value) -> validatedResources.put(
@@ -56,11 +110,33 @@ public final class ApplicationResourceConfig {
                 DEFAULT_DEBUG,
                 DEFAULT_CATEGORY_CODE_TABLES_PATH,
                 DEFAULT_IMAGE_ASSET_ROOT,
+                DEFAULT_APP_BACKGROUND_COLOR,
+                DEFAULT_APP_BACKGROUND_IMAGE,
+                DEFAULT_APP_BACKGROUND_IMAGE_TRANSPARENCY,
+                DEFAULT_PREFERENCES_SCREEN_BACKGROUND_COLOR,
+                DEFAULT_PREFERENCES_SCREEN_BACKGROUND_IMAGE,
+                DEFAULT_PREFERENCES_SCREEN_BACKGROUND_IMAGE_TRANSPARENCY,
+                DEFAULT_SAVE_LOAD_SCREEN_BACKGROUND_COLOR,
+                DEFAULT_SAVE_LOAD_SCREEN_BACKGROUND_IMAGE,
+                DEFAULT_SAVE_LOAD_SCREEN_BACKGROUND_IMAGE_TRANSPARENCY,
                 Map.of());
     }
 
     public static ApplicationResourceConfig of(String categoryCodeTablesPath, String imageAssetRoot, Map<String, String> resources) {
-        return of(DEFAULT_DEBUG, categoryCodeTablesPath, imageAssetRoot, resources);
+        return of(
+                DEFAULT_DEBUG,
+                categoryCodeTablesPath,
+                imageAssetRoot,
+                DEFAULT_APP_BACKGROUND_COLOR,
+                DEFAULT_APP_BACKGROUND_IMAGE,
+                DEFAULT_APP_BACKGROUND_IMAGE_TRANSPARENCY,
+                DEFAULT_PREFERENCES_SCREEN_BACKGROUND_COLOR,
+                DEFAULT_PREFERENCES_SCREEN_BACKGROUND_IMAGE,
+                DEFAULT_PREFERENCES_SCREEN_BACKGROUND_IMAGE_TRANSPARENCY,
+                DEFAULT_SAVE_LOAD_SCREEN_BACKGROUND_COLOR,
+                DEFAULT_SAVE_LOAD_SCREEN_BACKGROUND_IMAGE,
+                DEFAULT_SAVE_LOAD_SCREEN_BACKGROUND_IMAGE_TRANSPARENCY,
+                resources);
     }
 
     public static ApplicationResourceConfig of(
@@ -68,7 +144,50 @@ public final class ApplicationResourceConfig {
             String categoryCodeTablesPath,
             String imageAssetRoot,
             Map<String, String> resources) {
-        return new ApplicationResourceConfig(debug, categoryCodeTablesPath, imageAssetRoot, resources);
+        return of(
+                debug,
+                categoryCodeTablesPath,
+                imageAssetRoot,
+                DEFAULT_APP_BACKGROUND_COLOR,
+                DEFAULT_APP_BACKGROUND_IMAGE,
+                DEFAULT_APP_BACKGROUND_IMAGE_TRANSPARENCY,
+                DEFAULT_PREFERENCES_SCREEN_BACKGROUND_COLOR,
+                DEFAULT_PREFERENCES_SCREEN_BACKGROUND_IMAGE,
+                DEFAULT_PREFERENCES_SCREEN_BACKGROUND_IMAGE_TRANSPARENCY,
+                DEFAULT_SAVE_LOAD_SCREEN_BACKGROUND_COLOR,
+                DEFAULT_SAVE_LOAD_SCREEN_BACKGROUND_IMAGE,
+                DEFAULT_SAVE_LOAD_SCREEN_BACKGROUND_IMAGE_TRANSPARENCY,
+                resources);
+    }
+
+    public static ApplicationResourceConfig of(
+            boolean debug,
+            String categoryCodeTablesPath,
+            String imageAssetRoot,
+            String defaultAppBackgroundColor,
+            String defaultAppBackgroundImage,
+            String defaultAppBackgroundImageTransparency,
+            String defaultPreferencesScreenBackgroundColor,
+            String defaultPreferencesScreenBackgroundImage,
+            String defaultPreferencesScreenBackgroundImageTransparency,
+            String defaultSaveLoadScreenBackgroundColor,
+            String defaultSaveLoadScreenBackgroundImage,
+            String defaultSaveLoadScreenBackgroundImageTransparency,
+            Map<String, String> resources) {
+        return new ApplicationResourceConfig(
+                debug,
+                categoryCodeTablesPath,
+                imageAssetRoot,
+                defaultAppBackgroundColor,
+                defaultAppBackgroundImage,
+                defaultAppBackgroundImageTransparency,
+                defaultPreferencesScreenBackgroundColor,
+                defaultPreferencesScreenBackgroundImage,
+                defaultPreferencesScreenBackgroundImageTransparency,
+                defaultSaveLoadScreenBackgroundColor,
+                defaultSaveLoadScreenBackgroundImage,
+                defaultSaveLoadScreenBackgroundImageTransparency,
+                resources);
     }
 
     public static ApplicationResourceConfig load(Path jsonPath) {
@@ -90,6 +209,24 @@ public final class ApplicationResourceConfig {
                         .orElse(defaults.categoryCodeTablesPath()),
                 optionalString(root, "imageAssetRoot", "root.imageAssetRoot")
                         .orElse(defaults.imageAssetRoot()),
+                optionalStringAllowingBlank(root, "defaultAppBackgroundColor", "root.defaultAppBackgroundColor")
+                        .orElse(defaults.defaultAppBackgroundColor()),
+                optionalStringAllowingBlank(root, "defaultAppBackgroundImage", "root.defaultAppBackgroundImage")
+                        .orElse(defaults.defaultAppBackgroundImage()),
+                optionalStringAllowingBlank(root, "defaultAppBackgroundImageTransparency", "root.defaultAppBackgroundImageTransparency")
+                        .orElse(defaults.defaultAppBackgroundImageTransparency()),
+                optionalStringAllowingBlank(root, "defaultPreferencesScreenBackgroundColor", "root.defaultPreferencesScreenBackgroundColor")
+                        .orElse(defaults.defaultPreferencesScreenBackgroundColor()),
+                optionalStringAllowingBlank(root, "defaultPreferencesScreenBackgroundImage", "root.defaultPreferencesScreenBackgroundImage")
+                        .orElse(defaults.defaultPreferencesScreenBackgroundImage()),
+                optionalStringAllowingBlank(root, "defaultPreferencesScreenBackgroundImageTransparency", "root.defaultPreferencesScreenBackgroundImageTransparency")
+                        .orElse(defaults.defaultPreferencesScreenBackgroundImageTransparency()),
+                optionalStringAllowingBlank(root, "defaultSaveLoadScreenBackgroundColor", "root.defaultSaveLoadScreenBackgroundColor")
+                        .orElse(defaults.defaultSaveLoadScreenBackgroundColor()),
+                optionalStringAllowingBlank(root, "defaultSaveLoadScreenBackgroundImage", "root.defaultSaveLoadScreenBackgroundImage")
+                        .orElse(defaults.defaultSaveLoadScreenBackgroundImage()),
+                optionalStringAllowingBlank(root, "defaultSaveLoadScreenBackgroundImageTransparency", "root.defaultSaveLoadScreenBackgroundImageTransparency")
+                        .orElse(defaults.defaultSaveLoadScreenBackgroundImageTransparency()),
                 optionalObject(root, "resources", "root.resources")
                         .map(ApplicationResourceConfig::toStringMap)
                         .orElse(Map.of()));
@@ -105,6 +242,42 @@ public final class ApplicationResourceConfig {
 
     public String imageAssetRoot() {
         return imageAssetRoot;
+    }
+
+    public String defaultAppBackgroundColor() {
+        return defaultAppBackgroundColor;
+    }
+
+    public String defaultAppBackgroundImage() {
+        return defaultAppBackgroundImage;
+    }
+
+    public String defaultAppBackgroundImageTransparency() {
+        return defaultAppBackgroundImageTransparency;
+    }
+
+    public String defaultPreferencesScreenBackgroundColor() {
+        return defaultPreferencesScreenBackgroundColor;
+    }
+
+    public String defaultPreferencesScreenBackgroundImage() {
+        return defaultPreferencesScreenBackgroundImage;
+    }
+
+    public String defaultPreferencesScreenBackgroundImageTransparency() {
+        return defaultPreferencesScreenBackgroundImageTransparency;
+    }
+
+    public String defaultSaveLoadScreenBackgroundColor() {
+        return defaultSaveLoadScreenBackgroundColor;
+    }
+
+    public String defaultSaveLoadScreenBackgroundImage() {
+        return defaultSaveLoadScreenBackgroundImage;
+    }
+
+    public String defaultSaveLoadScreenBackgroundImageTransparency() {
+        return defaultSaveLoadScreenBackgroundImageTransparency;
     }
 
     public Map<String, String> resources() {
@@ -129,21 +302,228 @@ public final class ApplicationResourceConfig {
     }
 
     public ApplicationResourceConfig withDebug(boolean debug) {
-        return new ApplicationResourceConfig(debug, categoryCodeTablesPath, imageAssetRoot, resources);
+        return new ApplicationResourceConfig(
+                debug,
+                categoryCodeTablesPath,
+                imageAssetRoot,
+                defaultAppBackgroundColor,
+                defaultAppBackgroundImage,
+                defaultAppBackgroundImageTransparency,
+                defaultPreferencesScreenBackgroundColor,
+                defaultPreferencesScreenBackgroundImage,
+                defaultPreferencesScreenBackgroundImageTransparency,
+                defaultSaveLoadScreenBackgroundColor,
+                defaultSaveLoadScreenBackgroundImage,
+                defaultSaveLoadScreenBackgroundImageTransparency,
+                resources);
     }
 
     public ApplicationResourceConfig withCategoryCodeTablesPath(String categoryCodeTablesPath) {
-        return new ApplicationResourceConfig(debug, categoryCodeTablesPath, imageAssetRoot, resources);
+        return new ApplicationResourceConfig(
+                debug,
+                categoryCodeTablesPath,
+                imageAssetRoot,
+                defaultAppBackgroundColor,
+                defaultAppBackgroundImage,
+                defaultAppBackgroundImageTransparency,
+                defaultPreferencesScreenBackgroundColor,
+                defaultPreferencesScreenBackgroundImage,
+                defaultPreferencesScreenBackgroundImageTransparency,
+                defaultSaveLoadScreenBackgroundColor,
+                defaultSaveLoadScreenBackgroundImage,
+                defaultSaveLoadScreenBackgroundImageTransparency,
+                resources);
     }
 
     public ApplicationResourceConfig withImageAssetRoot(String imageAssetRoot) {
-        return new ApplicationResourceConfig(debug, categoryCodeTablesPath, imageAssetRoot, resources);
+        return new ApplicationResourceConfig(
+                debug,
+                categoryCodeTablesPath,
+                imageAssetRoot,
+                defaultAppBackgroundColor,
+                defaultAppBackgroundImage,
+                defaultAppBackgroundImageTransparency,
+                defaultPreferencesScreenBackgroundColor,
+                defaultPreferencesScreenBackgroundImage,
+                defaultPreferencesScreenBackgroundImageTransparency,
+                defaultSaveLoadScreenBackgroundColor,
+                defaultSaveLoadScreenBackgroundImage,
+                defaultSaveLoadScreenBackgroundImageTransparency,
+                resources);
+    }
+
+    public ApplicationResourceConfig withDefaultAppBackgroundColor(String defaultAppBackgroundColor) {
+        return new ApplicationResourceConfig(
+                debug,
+                categoryCodeTablesPath,
+                imageAssetRoot,
+                defaultAppBackgroundColor,
+                defaultAppBackgroundImage,
+                defaultAppBackgroundImageTransparency,
+                defaultPreferencesScreenBackgroundColor,
+                defaultPreferencesScreenBackgroundImage,
+                defaultPreferencesScreenBackgroundImageTransparency,
+                defaultSaveLoadScreenBackgroundColor,
+                defaultSaveLoadScreenBackgroundImage,
+                defaultSaveLoadScreenBackgroundImageTransparency,
+                resources);
+    }
+
+    public ApplicationResourceConfig withDefaultAppBackgroundImage(String defaultAppBackgroundImage) {
+        return new ApplicationResourceConfig(
+                debug,
+                categoryCodeTablesPath,
+                imageAssetRoot,
+                defaultAppBackgroundColor,
+                defaultAppBackgroundImage,
+                defaultAppBackgroundImageTransparency,
+                defaultPreferencesScreenBackgroundColor,
+                defaultPreferencesScreenBackgroundImage,
+                defaultPreferencesScreenBackgroundImageTransparency,
+                defaultSaveLoadScreenBackgroundColor,
+                defaultSaveLoadScreenBackgroundImage,
+                defaultSaveLoadScreenBackgroundImageTransparency,
+                resources);
+    }
+
+    public ApplicationResourceConfig withDefaultAppBackgroundImageTransparency(String defaultAppBackgroundImageTransparency) {
+        return new ApplicationResourceConfig(
+                debug,
+                categoryCodeTablesPath,
+                imageAssetRoot,
+                defaultAppBackgroundColor,
+                defaultAppBackgroundImage,
+                defaultAppBackgroundImageTransparency,
+                defaultPreferencesScreenBackgroundColor,
+                defaultPreferencesScreenBackgroundImage,
+                defaultPreferencesScreenBackgroundImageTransparency,
+                defaultSaveLoadScreenBackgroundColor,
+                defaultSaveLoadScreenBackgroundImage,
+                defaultSaveLoadScreenBackgroundImageTransparency,
+                resources);
+    }
+
+    public ApplicationResourceConfig withDefaultPreferencesScreenBackgroundColor(String defaultPreferencesScreenBackgroundColor) {
+        return new ApplicationResourceConfig(
+                debug,
+                categoryCodeTablesPath,
+                imageAssetRoot,
+                defaultAppBackgroundColor,
+                defaultAppBackgroundImage,
+                defaultAppBackgroundImageTransparency,
+                defaultPreferencesScreenBackgroundColor,
+                defaultPreferencesScreenBackgroundImage,
+                defaultPreferencesScreenBackgroundImageTransparency,
+                defaultSaveLoadScreenBackgroundColor,
+                defaultSaveLoadScreenBackgroundImage,
+                defaultSaveLoadScreenBackgroundImageTransparency,
+                resources);
+    }
+
+    public ApplicationResourceConfig withDefaultPreferencesScreenBackgroundImage(String defaultPreferencesScreenBackgroundImage) {
+        return new ApplicationResourceConfig(
+                debug,
+                categoryCodeTablesPath,
+                imageAssetRoot,
+                defaultAppBackgroundColor,
+                defaultAppBackgroundImage,
+                defaultAppBackgroundImageTransparency,
+                defaultPreferencesScreenBackgroundColor,
+                defaultPreferencesScreenBackgroundImage,
+                defaultPreferencesScreenBackgroundImageTransparency,
+                defaultSaveLoadScreenBackgroundColor,
+                defaultSaveLoadScreenBackgroundImage,
+                defaultSaveLoadScreenBackgroundImageTransparency,
+                resources);
+    }
+
+    public ApplicationResourceConfig withDefaultPreferencesScreenBackgroundImageTransparency(
+            String defaultPreferencesScreenBackgroundImageTransparency) {
+        return new ApplicationResourceConfig(
+                debug,
+                categoryCodeTablesPath,
+                imageAssetRoot,
+                defaultAppBackgroundColor,
+                defaultAppBackgroundImage,
+                defaultAppBackgroundImageTransparency,
+                defaultPreferencesScreenBackgroundColor,
+                defaultPreferencesScreenBackgroundImage,
+                defaultPreferencesScreenBackgroundImageTransparency,
+                defaultSaveLoadScreenBackgroundColor,
+                defaultSaveLoadScreenBackgroundImage,
+                defaultSaveLoadScreenBackgroundImageTransparency,
+                resources);
+    }
+
+    public ApplicationResourceConfig withDefaultSaveLoadScreenBackgroundColor(String defaultSaveLoadScreenBackgroundColor) {
+        return new ApplicationResourceConfig(
+                debug,
+                categoryCodeTablesPath,
+                imageAssetRoot,
+                defaultAppBackgroundColor,
+                defaultAppBackgroundImage,
+                defaultAppBackgroundImageTransparency,
+                defaultPreferencesScreenBackgroundColor,
+                defaultPreferencesScreenBackgroundImage,
+                defaultPreferencesScreenBackgroundImageTransparency,
+                defaultSaveLoadScreenBackgroundColor,
+                defaultSaveLoadScreenBackgroundImage,
+                defaultSaveLoadScreenBackgroundImageTransparency,
+                resources);
+    }
+
+    public ApplicationResourceConfig withDefaultSaveLoadScreenBackgroundImage(String defaultSaveLoadScreenBackgroundImage) {
+        return new ApplicationResourceConfig(
+                debug,
+                categoryCodeTablesPath,
+                imageAssetRoot,
+                defaultAppBackgroundColor,
+                defaultAppBackgroundImage,
+                defaultAppBackgroundImageTransparency,
+                defaultPreferencesScreenBackgroundColor,
+                defaultPreferencesScreenBackgroundImage,
+                defaultPreferencesScreenBackgroundImageTransparency,
+                defaultSaveLoadScreenBackgroundColor,
+                defaultSaveLoadScreenBackgroundImage,
+                defaultSaveLoadScreenBackgroundImageTransparency,
+                resources);
+    }
+
+    public ApplicationResourceConfig withDefaultSaveLoadScreenBackgroundImageTransparency(
+            String defaultSaveLoadScreenBackgroundImageTransparency) {
+        return new ApplicationResourceConfig(
+                debug,
+                categoryCodeTablesPath,
+                imageAssetRoot,
+                defaultAppBackgroundColor,
+                defaultAppBackgroundImage,
+                defaultAppBackgroundImageTransparency,
+                defaultPreferencesScreenBackgroundColor,
+                defaultPreferencesScreenBackgroundImage,
+                defaultPreferencesScreenBackgroundImageTransparency,
+                defaultSaveLoadScreenBackgroundColor,
+                defaultSaveLoadScreenBackgroundImage,
+                defaultSaveLoadScreenBackgroundImageTransparency,
+                resources);
     }
 
     public ApplicationResourceConfig putResource(String resourceId, String resourcePath) {
         LinkedHashMap<String, String> updated = new LinkedHashMap<>(resources);
         updated.put(resourceId, resourcePath);
-        return new ApplicationResourceConfig(debug, categoryCodeTablesPath, imageAssetRoot, updated);
+        return new ApplicationResourceConfig(
+                debug,
+                categoryCodeTablesPath,
+                imageAssetRoot,
+                defaultAppBackgroundColor,
+                defaultAppBackgroundImage,
+                defaultAppBackgroundImageTransparency,
+                defaultPreferencesScreenBackgroundColor,
+                defaultPreferencesScreenBackgroundImage,
+                defaultPreferencesScreenBackgroundImageTransparency,
+                defaultSaveLoadScreenBackgroundColor,
+                defaultSaveLoadScreenBackgroundImage,
+                defaultSaveLoadScreenBackgroundImageTransparency,
+                updated);
     }
 
     public ApplicationResourceConfig removeResource(String resourceId) {
@@ -153,7 +533,20 @@ public final class ApplicationResourceConfig {
         }
         LinkedHashMap<String, String> updated = new LinkedHashMap<>(resources);
         updated.remove(resourceId);
-        return new ApplicationResourceConfig(debug, categoryCodeTablesPath, imageAssetRoot, updated);
+        return new ApplicationResourceConfig(
+                debug,
+                categoryCodeTablesPath,
+                imageAssetRoot,
+                defaultAppBackgroundColor,
+                defaultAppBackgroundImage,
+                defaultAppBackgroundImageTransparency,
+                defaultPreferencesScreenBackgroundColor,
+                defaultPreferencesScreenBackgroundImage,
+                defaultPreferencesScreenBackgroundImageTransparency,
+                defaultSaveLoadScreenBackgroundColor,
+                defaultSaveLoadScreenBackgroundImage,
+                defaultSaveLoadScreenBackgroundImageTransparency,
+                updated);
     }
 
     public String toJson() {
@@ -162,6 +555,22 @@ public final class ApplicationResourceConfig {
                 .append("  \"debug\": ").append(debug).append(",\n")
                 .append("  \"categoryCodeTablesPath\": ").append(JsonStrings.quote(categoryCodeTablesPath)).append(",\n")
                 .append("  \"imageAssetRoot\": ").append(JsonStrings.quote(imageAssetRoot)).append(",\n")
+                .append("  \"defaultAppBackgroundColor\": ").append(JsonStrings.quote(defaultAppBackgroundColor)).append(",\n")
+                .append("  \"defaultAppBackgroundImage\": ").append(JsonStrings.quote(defaultAppBackgroundImage)).append(",\n")
+                .append("  \"defaultAppBackgroundImageTransparency\": ")
+                .append(JsonStrings.quote(defaultAppBackgroundImageTransparency)).append(",\n")
+                .append("  \"defaultPreferencesScreenBackgroundColor\": ")
+                .append(JsonStrings.quote(defaultPreferencesScreenBackgroundColor)).append(",\n")
+                .append("  \"defaultPreferencesScreenBackgroundImage\": ")
+                .append(JsonStrings.quote(defaultPreferencesScreenBackgroundImage)).append(",\n")
+                .append("  \"defaultPreferencesScreenBackgroundImageTransparency\": ")
+                .append(JsonStrings.quote(defaultPreferencesScreenBackgroundImageTransparency)).append(",\n")
+                .append("  \"defaultSaveLoadScreenBackgroundColor\": ")
+                .append(JsonStrings.quote(defaultSaveLoadScreenBackgroundColor)).append(",\n")
+                .append("  \"defaultSaveLoadScreenBackgroundImage\": ")
+                .append(JsonStrings.quote(defaultSaveLoadScreenBackgroundImage)).append(",\n")
+                .append("  \"defaultSaveLoadScreenBackgroundImageTransparency\": ")
+                .append(JsonStrings.quote(defaultSaveLoadScreenBackgroundImageTransparency)).append(",\n")
                 .append("  \"resources\": {\n");
         int index = 0;
         for (Map.Entry<String, String> entry : resources.entrySet()) {
@@ -210,6 +619,17 @@ public final class ApplicationResourceConfig {
         Object value = object.get(key);
         if (value instanceof String stringValue) {
             return Optional.of(Validation.requireNonBlank(stringValue, description + " must not be blank."));
+        }
+        throw new IllegalArgumentException("Expected JSON string for " + description + ".");
+    }
+
+    private static Optional<String> optionalStringAllowingBlank(Map<String, Object> object, String key, String description) {
+        if (!object.containsKey(key)) {
+            return Optional.empty();
+        }
+        Object value = object.get(key);
+        if (value instanceof String stringValue) {
+            return Optional.of(stringValue);
         }
         throw new IllegalArgumentException("Expected JSON string for " + description + ".");
     }
