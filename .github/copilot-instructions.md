@@ -45,7 +45,8 @@
 
 - `.github/workflows/copilot-setup-steps.yml` prepares Java 17 and warms Gradle dependencies with `compileJava testClasses`.
 - The setup workflow uses the `copilot` environment and minimal `contents: read` permissions.
-- The setup workflow expects an `ALTLIFE_TOKEN` environment secret only to configure Git access to the private AltLife repository referenced by the setup workflow; do not hard-code it or any other token.
+- The setup workflow expects an `ALTLIFE_TOKEN` environment secret only to configure Git access to the private AltLife source/application repository referenced by the setup workflow; do not hard-code it or any other token.
+- AltLife is a related private application repository used for setup-time access/context, while this repository should keep reusable engine code generic and free of application-specific content.
 - If setup fails because `ALTLIFE_TOKEN` is missing, configure it as a masked GitHub environment secret under Settings > Environments > `copilot`, then re-run the setup workflow.
 - Keep GitHub MCP tools enabled for repository context, releases, issues, pull requests, workflow runs, and CI log investigation.
 - Never commit MCP tokens, Copilot tokens, GitHub tokens, or other credentials to source, workflow files, docs examples, logs, or change summaries.
@@ -54,7 +55,7 @@
 
 - After completing any set of code changes, write a summary of those changes to `change_summary.md` in the repository root.
 - If the current branch already has a `change_summary.md`, append the new summary to the end of the file.
-- Before checking in, rename `change_summary.md` to `change_summary_<branch-name>.md`; replace forward slashes in branch names with underscores, for example `feature/add` becomes `change_summary_feature_add.md`, and leave other valid characters such as hyphens unchanged.
+- Before checking in, rename `change_summary.md` to `change_summary_<branch-name>.md`; replace forward slashes in branch names with underscores and leave other valid characters such as hyphens unchanged. For example, `feature/add` becomes `change_summary_feature_add.md`; the current branch `copilot/add-copilot-instructions-file` uses `change_summary_copilot_add-copilot-instructions-file.md`.
 
 ## Onboarding notes and workarounds
 
