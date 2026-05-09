@@ -1,5 +1,13 @@
 package com.eb.javafx.ui.test;
 
+import java.awt.GraphicsEnvironment;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
+
 import com.eb.javafx.prefs.PreferencesService;
 import com.eb.javafx.testscreen.ManualTest;
 import com.eb.javafx.testscreen.TestScreenApplication;
@@ -20,14 +28,6 @@ import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
 import org.junit.jupiter.api.Test;
 
-import java.awt.GraphicsEnvironment;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -35,6 +35,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 final class BlockBackgroundImageTestScreenTest {
+    private static final long JAVAFX_OPERATION_TIMEOUT_SECONDS = 5;
     private static final AtomicBoolean JAVAFX_STARTED = new AtomicBoolean();
 
     @Test
@@ -184,7 +185,7 @@ final class BlockBackgroundImageTestScreenTest {
                 completed.countDown();
             }
         });
-        assertTrue(completed.await(5, TimeUnit.SECONDS), "JavaFX action did not complete.");
+        assertTrue(completed.await(JAVAFX_OPERATION_TIMEOUT_SECONDS, TimeUnit.SECONDS), "JavaFX action did not complete.");
         if (failure.get() instanceof Exception exception) {
             throw exception;
         }
@@ -210,6 +211,6 @@ final class BlockBackgroundImageTestScreenTest {
             Platform.setImplicitExit(false);
             started.countDown();
         }
-        assertTrue(started.await(5, TimeUnit.SECONDS), "JavaFX toolkit did not start.");
+        assertTrue(started.await(JAVAFX_OPERATION_TIMEOUT_SECONDS, TimeUnit.SECONDS), "JavaFX toolkit did not start.");
     }
 }
