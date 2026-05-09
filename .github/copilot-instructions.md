@@ -45,7 +45,7 @@
 
 - `.github/workflows/copilot-setup-steps.yml` prepares Java 17 and warms Gradle dependencies with `compileJava testClasses`.
 - The setup workflow uses the `copilot` environment and minimal `contents: read` permissions.
-- The setup workflow expects an `ALTLIFE_TOKEN` environment secret to configure Git access to the private AltLife source/application repository, which is referenced during setup.
+- The setup workflow expects an `ALTLIFE_TOKEN` environment secret for the related private AltLife source/application repository, which is referenced during setup.
 - AltLife is a related private application repository used for setup-time access/context, while this repository should keep reusable engine code generic and free of application-specific content.
 - Use the least privilege needed for that secret: read-only Contents access to the private repository for fine-grained tokens, or the minimum private-repository read scope available for the token type.
 - Do not hard-code `ALTLIFE_TOKEN` or any other token.
@@ -58,7 +58,7 @@
 - After completing any set of code changes, write a summary of those changes to `change_summary.md` in the repository root.
 - If the current branch already has a `change_summary.md`, append the new summary to the end of the file.
 - Before checking in, rename `change_summary.md` to `change_summary_<sanitized-branch-name>.md`.
-- Replace non-alphanumeric branch-name separators such as forward slashes and hyphens with underscores.
+- Replace forward slashes, hyphens, and other non-alphanumeric branch-name characters with underscores.
 - For example, `feature/add` becomes `change_summary_feature_add.md`; the current branch `copilot/add-copilot-instructions-file` uses `change_summary_copilot_add_copilot_instructions_file.md`.
 
 ## Onboarding notes and workarounds
