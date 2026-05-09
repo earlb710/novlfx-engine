@@ -1,0 +1,123 @@
+package com.eb.javafx.ui.test;
+
+import com.eb.javafx.prefs.PreferencesService;
+import com.eb.javafx.ui.ScreenLayoutModel;
+import com.eb.javafx.ui.ScreenLayoutRenderer;
+import com.eb.javafx.ui.ScreenLayoutSection;
+import com.eb.javafx.ui.ScreenLayoutType;
+import com.eb.javafx.ui.UiTheme;
+import javafx.scene.Scene;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.Region;
+import javafx.scene.layout.StackPane;
+import javafx.scene.paint.Color;
+
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Manual route that previews block background SVG images layered over a screen SVG background.
+ */
+public final class BlockBackgroundImageTestScreen {
+    static final String SCREEN_BACKGROUND_RESOURCE = "/com/eb/javafx/images/svg/circle-background.svg";
+    static final String BLOCK_BACKGROUND_RESOURCE = "/com/eb/javafx/images/svg/circle2-background.svg";
+    static final String SCREEN_BACKGROUND_COLOR = "#08111f";
+    static final String LEFT_BLOCK_BACKGROUND_COLOR = "#203a67";
+    static final String RIGHT_BLOCK_BACKGROUND_COLOR = "#5a2b5f";
+    static final String BACKGROUND_TRANSPARENCY = "0.5";
+    static final double BACKGROUND_OPACITY = 0.5;
+
+    private BlockBackgroundImageTestScreen() {
+    }
+
+    public static Scene createScene(String title, PreferencesService preferencesService, UiTheme uiTheme) {
+        StackPane root = createRoot(title);
+        Scene scene = new Scene(root, TestUiScreenSize.sceneWidth(preferencesService), TestUiScreenSize.sceneHeight(preferencesService));
+        scene.getStylesheets().add(uiTheme.stylesheet());
+        return scene;
+    }
+
+    static StackPane createRoot(String title) {
+        StackPane root = new StackPane();
+        Region background = createBackgroundLayer(root);
+        BorderPane content = ScreenLayoutRenderer.createRoot(createModel(title));
+        content.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
+        root.getChildren().addAll(background, content);
+        return root;
+    }
+
+    static ScreenLayoutModel createModel(String title) {
+        return new ScreenLayoutModel(
+                ScreenLayoutType.FORM,
+                title,
+                "Screen background plus two block background image samples.",
+                List.of(new ScreenLayoutSection(
+                        "block-background-image-demo",
+                        "Block background image preview",
+                        List.of(
+                                "Outside item: the full screen uses circle-background.svg at 50% transparency.",
+                                "Outside item: the two blocks below use circle2-background.svg at 50% transparency."),
+                        "block-background-image-demo",
+                        Map.of(),
+                        List.of("outside.screen", "outside.blocks"),
+                        List.of(
+                                Map.of("fontStyle", "bold"),
+                                Map.of()),
+                        ScreenLayoutType.TWO_COLUMN,
+                        List.of(
+                                blockSection(
+                                        "left-block",
+                                        "Left block",
+                                        LEFT_BLOCK_BACKGROUND_COLOR,
+                                        List.of(
+                                                "Inside item: left block background image is circle2-background.svg.",
+                                                "Inside item: left block image transparency is 50%.")),
+                                blockSection(
+                                        "right-block",
+                                        "Right block",
+                                        RIGHT_BLOCK_BACKGROUND_COLOR,
+                                        List.of(
+                                                "Inside item: right block background image is circle2-background.svg.",
+                                                "Inside item: right block image transparency is 50%."))))),
+                List.of(),
+                List.of(),
+                List.of(),
+                "Use this screen to verify screen-level and block-level SVG background image layering.");
+    }
+
+    private static ScreenLayoutSection blockSection(
+            String id,
+            String title,
+            String backgroundColor,
+            List<String> lines) {
+        return new ScreenLayoutSection(
+                id,
+                title,
+                lines,
+                "block-background-image-demo-section",
+                Map.of(
+                        "backgroundColor", backgroundColor,
+                        "transparency", "0.15",
+                        "backgroundImage", BLOCK_BACKGROUND_RESOURCE,
+                        "backgroundImageTransparency", BACKGROUND_TRANSPARENCY,
+                        "borderStyle", "solid",
+                        "borderCorner", "rounded",
+                        "borderThickness", "1",
+                        "borderColor", "#d7e7ff"),
+                List.of(id + ".line1", id + ".line2"),
+                List.of(
+                        Map.of("fontStyle", "bold"),
+                        Map.of()));
+    }
+
+    private static Region createBackgroundLayer(StackPane root) {
+        Region background = com.eb.javafx.ui.ScreenShell.backgroundSvg(
+                SCREEN_BACKGROUND_RESOURCE,
+                BACKGROUND_OPACITY,
+                Color.web(SCREEN_BACKGROUND_COLOR));
+        background.prefWidthProperty().bind(root.widthProperty());
+        background.prefHeightProperty().bind(root.heightProperty());
+        background.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
+        return background;
+    }
+}
