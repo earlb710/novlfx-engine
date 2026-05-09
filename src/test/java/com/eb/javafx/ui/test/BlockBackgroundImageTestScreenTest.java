@@ -16,6 +16,7 @@ import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
 import org.junit.jupiter.api.Test;
 
@@ -48,14 +49,15 @@ final class BlockBackgroundImageTestScreenTest {
         assertEquals(ScreenLayoutType.TWO_COLUMN, outerSection.layoutType());
         assertEquals(2, outerSection.childSections().size());
         for (ScreenLayoutSection block : outerSection.childSections()) {
-            assertEquals(4, block.lines().size());
+            assertEquals(6, block.lines().size());
             assertEquals(BlockBackgroundImageTestScreen.BLOCK_BACKGROUND_RESOURCE, block.metadata().get("backgroundImage"));
             assertEquals(BlockBackgroundImageTestScreen.BACKGROUND_TRANSPARENCY, block.metadata().get("backgroundImageTransparency"));
             assertEquals("3", block.metadata().get("borderThickness"));
             assertEquals("pill", block.metadata().get("borderCorner"));
             assertEquals(BlockBackgroundImageTestScreen.BLOCK_TEXT_COLOR, block.lineMetadata().get(0).get("color"));
-            assertEquals("blockButtonPreview", block.lineMetadata().get(2).get("eventName"));
-            assertEquals(BlockBackgroundImageTestScreen.BLOCK_TEXT_COLOR, block.lineMetadata().get(2).get("color"));
+            assertEquals(BlockBackgroundImageTestScreen.BLOCK_TEXT_COLOR, block.lineMetadata().get(3).get("color"));
+            assertEquals("blockButtonPreview", block.lineMetadata().get(4).get("eventName"));
+            assertEquals(BlockBackgroundImageTestScreen.BLOCK_TEXT_COLOR, block.lineMetadata().get(4).get("color"));
         }
     }
 
@@ -83,6 +85,9 @@ final class BlockBackgroundImageTestScreenTest {
 
             assertTrue(blockBackgroundLayers >= 2, "Expected at least two layered block background sections.");
             assertTrue(buttons.size() >= 4, "Expected block action buttons to render inside the blocks.");
+            assertTrue(layeredSections.stream().filter(BlockBackgroundImageTestScreenTest::isBlockBackgroundLayer)
+                            .allMatch(BlockBackgroundImageTestScreenTest::hasRoundedBackgroundClip),
+                    "Expected block background images to be clipped to the rounded border shape.");
             VBox body = assertInstanceOf(VBox.class, content.getCenter());
             assertTrue(body.getChildren().size() >= 1);
         });
@@ -130,6 +135,17 @@ final class BlockBackgroundImageTestScreenTest {
                 && region.getChildrenUnmodifiable().size() == 1
                 && region.getChildrenUnmodifiable().get(0) instanceof ImageView imageView
                 && Math.abs(imageView.getOpacity() - BlockBackgroundImageTestScreen.BACKGROUND_OPACITY) < 0.0001;
+    }
+
+    private static boolean hasRoundedBackgroundClip(StackPane stackPane) {
+        if (!(stackPane.getChildren().get(0) instanceof Region region)) {
+            return false;
+        }
+        if (!(region.getClip() instanceof Rectangle clip)) {
+            return false;
+        }
+        return clip.arcWidthProperty().isBound()
+                && clip.arcHeightProperty().isBound();
     }
 
     private static void runOnJavaFxThread(Runnable action) throws Exception {

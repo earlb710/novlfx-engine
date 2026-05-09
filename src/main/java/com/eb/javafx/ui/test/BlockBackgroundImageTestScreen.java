@@ -73,6 +73,8 @@ public final class BlockBackgroundImageTestScreen {
                                         List.of(
                                                 "Inside item: left block background image is circle2-background.svg.",
                                                 "Inside item: left block image transparency is 50%.",
+                                                "Inside item: left block text stays readable with white labels over the artwork.",
+                                                "Inside item: left block clipping keeps the SVG image inside the rounded border.",
                                                 "Open left action",
                                                 "Confirm left action")),
                                 blockSection(
@@ -82,6 +84,8 @@ public final class BlockBackgroundImageTestScreen {
                                         List.of(
                                                 "Inside item: right block background image is circle2-background.svg.",
                                                 "Inside item: right block image transparency is 50%.",
+                                                "Inside item: right block text stays readable with white labels over the artwork.",
+                                                "Inside item: right block clipping keeps the SVG image inside the rounded border.",
                                                 "Open right action",
                                                 "Confirm right action"))))),
                 List.of(),
@@ -109,9 +113,11 @@ public final class BlockBackgroundImageTestScreen {
                         "borderCorner", "pill",
                         "borderThickness", "3",
                         "borderColor", "#d7e7ff"),
-                List.of(id + ".line1", id + ".line2", id + ".button1", id + ".button2"),
+                List.of(id + ".line1", id + ".line2", id + ".line3", id + ".line4", id + ".button1", id + ".button2"),
                 List.of(
                         textMetadata(true),
+                        textMetadata(false),
+                        textMetadata(false),
                         textMetadata(false),
                         buttonMetadata(id + ".open"),
                         buttonMetadata(id + ".confirm")));

@@ -23,6 +23,7 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.scene.shape.Rectangle;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.Window;
@@ -215,11 +216,12 @@ public final class ScreenLayoutRenderer {
         if (!section.childSections().isEmpty()) {
             content.getChildren().add(childSectionContainer(section, eventBus));
         }
-        Node backgroundLayer = backgroundImageLayer(section.metadata());
+        Region backgroundLayer = backgroundImageLayer(section.metadata());
         if (backgroundLayer == null) {
             configureSectionRegion(content, section, styleClass);
             return content;
         }
+        applyBackgroundImageClip(backgroundLayer, section.metadata());
         StackPane layeredSection = new StackPane(backgroundLayer, content);
         StackPane.setAlignment(content, Pos.TOP_LEFT);
         configureSectionRegion(layeredSection, section, styleClass);
@@ -365,7 +367,7 @@ public final class ScreenLayoutRenderer {
         applyContainerStyle(region, section.metadata(), isLayoutOnlyContainer(section));
     }
 
-    private static Node backgroundImageLayer(Map<String, String> metadata) {
+    private static Region backgroundImageLayer(Map<String, String> metadata) {
         String source = metadata.get(BACKGROUND_IMAGE_KEY);
         if (source == null || source.isBlank()) {
             return null;
@@ -373,6 +375,31 @@ public final class ScreenLayoutRenderer {
         return new BackgroundImageLayer(
                 loadBackgroundImage(source),
                 backgroundImageOpacity(metadata.get(BACKGROUND_IMAGE_TRANSPARENCY_KEY)));
+    }
+
+    private static void applyBackgroundImageClip(Region backgroundLayer, Map<String, String> metadata) {
+        String borderCorner = metadata.get("borderCorner");
+        if (borderCorner == null || borderCorner.isBlank() || "square".equalsIgnoreCase(borderCorner)) {
+            backgroundLayer.setClip(null);
+            return;
+        }
+        Rectangle clip = new Rectangle();
+        clip.widthProperty().bind(backgroundLayer.widthProperty());
+        clip.heightProperty().bind(backgroundLayer.heightProperty());
+        switch (borderCorner.toLowerCase()) {
+            case "rounded" -> {
+                clip.setArcWidth(12);
+                clip.setArcHeight(12);
+            }
+            case "pill" -> {
+                clip.arcWidthProperty().bind(backgroundLayer.widthProperty());
+                clip.arcHeightProperty().bind(backgroundLayer.heightProperty());
+            }
+            default -> {
+                return;
+            }
+        }
+        backgroundLayer.setClip(clip);
     }
 
     private static double backgroundImageOpacity(String transparency) {
