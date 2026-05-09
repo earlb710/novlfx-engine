@@ -66,6 +66,8 @@ final class BlockBackgroundImageTestScreenTest {
         assumeTrue(!GraphicsEnvironment.isHeadless(), "JavaFX root inspection requires a display.");
         runOnJavaFxThread(() -> {
             StackPane root = BlockBackgroundImageTestScreen.createRoot("Block Background Image Test");
+            root.resize(640, 360);
+            root.layout();
 
             assertEquals(2, root.getChildren().size());
             Region background = assertInstanceOf(Region.class, root.getChildren().get(0));
@@ -88,6 +90,14 @@ final class BlockBackgroundImageTestScreenTest {
             assertTrue(layeredSections.stream().filter(BlockBackgroundImageTestScreenTest::isBlockBackgroundLayer)
                             .allMatch(BlockBackgroundImageTestScreenTest::hasRoundedBackgroundClip),
                     "Expected block background images to be clipped to the rounded border shape.");
+            assertTrue(layeredSections.stream().filter(BlockBackgroundImageTestScreenTest::isBlockBackgroundLayer)
+                            .allMatch(BlockBackgroundImageTestScreenTest::clipMatchesRegionSize),
+                    "Expected block background clips to match the initial rendered size.");
+            root.resize(960, 540);
+            root.layout();
+            assertTrue(layeredSections.stream().filter(BlockBackgroundImageTestScreenTest::isBlockBackgroundLayer)
+                            .allMatch(BlockBackgroundImageTestScreenTest::clipMatchesRegionSize),
+                    "Expected block background clips to update after the block resizes.");
             VBox body = assertInstanceOf(VBox.class, content.getCenter());
             assertTrue(body.getChildren().size() >= 1);
         });
@@ -144,8 +154,21 @@ final class BlockBackgroundImageTestScreenTest {
         if (!(region.getClip() instanceof Rectangle clip)) {
             return false;
         }
-        return clip.arcWidthProperty().isBound()
-                && clip.arcHeightProperty().isBound();
+        return clip.getArcWidth() > 0
+                && clip.getArcHeight() > 0;
+    }
+
+    private static boolean clipMatchesRegionSize(StackPane stackPane) {
+        if (!(stackPane.getChildren().get(0) instanceof Region region)) {
+            return false;
+        }
+        if (!(region.getClip() instanceof Rectangle clip)) {
+            return false;
+        }
+        return Math.abs(clip.getWidth() - region.getWidth()) < 0.0001
+                && Math.abs(clip.getHeight() - region.getHeight()) < 0.0001
+                && Math.abs(clip.getArcWidth() - region.getWidth()) < 0.0001
+                && Math.abs(clip.getArcHeight() - region.getHeight()) < 0.0001;
     }
 
     private static void runOnJavaFxThread(Runnable action) throws Exception {

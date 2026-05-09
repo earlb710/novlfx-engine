@@ -222,7 +222,6 @@ public final class ScreenLayoutRenderer {
             configureSectionRegion(content, section, styleClass);
             return content;
         }
-        applyBackgroundImageClip(backgroundLayer, section.metadata());
         StackPane layeredSection = new StackPane(backgroundLayer, content);
         StackPane.setAlignment(content, Pos.TOP_LEFT);
         configureSectionRegion(layeredSection, section, styleClass);
@@ -375,29 +374,8 @@ public final class ScreenLayoutRenderer {
         }
         return new BackgroundImageLayer(
                 loadBackgroundImage(source),
-                backgroundImageOpacity(metadata.get(BACKGROUND_IMAGE_TRANSPARENCY_KEY)));
-    }
-
-    private static void applyBackgroundImageClip(Region backgroundLayer, Map<String, String> metadata) {
-        String borderCorner = metadata.get("borderCorner");
-        if (borderCorner == null || borderCorner.isBlank() || "square".equalsIgnoreCase(borderCorner)) {
-            backgroundLayer.setClip(null);
-            return;
-        }
-        Rectangle clip = new Rectangle();
-        clip.widthProperty().bind(backgroundLayer.widthProperty());
-        clip.heightProperty().bind(backgroundLayer.heightProperty());
-        if ("rounded".equalsIgnoreCase(borderCorner)) {
-            clip.setArcWidth(ROUNDED_BORDER_CLIP_ARC);
-            clip.setArcHeight(ROUNDED_BORDER_CLIP_ARC);
-        } else if ("pill".equalsIgnoreCase(borderCorner)) {
-            clip.arcWidthProperty().bind(backgroundLayer.widthProperty());
-            clip.arcHeightProperty().bind(backgroundLayer.heightProperty());
-        } else {
-            backgroundLayer.setClip(null);
-            return;
-        }
-        backgroundLayer.setClip(clip);
+                backgroundImageOpacity(metadata.get(BACKGROUND_IMAGE_TRANSPARENCY_KEY)),
+                metadata.get("borderCorner"));
     }
 
     private static double backgroundImageOpacity(String transparency) {
@@ -607,9 +585,13 @@ public final class ScreenLayoutRenderer {
     /** Transparent section background layer that stretches a loaded image to the region bounds. */
     private static final class BackgroundImageLayer extends Region {
         private final ImageView imageView;
+        private final String borderCorner;
+        private final Rectangle clipShape;
 
-        private BackgroundImageLayer(Image image, double opacity) {
+        private BackgroundImageLayer(Image image, double opacity, String borderCorner) {
             imageView = new ImageView(image);
+            this.borderCorner = borderCorner == null ? "" : borderCorner.trim().toLowerCase();
+            clipShape = requiresClip(this.borderCorner) ? new Rectangle() : null;
             setMinSize(0, 0);
             setMouseTransparent(true);
             setFocusTraversable(false);
@@ -618,14 +600,18 @@ public final class ScreenLayoutRenderer {
             imageView.setPreserveRatio(false);
             imageView.setSmooth(true);
             imageView.setOpacity(opacity);
+            setClip(clipShape);
             getChildren().add(imageView);
         }
 
         @Override
         protected void layoutChildren() {
-            imageView.setFitWidth(getWidth());
-            imageView.setFitHeight(getHeight());
-            imageView.resizeRelocate(0, 0, getWidth(), getHeight());
+            double width = getWidth();
+            double height = getHeight();
+            imageView.setFitWidth(width);
+            imageView.setFitHeight(height);
+            imageView.resizeRelocate(0, 0, width, height);
+            updateClip(width, height);
         }
 
         @Override
@@ -636,6 +622,25 @@ public final class ScreenLayoutRenderer {
         @Override
         protected double computePrefHeight(double width) {
             return 0;
+        }
+
+        private void updateClip(double width, double height) {
+            if (clipShape == null) {
+                return;
+            }
+            clipShape.setWidth(width);
+            clipShape.setHeight(height);
+            if ("pill".equals(borderCorner)) {
+                clipShape.setArcWidth(width);
+                clipShape.setArcHeight(height);
+                return;
+            }
+            clipShape.setArcWidth(Math.min(width, ROUNDED_BORDER_CLIP_ARC));
+            clipShape.setArcHeight(Math.min(height, ROUNDED_BORDER_CLIP_ARC));
+        }
+
+        private static boolean requiresClip(String borderCorner) {
+            return "rounded".equals(borderCorner) || "pill".equals(borderCorner);
         }
     }
 }
