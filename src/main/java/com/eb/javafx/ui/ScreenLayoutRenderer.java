@@ -46,6 +46,7 @@ import java.util.regex.Pattern;
 public final class ScreenLayoutRenderer {
     private static final double SECTION_SPACING = 8;
     private static final double REGION_SPACING = 12;
+    private static final double ROUNDED_BORDER_CLIP_ARC = 12;
     private static final Pattern FONT_SIZE_PATTERN = Pattern.compile("\\d+(\\.\\d+)?(px|pt|em)?");
     private static final Pattern DECIMAL_PATTERN = Pattern.compile("\\d*\\.?\\d+");
     private static final Pattern FONT_FAMILY_PATTERN = Pattern.compile("[\\p{Alnum} ._\\-]+");
@@ -386,18 +387,15 @@ public final class ScreenLayoutRenderer {
         Rectangle clip = new Rectangle();
         clip.widthProperty().bind(backgroundLayer.widthProperty());
         clip.heightProperty().bind(backgroundLayer.heightProperty());
-        switch (borderCorner.toLowerCase()) {
-            case "rounded" -> {
-                clip.setArcWidth(12);
-                clip.setArcHeight(12);
-            }
-            case "pill" -> {
-                clip.arcWidthProperty().bind(backgroundLayer.widthProperty());
-                clip.arcHeightProperty().bind(backgroundLayer.heightProperty());
-            }
-            default -> {
-                return;
-            }
+        if ("rounded".equalsIgnoreCase(borderCorner)) {
+            clip.setArcWidth(ROUNDED_BORDER_CLIP_ARC);
+            clip.setArcHeight(ROUNDED_BORDER_CLIP_ARC);
+        } else if ("pill".equalsIgnoreCase(borderCorner)) {
+            clip.arcWidthProperty().bind(backgroundLayer.widthProperty());
+            clip.arcHeightProperty().bind(backgroundLayer.heightProperty());
+        } else {
+            backgroundLayer.setClip(null);
+            return;
         }
         backgroundLayer.setClip(clip);
     }
