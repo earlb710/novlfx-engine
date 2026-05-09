@@ -1,6 +1,8 @@
 package com.eb.javafx.ui;
 
 import com.eb.javafx.prefs.PreferencesService;
+import com.eb.javafx.prefs.PreferencesService.ThemeFamily;
+import com.eb.javafx.prefs.PreferencesService.ThemeVariant;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -64,6 +66,26 @@ final class UiThemeTest {
 
         assertEquals("#ffffff", theme.textColor());
         assertTrue(theme.stylesheetContent().contains("-fx-text-fill: #ffffff;"));
+    }
+
+    @Test
+    void everyThemeSelectionBuildsSemanticStylesheetContent() {
+        for (ThemeFamily family : ThemeFamily.values()) {
+            for (ThemeVariant variant : ThemeVariant.values()) {
+                preferences.put("ui.themeFamily", family.preferenceValue());
+                preferences.put("ui.themeVariant", variant.preferenceValue());
+                PreferencesService preferencesService = new PreferencesService();
+                preferencesService.load();
+
+                UiTheme theme = new UiTheme();
+                theme.initialize(preferencesService);
+
+                assertTrue(theme.stylesheet().startsWith("file:"));
+                assertTrue(theme.stylesheetContent().contains(".screen-text-highlight"));
+                assertTrue(theme.stylesheetContent().contains(".screen-value"));
+                assertTrue(theme.stylesheetContent().contains(".screen-text"));
+            }
+        }
     }
 
     @Test
