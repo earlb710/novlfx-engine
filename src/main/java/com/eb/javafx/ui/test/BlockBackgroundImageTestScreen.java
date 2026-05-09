@@ -21,6 +21,7 @@ import java.util.Map;
 public final class BlockBackgroundImageTestScreen {
     static final String SCREEN_BACKGROUND_RESOURCE = "/com/eb/javafx/images/svg/circle-background.svg";
     static final String BLOCK_BACKGROUND_RESOURCE = "/com/eb/javafx/images/svg/circle2-background.svg";
+    static final String SCREEN_BACKGROUND_RESOURCE_KEY = "screenBackgroundImage";
     static final String SCREEN_BACKGROUND_COLOR = "#08111f";
     static final String LEFT_BLOCK_BACKGROUND_COLOR = "#203a67";
     static final String RIGHT_BLOCK_BACKGROUND_COLOR = "#5a2b5f";
@@ -96,7 +97,8 @@ public final class BlockBackgroundImageTestScreen {
                 List.of(),
                 List.of(),
                 List.of(),
-                "Use this screen to verify screen-level and block-level SVG background image layering.");
+                "Use this screen to verify screen-level and block-level SVG background image layering.",
+                Map.of(SCREEN_BACKGROUND_RESOURCE_KEY, SCREEN_BACKGROUND_RESOURCE));
     }
 
     private static ScreenLayoutSection blockSection(

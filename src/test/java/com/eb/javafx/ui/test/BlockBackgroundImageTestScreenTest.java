@@ -44,6 +44,8 @@ final class BlockBackgroundImageTestScreenTest {
 
         assertEquals(ScreenLayoutType.FORM, model.type());
         assertEquals("Block Background Image Test", model.title());
+        assertEquals(BlockBackgroundImageTestScreen.SCREEN_BACKGROUND_RESOURCE,
+                model.metadata().get(BlockBackgroundImageTestScreen.SCREEN_BACKGROUND_RESOURCE_KEY));
         assertEquals(1, model.contentSections().size());
         ScreenLayoutSection outerSection = model.contentSections().get(0);
         assertEquals(2, outerSection.lines().size());
