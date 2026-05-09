@@ -54,7 +54,7 @@
 
 - After completing any set of code changes, write a summary of those changes to `change_summary.md` in the repository root.
 - If the current branch already has a `change_summary.md`, append the new summary to the end of the file.
-- Before checking in, rename `change_summary.md` to `change_summary_<branch-name>.md` with slashes in the branch name replaced by underscores to reduce merge conflicts.
+- Before checking in, rename `change_summary.md` to `change_summary_<branch-name>.md` with slash path separators in the branch name replaced by underscores; leave other valid characters such as hyphens unchanged.
 
 ## Onboarding notes and workarounds
 
