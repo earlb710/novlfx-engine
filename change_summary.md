@@ -20,3 +20,5 @@ Capped Swing-based test/support windows and the screen-designer preview/test har
 19. Added `BlockBackgroundImageTestScreenTest` to verify the layout model metadata and expose the new manual launcher entry from the test screen app.
 20. Updated `BlockBackgroundImageTestScreen` so each block now includes preview buttons, uses white in-block text, and applies a thicker, rounder border treatment.
 21. Expanded `BlockBackgroundImageTestScreenTest` to verify the richer block metadata and that the rendered layout now includes block action buttons.
+22. Kept the block background image demo on the `circle-background.svg` screen backdrop and expanded each block with extra explanatory text lines.
+23. Updated `ScreenLayoutRenderer` and `BlockBackgroundImageTestScreenTest` so block background images are clipped to the configured rounded border shape instead of drawing past the curved edges.
