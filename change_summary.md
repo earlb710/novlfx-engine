@@ -15,3 +15,5 @@ Updated preferences-related tests, manual footer-test copy, and the user manual 
 Updated `PreferencesFooterTestScreenTest` to handle an already-initialized JavaFX toolkit when launched from the manual test app.
 Added shared `TestUiScreenSize` limits and capped JavaFX test/support scenes to 800x600.
 Capped Swing-based test/support windows and the screen-designer preview/test harness sizing so test UI windows stay within 800x600.
+Updated `PreferencesFooterTestScreenTest`'s manual launcher to build a real `SceneRouter` context so the footer preferences action opens the actual preferences route.
+Added a focused preferences-footer routing test that verifies the footer preferences control navigates to the routed preferences screen when a display is available.

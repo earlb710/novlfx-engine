@@ -1,15 +1,25 @@
 package com.eb.javafx.ui.test;
 
+import com.eb.javafx.content.ContentRegistry;
+import com.eb.javafx.content.EnginePlaceholderContentModule;
+import com.eb.javafx.display.ImageDisplayRegistry;
 import com.eb.javafx.prefs.PreferencesService;
+import com.eb.javafx.routing.SceneRouter;
+import com.eb.javafx.save.SaveLoadService;
 import com.eb.javafx.testscreen.ManualTest;
 import com.eb.javafx.testscreen.TestScreenApplication;
 import com.eb.javafx.ui.ScreenShell;
 import com.eb.javafx.ui.UiTheme;
 import javafx.application.Platform;
+import javafx.scene.Scene;
+import javafx.scene.control.Label;
 import javafx.scene.input.KeyCode;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.HBox;
 import javafx.stage.Stage;
 import org.junit.jupiter.api.Test;
 
+import java.awt.GraphicsEnvironment;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -62,6 +72,41 @@ final class PreferencesFooterTestScreenTest {
     }
 
     @Test
+    void footerPreferencesLabelNavigatesToPreferencesRoute() throws Exception {
+        assumeTrue(!GraphicsEnvironment.isHeadless(), "JavaFX route navigation test requires a display.");
+        runOnJavaFxThread(() -> {
+            PreferencesService preferencesService = new PreferencesService();
+            preferencesService.load();
+
+            UiTheme uiTheme = new UiTheme();
+            uiTheme.initialize(preferencesService);
+
+            Stage stage = new Stage();
+            SceneRouter router = createManualRouter(stage, preferencesService, uiTheme);
+            Scene initialScene = router.open(SceneRouter.PREFERENCES_FOOTER_TEST_ROUTE);
+            stage.setScene(initialScene);
+
+            BorderPane initialRoot = (BorderPane) initialScene.getRoot();
+            HBox footer = (HBox) initialRoot.getBottom();
+            Label preferencesLabel = footer.getChildren().stream()
+                    .filter(Label.class::isInstance)
+                    .map(Label.class::cast)
+                    .filter(label -> label.getUserData() instanceof ScreenShell.FooterOption option
+                            && option.id().equals("preferences"))
+                    .findFirst()
+                    .orElseThrow();
+
+            preferencesLabel.getOnMouseClicked().handle(null);
+
+            assertTrue(stage.getScene() != null && stage.getScene() != initialScene,
+                    "Preferences footer action should replace the scene.");
+            BorderPane preferencesRoot = (BorderPane) stage.getScene().getRoot();
+            assertEquals("Preferences", ((Label) preferencesRoot.getTop()).getText());
+            stage.close();
+        });
+    }
+
+    @Test
     @ManualTest
     void runPreferencesFooterTestScreenFromTestApp() throws Exception {
         assumeTrue(Boolean.getBoolean(TestScreenApplication.TEST_SCREEN_ACTIVE_PROPERTY),
@@ -76,16 +121,28 @@ final class PreferencesFooterTestScreenTest {
 
             Stage stage = new Stage();
             stage.setTitle("PreferencesFooterTestScreen manual test");
-            stage.setScene(PreferencesFooterTestScreen.createScene(
-                    "Preferences Footer Test",
-                    preferencesService,
-                    uiTheme,
-                    () -> stage.setTitle("Preferences opened from footer"),
-                    stage::close));
+            SceneRouter router = createManualRouter(stage, preferencesService, uiTheme);
+            stage.setScene(router.open(SceneRouter.PREFERENCES_FOOTER_TEST_ROUTE));
             stage.show();
             assertTrue(stage.isShowing() && stage.getScene() != null,
                     "PreferencesFooterTestScreen window was not shown.");
         });
+    }
+
+    private static SceneRouter createManualRouter(Stage stage, PreferencesService preferencesService, UiTheme uiTheme) {
+        ContentRegistry contentRegistry = new ContentRegistry();
+        contentRegistry.registerBaseContent();
+        new EnginePlaceholderContentModule().register(contentRegistry, null);
+
+        ImageDisplayRegistry imageDisplayRegistry = new ImageDisplayRegistry();
+        imageDisplayRegistry.registerBaseDisplayContent();
+
+        SaveLoadService saveLoadService = new SaveLoadService();
+        saveLoadService.initialize();
+
+        SceneRouter router = new SceneRouter();
+        router.registerDefaultRoutes(stage, preferencesService, contentRegistry, imageDisplayRegistry, saveLoadService, uiTheme);
+        return router;
     }
 
     private static ScreenShell.FooterOption option(String id) {
