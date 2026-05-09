@@ -423,6 +423,7 @@ public final class ScreenLayoutRenderer {
     private static Image loadSvgBackgroundImage(String source, URL url) {
         try (InputStream inputStream = url.openStream()) {
             VectorImage image = VectorImage.fromInputStream(inputStream);
+            // Background SVGs are intentionally stretched to fill their block bounds like raster backgrounds.
             image.getSvgDocument().getDocumentElement().setAttribute("preserveAspectRatio", "none");
             return image.toRasterImage(SVG_BACKGROUND_RASTER_SIZE, SVG_BACKGROUND_RASTER_SIZE);
         } catch (IOException exception) {

@@ -1045,9 +1045,6 @@ public final class ScreenDesignerApplication {
                 throw new IllegalArgumentException("Metadata line " + lineNumber + " must use key=value format.");
             }
             String key = line.substring(0, separator).trim();
-            if (key.isEmpty()) {
-                throw new IllegalArgumentException("Metadata line " + lineNumber + " is missing a key.");
-            }
             metadata.put(key, line.substring(separator + 1).trim());
         }
         return metadata;
@@ -1554,7 +1551,6 @@ public final class ScreenDesignerApplication {
 
     private void chooseImagePath(JTextField targetField) {
         JFileChooser chooser = new JFileChooser(jsonChooser().getCurrentDirectory());
-        chooser.setCurrentDirectory(jsonChooser().getCurrentDirectory());
         if (chooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
             targetField.setText(chooser.getSelectedFile().toPath().toAbsolutePath().normalize().toUri().toString());
         }
