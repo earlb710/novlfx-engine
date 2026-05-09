@@ -72,7 +72,7 @@ final class PreferencesFooterTestScreenTest {
     }
 
     @Test
-    void footerPreferencesLabelNavigatesToPreferencesRoute() throws Exception {
+    void footerPreferencesLabelNavigatesToPreferencesRouteFromTestScreen() throws Exception {
         assumeTrue(!GraphicsEnvironment.isHeadless(), "JavaFX route navigation test requires a display.");
         runOnJavaFxThread(() -> {
             PreferencesService preferencesService = new PreferencesService();

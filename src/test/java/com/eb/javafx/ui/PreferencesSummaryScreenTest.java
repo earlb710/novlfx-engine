@@ -138,6 +138,7 @@ final class PreferencesSummaryScreenTest {
             stage.setWidth(910);
             stage.setHeight(650);
 
+            String currentStylesheet = stage.getScene().getStylesheets().get(0);
             double currentSceneWidth = stage.getScene().getWidth();
             double currentSceneHeight = stage.getScene().getHeight();
 
@@ -145,6 +146,9 @@ final class PreferencesSummaryScreenTest {
             themeComboBox.getSelectionModel().select(1);
             themeComboBox.getOnAction().handle(new ActionEvent());
 
+            assertFalse(stage.getScene().getStylesheets().isEmpty());
+            assertTrue(!currentStylesheet.equals(stage.getScene().getStylesheets().get(0)),
+                    "Theme change should rebuild the stylesheet.");
             assertEquals(currentSceneWidth, stage.getScene().getWidth());
             assertEquals(currentSceneHeight, stage.getScene().getHeight());
             stage.close();
