@@ -20,5 +20,5 @@ Added a focused preferences-footer routing test that verifies the footer prefere
 Reworked preferences theme changes to rebuild the preferences scene after saving a new theme so refreshed controls and SVG button artwork use the newly selected palette immediately.
 Extended the generated/default JavaFX theme stylesheet with explicit combo-box and popup list colors plus core selection/looked-up color tokens to avoid the popup CSS warnings during preference changes.
 Expanded `UiThemeTest` to cover the new themed selection and combo-box stylesheet rules.
-24. Updated `PreferencesSummaryScreen` so the preferences footer keeps only the preferences icon enabled, clicking it closes back to the main menu, and Ctrl+P now mirrors that close behavior while the preferences screen is open.
-25. Added `PreferencesSummaryScreenTest` coverage for the new preferences-screen footer enablement, tooltip, shortcut, and close-navigation behavior.
+23. Updated `PreferencesSummaryScreen` so the preferences footer keeps only the preferences icon enabled, clicking it closes back to the main menu, and Ctrl+P now mirrors that close behavior while the preferences screen is open.
+24. Added `PreferencesSummaryScreenTest` coverage for the new preferences-screen footer enablement, tooltip, shortcut, and close-navigation behavior.
