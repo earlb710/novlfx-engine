@@ -1,26 +1,40 @@
 package com.eb.javafx.routing;
 
+import com.eb.javafx.bootstrap.ApplicationResourceConfig;
 import com.eb.javafx.content.ContentRegistry;
 import com.eb.javafx.content.EnginePlaceholderContentModule;
 import com.eb.javafx.display.ImageDisplayRegistry;
 import com.eb.javafx.prefs.PreferencesService;
 import com.eb.javafx.save.SaveLoadService;
 import com.eb.javafx.ui.UiTheme;
+import javafx.application.Platform;
+import javafx.scene.Scene;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.Region;
+import javafx.scene.layout.StackPane;
+import javafx.scene.paint.Color;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
+import java.nio.file.Path;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.prefs.BackingStoreException;
 import java.util.prefs.Preferences;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 final class SceneRouterTest {
+    private static final AtomicBoolean JAVAFX_STARTED = new AtomicBoolean();
+    private static final AtomicBoolean JAVAFX_AVAILABLE = new AtomicBoolean(true);
     private final Preferences preferences = Preferences.userNodeForPackage(PreferencesService.class);
 
     @AfterEach
@@ -160,7 +174,86 @@ final class SceneRouterTest {
         assertEquals("Unknown JavaFX route: missing-route", exception.getMessage());
     }
 
+    @Test
+    void routeContextThemedScenesUseConfiguredAppAndSpecializedBackgrounds() throws InterruptedException {
+        assumeTrue(startJavaFxToolkit());
+        PreferencesService preferencesService = new PreferencesService();
+        preferencesService.load();
+        UiTheme uiTheme = new UiTheme();
+        uiTheme.initialize(preferencesService);
+        ApplicationResourceConfig resourceConfig = ApplicationResourceConfig.of(
+                true,
+                "config/category-code-tables.en.json",
+                "game",
+                "#112233",
+                "",
+                "",
+                "#223344",
+                "",
+                "",
+                "#334455",
+                "",
+                "",
+                java.util.Map.of());
+        RouteContext context = new RouteContext(
+                null,
+                preferencesService,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                uiTheme,
+                new SceneRouter(),
+                Path.of(""),
+                resourceConfig);
+
+        Scene appScene = context.themedScene(new BorderPane());
+        Scene preferencesScene = context.themedPreferencesScene(new BorderPane());
+        Scene saveLoadScene = context.themedSaveLoadScene(new BorderPane());
+
+        assertEquals(Color.web("#112233"), sceneBackgroundFill(appScene));
+        assertEquals(Color.web("#223344"), sceneBackgroundFill(preferencesScene));
+        assertEquals(Color.web("#334455"), sceneBackgroundFill(saveLoadScene));
+    }
+
     private RouteContext minimalRouteContext(SceneRouter router) {
         return new RouteContext(null, null, null, null, null, null, router);
+    }
+
+    private static Color sceneBackgroundFill(Scene scene) {
+        StackPane root = (StackPane) scene.getRoot();
+        Region backgroundLayer = (Region) root.getChildren().get(0);
+        return (Color) backgroundLayer.getBackground().getFills().get(0).getFill();
+    }
+
+    private static boolean startJavaFxToolkit() throws InterruptedException {
+        if (!JAVAFX_AVAILABLE.get()) {
+            return false;
+        }
+        CountDownLatch started = new CountDownLatch(1);
+        if (JAVAFX_STARTED.compareAndSet(false, true)) {
+            try {
+                Platform.startup(() -> {
+                    Platform.setImplicitExit(false);
+                    started.countDown();
+                });
+            } catch (IllegalStateException exception) {
+                Platform.setImplicitExit(false);
+                started.countDown();
+            } catch (UnsupportedOperationException exception) {
+                JAVAFX_AVAILABLE.set(false);
+                started.countDown();
+                return false;
+            }
+        } else {
+            Platform.setImplicitExit(false);
+            started.countDown();
+        }
+        return started.await(5, TimeUnit.SECONDS);
     }
 }

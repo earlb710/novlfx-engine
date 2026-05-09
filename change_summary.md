@@ -21,3 +21,5 @@ Updated the Default App Values management screen coverage so the new config fiel
 Documented the new config JSON fields and refreshed the startup demo config to show route-level background defaults.
 Polished the Default App Values Application Values tab with friendly field labels, browse buttons for file/path fields, color picker buttons for color fields, and transparency labels that show the supported 0-1 range.
 Removed the “changes apply only to this management screen” wording from the tab intro text in the Default App Values editor.
+Wired routed screen scene creation to actually use the new configured background defaults: generic routed scenes now use the app background settings, while the preferences and save/load generators use their dedicated background color/image/transparency properties.
+Added focused coverage for configured screen background wrapping and route-context background selection.

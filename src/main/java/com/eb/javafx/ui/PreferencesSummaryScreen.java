@@ -48,7 +48,7 @@ public final class PreferencesSummaryScreen {
 
         Button closeButton = ScreenNavigation.button(context, CLOSE_LABEL, SceneRouter.MAIN_MENU_ROUTE);
         content.getChildren().add(closeButton);
-        return context.themedScene(ScreenShell.titled(viewModel.title(), content));
+        return context.themedPreferencesScene(ScreenShell.titled(viewModel.title(), content));
     }
 
     public static PreferencesSummaryViewModel viewModel(RouteContext context) {
@@ -200,7 +200,8 @@ public final class PreferencesSummaryScreen {
 
     private static void applyCurrentFooterPreferences(RouteContext context) {
         Scene scene = context.primaryStage().getScene();
-        if (scene == null || !(scene.getRoot() instanceof BorderPane root)) {
+        BorderPane root = scene == null ? null : ScreenShell.shellRoot(scene.getRoot());
+        if (root == null) {
             return;
         }
         ScreenShell.applyFooterPreferences(root.getBottom(), context.preferencesService());

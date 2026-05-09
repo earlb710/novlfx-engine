@@ -17,6 +17,10 @@ public final class ViewModelScreen {
     }
 
     public static Scene createScene(RouteContext context, ScreenViewModel viewModel) {
+        return context.themedScene(ScreenShell.titled(viewModel.title(), content(context, viewModel)));
+    }
+
+    static VBox content(RouteContext context, ScreenViewModel viewModel) {
         VBox content = new VBox(8);
         for (String line : viewModel.lines()) {
             content.getChildren().add(new Label(line));
@@ -26,6 +30,6 @@ public final class ViewModelScreen {
             button.setDisable(!action.enabled());
             content.getChildren().add(button);
         }
-        return context.themedScene(ScreenShell.titled(viewModel.title(), content));
+        return content;
     }
 }
