@@ -252,7 +252,8 @@ final class ScreenDesignModelTest {
         ScreenDesignModel model = new ScreenDesignModel("x", "X", ScreenLayoutType.FORM, Map.of(),
                 List.of(new ScreenDesignBlock("profile", "Profile", null, null, List.of(), "profile-shell", Map.of(
                         "backgroundImage", "/com/eb/javafx/images/svg/background-gradient-rectangle.svg",
-                        "backgroundImageTransparency", "0.35"))),
+                        "backgroundImageTransparency", "0.35",
+                        "backgroundImagePlacement", "fixed center"))),
                 List.of(),
                 List.of());
 
@@ -261,6 +262,7 @@ final class ScreenDesignModelTest {
         assertEquals("profile-shell", section.styleClass());
         assertEquals("/com/eb/javafx/images/svg/background-gradient-rectangle.svg", section.metadata().get("backgroundImage"));
         assertEquals("0.35", section.metadata().get("backgroundImageTransparency"));
+        assertEquals("fixed center", section.metadata().get("backgroundImagePlacement"));
     }
 
     @Test

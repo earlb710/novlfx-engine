@@ -28,3 +28,5 @@ Capped Swing-based test/support windows and the screen-designer preview/test har
 27. Made the block background image test screen root and content panel transparent so the configured `circle-background.svg` screen background remains visible behind the layout.
 28. Reworked section background-image rendering so borders stay visible by drawing the styled border on an outer wrapper and clipping an inset interior surface instead of clipping the border-owning node.
 29. Changed the block background image demo blocks from pill corners to rounded corners and expanded the focused test to verify unclipped border wrappers and non-pill rounded clips.
+30. Added `backgroundImagePlacement` support for block background images in `ScreenLayoutRenderer` and the screen designer, with `fixed top left`, `fixed center`, `fixed bottom right`, and `stretch to fit` options.
+31. Updated `docs/USER_MANUAL.md` with a screen-plus-block background image example and documented block background image transparency and placement metadata.

@@ -106,6 +106,7 @@ public final class ScreenDesignerApplication {
     private static final String DISPLAY_ROLE_KEY = "displayRole";
     private static final String BACKGROUND_IMAGE_KEY = "backgroundImage";
     private static final String BACKGROUND_IMAGE_TRANSPARENCY_KEY = "backgroundImageTransparency";
+    private static final String BACKGROUND_IMAGE_PLACEMENT_KEY = "backgroundImagePlacement";
     private static final String DIALOG_KEY = "dialog";
     private static final String DISMISS_ON_CLICK_OUTSIDE_KEY = "dismissOnClickOutside";
     private static final String DISMISS_ON_ESCAPE_KEY = "dismissOnEscape";
@@ -116,6 +117,9 @@ public final class ScreenDesignerApplication {
     private static final String[] FONT_STYLE_OPTIONS = {DEFAULT_OPTION, "normal", "bold", "italic", "bold italic"};
     private static final String[] FONT_SIZE_OPTIONS = {DEFAULT_OPTION, "10", "12", "14", "16", "18", "20", "22", "24", "28", "32", "36", "48", "64"};
     private static final String[] TRANSPARENCY_OPTIONS = {DEFAULT_OPTION, "0", "0.1", "0.2", "0.25", "0.3", "0.4", "0.5", "0.6", "0.7", "0.75", "0.8", "0.9", "1"};
+    private static final String[] BACKGROUND_IMAGE_PLACEMENT_OPTIONS = {
+            DEFAULT_OPTION, "fixed top left", "fixed center", "fixed bottom right", "stretch to fit"
+    };
     private static final String[] BORDER_STYLE_OPTIONS = {DEFAULT_OPTION, "solid", "dashed", "dotted", "none"};
     private static final String[] BORDER_CORNER_OPTIONS = {DEFAULT_OPTION, "square", "rounded", "pill"};
     private static final String[] BORDER_THICKNESS_OPTIONS = {DEFAULT_OPTION, "1", "2", "3", "4", "6", "8"};
@@ -134,7 +138,7 @@ public final class ScreenDesignerApplication {
     private static final Set<String> BLOCK_EXPOSED_METADATA_KEYS = Set.of(
             FONT_FAMILY_KEY, ITEM_FONT_SIZE_KEY, ITEM_FONT_STYLE_KEY, ITEM_COLOR_KEY,
             BACKGROUND_COLOR_KEY, TRANSPARENCY_KEY, BORDER_STYLE_KEY, BORDER_CORNER_KEY, BORDER_THICKNESS_KEY,
-            BORDER_COLOR_KEY, BACKGROUND_IMAGE_KEY, BACKGROUND_IMAGE_TRANSPARENCY_KEY);
+            BORDER_COLOR_KEY, BACKGROUND_IMAGE_KEY, BACKGROUND_IMAGE_TRANSPARENCY_KEY, BACKGROUND_IMAGE_PLACEMENT_KEY);
     private static final Set<String> ITEM_EXPOSED_METADATA_KEYS = Set.of(
             DISPLAY_ROLE_KEY, FONT_FAMILY_KEY, ITEM_FONT_SIZE_KEY, ITEM_FONT_STYLE_KEY, ITEM_COLOR_KEY,
             BACKGROUND_COLOR_KEY, TRANSPARENCY_KEY,
@@ -563,6 +567,7 @@ public final class ScreenDesignerApplication {
         JTextField backgroundColorField = new JTextField(existing == null ? "" : metadataValue(existing.metadata(), BACKGROUND_COLOR_KEY));
         JTextField backgroundImageField = new JTextField(existing == null ? "" : metadataValue(existing.metadata(), BACKGROUND_IMAGE_KEY));
         JComboBox<String> backgroundImageTransparencyBox = transparencyBox();
+        JComboBox<String> backgroundImagePlacementBox = new JComboBox<>(BACKGROUND_IMAGE_PLACEMENT_OPTIONS);
         JTextField borderColorField = new JTextField(existing == null ? "" : metadataValue(existing.metadata(), BORDER_COLOR_KEY));
         JTextArea conditionsArea = new JTextArea(existing == null ? "" : conditionsText(existing.conditions()), 3, 20);
         JTextArea metadataArea = new JTextArea(existing == null
@@ -573,6 +578,7 @@ public final class ScreenDesignerApplication {
         metadataArea.setLineWrap(false);
         setComboValue(transparencyBox, existing == null ? "" : metadataValue(existing.metadata(), TRANSPARENCY_KEY));
         setComboValue(backgroundImageTransparencyBox, existing == null ? "" : metadataValue(existing.metadata(), BACKGROUND_IMAGE_TRANSPARENCY_KEY));
+        setComboValue(backgroundImagePlacementBox, existing == null ? "" : metadataValue(existing.metadata(), BACKGROUND_IMAGE_PLACEMENT_KEY));
         setComboValue(borderStyleBox, existing == null ? "" : metadataValue(existing.metadata(), BORDER_STYLE_KEY));
         setComboValue(borderCornerBox, existing == null ? "" : metadataValue(existing.metadata(), BORDER_CORNER_KEY));
         setComboValue(borderThicknessBox, existing == null ? "" : metadataValue(existing.metadata(), BORDER_THICKNESS_KEY));
@@ -583,7 +589,7 @@ public final class ScreenDesignerApplication {
         } else {
             parentBlockBox.setSelectedItem(SCREEN_PARENT_OPTION);
         }
-        JPanel fields = new JPanel(new GridLayout(15, 2, 6, 6));
+        JPanel fields = new JPanel(new GridLayout(16, 2, 6, 6));
         fields.add(new JLabel("Block id"));
         fields.add(blockIdField);
         fields.add(new JLabel("Title"));
@@ -602,6 +608,8 @@ public final class ScreenDesignerApplication {
         fields.add(fileSelector(backgroundImageField, "Choose...", () -> chooseImagePath(backgroundImageField)));
         fields.add(new JLabel("Background image transparency"));
         fields.add(backgroundImageTransparencyBox);
+        fields.add(new JLabel("Background image placement"));
+        fields.add(backgroundImagePlacementBox);
         fields.add(new JLabel("Transparency"));
         fields.add(transparencyBox);
         fields.add(new JLabel("Border style"));
@@ -625,6 +633,7 @@ public final class ScreenDesignerApplication {
         putOptionalMetadata(metadata, BACKGROUND_COLOR_KEY, backgroundColorField.getText());
         putOptionalMetadata(metadata, BACKGROUND_IMAGE_KEY, backgroundImageField.getText());
         putOptionalMetadata(metadata, BACKGROUND_IMAGE_TRANSPARENCY_KEY, selectedComboValue(backgroundImageTransparencyBox));
+        putOptionalMetadata(metadata, BACKGROUND_IMAGE_PLACEMENT_KEY, selectedComboValue(backgroundImagePlacementBox));
         putOptionalMetadata(metadata, TRANSPARENCY_KEY, selectedComboValue(transparencyBox));
         putOptionalMetadata(metadata, BORDER_STYLE_KEY, selectedComboValue(borderStyleBox));
         putOptionalMetadata(metadata, BORDER_CORNER_KEY, selectedComboValue(borderCornerBox));

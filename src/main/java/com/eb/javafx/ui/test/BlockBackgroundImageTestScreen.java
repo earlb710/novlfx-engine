@@ -116,6 +116,7 @@ public final class BlockBackgroundImageTestScreen {
                         "transparency", "0.15",
                         "backgroundImage", BLOCK_BACKGROUND_RESOURCE,
                         "backgroundImageTransparency", BACKGROUND_TRANSPARENCY,
+                        "backgroundImagePlacement", "stretch to fit",
                         "borderStyle", "solid",
                         "borderCorner", "rounded",
                         "borderThickness", "3",

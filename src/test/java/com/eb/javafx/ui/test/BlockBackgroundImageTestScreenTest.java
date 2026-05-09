@@ -3,12 +3,14 @@ package com.eb.javafx.ui.test;
 import java.awt.GraphicsEnvironment;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.eb.javafx.prefs.PreferencesService;
+import com.eb.javafx.ui.ScreenLayoutRenderer;
 import com.eb.javafx.testscreen.ManualTest;
 import com.eb.javafx.testscreen.TestScreenApplication;
 import com.eb.javafx.ui.ScreenLayoutModel;
@@ -29,6 +31,7 @@ import javafx.stage.Stage;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -37,6 +40,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 final class BlockBackgroundImageTestScreenTest {
     private static final long JAVAFX_OPERATION_TIMEOUT_SECONDS = 5;
     private static final AtomicBoolean JAVAFX_STARTED = new AtomicBoolean();
+    private static final String PLACEMENT_TEST_BACKGROUND = "/com/eb/javafx/ui/test/background-placement-test.svg";
 
     @Test
     void modelUsesScreenBackgroundAndTwoBlocksWithBlockBackgroundImages() {
@@ -55,6 +59,7 @@ final class BlockBackgroundImageTestScreenTest {
             assertEquals(6, block.lines().size());
             assertEquals(BlockBackgroundImageTestScreen.BLOCK_BACKGROUND_RESOURCE, block.metadata().get("backgroundImage"));
             assertEquals(BlockBackgroundImageTestScreen.BACKGROUND_TRANSPARENCY, block.metadata().get("backgroundImageTransparency"));
+            assertEquals("stretch to fit", block.metadata().get("backgroundImagePlacement"));
             assertEquals("3", block.metadata().get("borderThickness"));
             assertEquals("rounded", block.metadata().get("borderCorner"));
             assertEquals(BlockBackgroundImageTestScreen.BLOCK_TEXT_COLOR, block.lineMetadata().get(0).get("color"));
@@ -112,6 +117,17 @@ final class BlockBackgroundImageTestScreenTest {
                     "Expected block background clips to update after the block resizes.");
             VBox body = assertInstanceOf(VBox.class, content.getCenter());
             assertTrue(body.getChildren().size() >= 1);
+        });
+    }
+
+    @Test
+    void rendererSupportsFixedAndStretchBlockBackgroundImagePlacements() throws Exception {
+        assumeTrue(!GraphicsEnvironment.isHeadless(), "JavaFX root inspection requires a display.");
+        runOnJavaFxThread(() -> {
+            assertBackgroundPlacement("fixed top left");
+            assertBackgroundPlacement("fixed center");
+            assertBackgroundPlacement("fixed bottom right");
+            assertBackgroundPlacement("stretch to fit");
         });
     }
 
@@ -192,6 +208,75 @@ final class BlockBackgroundImageTestScreenTest {
         }
         return clip.getArcWidth() < stackPane.getWidth()
                 && clip.getArcHeight() < stackPane.getHeight();
+    }
+
+    private static void assertBackgroundPlacement(String placement) {
+        BorderPane root = ScreenLayoutRenderer.createRoot(new ScreenLayoutModel(
+                ScreenLayoutType.FORM,
+                "Placement Test",
+                null,
+                List.of(new ScreenLayoutSection(
+                        "placement-block",
+                        "Placement block",
+                        List.of("Placement preview"),
+                        "placement-block",
+                        Map.of(
+                                "backgroundImage", PLACEMENT_TEST_BACKGROUND,
+                                "backgroundImagePlacement", placement,
+                                "borderStyle", "solid",
+                                "borderCorner", "rounded",
+                                "borderThickness", "2",
+                                "borderColor", "#ffffff"),
+                        List.of("placement.row"),
+                        List.of(Map.of()))),
+                List.of(),
+                List.of(),
+                List.of(),
+                null));
+        root.resize(320, 220);
+        root.layout();
+
+        StackPane blockLayer = firstBlockBackgroundLayer(root);
+        ImageView imageView = backgroundImageView(blockLayer);
+        double imageWidth = imageView.getImage().getWidth();
+        double imageHeight = imageView.getImage().getHeight();
+        if ("stretch to fit".equals(placement)) {
+            assertFalse(imageView.isPreserveRatio());
+            assertEquals(blockLayer.getWidth(), imageView.getFitWidth(), 0.0001);
+            assertEquals(blockLayer.getHeight(), imageView.getFitHeight(), 0.0001);
+            assertEquals(0.0, imageView.getLayoutX(), 0.0001);
+            assertEquals(0.0, imageView.getLayoutY(), 0.0001);
+            return;
+        }
+        assertTrue(imageView.isPreserveRatio());
+        assertEquals(imageWidth, imageView.getFitWidth(), 0.0001);
+        assertEquals(imageHeight, imageView.getFitHeight(), 0.0001);
+        double expectedX = switch (placement) {
+            case "fixed center" -> (blockLayer.getWidth() - imageWidth) / 2.0;
+            case "fixed bottom right" -> blockLayer.getWidth() - imageWidth;
+            default -> 0.0;
+        };
+        double expectedY = switch (placement) {
+            case "fixed center" -> (blockLayer.getHeight() - imageHeight) / 2.0;
+            case "fixed bottom right" -> blockLayer.getHeight() - imageHeight;
+            default -> 0.0;
+        };
+        assertEquals(expectedX, imageView.getLayoutX(), 0.0001);
+        assertEquals(expectedY, imageView.getLayoutY(), 0.0001);
+    }
+
+    private static StackPane firstBlockBackgroundLayer(Node root) {
+        List<StackPane> layeredSections = new ArrayList<>();
+        collectNodes(root, StackPane.class, layeredSections);
+        return layeredSections.stream()
+                .filter(BlockBackgroundImageTestScreenTest::isBlockBackgroundLayer)
+                .findFirst()
+                .orElseThrow();
+    }
+
+    private static ImageView backgroundImageView(StackPane stackPane) {
+        Region backgroundRegion = assertInstanceOf(Region.class, stackPane.getChildren().get(0));
+        return assertInstanceOf(ImageView.class, backgroundRegion.getChildrenUnmodifiable().get(0));
     }
 
     private static void runOnJavaFxThread(Runnable action) throws Exception {

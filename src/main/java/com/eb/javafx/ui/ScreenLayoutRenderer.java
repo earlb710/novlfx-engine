@@ -58,6 +58,7 @@ public final class ScreenLayoutRenderer {
     private static final String ACTION_VALUE_KEY = "actionValue";
     static final String BACKGROUND_IMAGE_KEY = "backgroundImage";
     static final String BACKGROUND_IMAGE_TRANSPARENCY_KEY = "backgroundImageTransparency";
+    static final String BACKGROUND_IMAGE_PLACEMENT_KEY = "backgroundImagePlacement";
     static final String DIALOG_KEY = "dialog";
     static final String DISMISS_ON_CLICK_OUTSIDE_KEY = "dismissOnClickOutside";
     static final String DISMISS_ON_ESCAPE_KEY = "dismissOnEscape";
@@ -351,9 +352,13 @@ public final class ScreenLayoutRenderer {
     }
 
     static Image loadBackgroundImage(String source) {
+        return loadBackgroundImage(source, BackgroundImagePlacement.STRETCH_TO_FIT);
+    }
+
+    private static Image loadBackgroundImage(String source, BackgroundImagePlacement placement) {
         URL url = resolveBackgroundImageUrl(source);
         if (isSvgSource(source, url)) {
-            return loadSvgBackgroundImage(source, url);
+            return loadSvgBackgroundImage(source, url, placement);
         }
         Image image = new Image(url.toExternalForm(), false);
         if (image.isError()) {
@@ -393,9 +398,11 @@ public final class ScreenLayoutRenderer {
         if (source == null || source.isBlank()) {
             return null;
         }
+        BackgroundImagePlacement placement = backgroundImagePlacement(metadata.get(BACKGROUND_IMAGE_PLACEMENT_KEY));
         return new BackgroundImageLayer(
-                loadBackgroundImage(source),
-                backgroundImageOpacity(metadata.get(BACKGROUND_IMAGE_TRANSPARENCY_KEY)));
+                loadBackgroundImage(source, placement),
+                backgroundImageOpacity(metadata.get(BACKGROUND_IMAGE_TRANSPARENCY_KEY)),
+                placement);
     }
 
     private static void applyBackgroundImageClip(Region clippedRegion, Map<String, String> metadata) {
@@ -444,6 +451,19 @@ public final class ScreenLayoutRenderer {
         return opacity;
     }
 
+    private static BackgroundImagePlacement backgroundImagePlacement(String placement) {
+        if (placement == null || placement.isBlank()) {
+            return BackgroundImagePlacement.STRETCH_TO_FIT;
+        }
+        return switch (placement.trim().toLowerCase(java.util.Locale.ROOT)) {
+            case "fixed top left" -> BackgroundImagePlacement.FIXED_TOP_LEFT;
+            case "fixed center" -> BackgroundImagePlacement.FIXED_CENTER;
+            case "fixed bottom right" -> BackgroundImagePlacement.FIXED_BOTTOM_RIGHT;
+            case "stretch to fit" -> BackgroundImagePlacement.STRETCH_TO_FIT;
+            default -> BackgroundImagePlacement.STRETCH_TO_FIT;
+        };
+    }
+
     private static URL resolveBackgroundImageUrl(String source) {
         String checkedSource = Validation.requireNonBlank(source, "Screen layout background image is required.");
         try {
@@ -481,13 +501,16 @@ public final class ScreenLayoutRenderer {
         return lowerSource.endsWith(".svg") || lowerPath.endsWith(".svg");
     }
 
-    private static Image loadSvgBackgroundImage(String source, URL url) {
+    private static Image loadSvgBackgroundImage(String source, URL url, BackgroundImagePlacement placement) {
         try (InputStream inputStream = url.openStream()) {
             VectorImage image = VectorImage.fromInputStream(inputStream);
-            // Each load creates an independent SVG document, so this mutation stays local to the background image.
-            // Background SVGs are intentionally stretched to fill their block bounds like raster backgrounds.
-            image.getSvgDocument().getDocumentElement().setAttribute("preserveAspectRatio", "none");
-            return image.toRasterImage(SVG_BACKGROUND_RASTER_SIZE, SVG_BACKGROUND_RASTER_SIZE);
+            if (placement == BackgroundImagePlacement.STRETCH_TO_FIT) {
+                // Each load creates an independent SVG document, so this mutation stays local to the background image.
+                // Stretch mode fills the block bounds like raster backgrounds.
+                image.getSvgDocument().getDocumentElement().setAttribute("preserveAspectRatio", "none");
+                return image.toRasterImage(SVG_BACKGROUND_RASTER_SIZE, SVG_BACKGROUND_RASTER_SIZE);
+            }
+            return image.toRasterImage();
         } catch (IOException exception) {
             throw new IllegalArgumentException("Failed to load SVG background image: " + source, exception);
         } catch (IllegalArgumentException | IllegalStateException exception) {
@@ -642,16 +665,20 @@ public final class ScreenLayoutRenderer {
 
     /** Transparent section background layer that stretches a loaded image to the region bounds. */
     private static final class BackgroundImageLayer extends Region {
+        private final Image image;
         private final ImageView imageView;
+        private final BackgroundImagePlacement placement;
 
-        private BackgroundImageLayer(Image image, double opacity) {
+        private BackgroundImageLayer(Image image, double opacity, BackgroundImagePlacement placement) {
+            this.image = image;
+            this.placement = placement;
             imageView = new ImageView(image);
             setMinSize(0, 0);
             setMouseTransparent(true);
             setFocusTraversable(false);
+            imageView.setManaged(false);
             imageView.setMouseTransparent(true);
             imageView.setFocusTraversable(false);
-            imageView.setPreserveRatio(false);
             imageView.setSmooth(true);
             imageView.setOpacity(opacity);
             getChildren().add(imageView);
@@ -661,9 +688,29 @@ public final class ScreenLayoutRenderer {
         protected void layoutChildren() {
             double width = getWidth();
             double height = getHeight();
-            imageView.setFitWidth(width);
-            imageView.setFitHeight(height);
-            imageView.resizeRelocate(0, 0, width, height);
+            if (placement == BackgroundImagePlacement.STRETCH_TO_FIT) {
+                imageView.setPreserveRatio(false);
+                imageView.setFitWidth(width);
+                imageView.setFitHeight(height);
+                imageView.resizeRelocate(0, 0, width, height);
+                return;
+            }
+            imageView.setPreserveRatio(true);
+            double imageWidth = image.getWidth();
+            double imageHeight = image.getHeight();
+            imageView.setFitWidth(imageWidth);
+            imageView.setFitHeight(imageHeight);
+            double x = switch (placement) {
+                case FIXED_CENTER -> (width - imageWidth) / 2.0;
+                case FIXED_BOTTOM_RIGHT -> width - imageWidth;
+                default -> 0.0;
+            };
+            double y = switch (placement) {
+                case FIXED_CENTER -> (height - imageHeight) / 2.0;
+                case FIXED_BOTTOM_RIGHT -> height - imageHeight;
+                default -> 0.0;
+            };
+            imageView.relocate(x, y);
         }
 
         @Override
@@ -675,5 +722,12 @@ public final class ScreenLayoutRenderer {
         protected double computePrefHeight(double width) {
             return 0;
         }
+    }
+
+    private enum BackgroundImagePlacement {
+        FIXED_TOP_LEFT,
+        FIXED_CENTER,
+        FIXED_BOTTOM_RIGHT,
+        STRETCH_TO_FIT
     }
 }
