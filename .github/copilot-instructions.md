@@ -25,6 +25,7 @@
 - After completing any set of code changes, write a summary of those changes to `change_summary.md` in the repository root.
 - If the current branch already has a `change_summary.md`, **append** the new summary to the end of the file.
 - If `change_summary.md` does not yet exist on the current branch (i.e. this is the first set of changes on the branch), create the file (or overwrite any version carried over from a different branch) with only the new summary.
+- when checking in rename `change_summary.md` to `change_summary_branchname.md` that way there should be no merge conflicts. 
 
 ## Private repository access
 
