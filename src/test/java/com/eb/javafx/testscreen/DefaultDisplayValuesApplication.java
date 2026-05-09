@@ -48,6 +48,7 @@ import java.util.function.Consumer;
 /** Manual editor for engine default display values and viewer for related resources. */
 public final class DefaultDisplayValuesApplication {
     static final String APPLICATION_CONFIG_RESOURCE = "/com/eb/javafx/bootstrap/config.json";
+    private static final String HEX_COLOR_PATTERN = "#[0-9a-fA-F]{6}";
     private static final List<DisplayResource> DISPLAY_RESOURCES = List.of(
             new DisplayResource("Default CSS", "/com/eb/javafx/ui/default.css", true),
             new DisplayResource("Layouts", "/com/eb/javafx/ui/layout-contract.json", false));
@@ -560,7 +561,7 @@ public final class DefaultDisplayValuesApplication {
             try {
                 Path path = Path.of(currentValue);
                 Path normalized = path.toAbsolutePath().normalize();
-                return normalized.toFile().isDirectory() ? normalized : normalized.getParent() == null ? normalized : normalized.getParent();
+                return chooserStartDirectory(normalized);
             } catch (RuntimeException ignored) {
                 // Fall through to current directory.
             }
@@ -568,9 +569,17 @@ public final class DefaultDisplayValuesApplication {
         return Path.of("").toAbsolutePath().normalize();
     }
 
+    private static Path chooserStartDirectory(Path path) {
+        if (path.toFile().isDirectory()) {
+            return path;
+        }
+        Path parent = path.getParent();
+        return parent == null ? path : parent;
+    }
+
     private static Color initialColor(String value) {
         try {
-            return value != null && value.matches("#[0-9a-fA-F]{6}") ? Color.decode(value) : Color.WHITE;
+            return value != null && value.matches(HEX_COLOR_PATTERN) ? Color.decode(value) : Color.WHITE;
         } catch (NumberFormatException exception) {
             return Color.WHITE;
         }
