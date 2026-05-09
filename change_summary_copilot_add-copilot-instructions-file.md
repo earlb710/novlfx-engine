@@ -54,3 +54,5 @@ Capped Swing-based test/support windows and the screen-designer preview/test har
 54. Changed the block background image demo blocks from pill corners to rounded corners and expanded the focused test to verify unclipped border wrappers and non-pill rounded clips.
 55. Added `backgroundImagePlacement` support for block background images in `ScreenLayoutRenderer` and the screen designer, with `fixed top left`, `fixed center`, `fixed bottom right`, and `stretch to fit` options.
 56. Updated `docs/USER_MANUAL.md` with a screen-plus-block background image example and documented block background image transparency and placement metadata.
+
+58. Expanded `.github/copilot-instructions.md` with repository-specific onboarding guidance for Copilot cloud agents, including project layout, validation, setup secrets, manual app usage, and onboarding workarounds.
