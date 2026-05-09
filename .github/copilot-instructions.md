@@ -55,7 +55,7 @@
 
 - After completing any set of code changes, write a summary of those changes to `change_summary.md` in the repository root.
 - If the current branch already has a `change_summary.md`, append the new summary to the end of the file.
-- Before checking in, rename `change_summary.md` to `change_summary_<branch-name>.md`; replace forward slashes in branch names with underscores and leave other valid characters such as hyphens unchanged. For example, `feature/add` becomes `change_summary_feature_add.md`; the current branch `copilot/add-copilot-instructions-file` uses `change_summary_copilot_add-copilot-instructions-file.md`.
+- Before checking in, rename `change_summary.md` to `change_summary_<sanitized-branch-name>.md`; replace non-alphanumeric branch-name separators such as forward slashes and hyphens with underscores. For example, `feature/add` becomes `change_summary_feature_add.md`; the current branch `copilot/add-copilot-instructions-file` uses `change_summary_copilot_add_copilot_instructions_file.md`.
 
 ## Onboarding notes and workarounds
 
