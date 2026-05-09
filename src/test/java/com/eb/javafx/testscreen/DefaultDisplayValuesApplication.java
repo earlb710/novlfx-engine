@@ -435,19 +435,28 @@ public final class DefaultDisplayValuesApplication {
     }
 
     private static Component editableField(ApplicationConfigField field, Component messageParent) {
-        if (field.editorType() == ApplicationConfigFieldEditorType.BOOLEAN) {
-            JCheckBox checkBox = new JCheckBox();
-            checkBox.setSelected(Boolean.parseBoolean(field.value()));
-            return checkBox;
-        }
-        JTextField textField = new JTextField(field.value());
         return switch (field.editorType()) {
-            case BOOLEAN -> throw new IllegalStateException("Boolean fields should use checkbox editors.");
-            case TEXT -> textField;
-            case COLOR -> colorSelector(textField);
-            case FILE -> fileSelector(textField, "Browse...", () -> choosePath(textField, JFileChooser.FILES_ONLY, messageParent));
-            case DIRECTORY -> fileSelector(textField, "Browse...", () -> choosePath(textField, JFileChooser.DIRECTORIES_ONLY, messageParent));
+            case BOOLEAN -> booleanField(field.value());
+            case TEXT -> new JTextField(field.value());
+            case COLOR -> {
+                JTextField textField = new JTextField(field.value());
+                yield colorSelector(textField);
+            }
+            case FILE -> {
+                JTextField textField = new JTextField(field.value());
+                yield fileSelector(textField, "Browse...", () -> choosePath(textField, JFileChooser.FILES_ONLY, messageParent));
+            }
+            case DIRECTORY -> {
+                JTextField textField = new JTextField(field.value());
+                yield fileSelector(textField, "Browse...", () -> choosePath(textField, JFileChooser.DIRECTORIES_ONLY, messageParent));
+            }
         };
+    }
+
+    private static JCheckBox booleanField(String value) {
+        JCheckBox checkBox = new JCheckBox();
+        checkBox.setSelected(Boolean.parseBoolean(value));
+        return checkBox;
     }
 
     private static List<ApplicationConfigField> editedApplicationConfigFields(Map<ApplicationConfigField, Component> editors) {
@@ -561,7 +570,10 @@ public final class DefaultDisplayValuesApplication {
             try {
                 Path path = Path.of(currentValue);
                 Path normalized = path.toAbsolutePath().normalize();
-                return chooserStartDirectory(normalized);
+                Path chooserPath = chooserStartDirectory(normalized);
+                if (chooserPath.toFile().exists()) {
+                    return chooserPath;
+                }
             } catch (RuntimeException ignored) {
                 // Fall through to current directory.
             }
