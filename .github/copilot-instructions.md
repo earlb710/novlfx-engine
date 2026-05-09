@@ -46,6 +46,7 @@
 - `.github/workflows/copilot-setup-steps.yml` prepares Java 17 and warms Gradle dependencies with `compileJava testClasses`.
 - The setup workflow uses the `copilot` environment and minimal `contents: read` permissions.
 - The setup workflow expects an `ALTLIFE_TOKEN` environment secret only to configure Git access to the private AltLife source/application repository referenced by the setup workflow.
+- Use the least privilege needed for that secret: read-only Contents access to the private repository for fine-grained tokens, or the minimum private-repository read scope available for the token type.
 - Do not hard-code `ALTLIFE_TOKEN` or any other token.
 - AltLife is a related private application repository used for setup-time access/context, while this repository should keep reusable engine code generic and free of application-specific content.
 - If setup fails because `ALTLIFE_TOKEN` is missing, configure it as a masked GitHub environment secret under Settings > Environments > `copilot`, then re-run the setup workflow.
