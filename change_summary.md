@@ -18,3 +18,5 @@ Capped Swing-based test/support windows and the screen-designer preview/test har
 
 18. Added `BlockBackgroundImageTestScreen`, a manual JavaFX test screen that renders a 50% transparent `circle-background.svg` behind content and two block sections using 50% transparent `circle2-background.svg` backgrounds.
 19. Added `BlockBackgroundImageTestScreenTest` to verify the layout model metadata and expose the new manual launcher entry from the test screen app.
+20. Updated `BlockBackgroundImageTestScreen` so each block now includes preview buttons, uses white in-block text, and applies a thicker, rounder border treatment.
+21. Expanded `BlockBackgroundImageTestScreenTest` to verify the richer block metadata and that the rendered layout now includes block action buttons.
