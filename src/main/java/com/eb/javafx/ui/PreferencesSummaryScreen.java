@@ -152,12 +152,14 @@ public final class PreferencesSummaryScreen {
             double currentVolume,
             VolumeSaver volumeSaver) {
         Label label = new Label(labelText);
+        label.getStyleClass().add(ScreenShell.SCREEN_TEXT_STYLE_CLASS);
         Slider slider = new Slider(0, VOLUME_PERCENT_SCALE, currentVolume * VOLUME_PERCENT_SCALE);
         slider.setShowTickLabels(true);
         slider.setShowTickMarks(true);
         slider.setMajorTickUnit(25);
         slider.setBlockIncrement(10);
         Label value = new Label(percentLabel(currentVolume));
+        value.getStyleClass().add(ScreenShell.SCREEN_VALUE_STYLE_CLASS);
         slider.valueProperty().addListener((observable, previous, current) -> {
             double updatedVolume = current.doubleValue() / VOLUME_PERCENT_SCALE;
             value.setText(percentLabel(updatedVolume));
@@ -170,6 +172,7 @@ public final class PreferencesSummaryScreen {
 
     private static HBox themeSelectionRow(RouteContext context) {
         Label label = new Label("Theme");
+        label.getStyleClass().add(ScreenShell.SCREEN_TEXT_STYLE_CLASS);
         ComboBox<ThemeChoice> comboBox = new ComboBox<>();
         comboBox.getItems().addAll(themeChoices());
         comboBox.setConverter(new StringConverter<>() {
@@ -200,6 +203,7 @@ public final class PreferencesSummaryScreen {
 
     private static HBox footerDisplayRow(RouteContext context) {
         Label label = new Label("Footer shortcuts");
+        label.getStyleClass().add(ScreenShell.SCREEN_TEXT_STYLE_CLASS);
         ComboBox<FooterShortcutDisplay> comboBox = new ComboBox<>();
         comboBox.getItems().addAll(FooterShortcutDisplay.values());
         comboBox.setConverter(new StringConverter<>() {

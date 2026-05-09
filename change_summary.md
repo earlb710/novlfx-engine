@@ -30,4 +30,7 @@ Expanded `UiThemeTest` to cover the new themed selection and combo-box styleshee
 30. Added a default-on `new` checkbox before the manual filter on `TestScreenApplication` so the test tree shows only new tests until the filter is cleared.
 31. Added shared test-screen filtering logic to combine the new-test and manual-only filters, and expanded `TestScreenApplicationTest` to cover the filter combinations and checkbox defaults.
 32. Added a shared JavaFX tooltip factory with a shorter show delay and switched scene choice tooltips plus footer/preferences tooltips to use it.
+33. Expanded `UiTheme` and `default.css` with semantic text-role colors for subtitles, body text, highlighted text, values, and highlighted-text hover states while keeping screen, block, and button palette tokens theme-driven.
+34. Added shared `ScreenShell` semantic style-class hooks for screen/layout highlighted text and values, and applied the text/value roles to shared `PreferencesSummaryScreen` labels.
+35. Extended focused theme and preferences tests to cover the new semantic theme roles and shared styling hooks.
 

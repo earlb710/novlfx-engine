@@ -54,6 +54,10 @@ public final class ScreenShell {
     public static final String SCREEN_ROOT_STYLE_CLASS = "screen-root";
     public static final String SCREEN_TITLE_STYLE_CLASS = "screen-title";
     public static final String SCREEN_PANEL_STYLE_CLASS = "screen-panel";
+    public static final String SCREEN_SUBTITLE_STYLE_CLASS = "screen-subtitle";
+    public static final String SCREEN_TEXT_STYLE_CLASS = "screen-text";
+    public static final String SCREEN_TEXT_HIGHLIGHT_STYLE_CLASS = "screen-text-highlight";
+    public static final String SCREEN_VALUE_STYLE_CLASS = "screen-value";
     public static final String SCREEN_BACKGROUND_SVG_STYLE_CLASS = "screen-background-svg";
     public static final String SCREEN_FOOTER_BAR_STYLE_CLASS = "screen-footer-bar";
     public static final String SCREEN_FOOTER_OPTION_STYLE_CLASS = "screen-footer-option";
@@ -83,6 +87,8 @@ public final class ScreenShell {
     public static final String LAYOUT_SECTION_STYLE_CLASS = "layout-section";
     public static final String LAYOUT_SECTION_TITLE_STYLE_CLASS = "layout-section-title";
     public static final String LAYOUT_SECTION_ROW_STYLE_CLASS = "layout-section-row";
+    public static final String LAYOUT_TEXT_HIGHLIGHT_STYLE_CLASS = "layout-text-highlight";
+    public static final String LAYOUT_VALUE_STYLE_CLASS = "layout-value";
     public static final String LAYOUT_ACTION_ROW_STYLE_CLASS = "layout-action-row";
     public static final String LAYOUT_PRIMARY_ACTION_STYLE_CLASS = "layout-primary-action";
     public static final String LAYOUT_SECONDARY_ACTION_STYLE_CLASS = "layout-secondary-action";

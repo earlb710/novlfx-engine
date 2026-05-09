@@ -44,6 +44,11 @@ final class UiThemeTest {
         assertTrue(theme.stylesheetContent().contains("-fx-background-color: #faf6ff;"));
         assertTrue(theme.stylesheetContent().contains("-fx-selection-bar: #775fc1;"));
         assertTrue(theme.stylesheetContent().contains(".combo-box-popup .list-cell:selected"));
+        assertTrue(theme.stylesheetContent().contains(".screen-text-highlight"));
+        assertTrue(theme.stylesheetContent().contains(".screen-value"));
+        assertTrue(theme.stylesheetContent().contains(".screen-text"));
+        assertTrue(theme.stylesheetContent().contains("-fx-text-fill: #775fc1;"));
+        assertTrue(theme.stylesheetContent().contains("-fx-text-fill: #5b5076;"));
         assertTrue(theme.stylesheetContent().contains("-fx-text-fill: #000000;"));
     }
 

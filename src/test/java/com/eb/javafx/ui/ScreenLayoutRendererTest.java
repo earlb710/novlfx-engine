@@ -20,6 +20,8 @@ final class ScreenLayoutRendererTest {
         assertTrue(ScreenShell.LAYOUT_SECONDARY_ACTION_STYLE_CLASS.startsWith("layout-"));
         assertTrue(ScreenShell.LAYOUT_CARD_STYLE_CLASS.startsWith("layout-"));
         assertTrue(ScreenShell.LAYOUT_FORM_STYLE_CLASS.startsWith("layout-"));
+        assertTrue(ScreenShell.LAYOUT_TEXT_HIGHLIGHT_STYLE_CLASS.startsWith("layout-"));
+        assertTrue(ScreenShell.LAYOUT_VALUE_STYLE_CLASS.startsWith("layout-"));
     }
 
     @Test

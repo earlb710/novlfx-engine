@@ -24,6 +24,10 @@
     -fx-text-fill: #66c1e0;
 }
 
+.screen-subtitle {
+    -fx-text-fill: #cbd5e1;
+}
+
 .screen-panel {
     -fx-background-color: rgba(10, 20, 38, 0.85);
     -fx-border-color: #0099cc;
@@ -82,6 +86,21 @@
 .scene-choice-state,
 .scene-effect-preview {
     -fx-text-fill: #cbd5e1;
+}
+
+.screen-text-highlight,
+.layout-text-highlight {
+    -fx-text-fill: #66c1e0;
+}
+
+.screen-text-highlight:hover,
+.layout-text-highlight:hover {
+    -fx-text-fill: #ffffff;
+}
+
+.screen-value,
+.layout-value {
+    -fx-text-fill: #bfd3ec;
 }
 
 .layout-content,
@@ -145,6 +164,10 @@
 .label {
     -fx-text-fill: #dbeafe;
     -fx-font-size: 18px;
+}
+
+.screen-text {
+    -fx-text-fill: #dbeafe;
 }
 
 .button {

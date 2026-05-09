@@ -17,6 +17,7 @@ import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
+import javafx.scene.Node;
 import javafx.stage.Stage;
 import org.junit.jupiter.api.Test;
 
@@ -155,6 +156,32 @@ final class PreferencesSummaryScreenTest {
         });
     }
 
+    @Test
+    void preferencesRowsUseSemanticThemeTextAndValueClasses() throws Exception {
+        assumeTrue(!GraphicsEnvironment.isHeadless(), "JavaFX control test requires a display.");
+        runOnJavaFxThread(() -> {
+            PreferencesService preferencesService = new PreferencesService();
+            preferencesService.load();
+
+            UiTheme uiTheme = new UiTheme();
+            uiTheme.initialize(preferencesService);
+
+            Stage stage = new Stage();
+            SceneRouter router = createManualRouter(stage, preferencesService, uiTheme);
+            Scene scene = router.open(SceneRouter.PREFERENCES_ROUTE);
+            stage.setScene(scene);
+
+            Label masterVolumeLabel = findLabel((BorderPane) scene.getRoot(), "Master volume");
+            Label masterVolumeValue = findLabel((BorderPane) scene.getRoot(), "100%");
+            Label themeLabel = findLabel((BorderPane) scene.getRoot(), "Theme");
+
+            assertTrue(masterVolumeLabel.getStyleClass().contains(ScreenShell.SCREEN_TEXT_STYLE_CLASS));
+            assertTrue(themeLabel.getStyleClass().contains(ScreenShell.SCREEN_TEXT_STYLE_CLASS));
+            assertTrue(masterVolumeValue.getStyleClass().contains(ScreenShell.SCREEN_VALUE_STYLE_CLASS));
+            stage.close();
+        });
+    }
+
     private static SceneRouter createManualRouter(Stage stage, PreferencesService preferencesService, UiTheme uiTheme) {
         ContentRegistry contentRegistry = new ContentRegistry();
         contentRegistry.registerBaseContent();
@@ -188,6 +215,21 @@ final class PreferencesSummaryScreenTest {
             }
         }
         return comboBoxes;
+    }
+
+    private static Label findLabel(Pane pane, String text) {
+        for (Node child : pane.getChildren()) {
+            if (child instanceof Label label && text.equals(label.getText())) {
+                return label;
+            }
+            if (child instanceof Pane childPane) {
+                Label found = findLabel(childPane, text);
+                if (found != null) {
+                    return found;
+                }
+            }
+        }
+        throw new AssertionError("Missing label: " + text);
     }
 
     private static void runOnJavaFxThread(Runnable action) throws Exception {
