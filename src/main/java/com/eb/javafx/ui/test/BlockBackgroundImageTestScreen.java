@@ -27,6 +27,7 @@ public final class BlockBackgroundImageTestScreen {
     static final String BLOCK_TEXT_COLOR = "#ffffff";
     static final String BACKGROUND_TRANSPARENCY = "0.5";
     static final double BACKGROUND_OPACITY = 0.5;
+    private static final String TRANSPARENT_BACKGROUND_STYLE = "-fx-background-color: transparent;";
 
     private BlockBackgroundImageTestScreen() {
     }
@@ -43,6 +44,10 @@ public final class BlockBackgroundImageTestScreen {
         Region background = createBackgroundLayer(root);
         BorderPane content = ScreenLayoutRenderer.createRoot(createModel(title));
         content.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
+        content.setStyle(TRANSPARENT_BACKGROUND_STYLE);
+        if (content.getCenter() instanceof Region contentPanel) {
+            contentPanel.setStyle(TRANSPARENT_BACKGROUND_STYLE);
+        }
         root.getChildren().addAll(background, content);
         return root;
     }
@@ -144,6 +149,7 @@ public final class BlockBackgroundImageTestScreen {
                 SCREEN_BACKGROUND_RESOURCE,
                 BACKGROUND_OPACITY,
                 Color.web(SCREEN_BACKGROUND_COLOR));
+        background.setUserData(SCREEN_BACKGROUND_RESOURCE);
         background.prefWidthProperty().bind(root.widthProperty());
         background.prefHeightProperty().bind(root.heightProperty());
         background.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);

@@ -76,7 +76,10 @@ final class BlockBackgroundImageTestScreenTest {
             ImageView screenBackgroundImage = assertInstanceOf(ImageView.class, background.getChildrenUnmodifiable().get(0));
 
             assertTrue(background.getStyleClass().contains(ScreenShell.SCREEN_BACKGROUND_SVG_STYLE_CLASS));
+            assertEquals(BlockBackgroundImageTestScreen.SCREEN_BACKGROUND_RESOURCE, background.getUserData());
             assertEquals(BlockBackgroundImageTestScreen.BACKGROUND_OPACITY, screenBackgroundImage.getOpacity(), 0.0001);
+            assertTrue(content.getStyle().contains("transparent"));
+            assertTrue(assertInstanceOf(Region.class, content.getCenter()).getStyle().contains("transparent"));
 
             List<StackPane> layeredSections = new ArrayList<>();
             collectNodes(content, StackPane.class, layeredSections);
@@ -149,10 +152,7 @@ final class BlockBackgroundImageTestScreenTest {
     }
 
     private static boolean hasRoundedBackgroundClip(StackPane stackPane) {
-        if (!(stackPane.getChildren().get(0) instanceof Region region)) {
-            return false;
-        }
-        if (!(region.getClip() instanceof Rectangle clip)) {
+        if (!(stackPane.getClip() instanceof Rectangle clip)) {
             return false;
         }
         return clip.getArcWidth() > 0
@@ -160,16 +160,13 @@ final class BlockBackgroundImageTestScreenTest {
     }
 
     private static boolean pillClipMatchesRegionSize(StackPane stackPane) {
-        if (!(stackPane.getChildren().get(0) instanceof Region region)) {
+        if (!(stackPane.getClip() instanceof Rectangle clip)) {
             return false;
         }
-        if (!(region.getClip() instanceof Rectangle clip)) {
-            return false;
-        }
-        return Math.abs(clip.getWidth() - region.getWidth()) < 0.0001
-                && Math.abs(clip.getHeight() - region.getHeight()) < 0.0001
-                && Math.abs(clip.getArcWidth() - region.getWidth()) < 0.0001
-                && Math.abs(clip.getArcHeight() - region.getHeight()) < 0.0001;
+        return Math.abs(clip.getWidth() - stackPane.getWidth()) < 0.0001
+                && Math.abs(clip.getHeight() - stackPane.getHeight()) < 0.0001
+                && Math.abs(clip.getArcWidth() - stackPane.getWidth()) < 0.0001
+                && Math.abs(clip.getArcHeight() - stackPane.getHeight()) < 0.0001;
     }
 
     private static void runOnJavaFxThread(Runnable action) throws Exception {

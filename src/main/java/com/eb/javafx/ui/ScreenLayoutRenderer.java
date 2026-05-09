@@ -226,6 +226,7 @@ public final class ScreenLayoutRenderer {
         StackPane layeredSection = new StackPane(backgroundLayer, content);
         StackPane.setAlignment(content, Pos.TOP_LEFT);
         configureSectionRegion(layeredSection, section, styleClass);
+        applyBackgroundImageClip(layeredSection, section.metadata());
         return layeredSection;
     }
 
@@ -375,8 +376,29 @@ public final class ScreenLayoutRenderer {
         }
         return new BackgroundImageLayer(
                 loadBackgroundImage(source),
-                backgroundImageOpacity(metadata.get(BACKGROUND_IMAGE_TRANSPARENCY_KEY)),
-                metadata.get("borderCorner"));
+                backgroundImageOpacity(metadata.get(BACKGROUND_IMAGE_TRANSPARENCY_KEY)));
+    }
+
+    private static void applyBackgroundImageClip(Region clippedRegion, Map<String, String> metadata) {
+        String borderCorner = metadata.get("borderCorner");
+        if (borderCorner == null || borderCorner.isBlank() || "square".equalsIgnoreCase(borderCorner)) {
+            clippedRegion.setClip(null);
+            return;
+        }
+        Rectangle clip = new Rectangle();
+        clip.widthProperty().bind(clippedRegion.widthProperty());
+        clip.heightProperty().bind(clippedRegion.heightProperty());
+        if ("rounded".equalsIgnoreCase(borderCorner)) {
+            clip.setArcWidth(ROUNDED_BORDER_CLIP_ARC);
+            clip.setArcHeight(ROUNDED_BORDER_CLIP_ARC);
+        } else if ("pill".equalsIgnoreCase(borderCorner)) {
+            clip.arcWidthProperty().bind(clippedRegion.widthProperty());
+            clip.arcHeightProperty().bind(clippedRegion.heightProperty());
+        } else {
+            clippedRegion.setClip(null);
+            return;
+        }
+        clippedRegion.setClip(clip);
     }
 
     private static double backgroundImageOpacity(String transparency) {
@@ -586,13 +608,9 @@ public final class ScreenLayoutRenderer {
     /** Transparent section background layer that stretches a loaded image to the region bounds. */
     private static final class BackgroundImageLayer extends Region {
         private final ImageView imageView;
-        private final String borderCorner;
-        private final Rectangle clipShape;
 
-        private BackgroundImageLayer(Image image, double opacity, String borderCorner) {
+        private BackgroundImageLayer(Image image, double opacity) {
             imageView = new ImageView(image);
-            this.borderCorner = borderCorner == null ? "" : borderCorner.trim().toLowerCase();
-            clipShape = requiresClip(this.borderCorner) ? new Rectangle() : null;
             setMinSize(0, 0);
             setMouseTransparent(true);
             setFocusTraversable(false);
@@ -601,7 +619,6 @@ public final class ScreenLayoutRenderer {
             imageView.setPreserveRatio(false);
             imageView.setSmooth(true);
             imageView.setOpacity(opacity);
-            setClip(clipShape);
             getChildren().add(imageView);
         }
 
@@ -612,7 +629,6 @@ public final class ScreenLayoutRenderer {
             imageView.setFitWidth(width);
             imageView.setFitHeight(height);
             imageView.resizeRelocate(0, 0, width, height);
-            updateClip(width, height);
         }
 
         @Override
@@ -623,25 +639,6 @@ public final class ScreenLayoutRenderer {
         @Override
         protected double computePrefHeight(double width) {
             return 0;
-        }
-
-        private void updateClip(double width, double height) {
-            if (clipShape == null) {
-                return;
-            }
-            clipShape.setWidth(width);
-            clipShape.setHeight(height);
-            if ("pill".equals(borderCorner)) {
-                clipShape.setArcWidth(width);
-                clipShape.setArcHeight(height);
-                return;
-            }
-            clipShape.setArcWidth(ROUNDED_BORDER_CLIP_ARC);
-            clipShape.setArcHeight(ROUNDED_BORDER_CLIP_ARC);
-        }
-
-        private static boolean requiresClip(String borderCorner) {
-            return "rounded".equals(borderCorner) || "pill".equals(borderCorner);
         }
     }
 }
