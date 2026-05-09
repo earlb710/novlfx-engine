@@ -33,6 +33,7 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.stage.Screen;
+import javafx.util.Duration;
 
 import java.net.URL;
 import java.io.IOException;
@@ -100,6 +101,7 @@ public final class ScreenShell {
     private static final double DEFAULT_FOOTER_OPACITY = 0.5;
     private static final double FULL_FOOTER_OPACITY = 1.0;
     private static final double DEFAULT_FOOTER_BACKGROUND_TRANSPARENCY = 0.5;
+    private static final Duration DEFAULT_TOOLTIP_SHOW_DELAY = Duration.millis(150);
     private static final Color DEFAULT_FOOTER_BACKGROUND_COLOR = Color.rgb(10, 20, 38);
     private static final Color DEFAULT_FOOTER_BORDER_COLOR = Color.web("#143869");
     private static final CornerRadii FOOTER_CORNER_RADII = new CornerRadii(999);
@@ -768,7 +770,7 @@ public final class ScreenShell {
             return;
         }
         label.setAccessibleHelp(tooltip);
-        Tooltip tooltipNode = new Tooltip(tooltip);
+        Tooltip tooltipNode = createTooltip(tooltip);
         Tooltip.install(label, tooltipNode);
         if (Platform.isFxApplicationThread()) {
             label.setTooltip(tooltipNode);
@@ -784,6 +786,12 @@ public final class ScreenShell {
     public static boolean isFooterOptionEnabled(Label label) {
         Validation.requireNonNull(label, "Footer label is required.");
         return label.getUserData() instanceof FooterOption option && option.enabled();
+    }
+
+    public static Tooltip createTooltip(String text) {
+        Tooltip tooltip = new Tooltip(text);
+        tooltip.setShowDelay(DEFAULT_TOOLTIP_SHOW_DELAY);
+        return tooltip;
     }
 
     private static boolean isCompactFooterWidth(double width, double compactWidth) {

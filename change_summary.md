@@ -27,3 +27,7 @@ Expanded `UiThemeTest` to cover the new themed selection and combo-box styleshee
 27. Updated footer tooltip installation so footer labels keep real JavaFX tooltips without relying on disabled label controls, allowing disabled-looking footer options to remain hoverable.
 28. Updated preferences theme changes to rebuild the preferences scene at the current scene size so changing theme colors does not resize the window.
 29. Changed default theme text colors so pastel variants use black label text and dark variants use white label text, and expanded tests to cover the new tooltip, sizing, and text color behavior.
+30. Added a default-on `new` checkbox before the manual filter on `TestScreenApplication` so the test tree shows only new tests until the filter is cleared.
+31. Added shared test-screen filtering logic to combine the new-test and manual-only filters, and expanded `TestScreenApplicationTest` to cover the filter combinations and checkbox defaults.
+32. Added a shared JavaFX tooltip factory with a shorter show delay and switched scene choice tooltips plus footer/preferences tooltips to use it.
+
