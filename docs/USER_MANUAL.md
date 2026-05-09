@@ -492,14 +492,58 @@ When editing manually:
 The designer and JSON format currently expose these style-oriented metadata keys:
 
 - screen metadata: `fontFamily`, `fontSize`, `fontStyle`, `color`, `backgroundColor`, `borderStyle`, `borderCorner`, `borderThickness`, `borderColor`, `dialog`, `dismissOnClickOutside`, `dismissOnEscape`
-- block metadata: `fontFamily`, `fontSize`, `fontStyle`, `color`, `backgroundColor`, `backgroundImage`, `backgroundImageTransparency`, `transparency`, `borderStyle`, `borderCorner`, `borderThickness`, `borderColor`
+- block metadata: `fontFamily`, `fontSize`, `fontStyle`, `color`, `backgroundColor`, `backgroundImage`, `backgroundImageTransparency`, `backgroundImagePlacement`, `transparency`, `borderStyle`, `borderCorner`, `borderThickness`, `borderColor`
 - item metadata: `displayRole`, `fontFamily`, `fontSize`, `fontStyle`, `color`, `backgroundColor`, `transparency`, `labelFontFamily`, `labelFontSize`, `labelFontStyle`, `labelColor`, `eventName`, `actionEvent`
 
 These keys are string-valued metadata entries in the saved JSON. Leave a key out to inherit the bundled default display configuration from `src/main/resources/com/eb/javafx/ui/display-defaults.json`, or from any edited preview defaults currently loaded in the screen designer.
 
-`fontSize` accepts a number or JavaFX-style size token such as `20`, `20px`, `16pt`, or `1.2em`. `fontStyle` supports `normal`, `bold`, `italic`, and `bold italic`. `color`, `backgroundColor`, and `borderColor` accept simple JavaFX color tokens such as hex colors or named colors. `transparency` is stored as a value from `0` to `1`, where `0` is fully opaque and larger values increase transparency. `backgroundImage` can be a classpath resource path, file URI, or filesystem path; SVG sources are rasterized for preview/rendering and stretched to fill the block bounds like raster backgrounds. `backgroundImageTransparency` uses the same `0` to `1` scale as `transparency`, but applies only to the block background image layer. `borderStyle` supports `solid`, `dashed`, `dotted`, or `none`; `borderCorner` supports `square`, `rounded`, or `pill`; `borderThickness` accepts the same kind of numeric tokens as `fontSize`. The generic layout renderer currently applies supported screen, block, and item metadata consistently in preview/rendered layout output. Label-specific keys are intended for field-style items, are ignored by non-field items, and are available for future renderer support or application-owned rendering code that wants label-specific styling.
+`fontSize` accepts a number or JavaFX-style size token such as `20`, `20px`, `16pt`, or `1.2em`. `fontStyle` supports `normal`, `bold`, `italic`, and `bold italic`. `color`, `backgroundColor`, and `borderColor` accept simple JavaFX color tokens such as hex colors or named colors. `transparency` is stored as a value from `0` to `1`, where `0` is fully opaque and larger values increase transparency. `backgroundImage` can be a classpath resource path, file URI, or filesystem path; SVG sources are rasterized for preview/rendering. `backgroundImageTransparency` uses the same `0` to `1` scale as `transparency`, but applies only to the block background image layer. `backgroundImagePlacement` supports `fixed top left`, `fixed center`, `fixed bottom right`, or `stretch to fit`; the fixed modes keep the rasterized image at its own size and anchor it within the block, while `stretch to fit` fills the block bounds. `borderStyle` supports `solid`, `dashed`, `dotted`, or `none`; `borderCorner` supports `square`, `rounded`, or `pill`; `borderThickness` accepts the same kind of numeric tokens as `fontSize`. The generic layout renderer currently applies supported screen, block, and item metadata consistently in preview/rendered layout output. Label-specific keys are intended for field-style items, are ignored by non-field items, and are available for future renderer support or application-owned rendering code that wants label-specific styling.
 
 To save and load manually-authored screen designs in code, use `ScreenDesignJson.load(path)` and `ScreenDesignJson.save(path, design)`. Save output intentionally excludes temporary preview items, so only the ordered `items` array is persisted in JSON.
+
+### Example: screen and block background images
+
+Screen background images are application-owned. A common pattern is to place a background region behind the engine-rendered layout and make the layout root transparent so the authored art stays visible:
+
+```java
+StackPane root = new StackPane();
+Region screenBackground = ScreenShell.backgroundSvg(
+        "/com/eb/javafx/images/svg/circle-background.svg",
+        0.5,
+        Color.web("#08111f"));
+BorderPane content = ScreenLayoutRenderer.createRoot(model);
+content.setStyle("-fx-background-color: transparent;");
+if (content.getCenter() instanceof Region contentPanel) {
+    contentPanel.setStyle("-fx-background-color: transparent;");
+}
+root.getChildren().addAll(screenBackground, content);
+```
+
+Block background images are metadata-driven. Add `backgroundImage`, `backgroundImageTransparency`, and (optionally) `backgroundImagePlacement` to the block metadata:
+
+```json
+{
+  "id": "left-block",
+  "title": "Left block",
+  "layoutType": null,
+  "parentBlockId": null,
+  "conditions": [],
+  "styleClass": "block-background-image-demo-section",
+  "metadata": {
+    "backgroundColor": "#203a67",
+    "transparency": "0.15",
+    "backgroundImage": "/com/eb/javafx/images/svg/circle2-background.svg",
+    "backgroundImageTransparency": "0.5",
+    "backgroundImagePlacement": "fixed center",
+    "borderStyle": "solid",
+    "borderCorner": "rounded",
+    "borderThickness": "3",
+    "borderColor": "#d7e7ff"
+  }
+}
+```
+
+Use `stretch to fit` when the image should fill the entire block. Use `fixed top left`, `fixed center`, or `fixed bottom right` when the image should keep its rasterized size and stay pinned to a specific anchor inside the clipped block.
 
 ### Editing a screen in the screen designer app
 
@@ -533,7 +577,7 @@ The management launcher also includes **Reloadable JSON Screen**, which opens `e
 The property editor adapts to the selected item type:
 
 - screen nodes expose screen id, title, layout type, font family, font size/style, text color, background color, border attributes, dialog/dismiss preview hints, and an extra metadata editor for non-exposed keys
-- block nodes expose block id, title, layout type, parent block, style class, conditions, font family, font size/style, text color, background color, optional background image plus image transparency, transparency, border attributes, and an extra metadata editor for non-exposed keys
+- block nodes expose block id, title, layout type, parent block, style class, conditions, font family, font size/style, text color, background color, optional background image plus image transparency/placement, transparency, border attributes, and an extra metadata editor for non-exposed keys
 - field-style items expose block target, item id, style class, type, sequence, label, current value, editable, display role, item font family/size/style/color/background/transparency, label font family/size/style/color, and an extra metadata editor for non-exposed keys
 - non-field items hide label/editable controls and only expose the applicable content plus style class, sequence, display role, item font family/size/style/color/background/transparency, and extra metadata
 - `TEXT_AREA` and `MULTI_LINE_FIELD` use a multiline content editor

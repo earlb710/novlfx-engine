@@ -23,6 +23,7 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.scene.shape.Rectangle;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.Window;
@@ -45,6 +46,8 @@ import java.util.regex.Pattern;
 public final class ScreenLayoutRenderer {
     private static final double SECTION_SPACING = 8;
     private static final double REGION_SPACING = 12;
+    // Rectangle arc values are diameters, so this matches the 6px rounded border radius emitted by appendBorderRadius.
+    private static final double ROUNDED_BORDER_ARC_DIAMETER = 12;
     private static final Pattern FONT_SIZE_PATTERN = Pattern.compile("\\d+(\\.\\d+)?(px|pt|em)?");
     private static final Pattern DECIMAL_PATTERN = Pattern.compile("\\d*\\.?\\d+");
     private static final Pattern FONT_FAMILY_PATTERN = Pattern.compile("[\\p{Alnum} ._\\-]+");
@@ -55,6 +58,7 @@ public final class ScreenLayoutRenderer {
     private static final String ACTION_VALUE_KEY = "actionValue";
     static final String BACKGROUND_IMAGE_KEY = "backgroundImage";
     static final String BACKGROUND_IMAGE_TRANSPARENCY_KEY = "backgroundImageTransparency";
+    static final String BACKGROUND_IMAGE_PLACEMENT_KEY = "backgroundImagePlacement";
     static final String DIALOG_KEY = "dialog";
     static final String DISMISS_ON_CLICK_OUTSIDE_KEY = "dismissOnClickOutside";
     static final String DISMISS_ON_ESCAPE_KEY = "dismissOnEscape";
@@ -215,14 +219,20 @@ public final class ScreenLayoutRenderer {
         if (!section.childSections().isEmpty()) {
             content.getChildren().add(childSectionContainer(section, eventBus));
         }
-        Node backgroundLayer = backgroundImageLayer(section.metadata());
+        Region backgroundLayer = backgroundImageLayer(section.metadata());
         if (backgroundLayer == null) {
             configureSectionRegion(content, section, styleClass);
             return content;
         }
-        StackPane layeredSection = new StackPane(backgroundLayer, content);
+        StackPane sectionSurface = new StackPane(backgroundLayer, content);
+        sectionSurface.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
         StackPane.setAlignment(content, Pos.TOP_LEFT);
-        configureSectionRegion(layeredSection, section, styleClass);
+        applySurfaceStyle(sectionSurface, section.metadata());
+        applyBackgroundImageClip(sectionSurface, section.metadata());
+
+        StackPane layeredSection = new StackPane(sectionSurface);
+        layeredSection.setPadding(borderInsets(section.metadata()));
+        configureSectionRegion(layeredSection, section, styleClass, true);
         return layeredSection;
     }
 
@@ -342,9 +352,13 @@ public final class ScreenLayoutRenderer {
     }
 
     static Image loadBackgroundImage(String source) {
+        return loadBackgroundImage(source, BackgroundImagePlacement.STRETCH_TO_FIT);
+    }
+
+    private static Image loadBackgroundImage(String source, BackgroundImagePlacement placement) {
         URL url = resolveBackgroundImageUrl(source);
         if (isSvgSource(source, url)) {
-            return loadSvgBackgroundImage(source, url);
+            return loadSvgBackgroundImage(source, url, placement);
         }
         Image image = new Image(url.toExternalForm(), false);
         if (image.isError()) {
@@ -354,6 +368,10 @@ public final class ScreenLayoutRenderer {
     }
 
     private static void configureSectionRegion(Region region, ScreenLayoutSection section, String styleClass) {
+        configureSectionRegion(region, section, styleClass, false);
+    }
+
+    private static void configureSectionRegion(Region region, ScreenLayoutSection section, String styleClass, boolean hideBackground) {
         region.setId(section.id());
         region.getStyleClass().add(ScreenShell.LAYOUT_SECTION_STYLE_CLASS);
         if (styleClass != null && !styleClass.isBlank()) {
@@ -362,17 +380,67 @@ public final class ScreenLayoutRenderer {
         if (section.styleClass() != null && !section.styleClass().isBlank()) {
             region.getStyleClass().add(section.styleClass());
         }
-        applyContainerStyle(region, section.metadata(), isLayoutOnlyContainer(section));
+        applyContainerStyle(region, section.metadata(), hideBackground || isLayoutOnlyContainer(section));
     }
 
-    private static Node backgroundImageLayer(Map<String, String> metadata) {
+    private static void applySurfaceStyle(Region region, Map<String, String> metadata) {
+        StringBuilder style = new StringBuilder();
+        appendBackgroundColor(style, metadata.get("backgroundColor"));
+        appendOpacity(style, metadata.get("transparency"));
+        appendBorderRadius(style, metadata.get("borderCorner"));
+        if (!style.isEmpty()) {
+            region.setStyle(style.toString());
+        }
+    }
+
+    private static Region backgroundImageLayer(Map<String, String> metadata) {
         String source = metadata.get(BACKGROUND_IMAGE_KEY);
         if (source == null || source.isBlank()) {
             return null;
         }
+        BackgroundImagePlacement placement = backgroundImagePlacement(metadata.get(BACKGROUND_IMAGE_PLACEMENT_KEY));
         return new BackgroundImageLayer(
-                loadBackgroundImage(source),
-                backgroundImageOpacity(metadata.get(BACKGROUND_IMAGE_TRANSPARENCY_KEY)));
+                loadBackgroundImage(source, placement),
+                backgroundImageOpacity(metadata.get(BACKGROUND_IMAGE_TRANSPARENCY_KEY)),
+                placement);
+    }
+
+    private static void applyBackgroundImageClip(Region clippedRegion, Map<String, String> metadata) {
+        String borderCorner = metadata.get("borderCorner");
+        if (borderCorner == null || borderCorner.isBlank() || "square".equalsIgnoreCase(borderCorner)) {
+            clippedRegion.setClip(null);
+            return;
+        }
+        Rectangle clip = new Rectangle();
+        clip.widthProperty().bind(clippedRegion.widthProperty());
+        clip.heightProperty().bind(clippedRegion.heightProperty());
+        if ("rounded".equalsIgnoreCase(borderCorner)) {
+            clip.setArcWidth(ROUNDED_BORDER_ARC_DIAMETER);
+            clip.setArcHeight(ROUNDED_BORDER_ARC_DIAMETER);
+        } else if ("pill".equalsIgnoreCase(borderCorner)) {
+            clip.arcWidthProperty().bind(clippedRegion.widthProperty());
+            clip.arcHeightProperty().bind(clippedRegion.heightProperty());
+        } else {
+            clippedRegion.setClip(null);
+            return;
+        }
+        clippedRegion.setClip(clip);
+    }
+
+    private static Insets borderInsets(Map<String, String> metadata) {
+        String borderThickness = metadata.get("borderThickness");
+        if (borderThickness == null || borderThickness.isBlank()) {
+            return Insets.EMPTY;
+        }
+        java.util.regex.Matcher matcher = DECIMAL_PATTERN.matcher(borderThickness);
+        if (!matcher.find()) {
+            return Insets.EMPTY;
+        }
+        double thickness = Double.parseDouble(matcher.group());
+        if (thickness <= 0.0) {
+            return Insets.EMPTY;
+        }
+        return new Insets(thickness);
     }
 
     private static double backgroundImageOpacity(String transparency) {
@@ -381,6 +449,19 @@ public final class ScreenLayoutRenderer {
             return 1.0;
         }
         return opacity;
+    }
+
+    private static BackgroundImagePlacement backgroundImagePlacement(String placement) {
+        if (placement == null || placement.isBlank()) {
+            return BackgroundImagePlacement.STRETCH_TO_FIT;
+        }
+        return switch (placement.trim().toLowerCase(java.util.Locale.ROOT)) {
+            case "fixed top left" -> BackgroundImagePlacement.FIXED_TOP_LEFT;
+            case "fixed center" -> BackgroundImagePlacement.FIXED_CENTER;
+            case "fixed bottom right" -> BackgroundImagePlacement.FIXED_BOTTOM_RIGHT;
+            case "stretch to fit" -> BackgroundImagePlacement.STRETCH_TO_FIT;
+            default -> BackgroundImagePlacement.STRETCH_TO_FIT;
+        };
     }
 
     private static URL resolveBackgroundImageUrl(String source) {
@@ -420,13 +501,16 @@ public final class ScreenLayoutRenderer {
         return lowerSource.endsWith(".svg") || lowerPath.endsWith(".svg");
     }
 
-    private static Image loadSvgBackgroundImage(String source, URL url) {
+    private static Image loadSvgBackgroundImage(String source, URL url, BackgroundImagePlacement placement) {
         try (InputStream inputStream = url.openStream()) {
             VectorImage image = VectorImage.fromInputStream(inputStream);
-            // Each load creates an independent SVG document, so this mutation stays local to the background image.
-            // Background SVGs are intentionally stretched to fill their block bounds like raster backgrounds.
-            image.getSvgDocument().getDocumentElement().setAttribute("preserveAspectRatio", "none");
-            return image.toRasterImage(SVG_BACKGROUND_RASTER_SIZE, SVG_BACKGROUND_RASTER_SIZE);
+            if (placement == BackgroundImagePlacement.STRETCH_TO_FIT) {
+                // Each load creates an independent SVG document, so this mutation stays local to the background image.
+                // Stretch mode fills the block bounds like raster backgrounds.
+                image.getSvgDocument().getDocumentElement().setAttribute("preserveAspectRatio", "none");
+                return image.toRasterImage(SVG_BACKGROUND_RASTER_SIZE, SVG_BACKGROUND_RASTER_SIZE);
+            }
+            return image.toRasterImage();
         } catch (IOException exception) {
             throw new IllegalArgumentException("Failed to load SVG background image: " + source, exception);
         } catch (IllegalArgumentException | IllegalStateException exception) {
@@ -581,16 +665,20 @@ public final class ScreenLayoutRenderer {
 
     /** Transparent section background layer that stretches a loaded image to the region bounds. */
     private static final class BackgroundImageLayer extends Region {
+        private final Image image;
         private final ImageView imageView;
+        private final BackgroundImagePlacement placement;
 
-        private BackgroundImageLayer(Image image, double opacity) {
+        private BackgroundImageLayer(Image image, double opacity, BackgroundImagePlacement placement) {
+            this.image = image;
+            this.placement = placement;
             imageView = new ImageView(image);
             setMinSize(0, 0);
             setMouseTransparent(true);
             setFocusTraversable(false);
+            imageView.setManaged(false);
             imageView.setMouseTransparent(true);
             imageView.setFocusTraversable(false);
-            imageView.setPreserveRatio(false);
             imageView.setSmooth(true);
             imageView.setOpacity(opacity);
             getChildren().add(imageView);
@@ -598,9 +686,31 @@ public final class ScreenLayoutRenderer {
 
         @Override
         protected void layoutChildren() {
-            imageView.setFitWidth(getWidth());
-            imageView.setFitHeight(getHeight());
-            imageView.resizeRelocate(0, 0, getWidth(), getHeight());
+            double width = getWidth();
+            double height = getHeight();
+            if (placement == BackgroundImagePlacement.STRETCH_TO_FIT) {
+                imageView.setPreserveRatio(false);
+                imageView.setFitWidth(width);
+                imageView.setFitHeight(height);
+                imageView.resizeRelocate(0, 0, width, height);
+                return;
+            }
+            imageView.setPreserveRatio(true);
+            double imageWidth = image.getWidth();
+            double imageHeight = image.getHeight();
+            imageView.setFitWidth(imageWidth);
+            imageView.setFitHeight(imageHeight);
+            double x = switch (placement) {
+                case FIXED_CENTER -> (width - imageWidth) / 2.0;
+                case FIXED_BOTTOM_RIGHT -> width - imageWidth;
+                default -> 0.0;
+            };
+            double y = switch (placement) {
+                case FIXED_CENTER -> (height - imageHeight) / 2.0;
+                case FIXED_BOTTOM_RIGHT -> height - imageHeight;
+                default -> 0.0;
+            };
+            imageView.relocate(x, y);
         }
 
         @Override
@@ -612,5 +722,12 @@ public final class ScreenLayoutRenderer {
         protected double computePrefHeight(double width) {
             return 0;
         }
+    }
+
+    private enum BackgroundImagePlacement {
+        FIXED_TOP_LEFT,
+        FIXED_CENTER,
+        FIXED_BOTTOM_RIGHT,
+        STRETCH_TO_FIT
     }
 }
