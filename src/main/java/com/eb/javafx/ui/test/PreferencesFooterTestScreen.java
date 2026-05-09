@@ -25,7 +25,7 @@ public final class PreferencesFooterTestScreen {
     static final String DESCRIPTION_TEXT =
             "Use the footer preferences icon or Ctrl+P to open the default preferences screen.";
     static final String DETAIL_TEXT =
-            "The destination screen exposes music volume, sound volume, and theme color controls.";
+            "The destination screen exposes master/music/sound audio controls, theme color, and footer display settings.";
     static final String BACK_LABEL = "Back to main menu";
     private static final String BACK_ID = "back";
     private static final String PREFERENCES_ID = "preferences";

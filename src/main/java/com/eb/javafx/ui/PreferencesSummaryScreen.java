@@ -1,6 +1,7 @@
 package com.eb.javafx.ui;
 
 import com.eb.javafx.audio.AudioService;
+import com.eb.javafx.prefs.PreferencesService.FooterShortcutDisplay;
 import com.eb.javafx.prefs.PreferencesService;
 import com.eb.javafx.prefs.PreferencesService.ThemeFamily;
 import com.eb.javafx.prefs.PreferencesService.ThemeVariant;
@@ -9,10 +10,13 @@ import com.eb.javafx.routing.SceneRouter;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.Slider;
+import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
+import javafx.util.StringConverter;
 
 import java.util.List;
 
@@ -20,7 +24,7 @@ import java.util.List;
  * Reusable preferences route that summarizes startup preferences and exposes theme selection.
  */
 public final class PreferencesSummaryScreen {
-    private static final String BACK_LABEL = "Back to main menu";
+    private static final String CLOSE_LABEL = "Close";
     private static final double VOLUME_PERCENT_SCALE = 100.0;
 
     private PreferencesSummaryScreen() {
@@ -29,33 +33,21 @@ public final class PreferencesSummaryScreen {
     public static Scene createScene(RouteContext context) {
         PreferencesSummaryViewModel viewModel = viewModel(context);
         VBox content = new VBox(10);
-        for (PreferencesSummaryRowViewModel row : viewModel.rows()) {
-            content.getChildren().add(new Label(row.line()));
-        }
-
-        Label audioHeading = new Label("Audio");
-        audioHeading.getStyleClass().add(ScreenShell.LAYOUT_SECTION_TITLE_STYLE_CLASS);
-        audioHeading.setPadding(new Insets(8, 0, 0, 0));
-        content.getChildren().add(audioHeading);
+        content.getChildren().add(sectionHeading("Audio"));
+        content.getChildren().add(volumeRow(context, "Master volume", context.preferencesService().masterVolume(),
+                PreferencesSummaryScreen::saveMasterVolume));
         content.getChildren().add(volumeRow(context, "Music volume", context.preferencesService().musicVolume(),
                 PreferencesSummaryScreen::saveMusicVolume));
         content.getChildren().add(volumeRow(context, "Sound volume", context.preferencesService().soundVolume(),
                 PreferencesSummaryScreen::saveSoundVolume));
 
-        Label themeHeading = new Label("Theme color");
-        themeHeading.getStyleClass().add(ScreenShell.LAYOUT_SECTION_TITLE_STYLE_CLASS);
-        themeHeading.setPadding(new Insets(8, 0, 0, 0));
-        content.getChildren().add(themeHeading);
+        content.getChildren().add(sectionHeading("Theme color"));
+        content.getChildren().add(themeSelectionRow(context));
+        content.getChildren().add(sectionHeading("Footer display"));
+        content.getChildren().add(footerDisplayRow(context));
 
-        Label themeHelp = new Label("Choose one of four theme colors with dark or light pastel variants.");
-        content.getChildren().add(themeHelp);
-
-        for (ThemeFamily family : ThemeFamily.values()) {
-            content.getChildren().add(themeFamilyRow(context, family));
-        }
-
-        Button backButton = ScreenNavigation.button(context, BACK_LABEL, SceneRouter.MAIN_MENU_ROUTE);
-        content.getChildren().add(backButton);
+        Button closeButton = ScreenNavigation.button(context, CLOSE_LABEL, SceneRouter.MAIN_MENU_ROUTE);
+        content.getChildren().add(closeButton);
         return context.themedScene(ScreenShell.titled(viewModel.title(), content));
     }
 
@@ -69,24 +61,13 @@ public final class PreferencesSummaryScreen {
         return new PreferencesSummaryViewModel(
                 title,
                 List.of(
-                        new PreferencesSummaryRowViewModel("Window", preferencesService.windowWidth() + "x" + preferencesService.windowHeight()),
-                        new PreferencesSummaryRowViewModel("HUD alpha", Double.toString(preferencesService.hudAlpha())),
-                        new PreferencesSummaryRowViewModel("Say-window alpha", Double.toString(preferencesService.sayWindowAlpha())),
-                        new PreferencesSummaryRowViewModel("Show portrait", Boolean.toString(preferencesService.showPortrait())),
-                        new PreferencesSummaryRowViewModel("Cheats visible", Boolean.toString(preferencesService.cheatsVisible())),
-                        new PreferencesSummaryRowViewModel("Log stat changes", Boolean.toString(preferencesService.logStatChanges())),
-                        new PreferencesSummaryRowViewModel("Footer shortcut display", preferencesService.footerShortcutDisplay().label()),
-                        new PreferencesSummaryRowViewModel("Font family", preferencesService.fontFamily()),
-                        new PreferencesSummaryRowViewModel("Font scale", Double.toString(preferencesService.fontScale())),
+                        new PreferencesSummaryRowViewModel("Master volume", percentLabel(preferencesService.masterVolume())),
                         new PreferencesSummaryRowViewModel("Music volume", percentLabel(preferencesService.musicVolume())),
                         new PreferencesSummaryRowViewModel("Sound volume", percentLabel(preferencesService.soundVolume())),
-                        new PreferencesSummaryRowViewModel("Theme color", preferencesService.themeFamily().label()),
-                        new PreferencesSummaryRowViewModel("Theme variant", preferencesService.themeVariant().label()),
-                        new PreferencesSummaryRowViewModel("High contrast", Boolean.toString(preferencesService.highContrast())),
-                        new PreferencesSummaryRowViewModel("Reduced motion", Boolean.toString(preferencesService.reducedMotion())),
-                        new PreferencesSummaryRowViewModel("Input mode", preferencesService.inputMode()),
-                        new PreferencesSummaryRowViewModel("Master volume", Double.toString(preferencesService.masterVolume()))),
-                List.of(new ScreenActionViewModel(BACK_LABEL, SceneRouter.MAIN_MENU_ROUTE, true)));
+                        new PreferencesSummaryRowViewModel("Theme color",
+                                themeOptionLabel(preferencesService.themeFamily(), preferencesService.themeVariant())),
+                        new PreferencesSummaryRowViewModel("Footer display", preferencesService.footerShortcutDisplay().label())),
+                List.of(new ScreenActionViewModel(CLOSE_LABEL, SceneRouter.MAIN_MENU_ROUTE, true)));
     }
 
     static List<String> themeOptionLabels() {
@@ -105,6 +86,17 @@ public final class PreferencesSummaryScreen {
         return Math.round(volume * VOLUME_PERCENT_SCALE) + "%";
     }
 
+    static String themeOptionLabel(ThemeFamily family, ThemeVariant variant) {
+        return family.label() + " - " + variant.label();
+    }
+
+    private static Label sectionHeading(String text) {
+        Label heading = new Label(text);
+        heading.getStyleClass().add(ScreenShell.LAYOUT_SECTION_TITLE_STYLE_CLASS);
+        heading.setPadding(new Insets(8, 0, 0, 0));
+        return heading;
+    }
+
     private static HBox volumeRow(
             RouteContext context,
             String labelText,
@@ -117,38 +109,109 @@ public final class PreferencesSummaryScreen {
         slider.setMajorTickUnit(25);
         slider.setBlockIncrement(10);
         Label value = new Label(percentLabel(currentVolume));
-        slider.valueProperty().addListener((observable, previous, current) ->
-                value.setText(Math.round(current.doubleValue()) + "%"));
-        Button save = ButtonVisuals.applySvgArtwork(new Button("Save"));
-        save.setOnAction(event -> {
-            volumeSaver.save(context, slider.getValue() / VOLUME_PERCENT_SCALE);
-            value.setText(percentLabel(slider.getValue() / VOLUME_PERCENT_SCALE));
+        slider.valueProperty().addListener((observable, previous, current) -> {
+            double updatedVolume = current.doubleValue() / VOLUME_PERCENT_SCALE;
+            value.setText(percentLabel(updatedVolume));
+            volumeSaver.save(context, updatedVolume);
         });
-        return new HBox(8, label, slider, value, save);
+        return new HBox(8, label, slider, value);
     }
 
-    private static VBox themeFamilyRow(RouteContext context, ThemeFamily family) {
-        VBox container = new VBox(6);
-        Label label = new Label(family.label());
-        HBox buttonRow = new HBox(8,
-                themeButton(context, family, ThemeVariant.DARK),
-                themeButton(context, family, ThemeVariant.LIGHT_PASTEL));
-        container.getChildren().addAll(label, buttonRow);
-        return container;
+    private static HBox themeSelectionRow(RouteContext context) {
+        Label label = new Label("Theme");
+        ComboBox<ThemeChoice> comboBox = new ComboBox<>();
+        comboBox.getItems().addAll(themeChoices());
+        comboBox.setConverter(new StringConverter<>() {
+            @Override
+            public String toString(ThemeChoice choice) {
+                return choice == null ? "" : choice.label();
+            }
+
+            @Override
+            public ThemeChoice fromString(String string) {
+                return themeChoices().stream()
+                        .filter(choice -> choice.label().equals(string))
+                        .findFirst()
+                        .orElse(null);
+            }
+        });
+        comboBox.setValue(new ThemeChoice(context.preferencesService().themeFamily(), context.preferencesService().themeVariant()));
+        comboBox.setOnAction(event -> {
+            ThemeChoice selected = comboBox.getValue();
+            if (selected != null) {
+                applyTheme(context, selected.family(), selected.variant());
+            }
+        });
+        return new HBox(8, label, comboBox);
     }
 
-    private static Button themeButton(RouteContext context, ThemeFamily family, ThemeVariant variant) {
-        Button button = ButtonVisuals.applySvgArtwork(new Button(variant.label()));
-        button.setDisable(context.preferencesService().themeFamily() == family
-                && context.preferencesService().themeVariant() == variant);
-        button.setOnAction(event -> applyTheme(context, family, variant));
-        return button;
+    private static HBox footerDisplayRow(RouteContext context) {
+        Label label = new Label("Footer shortcuts");
+        ComboBox<FooterShortcutDisplay> comboBox = new ComboBox<>();
+        comboBox.getItems().addAll(FooterShortcutDisplay.values());
+        comboBox.setConverter(new StringConverter<>() {
+            @Override
+            public String toString(FooterShortcutDisplay display) {
+                return display == null ? "" : display.label();
+            }
+
+            @Override
+            public FooterShortcutDisplay fromString(String string) {
+                for (FooterShortcutDisplay display : FooterShortcutDisplay.values()) {
+                    if (display.label().equals(string)) {
+                        return display;
+                    }
+                }
+                return null;
+            }
+        });
+        comboBox.setValue(context.preferencesService().footerShortcutDisplay());
+        comboBox.setOnAction(event -> {
+            FooterShortcutDisplay selected = comboBox.getValue();
+            if (selected != null) {
+                context.preferencesService().saveFooterShortcutDisplay(selected);
+                applyCurrentFooterPreferences(context);
+            }
+        });
+        return new HBox(8, label, comboBox);
+    }
+
+    private static List<ThemeChoice> themeChoices() {
+        return List.of(
+                new ThemeChoice(ThemeFamily.OCEAN, ThemeVariant.DARK),
+                new ThemeChoice(ThemeFamily.OCEAN, ThemeVariant.LIGHT_PASTEL),
+                new ThemeChoice(ThemeFamily.FOREST, ThemeVariant.DARK),
+                new ThemeChoice(ThemeFamily.FOREST, ThemeVariant.LIGHT_PASTEL),
+                new ThemeChoice(ThemeFamily.SUNSET, ThemeVariant.DARK),
+                new ThemeChoice(ThemeFamily.SUNSET, ThemeVariant.LIGHT_PASTEL),
+                new ThemeChoice(ThemeFamily.VIOLET, ThemeVariant.DARK),
+                new ThemeChoice(ThemeFamily.VIOLET, ThemeVariant.LIGHT_PASTEL));
     }
 
     private static void applyTheme(RouteContext context, ThemeFamily family, ThemeVariant variant) {
         context.preferencesService().saveThemePreferences(family, variant);
         context.uiTheme().initialize(context.preferencesService());
-        context.navigateTo(SceneRouter.PREFERENCES_ROUTE);
+        Scene scene = context.primaryStage().getScene();
+        if (scene != null) {
+            scene.getStylesheets().setAll(context.uiTheme().stylesheet());
+        }
+        applyCurrentFooterPreferences(context);
+    }
+
+    private static void applyCurrentFooterPreferences(RouteContext context) {
+        Scene scene = context.primaryStage().getScene();
+        if (scene == null || !(scene.getRoot() instanceof BorderPane root)) {
+            return;
+        }
+        ScreenShell.applyFooterPreferences(root.getBottom(), context.preferencesService());
+    }
+
+    private static void saveMasterVolume(RouteContext context, double volume) {
+        context.preferencesService().saveMasterVolume(volume);
+        AudioService audioService = context.audioService();
+        if (audioService != null && audioService.isInitialized()) {
+            audioService.setMasterVolume(context.preferencesService().masterVolume());
+        }
     }
 
     private static void saveMusicVolume(RouteContext context, double volume) {
@@ -170,5 +233,11 @@ public final class PreferencesSummaryScreen {
     @FunctionalInterface
     private interface VolumeSaver {
         void save(RouteContext context, double volume);
+    }
+
+    private record ThemeChoice(ThemeFamily family, ThemeVariant variant) {
+        private String label() {
+            return themeOptionLabel(family, variant);
+        }
     }
 }

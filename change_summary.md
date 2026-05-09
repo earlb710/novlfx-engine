@@ -7,3 +7,7 @@ Added screen designer support for editing block/item `styleClass` values plus ex
 Added block background image and background image transparency metadata support to the designer, with file browsing support that stores chosen files as file URIs.
 Extended `ScreenLayoutRenderer` to render block background images from classpath resources, filesystem paths, and file/URL sources, including SVG backgrounds rasterized through `VectorImage`.
 Updated tests, sample screen JSON, and the user manual to cover the new metadata editing and block background image capabilities.
+
+Simplified `PreferencesSummaryScreen` so it only shows editable preferences: master/music/sound audio, theme color, and footer display mode.
+Removed inline save buttons from the preferences route and switched those controls to immediate persistence/application, leaving a single Close button at the bottom.
+Updated preferences-related tests, manual footer-test copy, and the user manual to reflect the narrower editable preferences surface.

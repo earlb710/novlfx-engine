@@ -19,26 +19,27 @@ final class SummaryViewModelTest {
     void preferencesSummaryUsesRowsInsteadOfRawLines() {
         PreferencesService preferencesService = new PreferencesService();
         preferencesService.load();
-        preferencesService.saveUiOpacity(0.42, 0.75);
+        preferencesService.saveMasterVolume(0.42);
         preferencesService.saveAudioChannelVolumes(0.25, 0.75);
+        preferencesService.saveThemePreferences(PreferencesService.ThemeFamily.SUNSET, PreferencesService.ThemeVariant.LIGHT_PASTEL);
+        preferencesService.saveFooterShortcutDisplay(PreferencesService.FooterShortcutDisplay.HIDE);
 
         PreferencesSummaryViewModel viewModel = PreferencesSummaryScreen.viewModel("Preferences", preferencesService);
 
         assertEquals("Preferences", viewModel.title());
-        assertEquals("Window", viewModel.rows().get(0).label());
-        assertEquals("HUD alpha", viewModel.rows().get(1).label());
-        assertEquals("0.42", viewModel.rows().get(1).value());
-        assertEquals(17, viewModel.rows().size());
-        assertEquals("Footer shortcut display", viewModel.rows().get(6).label());
-        assertEquals("Music volume", viewModel.rows().get(9).label());
-        assertEquals("25%", viewModel.rows().get(9).value());
-        assertEquals("Sound volume", viewModel.rows().get(10).label());
-        assertEquals("75%", viewModel.rows().get(10).value());
-        assertEquals("Theme color", viewModel.rows().get(11).label());
-        assertEquals("Ocean", viewModel.rows().get(11).value());
-        assertEquals("Theme variant", viewModel.rows().get(12).label());
-        assertEquals("HUD alpha: 0.42", viewModel.screenViewModel().lines().get(1));
-        assertEquals("Back to main menu", viewModel.actions().get(0).label());
+        assertEquals(5, viewModel.rows().size());
+        assertEquals("Master volume", viewModel.rows().get(0).label());
+        assertEquals("42%", viewModel.rows().get(0).value());
+        assertEquals("Music volume", viewModel.rows().get(1).label());
+        assertEquals("25%", viewModel.rows().get(1).value());
+        assertEquals("Sound volume", viewModel.rows().get(2).label());
+        assertEquals("75%", viewModel.rows().get(2).value());
+        assertEquals("Theme color", viewModel.rows().get(3).label());
+        assertEquals("Sunset - Light pastel", viewModel.rows().get(3).value());
+        assertEquals("Footer display", viewModel.rows().get(4).label());
+        assertEquals("Do not display", viewModel.rows().get(4).value());
+        assertEquals("Music volume: 25%", viewModel.screenViewModel().lines().get(1));
+        assertEquals("Close", viewModel.actions().get(0).label());
     }
 
     @Test
@@ -60,6 +61,10 @@ final class SummaryViewModelTest {
                         "Violet - Dark",
                         "Violet - Light pastel"),
                 PreferencesSummaryScreen.themeOptionLabels());
+        assertEquals("Forest - Light pastel",
+                PreferencesSummaryScreen.themeOptionLabel(
+                        PreferencesService.ThemeFamily.FOREST,
+                        PreferencesService.ThemeVariant.LIGHT_PASTEL));
     }
 
     @Test
