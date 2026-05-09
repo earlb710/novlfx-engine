@@ -252,11 +252,11 @@ public final class PreferencesSummaryScreen {
 
     private static void wireFooter(HBox footer, Runnable closeAction) {
         for (Node child : footer.getChildren()) {
-            if (child instanceof Label label) {
+            if (child instanceof Label label
+                    && label.getUserData() instanceof ScreenShell.FooterOption option
+                    && PREFERENCES_ID.equals(option.id())) {
                 label.setOnMouseClicked(event -> {
-                    if (label.isDisabled()
-                            || !(label.getUserData() instanceof ScreenShell.FooterOption option)
-                            || !PREFERENCES_ID.equals(option.id())) {
+                    if (label.isDisabled()) {
                         return;
                     }
                     closeAction.run();
