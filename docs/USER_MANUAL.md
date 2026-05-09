@@ -354,6 +354,8 @@ Both styles rasterize the SVG artwork to the requested button size, support pres
 
 `ScreenShell` provides SVG background helpers for whole-screen artwork. Use `ScreenShell.setBackgroundSvg(screen, "/path/background.svg")` or `ScreenShell.withBackgroundSvg(...)` to wrap an existing screen region in a `StackPane` with the SVG behind the content. The SVG background is not clickable, has no border or padding, and resizes with the returned root; use that returned root as the scene root when the artwork should cover the full screen.
 
+When an application needs the SVG artwork to blend with underlying content or to reveal a chosen canvas color through transparent regions, use the `ScreenShell.backgroundSvg(String svgResourcePath, double opacity, Color canvasBackgroundColor)` overload. The `opacity` argument applies to the rendered SVG image (`0.0` to `1.0`), and the canvas color is painted behind the SVG before the rest of the screen content is layered above it.
+
 Pass two or more resource paths to layer SVG backgrounds in order:
 
 ```java
@@ -364,6 +366,17 @@ StackPane root = ScreenShell.setBackgroundSvg(
 ```
 
 The first SVG is the back-most layer, each additional SVG is placed above it, and the screen content is placed above all background layers.
+
+Use the configurable overload directly when you need a single background node with transparency or a non-transparent canvas fill:
+
+```java
+Region background = ScreenShell.backgroundSvg(
+        "/com/example/images/background-overlay.svg",
+        0.60,
+        Color.web("#08111f"));
+```
+
+The manual `SvgBackgroundTestScreen` includes controls for switching the packaged SVG, adjusting transparency, and choosing the canvas color so applications can verify how transparent artwork composes with their screen content.
 
 ### Screen layouts, reusable screens, and editable screen designs
 

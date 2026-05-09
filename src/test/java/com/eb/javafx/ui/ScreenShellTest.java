@@ -144,10 +144,29 @@ final class ScreenShellTest {
     }
 
     @Test
+    void backgroundSvgSupportsOpacityAndCanvasFill() {
+        Region background = ScreenShell.backgroundSvg(
+                ButtonVisuals.BUTTON_LONG_ARTWORK_RESOURCE,
+                0.35,
+                Color.ALICEBLUE);
+
+        ImageView backgroundImage = (ImageView) background.getChildrenUnmodifiable().get(0);
+
+        assertEquals(Color.ALICEBLUE, background.getBackground().getFills().get(0).getFill());
+        assertEquals(0.35, backgroundImage.getOpacity());
+    }
+
+    @Test
     void backgroundSvgHelpersValidateRequiredResource() {
         assertThrows(IllegalArgumentException.class, () -> ScreenShell.backgroundSvg(null));
         assertThrows(IllegalArgumentException.class, () -> ScreenShell.backgroundSvg(" "));
         assertThrows(IllegalArgumentException.class, () -> ScreenShell.backgroundSvg("/missing-background.svg"));
+        assertThrows(IllegalArgumentException.class, () ->
+                ScreenShell.backgroundSvg(ButtonVisuals.BUTTON_LONG_ARTWORK_RESOURCE, -0.1, Color.BLACK));
+        assertThrows(IllegalArgumentException.class, () ->
+                ScreenShell.backgroundSvg(ButtonVisuals.BUTTON_LONG_ARTWORK_RESOURCE, 1.1, Color.BLACK));
+        assertThrows(IllegalArgumentException.class, () ->
+                ScreenShell.backgroundSvg(ButtonVisuals.BUTTON_LONG_ARTWORK_RESOURCE, 0.5, null));
         assertThrows(IllegalArgumentException.class, () -> ScreenShell.withBackgroundSvg(null,
                 ButtonVisuals.BUTTON_LONG_ARTWORK_RESOURCE));
     }

@@ -510,7 +510,23 @@ public final class ScreenShell {
      * @return resizable SVG background region
      */
     public static Region backgroundSvg(String svgResourcePath) {
-        return new SvgBackground(svgResourcePath);
+        return backgroundSvg(svgResourcePath, 1.0, Color.TRANSPARENT);
+    }
+
+    /**
+     * Creates a full-screen SVG background node with configurable image opacity and canvas color.
+     *
+     * <p>The returned node is not clickable and has no border or padding.</p>
+     *
+     * @param svgResourcePath packaged SVG resource path
+     * @param opacity opacity applied to the SVG image from {@code 0.0} to {@code 1.0}
+     * @param canvasBackgroundColor background fill shown behind transparent SVG regions
+     * @return resizable SVG background region
+     */
+    public static Region backgroundSvg(String svgResourcePath, double opacity, Color canvasBackgroundColor) {
+        Validation.requireUnitInterval(opacity, "Screen SVG background opacity must be between 0 and 1.");
+        Validation.requireNonNull(canvasBackgroundColor, "Screen SVG background canvas color is required.");
+        return new SvgBackground(svgResourcePath, opacity, canvasBackgroundColor);
     }
 
     private static List<Region> backgroundSvgLayers(String svgResourcePath, String... additionalSvgResourcePaths) {
@@ -773,16 +789,19 @@ public final class ScreenShell {
     private static final class SvgBackground extends Region {
         private final ImageView imageView;
 
-        private SvgBackground(String svgResourcePath) {
+        private SvgBackground(String svgResourcePath, double opacity, Color canvasBackgroundColor) {
             imageView = new ImageView(loadBackgroundSvgImage(svgResourcePath));
             getStyleClass().add(SCREEN_BACKGROUND_SVG_STYLE_CLASS);
             setMinSize(0, 0);
             setBorder(Border.EMPTY);
-            setBackground(Background.EMPTY);
+            setBackground(canvasBackgroundColor.equals(Color.TRANSPARENT)
+                    ? Background.EMPTY
+                    : new Background(new BackgroundFill(canvasBackgroundColor, CornerRadii.EMPTY, Insets.EMPTY)));
             setMouseTransparent(true);
             setFocusTraversable(false);
             imageView.setMouseTransparent(true);
             imageView.setFocusTraversable(false);
+            imageView.setOpacity(opacity);
             imageView.setPreserveRatio(false);
             imageView.setSmooth(true);
             imageView.fitWidthProperty().bind(widthProperty());
