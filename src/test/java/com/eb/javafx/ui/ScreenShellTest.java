@@ -7,9 +7,13 @@ import com.eb.javafx.prefs.PreferencesService;
 import com.eb.javafx.prefs.PreferencesService.FooterShortcutDisplay;
 import com.eb.javafx.state.GameState;
 import com.eb.javafx.util.VectorImage;
+import javafx.application.Platform;
+import javafx.scene.Parent;
+import javafx.scene.control.Tooltip;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.image.WritableImage;
+import javafx.scene.layout.Background;
 import javafx.scene.layout.BackgroundImage;
 import javafx.scene.layout.BackgroundPosition;
 import javafx.scene.layout.BackgroundRepeat;
@@ -24,12 +28,18 @@ import javafx.scene.layout.VBox;
 import javafx.geometry.Pos;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.SVGPath;
+import javafx.util.Duration;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
+import java.awt.GraphicsEnvironment;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -37,8 +47,11 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 final class ScreenShellTest {
+    private static final AtomicBoolean JAVAFX_STARTED = new AtomicBoolean();
+
     @Test
     void backgroundImageStretchesToScreenBounds() {
         Image image = new WritableImage(16, 9);
@@ -154,6 +167,30 @@ final class ScreenShellTest {
 
         assertEquals(Color.ALICEBLUE, background.getBackground().getFills().get(0).getFill());
         assertEquals(0.35, backgroundImage.getOpacity());
+    }
+
+    @Test
+    void configuredBackgroundResolvesRelativeAssetsAndKeepsShellReachable(@TempDir Path tempDir) throws Exception {
+        Path background = tempDir.resolve("background.svg");
+        Files.writeString(background, """
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="8" viewBox="0 0 12 8">
+                  <rect width="12" height="8" fill="#ffffff"/>
+                </svg>
+                """);
+        BorderPane screen = new BorderPane();
+
+        Parent root = ScreenShell.withConfiguredBackground(screen, tempDir, "#123456", "background.svg", "0.25");
+
+        assertTrue(root instanceof StackPane);
+        StackPane backgroundRoot = (StackPane) root;
+        Region backgroundLayer = (Region) backgroundRoot.getChildren().get(0);
+        ImageView imageView = (ImageView) backgroundLayer.getChildrenUnmodifiable().get(0);
+
+        assertSame(screen, ScreenShell.shellRoot(backgroundRoot));
+        assertEquals(2, backgroundRoot.getChildren().size());
+        assertEquals(Color.web("#123456"), backgroundLayer.getBackground().getFills().get(0).getFill());
+        assertEquals(0.75, imageView.getOpacity());
+        assertEquals(Background.EMPTY, screen.getBackground());
     }
 
     @Test
@@ -307,6 +344,35 @@ final class ScreenShellTest {
         }
         assertTrue(VectorImage.isSvgPath(Path.of(
                 "src/main/resources/com/eb/javafx/images/icons/icons-10x10.svg")));
+    }
+
+    @Test
+    void createdTooltipsUseShorterShowDelay() throws Exception {
+        assumeTrue(!GraphicsEnvironment.isHeadless(), "Tooltip timing test requires a display.");
+        startJavaFxToolkit();
+        Tooltip tooltip = ScreenShell.createTooltip("Short delay");
+
+        assertEquals(Duration.millis(150), tooltip.getShowDelay());
+        assertEquals("Short delay", tooltip.getText());
+    }
+
+    private static void startJavaFxToolkit() throws InterruptedException {
+        CountDownLatch started = new CountDownLatch(1);
+        if (JAVAFX_STARTED.compareAndSet(false, true)) {
+            try {
+                Platform.startup(() -> {
+                    Platform.setImplicitExit(false);
+                    started.countDown();
+                });
+            } catch (IllegalStateException exception) {
+                Platform.setImplicitExit(false);
+                started.countDown();
+            }
+        } else {
+            Platform.setImplicitExit(false);
+            started.countDown();
+        }
+        assertTrue(started.await(5, TimeUnit.SECONDS), "JavaFX toolkit did not start.");
     }
 
     @Test

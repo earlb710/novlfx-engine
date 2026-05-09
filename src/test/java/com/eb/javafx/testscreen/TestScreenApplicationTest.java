@@ -319,6 +319,20 @@ final class TestScreenApplicationTest {
     }
 
     @Test
+    void filteredTestsSupportsCombinedFilters() {
+        List<String> tests = List.of("new auto", "new manual", "old auto", "old manual");
+
+        assertEquals(List.of("new auto", "new manual"),
+                TestScreenApplication.filteredTests(tests, test -> test.startsWith("new"), test -> test.endsWith("auto"), true, false));
+        assertEquals(List.of("new manual"),
+                TestScreenApplication.filteredTests(tests, test -> test.startsWith("new"), test -> test.endsWith("auto"), true, true));
+        assertEquals(List.of("new manual", "old manual"),
+                TestScreenApplication.filteredTests(tests, test -> test.startsWith("new"), test -> test.endsWith("auto"), false, true));
+        assertEquals(tests,
+                TestScreenApplication.filteredTests(tests, test -> test.startsWith("new"), test -> test.endsWith("auto"), false, false));
+    }
+
+    @Test
     void discoveryMessageShowsFilteredAndTotalCounts() {
         assertEquals("Showing 3 of 10 tests. Results are recorded in " + tempDir.resolve("result.json").toAbsolutePath() + ".",
                 TestScreenApplication.discoveryMessage(3, 10, tempDir.resolve("result.json")));
@@ -327,16 +341,21 @@ final class TestScreenApplicationTest {
     }
 
     @Test
-    void buildContentAddsManualFilterCheckboxAtTopOfTestTree() throws Exception {
+    void buildContentAddsNewAndManualFilterCheckboxesAtTopOfTestTree() throws Exception {
         TestScreenApplication application = new TestScreenApplication(TestScreenApplication.TestScreenConfiguration.defaults());
         Method buildContent = TestScreenApplication.class.getDeclaredMethod("buildContent");
         buildContent.setAccessible(true);
 
         JPanel content = (JPanel) buildContent.invoke(application);
 
+        Optional<JCheckBox> newCheckbox = findComponents(content, JCheckBox.class).stream()
+                .filter(checkBox -> "new".equals(checkBox.getText()))
+                .findFirst();
         Optional<JCheckBox> manualCheckbox = findComponents(content, JCheckBox.class).stream()
                 .filter(checkBox -> "manual".equals(checkBox.getText()))
                 .findFirst();
+        assertTrue(newCheckbox.isPresent());
+        assertTrue(newCheckbox.orElseThrow().isSelected());
         assertTrue(manualCheckbox.isPresent());
         assertFalse(manualCheckbox.orElseThrow().isSelected());
     }

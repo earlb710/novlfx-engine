@@ -17,6 +17,17 @@ public final class UiTheme {
             .root {
                 -fx-background-color: %s;
                 -fx-font-family: "%s";
+                -fx-accent: %s;
+                -fx-default-button: %s;
+                -fx-focus-color: %s;
+                -fx-faint-focus-color: transparent;
+                -fx-selection-bar: %s;
+                -fx-selection-bar-text: %s;
+                -fx-text-background-color: %s;
+                -fx-control-inner-background: %s;
+                -fx-control-inner-background-alt: %s;
+                -fx-cell-hover-color: %s;
+                -fx-mark-color: %s;
             }
 
             .screen-root {
@@ -26,6 +37,10 @@ public final class UiTheme {
             .screen-title {
                 -fx-font-size: 34px;
                 -fx-font-weight: bold;
+                -fx-text-fill: %s;
+            }
+
+            .screen-subtitle {
                 -fx-text-fill: %s;
             }
 
@@ -85,6 +100,21 @@ public final class UiTheme {
 
             .scene-choice-state,
             .scene-effect-preview {
+                -fx-text-fill: %s;
+            }
+
+            .screen-text-highlight,
+            .layout-text-highlight {
+                -fx-text-fill: %s;
+            }
+
+            .screen-text-highlight:hover,
+            .layout-text-highlight:hover {
+                -fx-text-fill: %s;
+            }
+
+            .screen-value,
+            .layout-value {
                 -fx-text-fill: %s;
             }
 
@@ -151,6 +181,10 @@ public final class UiTheme {
                 -fx-font-size: 18px;
             }
 
+            .screen-text {
+                -fx-text-fill: %s;
+            }
+
             .button {
                 -fx-font-size: 20px;
                 -fx-font-weight: bold;
@@ -173,6 +207,49 @@ public final class UiTheme {
                 -fx-background-color: %s;
                 -fx-text-fill: %s;
                 -fx-border-color: %s;
+            }
+
+            .combo-box-base,
+            .combo-box-base:editable > .text-field,
+            .combo-box > .list-cell {
+                -fx-background-color: %s;
+                -fx-text-fill: %s;
+                -fx-border-color: %s;
+                -fx-control-inner-background: %s;
+                -fx-prompt-text-fill: %s;
+            }
+
+            .combo-box-base:hover,
+            .combo-box-base:showing {
+                -fx-background-color: %s;
+                -fx-text-fill: %s;
+                -fx-border-color: %s;
+            }
+
+            .combo-box-base .arrow {
+                -fx-background-color: %s;
+            }
+
+            .combo-box-popup .list-view {
+                -fx-background-color: %s;
+                -fx-border-color: %s;
+                -fx-control-inner-background: %s;
+            }
+
+            .combo-box-popup .list-cell {
+                -fx-background-color: %s;
+                -fx-text-fill: %s;
+            }
+
+            .combo-box-popup .list-cell:hover {
+                -fx-background-color: %s;
+                -fx-text-fill: %s;
+            }
+
+            .combo-box-popup .list-cell:selected,
+            .combo-box-popup .list-cell:hover:selected {
+                -fx-background-color: %s;
+                -fx-text-fill: %s;
             }
 
             .svg-button-artwork-text {
@@ -294,6 +371,9 @@ public final class UiTheme {
             String footerText,
             String sectionBorder,
             String sectionText,
+            String textHighlight,
+            String textHighlightHover,
+            String valueText,
             String layoutPanelBackground,
             String labelText,
             String buttonBackground,
@@ -317,8 +397,8 @@ public final class UiTheme {
                         "#101828", "#101828", "#0a1426", "#66c1e0",
                         "rgba(10, 20, 38, 0.85)", "#0099cc",
                         "rgba(10, 20, 38, 0.50)", "#cbd5e1",
-                        "#143869", "#cbd5e1",
-                        "rgba(10, 20, 38, 0.65)", "#dbeafe",
+                        "#143869", "#cbd5e1", "#66c1e0", "#ffffff", "#bfd3ec",
+                        "rgba(10, 20, 38, 0.65)", "#ffffff",
                         "#0a1426", "#bfd3ec", "#143869",
                         "#143869", "#ffffff", "#0099cc",
                         "#0099cc", "#ffffff", "#66c1e0",
@@ -328,8 +408,8 @@ public final class UiTheme {
                         "#f4fbff", "#f4fbff", "#dcefff", "#3c7ea3",
                         "rgba(229, 243, 251, 0.92)", "#7cb8d6",
                         "rgba(229, 243, 251, 0.72)", "#456273",
-                        "#97c7dd", "#456273",
-                        "rgba(220, 239, 255, 0.84)", "#234052",
+                        "#97c7dd", "#456273", "#3c7ea3", "#234052", "#36576a",
+                        "rgba(220, 239, 255, 0.84)", "#000000",
                         "#e7f4fb", "#36576a", "#97c7dd",
                         "#cfe8f6", "#234052", "#5ba6c8",
                         "#8cc9e3", "#1f3e50", "#cae8f6",
@@ -340,8 +420,8 @@ public final class UiTheme {
                         "#0f1a13", "#0f1a13", "#0a140f", "#8dd7a8",
                         "rgba(11, 25, 17, 0.88)", "#57b27e",
                         "rgba(11, 25, 17, 0.52)", "#cfe7d7",
-                        "#2d6a45", "#cfe7d7",
-                        "rgba(16, 34, 22, 0.68)", "#e2f4e8",
+                        "#2d6a45", "#cfe7d7", "#8dd7a8", "#ffffff", "#d2eedc",
+                        "rgba(16, 34, 22, 0.68)", "#ffffff",
                         "#122117", "#d2eedc", "#2d6a45",
                         "#2d6a45", "#ffffff", "#57b27e",
                         "#57b27e", "#082212", "#9fe0ba",
@@ -351,8 +431,8 @@ public final class UiTheme {
                         "#f5fcf7", "#f5fcf7", "#e1f3e5", "#4f8b66",
                         "rgba(231, 246, 235, 0.92)", "#90c7a4",
                         "rgba(231, 246, 235, 0.72)", "#446152",
-                        "#a2cfb1", "#446152",
-                        "rgba(225, 243, 229, 0.84)", "#284233",
+                        "#a2cfb1", "#446152", "#4f8b66", "#284233", "#365343",
+                        "rgba(225, 243, 229, 0.84)", "#000000",
                         "#e9f6ed", "#365343", "#9ecfb0",
                         "#d4ecdb", "#284233", "#6aad87",
                         "#9ed3b4", "#1d3427", "#d7f0df",
@@ -363,8 +443,8 @@ public final class UiTheme {
                         "#24131a", "#24131a", "#160d12", "#f3a6a0",
                         "rgba(36, 19, 26, 0.86)", "#e07a6e",
                         "rgba(36, 19, 26, 0.52)", "#f0d3d0",
-                        "#8f3f4c", "#f0d3d0",
-                        "rgba(45, 24, 31, 0.68)", "#fff0ee",
+                        "#8f3f4c", "#f0d3d0", "#f3a6a0", "#ffffff", "#f8d8d3",
+                        "rgba(45, 24, 31, 0.68)", "#ffffff",
                         "#2a151d", "#f8d8d3", "#8f3f4c",
                         "#8f3f4c", "#ffffff", "#e07a6e",
                         "#e07a6e", "#2a151d", "#f7c1b8",
@@ -374,8 +454,8 @@ public final class UiTheme {
                         "#fff6f3", "#fff6f3", "#ffe6df", "#b86d61",
                         "rgba(255, 235, 228, 0.92)", "#e6ae9f",
                         "rgba(255, 235, 228, 0.72)", "#72514c",
-                        "#d7a195", "#72514c",
-                        "rgba(255, 230, 223, 0.84)", "#593e3a",
+                        "#d7a195", "#72514c", "#b86d61", "#593e3a", "#6f4d47",
+                        "rgba(255, 230, 223, 0.84)", "#000000",
                         "#fff0ea", "#6f4d47", "#daa296",
                         "#ffdcd0", "#593e3a", "#d99081",
                         "#efb0a2", "#4c322c", "#f9d7cf",
@@ -386,8 +466,8 @@ public final class UiTheme {
                         "#191427", "#191427", "#110d1b", "#c7b5ff",
                         "rgba(25, 20, 39, 0.86)", "#9b7be6",
                         "rgba(25, 20, 39, 0.52)", "#e1d9fb",
-                        "#5b4b8a", "#e1d9fb",
-                        "rgba(32, 26, 49, 0.68)", "#f2efff",
+                        "#5b4b8a", "#e1d9fb", "#c7b5ff", "#ffffff", "#ddd3ff",
+                        "rgba(32, 26, 49, 0.68)", "#ffffff",
                         "#1c1730", "#ddd3ff", "#5b4b8a",
                         "#5b4b8a", "#ffffff", "#9b7be6",
                         "#9b7be6", "#1c1730", "#d7c9ff",
@@ -397,8 +477,8 @@ public final class UiTheme {
                         "#faf6ff", "#faf6ff", "#ede3ff", "#775fc1",
                         "rgba(240, 232, 255, 0.92)", "#b9a2ea",
                         "rgba(240, 232, 255, 0.72)", "#605375",
-                        "#c8b8ee", "#605375",
-                        "rgba(237, 227, 255, 0.84)", "#43395a",
+                        "#c8b8ee", "#605375", "#775fc1", "#43395a", "#5b5076",
+                        "rgba(237, 227, 255, 0.84)", "#000000",
                         "#f3ecff", "#5b5076", "#baa7e9",
                         "#e6dafd", "#43395a", "#9f81dd",
                         "#c5b0f2", "#352c49", "#e9e0ff",
@@ -412,7 +492,7 @@ public final class UiTheme {
                     "#000000", "#000000", "#000000", "#ffff66",
                     "rgba(0, 0, 0, 0.96)", "#ffff66",
                     "rgba(0, 0, 0, 0.92)", "#ffff66",
-                    "#ffff66", "#ffff66",
+                    "#ffff66", "#ffff66", "#ffff66", "#ffffff", "#ffff66",
                     "rgba(0, 0, 0, 0.94)", "#ffffff",
                     "#000000", "#ffff66", "#ffff66",
                     "#333300", "#ffffff", "#ffff66",
@@ -425,21 +505,36 @@ public final class UiTheme {
             return STYLESHEET_TEMPLATE.formatted(
                     rootBackground,
                     cssQuoted(fontFamily == null || fontFamily.isBlank() ? "System" : fontFamily),
+                    accentColor,
+                    accentColor,
+                    accentColor,
+                    accentColor,
+                    buttonHoverText,
+                    labelText,
+                    screenPanelBackground,
+                    layoutPanelBackground,
+                    buttonHoverBackground,
+                    accentColor,
                     screenGradientStart,
                     screenGradientEnd,
                     accentColor,
+                    sectionText,
                     screenPanelBackground,
                     screenPanelBorder,
                     footerBackground,
                     footerText,
                     sectionBorder,
                     sectionText,
+                    textHighlight,
+                    textHighlightHover,
+                    valueText,
                     sectionText,
                     accentColor,
                     layoutPanelBackground,
                     sectionBorder,
                     screenPanelBorder,
                     sectionBorder,
+                    labelText,
                     labelText,
                     buttonBackground,
                     buttonText,
@@ -450,6 +545,24 @@ public final class UiTheme {
                     buttonPressedBackground,
                     buttonPressedText,
                     buttonPressedBorder,
+                    buttonBackground,
+                    buttonText,
+                    buttonBorder,
+                    screenPanelBackground,
+                    sectionText,
+                    buttonHoverBackground,
+                    buttonHoverText,
+                    buttonHoverBorder,
+                    sectionText,
+                    screenPanelBackground,
+                    screenPanelBorder,
+                    screenPanelBackground,
+                    screenPanelBackground,
+                    labelText,
+                    buttonHoverBackground,
+                    buttonHoverText,
+                    buttonPressedBackground,
+                    buttonPressedText,
                     svgButtonText,
                     svgButtonHoverText);
         }

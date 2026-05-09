@@ -8,6 +8,8 @@ import com.eb.javafx.prefs.PreferencesService.ThemeVariant;
 import com.eb.javafx.routing.RouteContext;
 import com.eb.javafx.routing.SceneRouter;
 import javafx.geometry.Insets;
+import javafx.scene.Node;
+import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
@@ -16,39 +18,62 @@ import javafx.scene.control.Slider;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import javafx.util.StringConverter;
 
 import java.util.List;
+import java.util.Set;
 
 /**
  * Reusable preferences route that summarizes startup preferences and exposes theme selection.
  */
 public final class PreferencesSummaryScreen {
     private static final String CLOSE_LABEL = "Close";
+    private static final String PREFERENCES_ID = "preferences";
+    private static final Set<String> ENABLED_FOOTER_IDS = Set.of(PREFERENCES_ID);
     private static final double VOLUME_PERCENT_SCALE = 100.0;
 
     private PreferencesSummaryScreen() {
     }
 
     public static Scene createScene(RouteContext context) {
-        PreferencesSummaryViewModel viewModel = viewModel(context);
-        VBox content = new VBox(10);
-        content.getChildren().add(sectionHeading("Audio"));
-        content.getChildren().add(volumeRow(context, "Master volume", context.preferencesService().masterVolume(),
-                PreferencesSummaryScreen::saveMasterVolume));
-        content.getChildren().add(volumeRow(context, "Music volume", context.preferencesService().musicVolume(),
-                PreferencesSummaryScreen::saveMusicVolume));
-        content.getChildren().add(volumeRow(context, "Sound volume", context.preferencesService().soundVolume(),
-                PreferencesSummaryScreen::saveSoundVolume));
+        return createScene(context, context.preferencesService().windowWidth(), context.preferencesService().windowHeight());
+    }
 
-        content.getChildren().add(sectionHeading("Theme color"));
-        content.getChildren().add(themeSelectionRow(context));
-        content.getChildren().add(sectionHeading("Footer display"));
-        content.getChildren().add(footerDisplayRow(context));
+    static Scene createScene(RouteContext context, double width, double height) {
+        PreferencesSummaryViewModel viewModel = viewModel(context);
+        Runnable closeAction = () -> context.navigateTo(SceneRouter.MAIN_MENU_ROUTE);
+        VBox content = new VBox(10);
+        content.getChildren().add(settingsBlock(
+                "Audio",
+                volumeRow(context, "Master volume", context.preferencesService().masterVolume(),
+                        PreferencesSummaryScreen::saveMasterVolume),
+                volumeRow(context, "Music volume", context.preferencesService().musicVolume(),
+                        PreferencesSummaryScreen::saveMusicVolume),
+                volumeRow(context, "Sound volume", context.preferencesService().soundVolume(),
+                        PreferencesSummaryScreen::saveSoundVolume)));
+        content.getChildren().add(settingsBlock(
+                "Visual",
+                themeSelectionRow(context),
+                footerDisplayRow(context)));
 
         Button closeButton = ScreenNavigation.button(context, CLOSE_LABEL, SceneRouter.MAIN_MENU_ROUTE);
         content.getChildren().add(closeButton);
-        return context.themedScene(ScreenShell.titled(viewModel.title(), content));
+        BorderPane root = ScreenShell.titled(viewModel.title(), content, footerOptions());
+        HBox footer = (HBox) root.getBottom();
+        ScreenShell.applyFooterPreferences(footer, context.preferencesService());
+        wireFooter(footer, closeAction);
+
+        Scene scene = themedPreferencesScene(context, root, width, height);
+        scene.getStylesheets().add(context.uiTheme().stylesheet());
+        scene.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
+            if (isCloseShortcut(event.getCode(), event.isShortcutDown())) {
+                closeAction.run();
+                event.consume();
+            }
+        });
+        return scene;
     }
 
     public static PreferencesSummaryViewModel viewModel(RouteContext context) {
@@ -82,6 +107,31 @@ public final class PreferencesSummaryScreen {
                 "Violet - Light pastel");
     }
 
+    static List<ScreenShell.FooterOption> footerOptions() {
+        return ScreenShell.defaultFooterOptions().stream()
+                .map(option -> {
+                    ScreenShell.FooterOption updated = option.withEnabled(ENABLED_FOOTER_IDS.contains(option.id()));
+                    if (PREFERENCES_ID.equals(updated.id())) {
+                        return updated.withTooltip("Close preferences.");
+                    }
+                    return updated;
+                })
+                .toList();
+    }
+
+    static boolean isCloseShortcut(KeyCode keyCode, boolean shortcutDown) {
+        return shortcutDown && keyCode == KeyCode.P;
+    }
+
+    static VBox settingsBlock(String title, Node... rows) {
+        Node[] blockChildren = new Node[rows.length + 1];
+        blockChildren[0] = sectionHeading(title);
+        for (int index = 0; index < rows.length; index++) {
+            blockChildren[index + 1] = rows[index];
+        }
+        return ScreenShell.styledPanel(ScreenShell.LAYOUT_CARD_STYLE_CLASS, blockChildren);
+    }
+
     static String percentLabel(double volume) {
         return Math.round(volume * VOLUME_PERCENT_SCALE) + "%";
     }
@@ -103,22 +153,27 @@ public final class PreferencesSummaryScreen {
             double currentVolume,
             VolumeSaver volumeSaver) {
         Label label = new Label(labelText);
+        label.getStyleClass().add(ScreenShell.SCREEN_TEXT_STYLE_CLASS);
         Slider slider = new Slider(0, VOLUME_PERCENT_SCALE, currentVolume * VOLUME_PERCENT_SCALE);
         slider.setShowTickLabels(true);
         slider.setShowTickMarks(true);
         slider.setMajorTickUnit(25);
         slider.setBlockIncrement(10);
         Label value = new Label(percentLabel(currentVolume));
+        value.getStyleClass().add(ScreenShell.SCREEN_VALUE_STYLE_CLASS);
         slider.valueProperty().addListener((observable, previous, current) -> {
             double updatedVolume = current.doubleValue() / VOLUME_PERCENT_SCALE;
             value.setText(percentLabel(updatedVolume));
             volumeSaver.save(context, updatedVolume);
         });
-        return new HBox(8, label, slider, value);
+        HBox row = new HBox(8, label, slider, value);
+        row.getStyleClass().add(ScreenShell.LAYOUT_SECTION_ROW_STYLE_CLASS);
+        return row;
     }
 
     private static HBox themeSelectionRow(RouteContext context) {
         Label label = new Label("Theme");
+        label.getStyleClass().add(ScreenShell.SCREEN_TEXT_STYLE_CLASS);
         ComboBox<ThemeChoice> comboBox = new ComboBox<>();
         comboBox.getItems().addAll(themeChoices());
         comboBox.setConverter(new StringConverter<>() {
@@ -142,11 +197,14 @@ public final class PreferencesSummaryScreen {
                 applyTheme(context, selected.family(), selected.variant());
             }
         });
-        return new HBox(8, label, comboBox);
+        HBox row = new HBox(8, label, comboBox);
+        row.getStyleClass().add(ScreenShell.LAYOUT_SECTION_ROW_STYLE_CLASS);
+        return row;
     }
 
     private static HBox footerDisplayRow(RouteContext context) {
         Label label = new Label("Footer shortcuts");
+        label.getStyleClass().add(ScreenShell.SCREEN_TEXT_STYLE_CLASS);
         ComboBox<FooterShortcutDisplay> comboBox = new ComboBox<>();
         comboBox.getItems().addAll(FooterShortcutDisplay.values());
         comboBox.setConverter(new StringConverter<>() {
@@ -173,7 +231,9 @@ public final class PreferencesSummaryScreen {
                 applyCurrentFooterPreferences(context);
             }
         });
-        return new HBox(8, label, comboBox);
+        HBox row = new HBox(8, label, comboBox);
+        row.getStyleClass().add(ScreenShell.LAYOUT_SECTION_ROW_STYLE_CLASS);
+        return row;
     }
 
     private static List<ThemeChoice> themeChoices() {
@@ -191,19 +251,44 @@ public final class PreferencesSummaryScreen {
     private static void applyTheme(RouteContext context, ThemeFamily family, ThemeVariant variant) {
         context.preferencesService().saveThemePreferences(family, variant);
         context.uiTheme().initialize(context.preferencesService());
-        Scene scene = context.primaryStage().getScene();
-        if (scene != null) {
-            scene.getStylesheets().setAll(context.uiTheme().stylesheet());
-        }
-        applyCurrentFooterPreferences(context);
+        Scene currentScene = context.primaryStage().getScene();
+        double width = currentScene == null ? context.preferencesService().windowWidth() : currentScene.getWidth();
+        double height = currentScene == null ? context.preferencesService().windowHeight() : currentScene.getHeight();
+        context.primaryStage().setScene(createScene(context, width, height));
     }
 
     private static void applyCurrentFooterPreferences(RouteContext context) {
         Scene scene = context.primaryStage().getScene();
-        if (scene == null || !(scene.getRoot() instanceof BorderPane root)) {
+        BorderPane root = scene == null ? null : ScreenShell.shellRoot(scene.getRoot());
+        if (root == null) {
             return;
         }
         ScreenShell.applyFooterPreferences(root.getBottom(), context.preferencesService());
+    }
+
+    private static void wireFooter(HBox footer, Runnable closeAction) {
+        for (Node child : footer.getChildren()) {
+            if (child instanceof Label label
+                    && label.getUserData() instanceof ScreenShell.FooterOption option
+                    && PREFERENCES_ID.equals(option.id())) {
+                label.setOnMouseClicked(event -> {
+                    if (!ScreenShell.isFooterOptionEnabled(label)) {
+                        return;
+                    }
+                    closeAction.run();
+                });
+            }
+        }
+    }
+
+    private static Scene themedPreferencesScene(RouteContext context, BorderPane root, double width, double height) {
+        Parent sceneRoot = ScreenShell.withConfiguredBackground(
+                root,
+                context.applicationRoot(),
+                context.resourceConfig().defaultPreferencesScreenBackgroundColor(),
+                context.resourceConfig().defaultPreferencesScreenBackgroundImage(),
+                context.resourceConfig().defaultPreferencesScreenBackgroundImageTransparency());
+        return new Scene(sceneRoot, width, height);
     }
 
     private static void saveMasterVolume(RouteContext context, double volume) {

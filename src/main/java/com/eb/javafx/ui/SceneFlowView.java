@@ -12,7 +12,6 @@ import javafx.geometry.Insets;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
-import javafx.scene.control.Tooltip;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 
@@ -157,7 +156,7 @@ public final class SceneFlowView {
             button.setDisable(!choice.available());
             button.setOnAction(event -> choiceHandler.accept(choice.value()));
             if (!choice.tooltipTextDefinition().isBlank()) {
-                button.setTooltip(new Tooltip(choice.tooltipTextDefinition()));
+                button.setTooltip(ScreenShell.createTooltip(choice.tooltipTextDefinition()));
             }
             panel.getChildren().add(button);
             if (choice.selected()) {

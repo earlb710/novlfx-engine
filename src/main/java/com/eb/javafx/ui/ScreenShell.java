@@ -11,6 +11,7 @@ import javafx.geometry.Dimension2D;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
+import javafx.scene.Parent;
 import javafx.scene.control.Label;
 import javafx.scene.control.Tooltip;
 import javafx.scene.image.Image;
@@ -33,7 +34,11 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.stage.Screen;
+import javafx.util.Duration;
 
+import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
+import java.nio.file.Path;
 import java.net.URL;
 import java.io.IOException;
 import java.io.InputStream;
@@ -53,6 +58,10 @@ public final class ScreenShell {
     public static final String SCREEN_ROOT_STYLE_CLASS = "screen-root";
     public static final String SCREEN_TITLE_STYLE_CLASS = "screen-title";
     public static final String SCREEN_PANEL_STYLE_CLASS = "screen-panel";
+    public static final String SCREEN_SUBTITLE_STYLE_CLASS = "screen-subtitle";
+    public static final String SCREEN_TEXT_STYLE_CLASS = "screen-text";
+    public static final String SCREEN_TEXT_HIGHLIGHT_STYLE_CLASS = "screen-text-highlight";
+    public static final String SCREEN_VALUE_STYLE_CLASS = "screen-value";
     public static final String SCREEN_BACKGROUND_SVG_STYLE_CLASS = "screen-background-svg";
     public static final String SCREEN_FOOTER_BAR_STYLE_CLASS = "screen-footer-bar";
     public static final String SCREEN_FOOTER_OPTION_STYLE_CLASS = "screen-footer-option";
@@ -82,6 +91,8 @@ public final class ScreenShell {
     public static final String LAYOUT_SECTION_STYLE_CLASS = "layout-section";
     public static final String LAYOUT_SECTION_TITLE_STYLE_CLASS = "layout-section-title";
     public static final String LAYOUT_SECTION_ROW_STYLE_CLASS = "layout-section-row";
+    public static final String LAYOUT_TEXT_HIGHLIGHT_STYLE_CLASS = "layout-text-highlight";
+    public static final String LAYOUT_VALUE_STYLE_CLASS = "layout-value";
     public static final String LAYOUT_ACTION_ROW_STYLE_CLASS = "layout-action-row";
     public static final String LAYOUT_PRIMARY_ACTION_STYLE_CLASS = "layout-primary-action";
     public static final String LAYOUT_SECONDARY_ACTION_STYLE_CLASS = "layout-secondary-action";
@@ -100,6 +111,7 @@ public final class ScreenShell {
     private static final double DEFAULT_FOOTER_OPACITY = 0.5;
     private static final double FULL_FOOTER_OPACITY = 1.0;
     private static final double DEFAULT_FOOTER_BACKGROUND_TRANSPARENCY = 0.5;
+    private static final Duration DEFAULT_TOOLTIP_SHOW_DELAY = Duration.millis(150);
     private static final Color DEFAULT_FOOTER_BACKGROUND_COLOR = Color.rgb(10, 20, 38);
     private static final Color DEFAULT_FOOTER_BORDER_COLOR = Color.web("#143869");
     private static final CornerRadii FOOTER_CORNER_RADII = new CornerRadii(999);
@@ -501,6 +513,49 @@ public final class ScreenShell {
         return withBackgroundSvg(screen, svgResourcePath, additionalSvgResourcePaths);
     }
 
+    /** Applies configured screen background defaults behind a screen shell. */
+    public static Parent withConfiguredBackground(
+            BorderPane screen,
+            Path applicationRoot,
+            String backgroundColor,
+            String backgroundImage,
+            String backgroundImageTransparency) {
+        Validation.requireNonNull(screen, "Screen shell is required.");
+        Color canvasColor = configuredBackgroundColor(backgroundColor);
+        String imageSource = configuredBackgroundSource(applicationRoot, backgroundImage);
+        if (imageSource == null && canvasColor == null) {
+            return screen;
+        }
+        BorderPane configuredScreen = screen;
+        configuredScreen.setBackground(Background.EMPTY);
+        StackPane root = new StackPane();
+        ConfiguredBackgroundLayer backgroundLayer = new ConfiguredBackgroundLayer(
+                imageSource == null ? null : ScreenLayoutRenderer.loadBackgroundImage(imageSource),
+                configuredBackgroundOpacity(backgroundImageTransparency),
+                canvasColor == null ? Color.TRANSPARENT : canvasColor);
+        root.getChildren().add(backgroundLayer);
+        root.getChildren().add(configuredScreen);
+        root.setMinSize(0, 0);
+        configureBackgroundLayer(backgroundLayer, root);
+        configuredScreen.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
+        return root;
+    }
+
+    /** Finds the screen shell border pane even when it is wrapped in a background stack. */
+    public static BorderPane shellRoot(Parent root) {
+        if (root instanceof BorderPane borderPane) {
+            return borderPane;
+        }
+        if (root instanceof StackPane stackPane) {
+            for (Node child : stackPane.getChildren()) {
+                if (child instanceof BorderPane borderPane) {
+                    return borderPane;
+                }
+            }
+        }
+        return null;
+    }
+
     /**
      * Creates a full-screen SVG background node.
      *
@@ -740,6 +795,43 @@ public final class ScreenShell {
         return resource;
     }
 
+    private static String configuredBackgroundSource(Path applicationRoot, String backgroundImage) {
+        if (backgroundImage == null || backgroundImage.isBlank()) {
+            return null;
+        }
+        try {
+            Path candidate = Path.of(backgroundImage);
+            if (!candidate.isAbsolute() && applicationRoot != null) {
+                Path resolved = applicationRoot.resolve(candidate).normalize();
+                if (Files.exists(resolved)) {
+                    return resolved.toString();
+                }
+            }
+        } catch (InvalidPathException ignored) {
+            // Leave non-path values for URI/classpath resolution.
+        }
+        return backgroundImage;
+    }
+
+    private static Color configuredBackgroundColor(String backgroundColor) {
+        if (backgroundColor == null || backgroundColor.isBlank()) {
+            return null;
+        }
+        return parseColor(backgroundColor, "Screen background color is required.");
+    }
+
+    private static double configuredBackgroundOpacity(String transparency) {
+        if (transparency == null || transparency.isBlank()) {
+            return 1.0;
+        }
+        try {
+            double opacity = 1.0 - Double.parseDouble(transparency);
+            return opacity < 0.0 || opacity > 1.0 ? 1.0 : opacity;
+        } catch (NumberFormatException exception) {
+            return 1.0;
+        }
+    }
+
     static String footerTextWithoutFallbackIcon(FooterOption option, String displayText) {
         if (displayText.equals(option.icon())) {
             return "";
@@ -753,7 +845,7 @@ public final class ScreenShell {
 
     private static void applyFooterOptionState(Label label, FooterOption option) {
         label.setAccessibleText(option.accessibleText());
-        label.setDisable(!option.enabled());
+        label.setDisable(false);
         if (option.enabled()) {
             label.getStyleClass().remove(SCREEN_FOOTER_OPTION_DISABLED_STYLE_CLASS);
         } else if (!label.getStyleClass().contains(SCREEN_FOOTER_OPTION_DISABLED_STYLE_CLASS)) {
@@ -762,19 +854,35 @@ public final class ScreenShell {
     }
 
     private static void installFooterTooltip(Label label, String tooltip) {
+        Tooltip.uninstall(label, label.getTooltip());
+        label.setTooltip(null);
         if (tooltip == null || tooltip.isBlank()) {
             return;
         }
         label.setAccessibleHelp(tooltip);
+        Tooltip tooltipNode = createTooltip(tooltip);
+        Tooltip.install(label, tooltipNode);
         if (Platform.isFxApplicationThread()) {
-            label.setTooltip(new Tooltip(tooltip));
+            label.setTooltip(tooltipNode);
         } else {
             try {
-                Platform.runLater(() -> label.setTooltip(new Tooltip(tooltip)));
+                Platform.runLater(() -> label.setTooltip(tooltipNode));
             } catch (IllegalStateException exception) {
                 label.setAccessibleText(label.getAccessibleText() + " - " + tooltip);
             }
         }
+    }
+
+    public static boolean isFooterOptionEnabled(Label label) {
+        Validation.requireNonNull(label, "Footer label is required.");
+        return label.getUserData() instanceof FooterOption option && option.enabled();
+    }
+
+    /** Creates a shared tooltip with a shorter delay so hover help appears promptly across reusable UI screens. */
+    public static Tooltip createTooltip(String text) {
+        Tooltip tooltip = new Tooltip(text);
+        tooltip.setShowDelay(DEFAULT_TOOLTIP_SHOW_DELAY);
+        return tooltip;
     }
 
     private static boolean isCompactFooterWidth(double width, double compactWidth) {
@@ -812,6 +920,47 @@ public final class ScreenShell {
         @Override
         protected void layoutChildren() {
             imageView.resizeRelocate(0, 0, getWidth(), getHeight());
+        }
+
+        @Override
+        protected double computePrefWidth(double height) {
+            return 0;
+        }
+
+        @Override
+        protected double computePrefHeight(double width) {
+            return 0;
+        }
+    }
+
+    private static final class ConfiguredBackgroundLayer extends Region {
+        private final ImageView imageView;
+
+        private ConfiguredBackgroundLayer(Image image, double opacity, Color canvasBackgroundColor) {
+            imageView = image == null ? null : new ImageView(image);
+            setMinSize(0, 0);
+            setMouseTransparent(true);
+            setFocusTraversable(false);
+            setBackground(canvasBackgroundColor.equals(Color.TRANSPARENT)
+                    ? Background.EMPTY
+                    : new Background(new BackgroundFill(canvasBackgroundColor, CornerRadii.EMPTY, Insets.EMPTY)));
+            if (imageView != null) {
+                imageView.setMouseTransparent(true);
+                imageView.setFocusTraversable(false);
+                imageView.setPreserveRatio(false);
+                imageView.setSmooth(true);
+                imageView.setOpacity(opacity);
+                getChildren().add(imageView);
+            }
+        }
+
+        @Override
+        protected void layoutChildren() {
+            if (imageView != null) {
+                imageView.setFitWidth(getWidth());
+                imageView.setFitHeight(getHeight());
+                imageView.resizeRelocate(0, 0, getWidth(), getHeight());
+            }
         }
 
         @Override

@@ -114,6 +114,7 @@ public final class TestScreenApplication {
     private final JTextArea outputArea;
     private final JButton runButton;
     private final JButton runAllButton;
+    private final JCheckBox newOnlyCheckBox;
     private final JCheckBox manualOnlyCheckBox;
     private final TestScreenConfiguration configuration;
     private final Path resultPath;
@@ -137,6 +138,7 @@ public final class TestScreenApplication {
         outputArea = new JTextArea();
         runButton = new JButton("Run");
         runAllButton = new JButton("Run All in Category");
+        newOnlyCheckBox = new JCheckBox("new", true);
         manualOnlyCheckBox = new JCheckBox("manual");
         resultPath = configuration.resultPath();
         applicationVersion = System.getProperty(configuration.applicationVersionProperty(), "unknown");
@@ -230,6 +232,7 @@ public final class TestScreenApplication {
         runAllButton.setEnabled(false);
         runAllButton.addActionListener(event -> runAllCategoryTests());
 
+        newOnlyCheckBox.addActionListener(event -> refreshDisplayedTests());
         manualOnlyCheckBox.addActionListener(event -> refreshDisplayedTests());
 
         JPanel rightPanel = new JPanel(new BorderLayout(8, 8));
@@ -241,7 +244,10 @@ public final class TestScreenApplication {
         testTreePane.setPreferredSize(new Dimension(240, 540));
         JPanel treePanel = new JPanel(new BorderLayout(4, 4));
         treePanel.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 0));
-        treePanel.add(manualOnlyCheckBox, BorderLayout.NORTH);
+        JPanel filtersPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
+        filtersPanel.add(newOnlyCheckBox);
+        filtersPanel.add(manualOnlyCheckBox);
+        treePanel.add(filtersPanel, BorderLayout.NORTH);
         treePanel.add(testTreePane, BorderLayout.CENTER);
         rightPanel.setPreferredSize(new Dimension(520, 540));
 
@@ -400,10 +406,27 @@ public final class TestScreenApplication {
     }
 
     private List<TestCase> displayedTests() {
-        if (!manualOnlyCheckBox.isSelected()) {
-            return discoveredTests;
+        return filteredTests(discoveredTests, TestCase::newTest, TestCase::auto,
+                newOnlyCheckBox.isSelected(), manualOnlyCheckBox.isSelected());
+    }
+
+    static <T> List<T> filteredTests(
+            List<T> tests,
+            Predicate<T> isNew,
+            Predicate<T> isAuto,
+            boolean newOnly,
+            boolean manualOnly) {
+        Objects.requireNonNull(tests, "tests");
+        Objects.requireNonNull(isNew, "isNew");
+        Objects.requireNonNull(isAuto, "isAuto");
+        Stream<T> filtered = tests.stream();
+        if (newOnly) {
+            filtered = filtered.filter(isNew);
         }
-        return manualTests(discoveredTests, TestCase::auto);
+        if (manualOnly) {
+            filtered = filtered.filter(test -> !isAuto.test(test));
+        }
+        return filtered.toList();
     }
 
     private void populateTestTree(List<TestCase> tests) {
