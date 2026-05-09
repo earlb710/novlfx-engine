@@ -89,7 +89,7 @@ final class PreferencesSummaryScreenTest {
             Scene initialScene = router.open(SceneRouter.PREFERENCES_ROUTE);
             stage.setScene(initialScene);
 
-            BorderPane initialRoot = (BorderPane) initialScene.getRoot();
+            BorderPane initialRoot = ScreenShell.shellRoot(initialScene.getRoot());
             HBox footer = (HBox) initialRoot.getBottom();
             for (var child : footer.getChildren()) {
                 if (child instanceof Label label && label.getUserData() instanceof ScreenShell.FooterOption option) {
@@ -116,7 +116,7 @@ final class PreferencesSummaryScreenTest {
 
             assertTrue(stage.getScene() != null && stage.getScene() != initialScene,
                     "Preferences footer action should replace the scene.");
-            BorderPane mainMenuRoot = (BorderPane) stage.getScene().getRoot();
+            BorderPane mainMenuRoot = ScreenShell.shellRoot(stage.getScene().getRoot());
             assertEquals("Main Menu", ((Label) mainMenuRoot.getTop()).getText());
             stage.close();
         });
@@ -143,7 +143,7 @@ final class PreferencesSummaryScreenTest {
             double currentSceneWidth = stage.getScene().getWidth();
             double currentSceneHeight = stage.getScene().getHeight();
 
-            ComboBox<?> themeComboBox = findThemeComboBox((BorderPane) stage.getScene().getRoot());
+            ComboBox<?> themeComboBox = findThemeComboBox(ScreenShell.shellRoot(stage.getScene().getRoot()));
             themeComboBox.getSelectionModel().select(1);
             themeComboBox.getOnAction().handle(new ActionEvent());
 
@@ -171,9 +171,10 @@ final class PreferencesSummaryScreenTest {
             Scene scene = router.open(SceneRouter.PREFERENCES_ROUTE);
             stage.setScene(scene);
 
-            Label masterVolumeLabel = findLabel((BorderPane) scene.getRoot(), "Master volume");
-            Label masterVolumeValue = findLabel((BorderPane) scene.getRoot(), "100%");
-            Label themeLabel = findLabel((BorderPane) scene.getRoot(), "Theme");
+            BorderPane root = ScreenShell.shellRoot(scene.getRoot());
+            Label masterVolumeLabel = findLabel(root, "Master volume");
+            Label masterVolumeValue = findLabel(root, "100%");
+            Label themeLabel = findLabel(root, "Theme");
 
             assertTrue(masterVolumeLabel.getStyleClass().contains(ScreenShell.SCREEN_TEXT_STYLE_CLASS));
             assertTrue(themeLabel.getStyleClass().contains(ScreenShell.SCREEN_TEXT_STYLE_CLASS));

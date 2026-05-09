@@ -8,10 +8,12 @@ import com.eb.javafx.prefs.PreferencesService.FooterShortcutDisplay;
 import com.eb.javafx.state.GameState;
 import com.eb.javafx.util.VectorImage;
 import javafx.application.Platform;
+import javafx.scene.Parent;
+import javafx.scene.control.Tooltip;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.image.WritableImage;
-import javafx.scene.control.Tooltip;
+import javafx.scene.layout.Background;
 import javafx.scene.layout.BackgroundImage;
 import javafx.scene.layout.BackgroundPosition;
 import javafx.scene.layout.BackgroundRepeat;
@@ -28,6 +30,7 @@ import javafx.scene.paint.Color;
 import javafx.scene.shape.SVGPath;
 import javafx.util.Duration;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import java.awt.GraphicsEnvironment;
 import java.nio.file.Files;
@@ -164,6 +167,30 @@ final class ScreenShellTest {
 
         assertEquals(Color.ALICEBLUE, background.getBackground().getFills().get(0).getFill());
         assertEquals(0.35, backgroundImage.getOpacity());
+    }
+
+    @Test
+    void configuredBackgroundResolvesRelativeAssetsAndKeepsShellReachable(@TempDir Path tempDir) throws Exception {
+        Path background = tempDir.resolve("background.svg");
+        Files.writeString(background, """
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="8" viewBox="0 0 12 8">
+                  <rect width="12" height="8" fill="#ffffff"/>
+                </svg>
+                """);
+        BorderPane screen = new BorderPane();
+
+        Parent root = ScreenShell.withConfiguredBackground(screen, tempDir, "#123456", "background.svg", "0.25");
+
+        assertTrue(root instanceof StackPane);
+        StackPane backgroundRoot = (StackPane) root;
+        Region backgroundLayer = (Region) backgroundRoot.getChildren().get(0);
+        ImageView imageView = (ImageView) backgroundLayer.getChildrenUnmodifiable().get(0);
+
+        assertSame(screen, ScreenShell.shellRoot(backgroundRoot));
+        assertEquals(2, backgroundRoot.getChildren().size());
+        assertEquals(Color.web("#123456"), backgroundLayer.getBackground().getFills().get(0).getFill());
+        assertEquals(0.75, imageView.getOpacity());
+        assertEquals(Background.EMPTY, screen.getBackground());
     }
 
     @Test

@@ -11,6 +11,7 @@ import javafx.geometry.Dimension2D;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
+import javafx.scene.Parent;
 import javafx.scene.control.Label;
 import javafx.scene.control.Tooltip;
 import javafx.scene.image.Image;
@@ -35,6 +36,9 @@ import javafx.scene.paint.Color;
 import javafx.stage.Screen;
 import javafx.util.Duration;
 
+import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
+import java.nio.file.Path;
 import java.net.URL;
 import java.io.IOException;
 import java.io.InputStream;
@@ -509,6 +513,49 @@ public final class ScreenShell {
         return withBackgroundSvg(screen, svgResourcePath, additionalSvgResourcePaths);
     }
 
+    /** Applies configured screen background defaults behind a screen shell. */
+    public static Parent withConfiguredBackground(
+            BorderPane screen,
+            Path applicationRoot,
+            String backgroundColor,
+            String backgroundImage,
+            String backgroundImageTransparency) {
+        Validation.requireNonNull(screen, "Screen shell is required.");
+        Color canvasColor = configuredBackgroundColor(backgroundColor);
+        String imageSource = configuredBackgroundSource(applicationRoot, backgroundImage);
+        if (imageSource == null && canvasColor == null) {
+            return screen;
+        }
+        BorderPane configuredScreen = screen;
+        configuredScreen.setBackground(Background.EMPTY);
+        StackPane root = new StackPane();
+        ConfiguredBackgroundLayer backgroundLayer = new ConfiguredBackgroundLayer(
+                imageSource == null ? null : ScreenLayoutRenderer.loadBackgroundImage(imageSource),
+                configuredBackgroundOpacity(backgroundImageTransparency),
+                canvasColor == null ? Color.TRANSPARENT : canvasColor);
+        root.getChildren().add(backgroundLayer);
+        root.getChildren().add(configuredScreen);
+        root.setMinSize(0, 0);
+        configureBackgroundLayer(backgroundLayer, root);
+        configuredScreen.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
+        return root;
+    }
+
+    /** Finds the screen shell border pane even when it is wrapped in a background stack. */
+    public static BorderPane shellRoot(Parent root) {
+        if (root instanceof BorderPane borderPane) {
+            return borderPane;
+        }
+        if (root instanceof StackPane stackPane) {
+            for (Node child : stackPane.getChildren()) {
+                if (child instanceof BorderPane borderPane) {
+                    return borderPane;
+                }
+            }
+        }
+        return null;
+    }
+
     /**
      * Creates a full-screen SVG background node.
      *
@@ -748,6 +795,43 @@ public final class ScreenShell {
         return resource;
     }
 
+    private static String configuredBackgroundSource(Path applicationRoot, String backgroundImage) {
+        if (backgroundImage == null || backgroundImage.isBlank()) {
+            return null;
+        }
+        try {
+            Path candidate = Path.of(backgroundImage);
+            if (!candidate.isAbsolute() && applicationRoot != null) {
+                Path resolved = applicationRoot.resolve(candidate).normalize();
+                if (Files.exists(resolved)) {
+                    return resolved.toString();
+                }
+            }
+        } catch (InvalidPathException ignored) {
+            // Leave non-path values for URI/classpath resolution.
+        }
+        return backgroundImage;
+    }
+
+    private static Color configuredBackgroundColor(String backgroundColor) {
+        if (backgroundColor == null || backgroundColor.isBlank()) {
+            return null;
+        }
+        return parseColor(backgroundColor, "Screen background color is required.");
+    }
+
+    private static double configuredBackgroundOpacity(String transparency) {
+        if (transparency == null || transparency.isBlank()) {
+            return 1.0;
+        }
+        try {
+            double opacity = 1.0 - Double.parseDouble(transparency);
+            return opacity < 0.0 || opacity > 1.0 ? 1.0 : opacity;
+        } catch (NumberFormatException exception) {
+            return 1.0;
+        }
+    }
+
     static String footerTextWithoutFallbackIcon(FooterOption option, String displayText) {
         if (displayText.equals(option.icon())) {
             return "";
@@ -836,6 +920,47 @@ public final class ScreenShell {
         @Override
         protected void layoutChildren() {
             imageView.resizeRelocate(0, 0, getWidth(), getHeight());
+        }
+
+        @Override
+        protected double computePrefWidth(double height) {
+            return 0;
+        }
+
+        @Override
+        protected double computePrefHeight(double width) {
+            return 0;
+        }
+    }
+
+    private static final class ConfiguredBackgroundLayer extends Region {
+        private final ImageView imageView;
+
+        private ConfiguredBackgroundLayer(Image image, double opacity, Color canvasBackgroundColor) {
+            imageView = image == null ? null : new ImageView(image);
+            setMinSize(0, 0);
+            setMouseTransparent(true);
+            setFocusTraversable(false);
+            setBackground(canvasBackgroundColor.equals(Color.TRANSPARENT)
+                    ? Background.EMPTY
+                    : new Background(new BackgroundFill(canvasBackgroundColor, CornerRadii.EMPTY, Insets.EMPTY)));
+            if (imageView != null) {
+                imageView.setMouseTransparent(true);
+                imageView.setFocusTraversable(false);
+                imageView.setPreserveRatio(false);
+                imageView.setSmooth(true);
+                imageView.setOpacity(opacity);
+                getChildren().add(imageView);
+            }
+        }
+
+        @Override
+        protected void layoutChildren() {
+            if (imageView != null) {
+                imageView.setFitWidth(getWidth());
+                imageView.setFitHeight(getHeight());
+                imageView.resizeRelocate(0, 0, getWidth(), getHeight());
+            }
         }
 
         @Override

@@ -1,5 +1,6 @@
 package com.eb.javafx.routing;
 
+import com.eb.javafx.bootstrap.ApplicationResourceConfig;
 import com.eb.javafx.content.ContentRegistry;
 import com.eb.javafx.audio.AudioService;
 import com.eb.javafx.display.ImageDisplayRegistry;
@@ -10,10 +11,15 @@ import com.eb.javafx.save.SaveLoadService;
 import com.eb.javafx.scene.SceneExecutor;
 import com.eb.javafx.scene.SceneRegistry;
 import com.eb.javafx.state.GameState;
+import com.eb.javafx.ui.ScreenShell;
 import com.eb.javafx.ui.UiTheme;
+import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.layout.BorderPane;
 import javafx.stage.Stage;
+
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 /**
  * Shared services available to route factories when a scene is opened.
@@ -36,6 +42,8 @@ public final class RouteContext {
     private final SceneExecutor sceneExecutor;
     private final UiTheme uiTheme;
     private final SceneRouter sceneRouter;
+    private final Path applicationRoot;
+    private final ApplicationResourceConfig resourceConfig;
 
     public RouteContext(
             Stage primaryStage,
@@ -46,7 +54,8 @@ public final class RouteContext {
             UiTheme uiTheme,
             SceneRouter sceneRouter) {
         this(primaryStage, preferencesService, contentRegistry, imageDisplayRegistry, saveLoadService,
-                null, null, null, null, new SceneRegistry(), null, uiTheme, sceneRouter);
+                null, null, null, null, new SceneRegistry(), null, uiTheme, sceneRouter,
+                Paths.get("").toAbsolutePath().normalize(), ApplicationResourceConfig.defaults());
     }
 
     public RouteContext(
@@ -63,7 +72,8 @@ public final class RouteContext {
             UiTheme uiTheme,
             SceneRouter sceneRouter) {
         this(primaryStage, preferencesService, contentRegistry, imageDisplayRegistry, saveLoadService, randomService,
-                gameSupportService, null, gameState, sceneRegistry, sceneExecutor, uiTheme, sceneRouter);
+                gameSupportService, null, gameState, sceneRegistry, sceneExecutor, uiTheme, sceneRouter,
+                Paths.get("").toAbsolutePath().normalize(), ApplicationResourceConfig.defaults());
     }
 
     public RouteContext(
@@ -80,6 +90,27 @@ public final class RouteContext {
             SceneExecutor sceneExecutor,
             UiTheme uiTheme,
             SceneRouter sceneRouter) {
+        this(primaryStage, preferencesService, contentRegistry, imageDisplayRegistry, saveLoadService, randomService,
+                gameSupportService, audioService, gameState, sceneRegistry, sceneExecutor, uiTheme, sceneRouter,
+                Paths.get("").toAbsolutePath().normalize(), ApplicationResourceConfig.defaults());
+    }
+
+    public RouteContext(
+            Stage primaryStage,
+            PreferencesService preferencesService,
+            ContentRegistry contentRegistry,
+            ImageDisplayRegistry imageDisplayRegistry,
+            SaveLoadService saveLoadService,
+            GameRandomService randomService,
+            GameSupportService gameSupportService,
+            AudioService audioService,
+            GameState gameState,
+            SceneRegistry sceneRegistry,
+            SceneExecutor sceneExecutor,
+            UiTheme uiTheme,
+            SceneRouter sceneRouter,
+            Path applicationRoot,
+            ApplicationResourceConfig resourceConfig) {
         this.primaryStage = primaryStage;
         this.preferencesService = preferencesService;
         this.contentRegistry = contentRegistry;
@@ -93,6 +124,10 @@ public final class RouteContext {
         this.sceneExecutor = sceneExecutor == null && sceneRegistry != null ? new SceneExecutor(sceneRegistry) : sceneExecutor;
         this.uiTheme = uiTheme;
         this.sceneRouter = sceneRouter;
+        this.applicationRoot = applicationRoot == null
+                ? Paths.get("").toAbsolutePath().normalize()
+                : applicationRoot.toAbsolutePath().normalize();
+        this.resourceConfig = resourceConfig == null ? ApplicationResourceConfig.defaults() : resourceConfig;
     }
 
     public Stage primaryStage() {
@@ -147,6 +182,14 @@ public final class RouteContext {
         return sceneRouter;
     }
 
+    public Path applicationRoot() {
+        return applicationRoot;
+    }
+
+    public ApplicationResourceConfig resourceConfig() {
+        return resourceConfig;
+    }
+
     /** Opens a route and attaches it to the primary stage. */
     public void navigateTo(String routeId) {
         primaryStage.setScene(sceneRouter.open(routeId));
@@ -154,7 +197,43 @@ public final class RouteContext {
 
     /** Creates a consistently sized and themed scene for a screen shell root. */
     public Scene themedScene(BorderPane root) {
-        Scene scene = new Scene(root, preferencesService.windowWidth(), preferencesService.windowHeight());
+        return themedScene(
+                root,
+                resourceConfig.defaultAppBackgroundColor(),
+                resourceConfig.defaultAppBackgroundImage(),
+                resourceConfig.defaultAppBackgroundImageTransparency());
+    }
+
+    /** Creates a themed scene using the configured preferences screen background defaults. */
+    public Scene themedPreferencesScene(BorderPane root) {
+        return themedScene(
+                root,
+                resourceConfig.defaultPreferencesScreenBackgroundColor(),
+                resourceConfig.defaultPreferencesScreenBackgroundImage(),
+                resourceConfig.defaultPreferencesScreenBackgroundImageTransparency());
+    }
+
+    /** Creates a themed scene using the configured save/load screen background defaults. */
+    public Scene themedSaveLoadScene(BorderPane root) {
+        return themedScene(
+                root,
+                resourceConfig.defaultSaveLoadScreenBackgroundColor(),
+                resourceConfig.defaultSaveLoadScreenBackgroundImage(),
+                resourceConfig.defaultSaveLoadScreenBackgroundImageTransparency());
+    }
+
+    private Scene themedScene(
+            BorderPane root,
+            String backgroundColor,
+            String backgroundImage,
+            String backgroundImageTransparency) {
+        Parent sceneRoot = ScreenShell.withConfiguredBackground(
+                root,
+                applicationRoot,
+                backgroundColor,
+                backgroundImage,
+                backgroundImageTransparency);
+        Scene scene = new Scene(sceneRoot, preferencesService.windowWidth(), preferencesService.windowHeight());
         scene.getStylesheets().add(uiTheme.stylesheet());
         return scene;
     }

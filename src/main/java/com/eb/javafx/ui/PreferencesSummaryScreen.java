@@ -9,6 +9,7 @@ import com.eb.javafx.routing.RouteContext;
 import com.eb.javafx.routing.SceneRouter;
 import javafx.geometry.Insets;
 import javafx.scene.Node;
+import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
@@ -64,7 +65,7 @@ public final class PreferencesSummaryScreen {
         ScreenShell.applyFooterPreferences(footer, context.preferencesService());
         wireFooter(footer, closeAction);
 
-        Scene scene = new Scene(root, width, height);
+        Scene scene = themedPreferencesScene(context, root, width, height);
         scene.getStylesheets().add(context.uiTheme().stylesheet());
         scene.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
             if (isCloseShortcut(event.getCode(), event.isShortcutDown())) {
@@ -258,7 +259,8 @@ public final class PreferencesSummaryScreen {
 
     private static void applyCurrentFooterPreferences(RouteContext context) {
         Scene scene = context.primaryStage().getScene();
-        if (scene == null || !(scene.getRoot() instanceof BorderPane root)) {
+        BorderPane root = scene == null ? null : ScreenShell.shellRoot(scene.getRoot());
+        if (root == null) {
             return;
         }
         ScreenShell.applyFooterPreferences(root.getBottom(), context.preferencesService());
@@ -277,6 +279,16 @@ public final class PreferencesSummaryScreen {
                 });
             }
         }
+    }
+
+    private static Scene themedPreferencesScene(RouteContext context, BorderPane root, double width, double height) {
+        Parent sceneRoot = ScreenShell.withConfiguredBackground(
+                root,
+                context.applicationRoot(),
+                context.resourceConfig().defaultPreferencesScreenBackgroundColor(),
+                context.resourceConfig().defaultPreferencesScreenBackgroundImage(),
+                context.resourceConfig().defaultPreferencesScreenBackgroundImageTransparency());
+        return new Scene(sceneRoot, width, height);
     }
 
     private static void saveMasterVolume(RouteContext context, double volume) {

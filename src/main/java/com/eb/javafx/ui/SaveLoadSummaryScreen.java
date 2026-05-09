@@ -21,7 +21,10 @@ public final class SaveLoadSummaryScreen {
     }
 
     public static Scene createScene(RouteContext context) {
-        return ViewModelScreen.createScene(context, viewModel(context).screenViewModel());
+        SaveLoadSummaryViewModel viewModel = viewModel(context);
+        return context.themedSaveLoadScene(ScreenShell.titled(
+                viewModel.screenViewModel().title(),
+                ViewModelScreen.content(context, viewModel.screenViewModel())));
     }
 
     public static SaveLoadSummaryViewModel viewModel(RouteContext context) {

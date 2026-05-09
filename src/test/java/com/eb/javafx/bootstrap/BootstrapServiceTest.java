@@ -179,4 +179,5 @@ final class BootstrapServiceTest {
         assertEquals(imageRoot.resolve("characters/hero.png").normalize(),
                 context.imageDisplayRegistry().resolveAssetPath("hero.neutral").orElseThrow());
     }
+
 }
