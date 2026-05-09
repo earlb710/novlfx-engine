@@ -24,3 +24,6 @@ Expanded `UiThemeTest` to cover the new themed selection and combo-box styleshee
 24. Added `PreferencesSummaryScreenTest` coverage for the new preferences-screen footer enablement, tooltip, shortcut, and close-navigation behavior.
 25. Grouped the preferences audio controls into a dedicated `Audio` card block and the theme/footer display controls into a dedicated `Visual` card block.
 26. Extended `PreferencesSummaryScreenTest` to verify the new grouped card block structure while keeping the existing preferences footer behavior coverage.
+27. Updated footer tooltip installation so footer labels keep real JavaFX tooltips without relying on disabled label controls, allowing disabled-looking footer options to remain hoverable.
+28. Updated preferences theme changes to rebuild the preferences scene at the current scene size so changing theme colors does not resize the window.
+29. Changed default theme text colors so pastel variants use black label text and dark variants use white label text, and expanded tests to cover the new tooltip, sizing, and text color behavior.

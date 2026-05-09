@@ -7,11 +7,15 @@ import com.eb.javafx.prefs.PreferencesService;
 import com.eb.javafx.routing.SceneRouter;
 import com.eb.javafx.save.SaveLoadService;
 import javafx.application.Platform;
+import javafx.collections.ObservableList;
+import javafx.event.ActionEvent;
 import javafx.scene.Scene;
 import javafx.scene.control.Label;
+import javafx.scene.control.ComboBox;
 import javafx.scene.input.KeyCode;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import org.junit.jupiter.api.Test;
@@ -89,9 +93,12 @@ final class PreferencesSummaryScreenTest {
             for (var child : footer.getChildren()) {
                 if (child instanceof Label label && label.getUserData() instanceof ScreenShell.FooterOption option) {
                     if (option.id().equals("preferences")) {
-                        assertFalse(label.isDisabled(), "Preferences footer icon should stay enabled.");
+                        assertTrue(ScreenShell.isFooterOptionEnabled(label), "Preferences footer icon should stay enabled.");
+                        assertEquals("Close preferences. Keyboard shortcut: Ctrl+P.", label.getTooltip().getText());
                     } else {
-                        assertTrue(label.isDisabled(), option.id() + " footer icon should be disabled.");
+                        assertFalse(ScreenShell.isFooterOptionEnabled(label), option.id() + " footer icon should be disabled.");
+                        assertTrue(label.getTooltip() != null && !label.getTooltip().getText().isBlank(),
+                                option.id() + " footer icon should keep a tooltip.");
                     }
                 }
             }
@@ -114,6 +121,36 @@ final class PreferencesSummaryScreenTest {
         });
     }
 
+    @Test
+    void themeChangesPreserveCurrentPreferencesSceneSize() throws Exception {
+        assumeTrue(!GraphicsEnvironment.isHeadless(), "JavaFX route sizing test requires a display.");
+        runOnJavaFxThread(() -> {
+            PreferencesService preferencesService = new PreferencesService();
+            preferencesService.load();
+
+            UiTheme uiTheme = new UiTheme();
+            uiTheme.initialize(preferencesService);
+
+            Stage stage = new Stage();
+            SceneRouter router = createManualRouter(stage, preferencesService, uiTheme);
+            stage.setScene(router.open(SceneRouter.PREFERENCES_ROUTE));
+            stage.show();
+            stage.setWidth(910);
+            stage.setHeight(650);
+
+            double currentSceneWidth = stage.getScene().getWidth();
+            double currentSceneHeight = stage.getScene().getHeight();
+
+            ComboBox<?> themeComboBox = findThemeComboBox((BorderPane) stage.getScene().getRoot());
+            themeComboBox.getSelectionModel().select(1);
+            themeComboBox.getOnAction().handle(new ActionEvent());
+
+            assertEquals(currentSceneWidth, stage.getScene().getWidth());
+            assertEquals(currentSceneHeight, stage.getScene().getHeight());
+            stage.close();
+        });
+    }
+
     private static SceneRouter createManualRouter(Stage stage, PreferencesService preferencesService, UiTheme uiTheme) {
         ContentRegistry contentRegistry = new ContentRegistry();
         contentRegistry.registerBaseContent();
@@ -128,6 +165,25 @@ final class PreferencesSummaryScreenTest {
         SceneRouter router = new SceneRouter();
         router.registerDefaultRoutes(stage, preferencesService, contentRegistry, imageDisplayRegistry, saveLoadService, uiTheme);
         return router;
+    }
+
+    private static ComboBox<?> findThemeComboBox(BorderPane root) {
+        return findComboBoxes(root).stream()
+                .findFirst()
+                .orElseThrow();
+    }
+
+    private static java.util.List<ComboBox<?>> findComboBoxes(Pane pane) {
+        java.util.List<ComboBox<?>> comboBoxes = new java.util.ArrayList<>();
+        ObservableList<javafx.scene.Node> children = pane.getChildren();
+        for (javafx.scene.Node child : children) {
+            if (child instanceof ComboBox<?> comboBox) {
+                comboBoxes.add(comboBox);
+            } else if (child instanceof Pane childPane) {
+                comboBoxes.addAll(findComboBoxes(childPane));
+            }
+        }
+        return comboBoxes;
     }
 
     private static void runOnJavaFxThread(Runnable action) throws Exception {

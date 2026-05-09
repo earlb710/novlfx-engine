@@ -37,6 +37,10 @@ public final class PreferencesSummaryScreen {
     }
 
     public static Scene createScene(RouteContext context) {
+        return createScene(context, context.preferencesService().windowWidth(), context.preferencesService().windowHeight());
+    }
+
+    static Scene createScene(RouteContext context, double width, double height) {
         PreferencesSummaryViewModel viewModel = viewModel(context);
         Runnable closeAction = () -> context.navigateTo(SceneRouter.MAIN_MENU_ROUTE);
         VBox content = new VBox(10);
@@ -60,7 +64,8 @@ public final class PreferencesSummaryScreen {
         ScreenShell.applyFooterPreferences(footer, context.preferencesService());
         wireFooter(footer, closeAction);
 
-        Scene scene = context.themedScene(root);
+        Scene scene = new Scene(root, width, height);
+        scene.getStylesheets().add(context.uiTheme().stylesheet());
         scene.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
             if (isCloseShortcut(event.getCode(), event.isShortcutDown())) {
                 closeAction.run();
@@ -239,7 +244,10 @@ public final class PreferencesSummaryScreen {
     private static void applyTheme(RouteContext context, ThemeFamily family, ThemeVariant variant) {
         context.preferencesService().saveThemePreferences(family, variant);
         context.uiTheme().initialize(context.preferencesService());
-        context.primaryStage().setScene(createScene(context));
+        Scene currentScene = context.primaryStage().getScene();
+        double width = currentScene == null ? context.preferencesService().windowWidth() : currentScene.getWidth();
+        double height = currentScene == null ? context.preferencesService().windowHeight() : currentScene.getHeight();
+        context.primaryStage().setScene(createScene(context, width, height));
     }
 
     private static void applyCurrentFooterPreferences(RouteContext context) {
@@ -256,7 +264,7 @@ public final class PreferencesSummaryScreen {
                     && label.getUserData() instanceof ScreenShell.FooterOption option
                     && PREFERENCES_ID.equals(option.id())) {
                 label.setOnMouseClicked(event -> {
-                    if (label.isDisabled()) {
+                    if (!ScreenShell.isFooterOptionEnabled(label)) {
                         return;
                     }
                     closeAction.run();

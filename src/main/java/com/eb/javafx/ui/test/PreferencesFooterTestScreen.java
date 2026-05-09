@@ -97,7 +97,8 @@ public final class PreferencesFooterTestScreen {
         for (Node child : footer.getChildren()) {
             if (child instanceof Label label) {
                 label.setOnMouseClicked(event -> {
-                    if (label.isDisabled() || !(label.getUserData() instanceof ScreenShell.FooterOption option)) {
+                    if (!ScreenShell.isFooterOptionEnabled(label)
+                            || !(label.getUserData() instanceof ScreenShell.FooterOption option)) {
                         return;
                     }
                     triggerFooterOption(option, openPreferencesAction, backAction);

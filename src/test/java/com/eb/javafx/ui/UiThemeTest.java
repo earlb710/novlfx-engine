@@ -36,7 +36,7 @@ final class UiThemeTest {
 
         assertEquals("Theme Test Font", theme.fontFamily());
         assertEquals("#775fc1", theme.accentColor());
-        assertEquals("#43395a", theme.textColor());
+        assertEquals("#000000", theme.textColor());
         assertEquals("rgba(240, 232, 255, 0.92)", theme.panelBackground());
         assertEquals("#e6dafd", theme.hoverBackground());
         assertEquals(1.5, theme.fontScale());
@@ -44,7 +44,21 @@ final class UiThemeTest {
         assertTrue(theme.stylesheetContent().contains("-fx-background-color: #faf6ff;"));
         assertTrue(theme.stylesheetContent().contains("-fx-selection-bar: #775fc1;"));
         assertTrue(theme.stylesheetContent().contains(".combo-box-popup .list-cell:selected"));
-        assertTrue(theme.stylesheetContent().contains("-fx-text-fill: #775fc1;"));
+        assertTrue(theme.stylesheetContent().contains("-fx-text-fill: #000000;"));
+    }
+
+    @Test
+    void darkThemesUseWhiteDefaultText() {
+        preferences.put("ui.themeFamily", "violet");
+        preferences.put("ui.themeVariant", "dark");
+        PreferencesService preferencesService = new PreferencesService();
+        preferencesService.load();
+
+        UiTheme theme = new UiTheme();
+        theme.initialize(preferencesService);
+
+        assertEquals("#ffffff", theme.textColor());
+        assertTrue(theme.stylesheetContent().contains("-fx-text-fill: #ffffff;"));
     }
 
     @Test

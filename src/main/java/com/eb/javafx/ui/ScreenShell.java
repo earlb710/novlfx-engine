@@ -753,7 +753,7 @@ public final class ScreenShell {
 
     private static void applyFooterOptionState(Label label, FooterOption option) {
         label.setAccessibleText(option.accessibleText());
-        label.setDisable(!option.enabled());
+        label.setDisable(false);
         if (option.enabled()) {
             label.getStyleClass().remove(SCREEN_FOOTER_OPTION_DISABLED_STYLE_CLASS);
         } else if (!label.getStyleClass().contains(SCREEN_FOOTER_OPTION_DISABLED_STYLE_CLASS)) {
@@ -762,19 +762,28 @@ public final class ScreenShell {
     }
 
     private static void installFooterTooltip(Label label, String tooltip) {
+        Tooltip.uninstall(label, label.getTooltip());
+        label.setTooltip(null);
         if (tooltip == null || tooltip.isBlank()) {
             return;
         }
         label.setAccessibleHelp(tooltip);
+        Tooltip tooltipNode = new Tooltip(tooltip);
+        Tooltip.install(label, tooltipNode);
         if (Platform.isFxApplicationThread()) {
-            label.setTooltip(new Tooltip(tooltip));
+            label.setTooltip(tooltipNode);
         } else {
             try {
-                Platform.runLater(() -> label.setTooltip(new Tooltip(tooltip)));
+                Platform.runLater(() -> label.setTooltip(tooltipNode));
             } catch (IllegalStateException exception) {
                 label.setAccessibleText(label.getAccessibleText() + " - " + tooltip);
             }
         }
+    }
+
+    public static boolean isFooterOptionEnabled(Label label) {
+        Validation.requireNonNull(label, "Footer label is required.");
+        return label.getUserData() instanceof FooterOption option && option.enabled();
     }
 
     private static boolean isCompactFooterWidth(double width, double compactWidth) {
