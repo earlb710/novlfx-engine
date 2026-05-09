@@ -15,11 +15,28 @@ Updated preferences-related tests, manual footer-test copy, and the user manual 
 Updated `PreferencesFooterTestScreenTest` to handle an already-initialized JavaFX toolkit when launched from the manual test app.
 Added shared `TestUiScreenSize` limits and capped JavaFX test/support scenes to 800x600.
 Capped Swing-based test/support windows and the screen-designer preview/test harness sizing so test UI windows stay within 800x600.
-
-Added default app, preferences-screen, and save/load-screen background color/image/transparency fields to `ApplicationResourceConfig`, including JSON parsing/serialization, immutable update helpers, and bundled config defaults.
-Updated the Default App Values management screen coverage so the new config fields appear in the editable Application Values list.
-Documented the new config JSON fields and refreshed the startup demo config to show route-level background defaults.
-Polished the Default App Values Application Values tab with friendly field labels, browse buttons for file/path fields, color picker buttons for color fields, and transparency labels that show the supported 0-1 range.
-Removed the “changes apply only to this management screen” wording from the tab intro text in the Default App Values editor.
-Wired routed screen scene creation to actually use the new configured background defaults: generic routed scenes now use the app background settings, while the preferences and save/load generators use their dedicated background color/image/transparency properties.
-Added focused coverage for configured screen background wrapping and route-context background selection.
+18. Updated `PreferencesFooterTestScreenTest`'s manual launcher to build a real `SceneRouter` context so the footer preferences action opens the actual preferences route.
+19. Added a focused preferences-footer routing test that verifies the footer preferences control navigates to the routed preferences screen when a display is available.
+20. Reworked preferences theme changes to rebuild the preferences scene after saving a new theme so refreshed controls and SVG button artwork use the newly selected palette immediately.
+21. Extended the generated/default JavaFX theme stylesheet with explicit combo-box and popup list colors plus core selection/looked-up color tokens to avoid the popup CSS warnings during preference changes.
+22. Expanded `UiThemeTest` to cover the new themed selection and combo-box stylesheet rules.
+23. Updated `PreferencesSummaryScreen` so the preferences footer keeps only the preferences icon enabled, clicking it closes back to the main menu, and Ctrl+P now mirrors that close behavior while the preferences screen is open.
+24. Added `PreferencesSummaryScreenTest` coverage for the new preferences-screen footer enablement, tooltip, shortcut, and close-navigation behavior.
+25. Grouped the preferences audio controls into a dedicated `Audio` card block and the theme/footer display controls into a dedicated `Visual` card block.
+26. Extended `PreferencesSummaryScreenTest` to verify the new grouped card block structure while keeping the existing preferences footer behavior coverage.
+27. Updated footer tooltip installation so footer labels keep real JavaFX tooltips without relying on disabled label controls, allowing disabled-looking footer options to remain hoverable.
+28. Updated preferences theme changes to rebuild the preferences scene at the current scene size so changing theme colors does not resize the window.
+29. Changed default theme text colors so pastel variants use black label text and dark variants use white label text, and expanded tests to cover the new tooltip, sizing, and text color behavior.
+30. Added a default-on `new` checkbox before the manual filter on `TestScreenApplication` so the test tree shows only new tests until the filter is cleared.
+31. Added shared test-screen filtering logic to combine the new-test and manual-only filters, and expanded `TestScreenApplicationTest` to cover the filter combinations and checkbox defaults.
+32. Added a shared JavaFX tooltip factory with a shorter show delay and switched scene choice tooltips plus footer/preferences tooltips to use it.
+33. Expanded `UiTheme` and `default.css` with semantic text-role colors for subtitles, body text, highlighted text, values, and highlighted-text hover states while keeping screen, block, and button palette tokens theme-driven.
+34. Added shared `ScreenShell` semantic style-class hooks for screen/layout highlighted text and values, and applied the text/value roles to shared `PreferencesSummaryScreen` labels.
+35. Extended focused theme and preferences tests to cover the new semantic theme roles and shared styling hooks.
+36. Added default app, preferences-screen, and save/load-screen background color/image/transparency fields to `ApplicationResourceConfig`, including JSON parsing/serialization, immutable update helpers, and bundled config defaults.
+37. Updated the Default App Values management screen coverage so the new config fields appear in the editable Application Values list.
+38. Documented the new config JSON fields and refreshed the startup demo config to show route-level background defaults.
+39. Polished the Default App Values Application Values tab with friendly field labels, browse buttons for file/path fields, color picker buttons for color fields, and transparency labels that show the supported 0-1 range.
+40. Removed the “changes apply only to this management screen” wording from the tab intro text in the Default App Values editor.
+41. Wired routed screen scene creation to actually use the new configured background defaults: generic routed scenes now use the app background settings, while the preferences and save/load generators use their dedicated background color/image/transparency properties.
+42. Added focused coverage for configured screen background wrapping and route-context background selection.

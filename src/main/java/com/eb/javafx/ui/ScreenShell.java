@@ -34,6 +34,7 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.stage.Screen;
+import javafx.util.Duration;
 
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
@@ -57,6 +58,10 @@ public final class ScreenShell {
     public static final String SCREEN_ROOT_STYLE_CLASS = "screen-root";
     public static final String SCREEN_TITLE_STYLE_CLASS = "screen-title";
     public static final String SCREEN_PANEL_STYLE_CLASS = "screen-panel";
+    public static final String SCREEN_SUBTITLE_STYLE_CLASS = "screen-subtitle";
+    public static final String SCREEN_TEXT_STYLE_CLASS = "screen-text";
+    public static final String SCREEN_TEXT_HIGHLIGHT_STYLE_CLASS = "screen-text-highlight";
+    public static final String SCREEN_VALUE_STYLE_CLASS = "screen-value";
     public static final String SCREEN_BACKGROUND_SVG_STYLE_CLASS = "screen-background-svg";
     public static final String SCREEN_FOOTER_BAR_STYLE_CLASS = "screen-footer-bar";
     public static final String SCREEN_FOOTER_OPTION_STYLE_CLASS = "screen-footer-option";
@@ -86,6 +91,8 @@ public final class ScreenShell {
     public static final String LAYOUT_SECTION_STYLE_CLASS = "layout-section";
     public static final String LAYOUT_SECTION_TITLE_STYLE_CLASS = "layout-section-title";
     public static final String LAYOUT_SECTION_ROW_STYLE_CLASS = "layout-section-row";
+    public static final String LAYOUT_TEXT_HIGHLIGHT_STYLE_CLASS = "layout-text-highlight";
+    public static final String LAYOUT_VALUE_STYLE_CLASS = "layout-value";
     public static final String LAYOUT_ACTION_ROW_STYLE_CLASS = "layout-action-row";
     public static final String LAYOUT_PRIMARY_ACTION_STYLE_CLASS = "layout-primary-action";
     public static final String LAYOUT_SECONDARY_ACTION_STYLE_CLASS = "layout-secondary-action";
@@ -104,6 +111,7 @@ public final class ScreenShell {
     private static final double DEFAULT_FOOTER_OPACITY = 0.5;
     private static final double FULL_FOOTER_OPACITY = 1.0;
     private static final double DEFAULT_FOOTER_BACKGROUND_TRANSPARENCY = 0.5;
+    private static final Duration DEFAULT_TOOLTIP_SHOW_DELAY = Duration.millis(150);
     private static final Color DEFAULT_FOOTER_BACKGROUND_COLOR = Color.rgb(10, 20, 38);
     private static final Color DEFAULT_FOOTER_BORDER_COLOR = Color.web("#143869");
     private static final CornerRadii FOOTER_CORNER_RADII = new CornerRadii(999);
@@ -837,7 +845,7 @@ public final class ScreenShell {
 
     private static void applyFooterOptionState(Label label, FooterOption option) {
         label.setAccessibleText(option.accessibleText());
-        label.setDisable(!option.enabled());
+        label.setDisable(false);
         if (option.enabled()) {
             label.getStyleClass().remove(SCREEN_FOOTER_OPTION_DISABLED_STYLE_CLASS);
         } else if (!label.getStyleClass().contains(SCREEN_FOOTER_OPTION_DISABLED_STYLE_CLASS)) {
@@ -846,19 +854,35 @@ public final class ScreenShell {
     }
 
     private static void installFooterTooltip(Label label, String tooltip) {
+        Tooltip.uninstall(label, label.getTooltip());
+        label.setTooltip(null);
         if (tooltip == null || tooltip.isBlank()) {
             return;
         }
         label.setAccessibleHelp(tooltip);
+        Tooltip tooltipNode = createTooltip(tooltip);
+        Tooltip.install(label, tooltipNode);
         if (Platform.isFxApplicationThread()) {
-            label.setTooltip(new Tooltip(tooltip));
+            label.setTooltip(tooltipNode);
         } else {
             try {
-                Platform.runLater(() -> label.setTooltip(new Tooltip(tooltip)));
+                Platform.runLater(() -> label.setTooltip(tooltipNode));
             } catch (IllegalStateException exception) {
                 label.setAccessibleText(label.getAccessibleText() + " - " + tooltip);
             }
         }
+    }
+
+    public static boolean isFooterOptionEnabled(Label label) {
+        Validation.requireNonNull(label, "Footer label is required.");
+        return label.getUserData() instanceof FooterOption option && option.enabled();
+    }
+
+    /** Creates a shared tooltip with a shorter delay so hover help appears promptly across reusable UI screens. */
+    public static Tooltip createTooltip(String text) {
+        Tooltip tooltip = new Tooltip(text);
+        tooltip.setShowDelay(DEFAULT_TOOLTIP_SHOW_DELAY);
+        return tooltip;
     }
 
     private static boolean isCompactFooterWidth(double width, double compactWidth) {

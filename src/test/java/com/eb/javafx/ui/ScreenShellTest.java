@@ -7,10 +7,12 @@ import com.eb.javafx.prefs.PreferencesService;
 import com.eb.javafx.prefs.PreferencesService.FooterShortcutDisplay;
 import com.eb.javafx.state.GameState;
 import com.eb.javafx.util.VectorImage;
+import javafx.application.Platform;
+import javafx.scene.Parent;
+import javafx.scene.control.Tooltip;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.image.WritableImage;
-import javafx.scene.Parent;
 import javafx.scene.layout.Background;
 import javafx.scene.layout.BackgroundImage;
 import javafx.scene.layout.BackgroundPosition;
@@ -26,13 +28,18 @@ import javafx.scene.layout.VBox;
 import javafx.geometry.Pos;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.SVGPath;
+import javafx.util.Duration;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import java.awt.GraphicsEnvironment;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -40,8 +47,11 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 final class ScreenShellTest {
+    private static final AtomicBoolean JAVAFX_STARTED = new AtomicBoolean();
+
     @Test
     void backgroundImageStretchesToScreenBounds() {
         Image image = new WritableImage(16, 9);
@@ -334,6 +344,35 @@ final class ScreenShellTest {
         }
         assertTrue(VectorImage.isSvgPath(Path.of(
                 "src/main/resources/com/eb/javafx/images/icons/icons-10x10.svg")));
+    }
+
+    @Test
+    void createdTooltipsUseShorterShowDelay() throws Exception {
+        assumeTrue(!GraphicsEnvironment.isHeadless(), "Tooltip timing test requires a display.");
+        startJavaFxToolkit();
+        Tooltip tooltip = ScreenShell.createTooltip("Short delay");
+
+        assertEquals(Duration.millis(150), tooltip.getShowDelay());
+        assertEquals("Short delay", tooltip.getText());
+    }
+
+    private static void startJavaFxToolkit() throws InterruptedException {
+        CountDownLatch started = new CountDownLatch(1);
+        if (JAVAFX_STARTED.compareAndSet(false, true)) {
+            try {
+                Platform.startup(() -> {
+                    Platform.setImplicitExit(false);
+                    started.countDown();
+                });
+            } catch (IllegalStateException exception) {
+                Platform.setImplicitExit(false);
+                started.countDown();
+            }
+        } else {
+            Platform.setImplicitExit(false);
+            started.countDown();
+        }
+        assertTrue(started.await(5, TimeUnit.SECONDS), "JavaFX toolkit did not start.");
     }
 
     @Test

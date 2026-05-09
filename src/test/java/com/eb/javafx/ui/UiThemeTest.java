@@ -1,6 +1,8 @@
 package com.eb.javafx.ui;
 
 import com.eb.javafx.prefs.PreferencesService;
+import com.eb.javafx.prefs.PreferencesService.ThemeFamily;
+import com.eb.javafx.prefs.PreferencesService.ThemeVariant;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -36,13 +38,54 @@ final class UiThemeTest {
 
         assertEquals("Theme Test Font", theme.fontFamily());
         assertEquals("#775fc1", theme.accentColor());
-        assertEquals("#43395a", theme.textColor());
+        assertEquals("#000000", theme.textColor());
         assertEquals("rgba(240, 232, 255, 0.92)", theme.panelBackground());
         assertEquals("#e6dafd", theme.hoverBackground());
         assertEquals(1.5, theme.fontScale());
         assertTrue(theme.stylesheet().startsWith("file:"));
         assertTrue(theme.stylesheetContent().contains("-fx-background-color: #faf6ff;"));
+        assertTrue(theme.stylesheetContent().contains("-fx-selection-bar: #775fc1;"));
+        assertTrue(theme.stylesheetContent().contains(".combo-box-popup .list-cell:selected"));
+        assertTrue(theme.stylesheetContent().contains(".screen-text-highlight"));
+        assertTrue(theme.stylesheetContent().contains(".screen-value"));
+        assertTrue(theme.stylesheetContent().contains(".screen-text"));
         assertTrue(theme.stylesheetContent().contains("-fx-text-fill: #775fc1;"));
+        assertTrue(theme.stylesheetContent().contains("-fx-text-fill: #5b5076;"));
+        assertTrue(theme.stylesheetContent().contains("-fx-text-fill: #000000;"));
+    }
+
+    @Test
+    void darkThemesUseWhiteDefaultText() {
+        preferences.put("ui.themeFamily", "violet");
+        preferences.put("ui.themeVariant", "dark");
+        PreferencesService preferencesService = new PreferencesService();
+        preferencesService.load();
+
+        UiTheme theme = new UiTheme();
+        theme.initialize(preferencesService);
+
+        assertEquals("#ffffff", theme.textColor());
+        assertTrue(theme.stylesheetContent().contains("-fx-text-fill: #ffffff;"));
+    }
+
+    @Test
+    void everyThemeSelectionBuildsSemanticStylesheetContent() {
+        for (ThemeFamily family : ThemeFamily.values()) {
+            for (ThemeVariant variant : ThemeVariant.values()) {
+                preferences.put("ui.themeFamily", family.preferenceValue());
+                preferences.put("ui.themeVariant", variant.preferenceValue());
+                PreferencesService preferencesService = new PreferencesService();
+                preferencesService.load();
+
+                UiTheme theme = new UiTheme();
+                theme.initialize(preferencesService);
+
+                assertTrue(theme.stylesheet().startsWith("file:"));
+                assertTrue(theme.stylesheetContent().contains(".screen-text-highlight"));
+                assertTrue(theme.stylesheetContent().contains(".screen-value"));
+                assertTrue(theme.stylesheetContent().contains(".screen-text"));
+            }
+        }
     }
 
     @Test
@@ -63,5 +106,6 @@ final class UiThemeTest {
         assertTrue(theme.highContrast());
         assertTrue(theme.reducedMotion());
         assertTrue(theme.stylesheetContent().contains("-fx-background-color: #000000;"));
+        assertTrue(theme.stylesheetContent().contains("-fx-selection-bar-text: #ffffff;"));
     }
 }
