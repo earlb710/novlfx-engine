@@ -7,6 +7,7 @@ import com.eb.javafx.prefs.PreferencesService.ThemeFamily;
 import com.eb.javafx.prefs.PreferencesService.ThemeVariant;
 import com.eb.javafx.routing.RouteContext;
 import com.eb.javafx.routing.SceneRouter;
+import javafx.scene.Node;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
@@ -16,15 +17,20 @@ import javafx.scene.control.Slider;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import javafx.util.StringConverter;
 
 import java.util.List;
+import java.util.Set;
 
 /**
  * Reusable preferences route that summarizes startup preferences and exposes theme selection.
  */
 public final class PreferencesSummaryScreen {
     private static final String CLOSE_LABEL = "Close";
+    private static final String PREFERENCES_ID = "preferences";
+    private static final Set<String> ENABLED_FOOTER_IDS = Set.of(PREFERENCES_ID);
     private static final double VOLUME_PERCENT_SCALE = 100.0;
 
     private PreferencesSummaryScreen() {
@@ -32,6 +38,7 @@ public final class PreferencesSummaryScreen {
 
     public static Scene createScene(RouteContext context) {
         PreferencesSummaryViewModel viewModel = viewModel(context);
+        Runnable closeAction = () -> context.navigateTo(SceneRouter.MAIN_MENU_ROUTE);
         VBox content = new VBox(10);
         content.getChildren().add(sectionHeading("Audio"));
         content.getChildren().add(volumeRow(context, "Master volume", context.preferencesService().masterVolume(),
@@ -48,7 +55,19 @@ public final class PreferencesSummaryScreen {
 
         Button closeButton = ScreenNavigation.button(context, CLOSE_LABEL, SceneRouter.MAIN_MENU_ROUTE);
         content.getChildren().add(closeButton);
-        return context.themedScene(ScreenShell.titled(viewModel.title(), content));
+        BorderPane root = ScreenShell.titled(viewModel.title(), content, footerOptions());
+        HBox footer = (HBox) root.getBottom();
+        ScreenShell.applyFooterPreferences(footer, context.preferencesService());
+        wireFooter(footer, closeAction);
+
+        Scene scene = context.themedScene(root);
+        scene.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
+            if (isCloseShortcut(event.getCode(), event.isShortcutDown())) {
+                closeAction.run();
+                event.consume();
+            }
+        });
+        return scene;
     }
 
     public static PreferencesSummaryViewModel viewModel(RouteContext context) {
@@ -80,6 +99,22 @@ public final class PreferencesSummaryScreen {
                 "Sunset - Light pastel",
                 "Violet - Dark",
                 "Violet - Light pastel");
+    }
+
+    static List<ScreenShell.FooterOption> footerOptions() {
+        return ScreenShell.defaultFooterOptions().stream()
+                .map(option -> {
+                    ScreenShell.FooterOption updated = option.withEnabled(ENABLED_FOOTER_IDS.contains(option.id()));
+                    if (PREFERENCES_ID.equals(updated.id())) {
+                        return updated.withTooltip("Close preferences.");
+                    }
+                    return updated;
+                })
+                .toList();
+    }
+
+    static boolean isCloseShortcut(KeyCode keyCode, boolean shortcutDown) {
+        return shortcutDown && keyCode == KeyCode.P;
     }
 
     static String percentLabel(double volume) {
@@ -200,6 +235,21 @@ public final class PreferencesSummaryScreen {
             return;
         }
         ScreenShell.applyFooterPreferences(root.getBottom(), context.preferencesService());
+    }
+
+    private static void wireFooter(HBox footer, Runnable closeAction) {
+        for (Node child : footer.getChildren()) {
+            if (child instanceof Label label) {
+                label.setOnMouseClicked(event -> {
+                    if (label.isDisabled()
+                            || !(label.getUserData() instanceof ScreenShell.FooterOption option)
+                            || !PREFERENCES_ID.equals(option.id())) {
+                        return;
+                    }
+                    closeAction.run();
+                });
+            }
+        }
     }
 
     private static void saveMasterVolume(RouteContext context, double volume) {
