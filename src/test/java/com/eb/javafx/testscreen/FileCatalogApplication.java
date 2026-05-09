@@ -2,6 +2,7 @@ package com.eb.javafx.testscreen;
 
 import com.eb.javafx.util.JsonData;
 import com.eb.javafx.util.JsonStrings;
+import com.eb.javafx.ui.test.TestUiScreenSize;
 import com.eb.javafx.util.Validation;
 
 import javax.swing.BorderFactory;
@@ -70,7 +71,7 @@ public final class FileCatalogApplication {
         JFrame frame = new JFrame("NovlFX File Catalog");
         frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         frame.setContentPane(content());
-        frame.setSize(1100, 700);
+        frame.setSize(TestUiScreenSize.capWidth(1100), TestUiScreenSize.capHeight(700));
         frame.setLocationByPlatform(true);
         loadCatalogIfPresent();
         frame.setVisible(true);

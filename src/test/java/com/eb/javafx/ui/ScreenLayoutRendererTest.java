@@ -113,4 +113,9 @@ final class ScreenLayoutRendererTest {
         assertTrue(ScreenLayoutRenderer.dismissOnEscape(dialog));
     }
 
+    @Test
+    void rendererLoadsPackagedSvgBackgroundImages() {
+        assertTrue(ScreenLayoutRenderer.loadBackgroundImage("/com/eb/javafx/images/svg/background-gradient-rectangle.svg").getWidth() > 0);
+    }
+
 }

@@ -8,6 +8,7 @@ import com.eb.javafx.scene.ConversationDefinition.LineType;
 import com.eb.javafx.scene.ConversationConditionSyntax;
 import com.eb.javafx.scene.ConversationDefinitionJson;
 import com.eb.javafx.gamesupport.SystemCodeTables;
+import com.eb.javafx.ui.test.TestUiScreenSize;
 import com.eb.javafx.util.Validation;
 
 import javax.swing.JButton;
@@ -111,7 +112,7 @@ public final class ConversationEditorApplication {
         });
         frame.setJMenuBar(menuBar());
         frame.setContentPane(content());
-        frame.setSize(1100, 700);
+        frame.setSize(TestUiScreenSize.capWidth(1100), TestUiScreenSize.capHeight(700));
         frame.setLocationByPlatform(true);
         refreshFileList();
         refreshAll();

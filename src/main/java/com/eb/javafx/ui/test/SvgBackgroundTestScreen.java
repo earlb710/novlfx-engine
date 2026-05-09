@@ -54,7 +54,7 @@ public final class SvgBackgroundTestScreen {
             UiTheme uiTheme,
             Runnable backAction) {
         StackPane root = createRoot(title, backAction);
-        Scene scene = new Scene(root, preferencesService.windowWidth(), preferencesService.windowHeight());
+        Scene scene = new Scene(root, TestUiScreenSize.sceneWidth(preferencesService), TestUiScreenSize.sceneHeight(preferencesService));
         scene.getStylesheets().add(uiTheme.stylesheet());
         return scene;
     }

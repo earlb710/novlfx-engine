@@ -80,7 +80,7 @@ public final class CaptureTestScreen {
         content.setPadding(new Insets(4));
 
         BorderPane root = ScreenShell.titled(title, content);
-        Scene scene = new Scene(root, preferencesService.windowWidth(), preferencesService.windowHeight());
+        Scene scene = new Scene(root, TestUiScreenSize.sceneWidth(preferencesService), TestUiScreenSize.sceneHeight(preferencesService));
         scene.getStylesheets().add(uiTheme.stylesheet());
         return scene;
     }

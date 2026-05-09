@@ -248,6 +248,22 @@ final class ScreenDesignModelTest {
     }
 
     @Test
+    void blockBackgroundImageMetadataFlowsIntoLayoutSections() {
+        ScreenDesignModel model = new ScreenDesignModel("x", "X", ScreenLayoutType.FORM, Map.of(),
+                List.of(new ScreenDesignBlock("profile", "Profile", null, null, List.of(), "profile-shell", Map.of(
+                        "backgroundImage", "/com/eb/javafx/images/svg/background-gradient-rectangle.svg",
+                        "backgroundImageTransparency", "0.35"))),
+                List.of(),
+                List.of());
+
+        ScreenLayoutSection section = ScreenDesignLayoutAdapter.toLayoutModel(model).contentSections().get(0);
+
+        assertEquals("profile-shell", section.styleClass());
+        assertEquals("/com/eb/javafx/images/svg/background-gradient-rectangle.svg", section.metadata().get("backgroundImage"));
+        assertEquals("0.35", section.metadata().get("backgroundImageTransparency"));
+    }
+
+    @Test
     void layoutMetadataUsesDisplayRoleDefaultsWhenScreenDoesNotOverrideThem() {
         ScreenDesignModel model = new ScreenDesignModel("x", "X", ScreenLayoutType.FORM, Map.of(),
                 List.of(new ScreenDesignBlock("profile", "Profile")),

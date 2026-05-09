@@ -114,10 +114,23 @@ final class PreferencesFooterTestScreenTest {
         }
     }
 
-    private static void startJavaFxToolkit() {
+    private static void startJavaFxToolkit() throws InterruptedException {
+        CountDownLatch started = new CountDownLatch(1);
         if (JAVAFX_STARTED.compareAndSet(false, true)) {
-            Platform.startup(() -> {
-            });
+            try {
+                Platform.startup(() -> {
+                    Platform.setImplicitExit(false);
+                    started.countDown();
+                });
+            } catch (IllegalStateException exception) {
+                // TestScreenApplication may already have started JavaFX before this manual test runs.
+                Platform.setImplicitExit(false);
+                started.countDown();
+            }
+        } else {
+            Platform.setImplicitExit(false);
+            started.countDown();
         }
+        assertTrue(started.await(5, TimeUnit.SECONDS), "JavaFX toolkit did not start.");
     }
 }

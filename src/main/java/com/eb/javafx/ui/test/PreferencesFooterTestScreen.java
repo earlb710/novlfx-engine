@@ -25,7 +25,7 @@ public final class PreferencesFooterTestScreen {
     static final String DESCRIPTION_TEXT =
             "Use the footer preferences icon or Ctrl+P to open the default preferences screen.";
     static final String DETAIL_TEXT =
-            "The destination screen exposes music volume, sound volume, and theme color controls.";
+            "The destination screen exposes master/music/sound audio controls, theme color, and footer display settings.";
     static final String BACK_LABEL = "Back to main menu";
     private static final String BACK_ID = "back";
     private static final String PREFERENCES_ID = "preferences";
@@ -55,7 +55,7 @@ public final class PreferencesFooterTestScreen {
         ScreenShell.applyFooterPreferences(footer, preferencesService);
         wireFooter(footer, openPreferencesAction, backAction);
 
-        Scene scene = new Scene(root, preferencesService.windowWidth(), preferencesService.windowHeight());
+        Scene scene = new Scene(root, TestUiScreenSize.sceneWidth(preferencesService), TestUiScreenSize.sceneHeight(preferencesService));
         scene.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
             if (isPreferencesShortcut(event.getCode(), event.isShortcutDown())) {
                 openPreferencesAction.run();

@@ -60,7 +60,7 @@ public final class JsonScreenDesignTestScreen {
         shell.setBottom(status);
         render(initialDesignPath, shell, status);
 
-        Scene scene = new Scene(shell, preferencesService.windowWidth(), preferencesService.windowHeight());
+        Scene scene = new Scene(shell, TestUiScreenSize.sceneWidth(preferencesService), TestUiScreenSize.sceneHeight(preferencesService));
         scene.getStylesheets().add(uiTheme.stylesheet());
         return scene;
     }

@@ -102,7 +102,7 @@ public final class ComplexFooterBarTestScreen {
         wireFooter(footer, model, refresh);
         refresh.run();
 
-        Scene scene = new Scene(root, preferencesService.windowWidth(), preferencesService.windowHeight());
+        Scene scene = new Scene(root, TestUiScreenSize.sceneWidth(preferencesService), TestUiScreenSize.sceneHeight(preferencesService));
         scene.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
             if (handleShortcut(event.getCode(), model)) {
                 refresh.run();

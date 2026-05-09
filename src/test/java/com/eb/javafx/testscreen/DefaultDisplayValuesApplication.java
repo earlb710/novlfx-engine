@@ -1,6 +1,7 @@
 package com.eb.javafx.testscreen;
 
 import com.eb.javafx.text.TextVariableType;
+import com.eb.javafx.ui.test.TestUiScreenSize;
 import com.eb.javafx.util.Validation;
 import com.eb.javafx.ui.DisplayDefaults;
 import com.eb.javafx.util.JsonData;
@@ -63,7 +64,7 @@ public final class DefaultDisplayValuesApplication {
         JFrame frame = new JFrame("NovlFX Default App Values");
         frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         frame.setContentPane(content(frame));
-        frame.setSize(900, 650);
+        frame.setSize(TestUiScreenSize.capWidth(900), TestUiScreenSize.capHeight(650));
         frame.setLocationByPlatform(true);
         frame.setVisible(true);
     }

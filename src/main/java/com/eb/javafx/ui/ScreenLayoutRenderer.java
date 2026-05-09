@@ -4,23 +4,37 @@ import com.eb.javafx.events.GameEvent;
 import com.eb.javafx.events.GameEventBus;
 import com.eb.javafx.routing.RouteContext;
 import com.eb.javafx.util.FontResources;
+import com.eb.javafx.util.VectorImage;
 import com.eb.javafx.util.Validation;
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.Window;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
+import java.nio.file.Path;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
@@ -39,9 +53,12 @@ public final class ScreenLayoutRenderer {
     private static final Map<String, String> FONT_FAMILY_CACHE = new ConcurrentHashMap<>();
     private static final String EVENT_NAME_KEY = "eventName";
     private static final String ACTION_VALUE_KEY = "actionValue";
+    static final String BACKGROUND_IMAGE_KEY = "backgroundImage";
+    static final String BACKGROUND_IMAGE_TRANSPARENCY_KEY = "backgroundImageTransparency";
     static final String DIALOG_KEY = "dialog";
     static final String DISMISS_ON_CLICK_OUTSIDE_KEY = "dismissOnClickOutside";
     static final String DISMISS_ON_ESCAPE_KEY = "dismissOnEscape";
+    private static final int SVG_BACKGROUND_RASTER_SIZE = 2048;
 
     private ScreenLayoutRenderer() {
     }
@@ -144,7 +161,7 @@ public final class ScreenLayoutRenderer {
         HBox columns = new HBox(REGION_SPACING);
         columns.getStyleClass().add(ScreenShell.LAYOUT_TWO_COLUMN_STYLE_CLASS);
         for (ScreenLayoutSection section : model.contentSections()) {
-            VBox column = sectionNode(section, ScreenShell.LAYOUT_COLUMN_STYLE_CLASS, eventBus);
+            Region column = sectionNode(section, ScreenShell.LAYOUT_COLUMN_STYLE_CLASS, eventBus);
             HBox.setHgrow(column, Priority.ALWAYS);
             columns.getChildren().add(column);
         }
@@ -185,28 +202,28 @@ public final class ScreenLayoutRenderer {
         return grid;
     }
 
-    private static VBox sectionNode(ScreenLayoutSection section, String styleClass, GameEventBus eventBus) {
-        VBox sectionNode = new VBox(SECTION_SPACING);
-        sectionNode.setId(section.id());
-        sectionNode.getStyleClass().add(ScreenShell.LAYOUT_SECTION_STYLE_CLASS);
-        if (styleClass != null && !styleClass.isBlank()) {
-            sectionNode.getStyleClass().add(styleClass);
-        }
-        if (section.styleClass() != null && !section.styleClass().isBlank()) {
-            sectionNode.getStyleClass().add(section.styleClass());
-        }
-        applyContainerStyle(sectionNode, section.metadata(), isLayoutOnlyContainer(section));
-        addOptionalText(sectionNode, section.title(), ScreenShell.LAYOUT_SECTION_TITLE_STYLE_CLASS);
+    private static Region sectionNode(ScreenLayoutSection section, String styleClass, GameEventBus eventBus) {
+        VBox content = new VBox(SECTION_SPACING);
+        content.setMaxWidth(Double.MAX_VALUE);
+        addOptionalText(content, section.title(), ScreenShell.LAYOUT_SECTION_TITLE_STYLE_CLASS);
         for (int index = 0; index < section.lines().size(); index++) {
             String line = section.lines().get(index);
             Map<String, String> metadata = section.lineMetadata().isEmpty() ? Map.of() : section.lineMetadata().get(index);
             Node lineNode = lineNode(line, lineId(section, index), metadata, eventBus);
-            sectionNode.getChildren().add(lineNode);
+            content.getChildren().add(lineNode);
         }
         if (!section.childSections().isEmpty()) {
-            sectionNode.getChildren().add(childSectionContainer(section, eventBus));
+            content.getChildren().add(childSectionContainer(section, eventBus));
         }
-        return sectionNode;
+        Node backgroundLayer = backgroundImageLayer(section.metadata());
+        if (backgroundLayer == null) {
+            configureSectionRegion(content, section, styleClass);
+            return content;
+        }
+        StackPane layeredSection = new StackPane(backgroundLayer, content);
+        StackPane.setAlignment(content, Pos.TOP_LEFT);
+        configureSectionRegion(layeredSection, section, styleClass);
+        return layeredSection;
     }
 
     private static boolean isLayoutOnlyContainer(ScreenLayoutSection section) {
@@ -221,7 +238,7 @@ public final class ScreenLayoutRenderer {
             HBox children = new HBox(REGION_SPACING);
             children.getStyleClass().add(ScreenShell.LAYOUT_TWO_COLUMN_STYLE_CLASS);
             for (ScreenLayoutSection child : section.childSections()) {
-                VBox childNode = sectionNode(child, ScreenShell.LAYOUT_COLUMN_STYLE_CLASS, eventBus);
+                Region childNode = sectionNode(child, ScreenShell.LAYOUT_COLUMN_STYLE_CLASS, eventBus);
                 HBox.setHgrow(childNode, Priority.ALWAYS);
                 children.getChildren().add(childNode);
             }
@@ -322,6 +339,99 @@ public final class ScreenLayoutRenderer {
         appendBorderThickness(style, metadata.get("borderThickness"));
         appendBorderColor(style, metadata.get("borderColor"));
         return style.toString();
+    }
+
+    static Image loadBackgroundImage(String source) {
+        URL url = resolveBackgroundImageUrl(source);
+        if (isSvgSource(source, url)) {
+            return loadSvgBackgroundImage(source, url);
+        }
+        Image image = new Image(url.toExternalForm(), false);
+        if (image.isError()) {
+            throw new IllegalArgumentException("Failed to load background image: " + source, image.getException());
+        }
+        return image;
+    }
+
+    private static void configureSectionRegion(Region region, ScreenLayoutSection section, String styleClass) {
+        region.setId(section.id());
+        region.getStyleClass().add(ScreenShell.LAYOUT_SECTION_STYLE_CLASS);
+        if (styleClass != null && !styleClass.isBlank()) {
+            region.getStyleClass().add(styleClass);
+        }
+        if (section.styleClass() != null && !section.styleClass().isBlank()) {
+            region.getStyleClass().add(section.styleClass());
+        }
+        applyContainerStyle(region, section.metadata(), isLayoutOnlyContainer(section));
+    }
+
+    private static Node backgroundImageLayer(Map<String, String> metadata) {
+        String source = metadata.get(BACKGROUND_IMAGE_KEY);
+        if (source == null || source.isBlank()) {
+            return null;
+        }
+        return new BackgroundImageLayer(
+                loadBackgroundImage(source),
+                backgroundImageOpacity(metadata.get(BACKGROUND_IMAGE_TRANSPARENCY_KEY)));
+    }
+
+    private static double backgroundImageOpacity(String transparency) {
+        Double opacity = opacityFromTransparency(transparency);
+        if (opacity == null || opacity < 0.0 || opacity > 1.0) {
+            return 1.0;
+        }
+        return opacity;
+    }
+
+    private static URL resolveBackgroundImageUrl(String source) {
+        String checkedSource = Validation.requireNonBlank(source, "Screen layout background image is required.");
+        try {
+            URI uri = new URI(checkedSource);
+            if (uri.getScheme() != null) {
+                return uri.toURL();
+            }
+        } catch (URISyntaxException | IllegalArgumentException ignored) {
+            // Fall through to file/classpath lookup.
+        } catch (IOException exception) {
+            throw new IllegalArgumentException("Failed to resolve background image URL: " + checkedSource, exception);
+        }
+        try {
+            Path filePath = Path.of(checkedSource);
+            if (Files.exists(filePath)) {
+                return filePath.toAbsolutePath().normalize().toUri().toURL();
+            }
+        } catch (InvalidPathException | IOException ignored) {
+            // Fall through to classpath lookup.
+        }
+        String classLoaderPath = checkedSource.startsWith("/") ? checkedSource.substring(1) : checkedSource;
+        URL resource = ScreenLayoutRenderer.class.getClassLoader().getResource(classLoaderPath);
+        if (resource == null) {
+            resource = ScreenLayoutRenderer.class.getResource(checkedSource.startsWith("/") ? checkedSource : "/" + checkedSource);
+        }
+        if (resource != null) {
+            return resource;
+        }
+        throw new IllegalArgumentException("Screen layout background image is missing: " + checkedSource);
+    }
+
+    private static boolean isSvgSource(String source, URL url) {
+        String lowerSource = source.toLowerCase(java.util.Locale.ROOT);
+        String lowerPath = url.getPath().toLowerCase(java.util.Locale.ROOT);
+        return lowerSource.endsWith(".svg") || lowerPath.endsWith(".svg");
+    }
+
+    private static Image loadSvgBackgroundImage(String source, URL url) {
+        try (InputStream inputStream = url.openStream()) {
+            VectorImage image = VectorImage.fromInputStream(inputStream);
+            // Each load creates an independent SVG document, so this mutation stays local to the background image.
+            // Background SVGs are intentionally stretched to fill their block bounds like raster backgrounds.
+            image.getSvgDocument().getDocumentElement().setAttribute("preserveAspectRatio", "none");
+            return image.toRasterImage(SVG_BACKGROUND_RASTER_SIZE, SVG_BACKGROUND_RASTER_SIZE);
+        } catch (IOException exception) {
+            throw new IllegalArgumentException("Failed to load SVG background image: " + source, exception);
+        } catch (IllegalArgumentException | IllegalStateException exception) {
+            throw new IllegalArgumentException("SVG background image has invalid format: " + source, exception);
+        }
     }
 
     private static void appendFontFamily(StringBuilder style, String value) {
@@ -466,6 +576,41 @@ public final class ScreenLayoutRenderer {
             label.getStyleClass().add(styleClass);
             label.setPadding(new Insets(0, 0, 4, 0));
             parent.getChildren().add(label);
+        }
+    }
+
+    /** Transparent section background layer that stretches a loaded image to the region bounds. */
+    private static final class BackgroundImageLayer extends Region {
+        private final ImageView imageView;
+
+        private BackgroundImageLayer(Image image, double opacity) {
+            imageView = new ImageView(image);
+            setMinSize(0, 0);
+            setMouseTransparent(true);
+            setFocusTraversable(false);
+            imageView.setMouseTransparent(true);
+            imageView.setFocusTraversable(false);
+            imageView.setPreserveRatio(false);
+            imageView.setSmooth(true);
+            imageView.setOpacity(opacity);
+            getChildren().add(imageView);
+        }
+
+        @Override
+        protected void layoutChildren() {
+            imageView.setFitWidth(getWidth());
+            imageView.setFitHeight(getHeight());
+            imageView.resizeRelocate(0, 0, getWidth(), getHeight());
+        }
+
+        @Override
+        protected double computePrefWidth(double height) {
+            return 0;
+        }
+
+        @Override
+        protected double computePrefHeight(double width) {
+            return 0;
         }
     }
 }
