@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
@@ -46,44 +47,67 @@ final class DefaultDisplayValuesApplicationTest {
     @Test
     void applicationValuesExposeApplicationConfigFields() {
         assertEquals(List.of(
-                        "debug",
-                        "categoryCodeTablesPath",
-                        "imageAssetRoot",
-                        "defaultAppBackgroundColor",
-                        "defaultAppBackgroundImage",
-                        "defaultAppBackgroundImageTransparency",
-                        "defaultPreferencesScreenBackgroundColor",
-                        "defaultPreferencesScreenBackgroundImage",
-                        "defaultPreferencesScreenBackgroundImageTransparency",
-                        "defaultSaveLoadScreenBackgroundColor",
-                        "defaultSaveLoadScreenBackgroundImage",
-                        "defaultSaveLoadScreenBackgroundImageTransparency",
-                        "resources.uiTheme"),
+                        "Debug mode",
+                        "Category code tables file",
+                        "Image asset root folder",
+                        "Default app background color",
+                        "Default app background image",
+                        "Default app background image transparency [0-1]",
+                        "Default preferences screen background color",
+                        "Default preferences screen background image",
+                        "Default preferences screen background image transparency [0-1]",
+                        "Default save/load screen background color",
+                        "Default save/load screen background image",
+                        "Default save/load screen background image transparency [0-1]",
+                        "UI theme file"),
                 DefaultDisplayValuesApplication.applicationConfigFields().stream()
                         .map(DefaultDisplayValuesApplication.ApplicationConfigField::label)
                         .toList());
         assertEquals("true", DefaultDisplayValuesApplication.applicationConfigFields().get(0).value());
         assertTrue(DefaultDisplayValuesApplication.applicationConfigFields().stream()
-                .anyMatch(field -> field.label().equals("resources.uiTheme")
+                .anyMatch(field -> field.key().equals("resources.uiTheme")
                         && field.value().equals("src/main/resources/com/eb/javafx/ui/default.css")));
         assertTrue(DefaultDisplayValuesApplication.applicationConfigFields().stream()
-                .filter(field -> field.label().startsWith("default"))
+                .filter(field -> field.key().startsWith("default"))
                 .allMatch(field -> field.value().isEmpty()));
     }
 
     @Test
-    void applicationValuesUseEditableControls() {
+    void applicationValuesUseTypedEditors() {
         Component booleanEditor = DefaultDisplayValuesApplication.editableField(
-                new DefaultDisplayValuesApplication.ApplicationConfigField("debug", "true"));
-        Component textEditor = DefaultDisplayValuesApplication.editableField(
-                new DefaultDisplayValuesApplication.ApplicationConfigField("imageAssetRoot", "game"));
+                new DefaultDisplayValuesApplication.ApplicationConfigField(
+                        "debug",
+                        "Debug mode",
+                        "true",
+                        DefaultDisplayValuesApplication.ApplicationConfigFieldEditorType.BOOLEAN));
+        Component directoryEditor = DefaultDisplayValuesApplication.editableField(
+                new DefaultDisplayValuesApplication.ApplicationConfigField(
+                        "imageAssetRoot",
+                        "Image asset root folder",
+                        "game",
+                        DefaultDisplayValuesApplication.ApplicationConfigFieldEditorType.DIRECTORY));
+        Component colorEditor = DefaultDisplayValuesApplication.editableField(
+                new DefaultDisplayValuesApplication.ApplicationConfigField(
+                        "defaultAppBackgroundColor",
+                        "Default app background color",
+                        "#112233",
+                        DefaultDisplayValuesApplication.ApplicationConfigFieldEditorType.COLOR));
+        Component transparencyEditor = DefaultDisplayValuesApplication.editableField(
+                new DefaultDisplayValuesApplication.ApplicationConfigField(
+                        "defaultAppBackgroundImageTransparency",
+                        "Default app background image transparency [0-1]",
+                        "0.5",
+                        DefaultDisplayValuesApplication.ApplicationConfigFieldEditorType.TEXT));
 
         assertTrue(booleanEditor instanceof JCheckBox);
         assertTrue(booleanEditor.isEnabled());
         assertTrue(((JCheckBox) booleanEditor).isSelected());
-        assertTrue(textEditor instanceof JTextField);
-        assertTrue(((JTextField) textEditor).isEditable());
-        assertEquals("game", ((JTextField) textEditor).getText());
+        assertEquals("Browse...", buttonText(directoryEditor));
+        assertEquals("game", textValue(directoryEditor));
+        assertEquals("Choose...", buttonText(colorEditor));
+        assertEquals("#112233", textValue(colorEditor));
+        assertTrue(transparencyEditor instanceof JTextField);
+        assertEquals("0.5", ((JTextField) transparencyEditor).getText());
     }
 
     @Test
@@ -362,6 +386,47 @@ final class DefaultDisplayValuesApplicationTest {
     }
 
     @Test
+    void applicationValuesTabIntroDoesNotMentionManagementScreenOnly() {
+        assertEquals("<html>Application config values from <code>/com/eb/javafx/bootstrap/config.json</code>.</html>",
+                DefaultDisplayValuesApplication.applicationValuesIntroText());
+        assertEquals("<html>Lookup variable catalog definitions. Declare each variable name and the type it resolves to.</html>",
+                DefaultDisplayValuesApplication.lookupVariablesIntroText());
+        assertEquals("<html>Edit default display values from <code>/com/eb/javafx/ui/display-defaults.json</code>.</html>",
+                DefaultDisplayValuesApplication.displayValuesIntroText());
+
+        JPanel panel = DefaultDisplayValuesApplication.applicationValuesPanel(
+                DefaultDisplayValuesApplication.applicationConfigFields());
+        JLabel intro = (JLabel) ((BorderLayout) panel.getLayout()).getLayoutComponent(BorderLayout.NORTH);
+        assertFalse(intro.getText().contains("management screen"));
+    }
+
+    @Test
+    void applicationConfigFieldHelpersProvideFriendlyLabelsAndTypedEditors() {
+        assertEquals("Default save/load screen background image transparency [0-1]",
+                DefaultDisplayValuesApplication.applicationConfigFieldLabel("defaultSaveLoadScreenBackgroundImageTransparency"));
+        assertEquals("UI theme file",
+                DefaultDisplayValuesApplication.applicationConfigFieldLabel("resources.uiTheme"));
+        assertEquals(DefaultDisplayValuesApplication.ApplicationConfigFieldEditorType.FILE,
+                DefaultDisplayValuesApplication.applicationConfigFields().stream()
+                        .filter(field -> field.key().equals("categoryCodeTablesPath"))
+                        .findFirst()
+                        .orElseThrow()
+                        .editorType());
+        assertEquals(DefaultDisplayValuesApplication.ApplicationConfigFieldEditorType.DIRECTORY,
+                DefaultDisplayValuesApplication.applicationConfigFields().stream()
+                        .filter(field -> field.key().equals("imageAssetRoot"))
+                        .findFirst()
+                        .orElseThrow()
+                        .editorType());
+        assertEquals(DefaultDisplayValuesApplication.ApplicationConfigFieldEditorType.COLOR,
+                DefaultDisplayValuesApplication.applicationConfigFields().stream()
+                        .filter(field -> field.key().equals("defaultAppBackgroundColor"))
+                        .findFirst()
+                        .orElseThrow()
+                        .editorType());
+    }
+
+    @Test
     void displayResourceContentsLoadFromClasspath() {
         assertTrue(DefaultDisplayValuesApplication.resourceContents("/com/eb/javafx/ui/default.css")
                 .contains(".root"));
@@ -439,5 +504,18 @@ final class DefaultDisplayValuesApplicationTest {
         JScrollPane scrollPane = (JScrollPane) ((BorderLayout) panel.getLayout()).getLayoutComponent(BorderLayout.CENTER);
         JViewport viewport = scrollPane.getViewport();
         return (JPanel) viewport.getView();
+    }
+
+    private static String textValue(Component editor) {
+        if (editor instanceof JTextField textField) {
+            return textField.getText();
+        }
+        JPanel panel = (JPanel) editor;
+        return ((JTextField) panel.getComponent(0)).getText();
+    }
+
+    private static String buttonText(Component editor) {
+        JPanel panel = (JPanel) editor;
+        return ((JButton) panel.getComponent(1)).getText();
     }
 }

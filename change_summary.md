@@ -19,3 +19,5 @@ Capped Swing-based test/support windows and the screen-designer preview/test har
 Added default app, preferences-screen, and save/load-screen background color/image/transparency fields to `ApplicationResourceConfig`, including JSON parsing/serialization, immutable update helpers, and bundled config defaults.
 Updated the Default App Values management screen coverage so the new config fields appear in the editable Application Values list.
 Documented the new config JSON fields and refreshed the startup demo config to show route-level background defaults.
+Polished the Default App Values Application Values tab with friendly field labels, browse buttons for file/path fields, color picker buttons for color fields, and transparency labels that show the supported 0-1 range.
+Removed the “changes apply only to this management screen” wording from the tab intro text in the Default App Values editor.
