@@ -91,12 +91,12 @@ final class BlockBackgroundImageTestScreenTest {
                             .allMatch(BlockBackgroundImageTestScreenTest::hasRoundedBackgroundClip),
                     "Expected block background images to be clipped to the rounded border shape.");
             assertTrue(layeredSections.stream().filter(BlockBackgroundImageTestScreenTest::isBlockBackgroundLayer)
-                            .allMatch(BlockBackgroundImageTestScreenTest::clipMatchesRegionSize),
+                            .allMatch(BlockBackgroundImageTestScreenTest::pillClipMatchesRegionSize),
                     "Expected block background clips to match the initial rendered size.");
             root.resize(960, 540);
             root.layout();
             assertTrue(layeredSections.stream().filter(BlockBackgroundImageTestScreenTest::isBlockBackgroundLayer)
-                            .allMatch(BlockBackgroundImageTestScreenTest::clipMatchesRegionSize),
+                            .allMatch(BlockBackgroundImageTestScreenTest::pillClipMatchesRegionSize),
                     "Expected block background clips to update after the block resizes.");
             VBox body = assertInstanceOf(VBox.class, content.getCenter());
             assertTrue(body.getChildren().size() >= 1);
@@ -158,7 +158,7 @@ final class BlockBackgroundImageTestScreenTest {
                 && clip.getArcHeight() > 0;
     }
 
-    private static boolean clipMatchesRegionSize(StackPane stackPane) {
+    private static boolean pillClipMatchesRegionSize(StackPane stackPane) {
         if (!(stackPane.getChildren().get(0) instanceof Region region)) {
             return false;
         }

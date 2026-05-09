@@ -635,8 +635,8 @@ public final class ScreenLayoutRenderer {
                 clipShape.setArcHeight(height);
                 return;
             }
-            clipShape.setArcWidth(Math.min(width, ROUNDED_BORDER_CLIP_ARC));
-            clipShape.setArcHeight(Math.min(height, ROUNDED_BORDER_CLIP_ARC));
+            clipShape.setArcWidth(ROUNDED_BORDER_CLIP_ARC);
+            clipShape.setArcHeight(ROUNDED_BORDER_CLIP_ARC);
         }
 
         private static boolean requiresClip(String borderCorner) {
