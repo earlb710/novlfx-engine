@@ -15,3 +15,7 @@ Updated preferences-related tests, manual footer-test copy, and the user manual 
 Updated `PreferencesFooterTestScreenTest` to handle an already-initialized JavaFX toolkit when launched from the manual test app.
 Added shared `TestUiScreenSize` limits and capped JavaFX test/support scenes to 800x600.
 Capped Swing-based test/support windows and the screen-designer preview/test harness sizing so test UI windows stay within 800x600.
+
+Added default app, preferences-screen, and save/load-screen background color/image/transparency fields to `ApplicationResourceConfig`, including JSON parsing/serialization, immutable update helpers, and bundled config defaults.
+Updated the Default App Values management screen coverage so the new config fields appear in the editable Application Values list.
+Documented the new config JSON fields and refreshed the startup demo config to show route-level background defaults.

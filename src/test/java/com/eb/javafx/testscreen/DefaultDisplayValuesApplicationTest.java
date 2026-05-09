@@ -45,7 +45,20 @@ final class DefaultDisplayValuesApplicationTest {
 
     @Test
     void applicationValuesExposeApplicationConfigFields() {
-        assertEquals(List.of("debug", "categoryCodeTablesPath", "imageAssetRoot", "resources.uiTheme"),
+        assertEquals(List.of(
+                        "debug",
+                        "categoryCodeTablesPath",
+                        "imageAssetRoot",
+                        "defaultAppBackgroundColor",
+                        "defaultAppBackgroundImage",
+                        "defaultAppBackgroundImageTransparency",
+                        "defaultPreferencesScreenBackgroundColor",
+                        "defaultPreferencesScreenBackgroundImage",
+                        "defaultPreferencesScreenBackgroundImageTransparency",
+                        "defaultSaveLoadScreenBackgroundColor",
+                        "defaultSaveLoadScreenBackgroundImage",
+                        "defaultSaveLoadScreenBackgroundImageTransparency",
+                        "resources.uiTheme"),
                 DefaultDisplayValuesApplication.applicationConfigFields().stream()
                         .map(DefaultDisplayValuesApplication.ApplicationConfigField::label)
                         .toList());
@@ -53,6 +66,9 @@ final class DefaultDisplayValuesApplicationTest {
         assertTrue(DefaultDisplayValuesApplication.applicationConfigFields().stream()
                 .anyMatch(field -> field.label().equals("resources.uiTheme")
                         && field.value().equals("src/main/resources/com/eb/javafx/ui/default.css")));
+        assertTrue(DefaultDisplayValuesApplication.applicationConfigFields().stream()
+                .filter(field -> field.label().startsWith("default"))
+                .allMatch(field -> field.value().isEmpty()));
     }
 
     @Test

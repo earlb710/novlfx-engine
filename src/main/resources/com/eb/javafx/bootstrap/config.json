@@ -2,6 +2,15 @@
   "debug": true,
   "categoryCodeTablesPath": "config/category-code-tables.en.json",
   "imageAssetRoot": "game",
+  "defaultAppBackgroundColor": "",
+  "defaultAppBackgroundImage": "",
+  "defaultAppBackgroundImageTransparency": "",
+  "defaultPreferencesScreenBackgroundColor": "",
+  "defaultPreferencesScreenBackgroundImage": "",
+  "defaultPreferencesScreenBackgroundImageTransparency": "",
+  "defaultSaveLoadScreenBackgroundColor": "",
+  "defaultSaveLoadScreenBackgroundImage": "",
+  "defaultSaveLoadScreenBackgroundImageTransparency": "",
   "resources": {
     "uiTheme": "src/main/resources/com/eb/javafx/ui/default.css"
   }
