@@ -1042,7 +1042,7 @@ public final class ScreenDesignerApplication {
             }
             int separator = line.indexOf('=');
             if (separator < 1) {
-                throw new IllegalArgumentException("Metadata line " + lineNumber + " must use key=value format.");
+                throw new IllegalArgumentException("Metadata line " + lineNumber + " must use non-empty key=value format.");
             }
             String key = line.substring(0, separator).trim();
             metadata.put(key, line.substring(separator + 1).trim());

@@ -423,6 +423,7 @@ public final class ScreenLayoutRenderer {
     private static Image loadSvgBackgroundImage(String source, URL url) {
         try (InputStream inputStream = url.openStream()) {
             VectorImage image = VectorImage.fromInputStream(inputStream);
+            // Each load creates an independent SVG document, so this mutation stays local to the background image.
             // Background SVGs are intentionally stretched to fill their block bounds like raster backgrounds.
             image.getSvgDocument().getDocumentElement().setAttribute("preserveAspectRatio", "none");
             return image.toRasterImage(SVG_BACKGROUND_RASTER_SIZE, SVG_BACKGROUND_RASTER_SIZE);
@@ -578,6 +579,7 @@ public final class ScreenLayoutRenderer {
         }
     }
 
+    /** Transparent section background layer that stretches a loaded image to the region bounds. */
     private static final class BackgroundImageLayer extends Region {
         private final ImageView imageView;
 

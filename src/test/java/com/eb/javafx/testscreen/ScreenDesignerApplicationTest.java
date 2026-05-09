@@ -283,7 +283,21 @@ final class ScreenDesignerApplicationTest {
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
                 () -> ScreenDesignerApplication.parseMetadataText("not-valid"));
 
-        assertEquals("Metadata line 1 must use key=value format.", exception.getMessage());
+        assertEquals("Metadata line 1 must use non-empty key=value format.", exception.getMessage());
+        assertEquals(Map.of("key", "value=tail"),
+                ScreenDesignerApplication.parseMetadataText("key=value=tail"));
+        assertEquals(Map.of("key", "=value"),
+                ScreenDesignerApplication.parseMetadataText("key==value"));
+        assertEquals(Map.of("key", "value"),
+                ScreenDesignerApplication.parseMetadataText(" key = value "));
+        assertEquals(Map.of("key", ""),
+                ScreenDesignerApplication.parseMetadataText("key="));
+        assertEquals("Metadata line 1 must use non-empty key=value format.",
+                assertThrows(IllegalArgumentException.class,
+                        () -> ScreenDesignerApplication.parseMetadataText("=value")).getMessage());
+        assertEquals("Metadata line 1 must use non-empty key=value format.",
+                assertThrows(IllegalArgumentException.class,
+                        () -> ScreenDesignerApplication.parseMetadataText("   =value")).getMessage());
     }
 
     @Test
