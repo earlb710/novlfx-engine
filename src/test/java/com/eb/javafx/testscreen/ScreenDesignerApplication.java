@@ -74,6 +74,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -102,6 +103,8 @@ public final class ScreenDesignerApplication {
     private static final String HOVER_BACKGROUND_COLOR_KEY = "hoverBackgroundColor";
     private static final String PRESSED_BACKGROUND_COLOR_KEY = "pressedBackgroundColor";
     private static final String DISPLAY_ROLE_KEY = "displayRole";
+    private static final String BACKGROUND_IMAGE_KEY = "backgroundImage";
+    private static final String BACKGROUND_IMAGE_TRANSPARENCY_KEY = "backgroundImageTransparency";
     private static final String DIALOG_KEY = "dialog";
     private static final String DISMISS_ON_CLICK_OUTSIDE_KEY = "dismissOnClickOutside";
     private static final String DISMISS_ON_ESCAPE_KEY = "dismissOnEscape";
@@ -123,6 +126,18 @@ public final class ScreenDesignerApplication {
             DisplayDefaults.ROLE_FIELD,
             DisplayDefaults.ROLE_BUTTON
     };
+    private static final Set<String> SCREEN_EXPOSED_METADATA_KEYS = Set.of(
+            FONT_FAMILY_KEY, ITEM_FONT_SIZE_KEY, ITEM_FONT_STYLE_KEY, ITEM_COLOR_KEY,
+            BACKGROUND_COLOR_KEY, BORDER_STYLE_KEY, BORDER_CORNER_KEY, BORDER_THICKNESS_KEY, BORDER_COLOR_KEY,
+            DIALOG_KEY, DISMISS_ON_CLICK_OUTSIDE_KEY, DISMISS_ON_ESCAPE_KEY);
+    private static final Set<String> BLOCK_EXPOSED_METADATA_KEYS = Set.of(
+            FONT_FAMILY_KEY, ITEM_FONT_SIZE_KEY, ITEM_FONT_STYLE_KEY, ITEM_COLOR_KEY,
+            BACKGROUND_COLOR_KEY, TRANSPARENCY_KEY, BORDER_STYLE_KEY, BORDER_CORNER_KEY, BORDER_THICKNESS_KEY,
+            BORDER_COLOR_KEY, BACKGROUND_IMAGE_KEY, BACKGROUND_IMAGE_TRANSPARENCY_KEY);
+    private static final Set<String> ITEM_EXPOSED_METADATA_KEYS = Set.of(
+            DISPLAY_ROLE_KEY, FONT_FAMILY_KEY, ITEM_FONT_SIZE_KEY, ITEM_FONT_STYLE_KEY, ITEM_COLOR_KEY,
+            BACKGROUND_COLOR_KEY, TRANSPARENCY_KEY,
+            LABEL_FONT_FAMILY_KEY, LABEL_FONT_SIZE_KEY, LABEL_FONT_STYLE_KEY, LABEL_COLOR_KEY);
     private static final AtomicBoolean JAVAFX_STARTED = new AtomicBoolean();
     private ScreenDesignModel design = sampleDesign();
     private final DefaultTreeModel objectTreeModel = new DefaultTreeModel(new DefaultMutableTreeNode());
@@ -147,24 +162,30 @@ public final class ScreenDesignerApplication {
     private final JCheckBox screenDialogBox = new JCheckBox();
     private final JCheckBox screenDismissOnClickOutsideBox = new JCheckBox();
     private final JCheckBox screenDismissOnEscapeBox = new JCheckBox();
+    private final JTextArea screenMetadataArea = new JTextArea(4, 20);
     private final JTextField blockIdField = new JTextField();
     private final JTextField blockTitleField = new JTextField();
     private final JComboBox<ScreenLayoutType> blockLayoutTypeBox = new JComboBox<>(blockLayoutOptions());
     private final JComboBox<String> parentBlockBox = new JComboBox<>();
+    private final JTextField blockStyleClassField = new JTextField();
     private final JComboBox<String> blockFontFamilyBox = fontFamilyBox();
     private final JComboBox<String> blockFontSizeBox = fontSizeBox();
     private final JComboBox<String> blockFontStyleBox = fontStyleBox();
     private final JTextField blockColorField = new JTextField();
     private final JTextField blockBackgroundColorField = new JTextField();
+    private final JTextField blockBackgroundImageField = new JTextField();
+    private final JComboBox<String> blockBackgroundImageTransparencyBox = transparencyBox();
     private final JComboBox<String> blockTransparencyBox = transparencyBox();
     private final JComboBox<String> blockBorderStyleBox = borderStyleBox();
     private final JComboBox<String> blockBorderCornerBox = borderCornerBox();
     private final JComboBox<String> blockBorderThicknessBox = borderThicknessBox();
     private final JTextField blockBorderColorField = new JTextField();
     private final JTextArea blockConditionsArea = new JTextArea(3, 20);
+    private final JTextArea blockMetadataArea = new JTextArea(4, 20);
     private final JComboBox<String> itemBlockBox = new JComboBox<>();
     private final JComboBox<ScreenDesignItemType> itemTypeBox = new JComboBox<>(ScreenDesignItemType.values());
     private final JTextField itemIdField = new JTextField();
+    private final JTextField itemStyleClassField = new JTextField();
     private final JTextField itemLabelField = new JTextField();
     private final JTextField itemContentField = new JTextField();
     private final JTextArea itemContentArea = new JTextArea(3, 20);
@@ -182,6 +203,7 @@ public final class ScreenDesignerApplication {
     private final JComboBox<String> itemLabelFontSizeBox = fontSizeBox();
     private final JComboBox<String> itemLabelFontStyleBox = fontStyleBox();
     private final JTextField itemLabelColorField = new JTextField();
+    private final JTextArea itemMetadataArea = new JTextArea(4, 20);
     private final JTextArea jsonArea = new JTextArea();
     private final JLabel statusLabel = new JLabel();
     private Path currentPath;
@@ -365,7 +387,7 @@ public final class ScreenDesignerApplication {
                 layoutTypeOrDefault((ScreenLayoutType) blockLayoutTypeBox.getSelectedItem()),
                 parentBlockSelection((String) parentBlockBox.getSelectedItem()),
                 parseConditions(blockConditionsArea.getText()),
-                existing.styleClass(),
+                blankToNull(blockStyleClassField.getText()),
                 blockMetadata(existing.metadata())));
     }
 
@@ -385,7 +407,7 @@ public final class ScreenDesignerApplication {
                 isFieldType(effectiveType) ? content : null,
                 parseSequence(itemSequenceField.getText()),
                 editableSelection(effectiveType, itemEditableBox.isSelected()),
-                existing.styleClass(),
+                blankToNull(itemStyleClassField.getText()),
                 itemMetadata(existing.metadata(), effectiveType)), temporary);
     }
 
@@ -446,6 +468,7 @@ public final class ScreenDesignerApplication {
                 ? (temporary ? ScreenDesignItemType.FIELD : ScreenDesignItemType.TEXT)
                 : existing.type());
         JTextField itemIdField = new JTextField(existing == null ? "" : existing.id());
+        JTextField styleClassField = new JTextField(existing == null ? "" : nullToBlank(existing.styleClass()));
         JTextField labelField = new JTextField(existing == null ? "" : nullToBlank(existing.label()));
         JTextField contentField = new JTextField(existing == null ? "" : itemContent(existing));
         JTextField valueField = new JTextField(existing == null ? "" : nullToBlank(existing.value()));
@@ -455,6 +478,10 @@ public final class ScreenDesignerApplication {
         JTextField backgroundColorField = new JTextField(existing == null ? "" : metadataValue(existing.metadata(), BACKGROUND_COLOR_KEY));
         JComboBox<String> transparencyBox = transparencyBox();
         setComboValue(transparencyBox, existing == null ? "" : metadataValue(existing.metadata(), TRANSPARENCY_KEY));
+        JTextArea metadataArea = new JTextArea(existing == null
+                ? ""
+                : metadataText(existing.metadata(), ITEM_EXPOSED_METADATA_KEYS), 4, 20);
+        metadataArea.setLineWrap(false);
         JCheckBox editableBox = new JCheckBox();
         editableBox.setSelected(existing == null
                 ? ScreenDesignItem.defaultEditable((ScreenDesignItemType) typeBox.getSelectedItem())
@@ -462,11 +489,13 @@ public final class ScreenDesignerApplication {
         typeBox.addActionListener(event -> refreshItemTypeState(typeBox, labelField, editableBox));
         refreshItemTypeState(typeBox, labelField, editableBox);
         boolean fieldType = isFieldType((ScreenDesignItemType) typeBox.getSelectedItem());
-        JPanel fields = new JPanel(new GridLayout(fieldType ? 11 : 8, 2, 6, 6));
+        JPanel fields = new JPanel(new GridLayout(fieldType ? 13 : 10, 2, 6, 6));
         fields.add(new JLabel("Target block"));
         fields.add(blockBox);
         fields.add(new JLabel("Item id"));
         fields.add(itemIdField);
+        fields.add(new JLabel("Style class"));
+        fields.add(styleClassField);
         fields.add(new JLabel("Type"));
         fields.add(typeBox);
         fields.add(new JLabel("Sequence"));
@@ -489,6 +518,8 @@ public final class ScreenDesignerApplication {
             fields.add(new JLabel("Editable"));
             fields.add(editableBox);
         }
+        fields.add(new JLabel("Extra metadata"));
+        fields.add(new JScrollPane(metadataArea));
         int result = JOptionPane.showConfirmDialog(null, fields, title, JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
         String itemId = itemIdField.getText();
         String blockId = (String) blockBox.getSelectedItem();
@@ -499,7 +530,7 @@ public final class ScreenDesignerApplication {
         String content = blankToNull(contentField.getText());
         String value = blankToNull(valueField.getText());
         ScreenDesignItemType effectiveType = type == null ? ScreenDesignItemType.TEXT : type;
-        Map<String, String> metadata = existing == null ? new LinkedHashMap<>() : new LinkedHashMap<>(existing.metadata());
+        Map<String, String> metadata = new LinkedHashMap<>(parseMetadataText(metadataArea.getText()));
         putOptionalMetadata(metadata, DISPLAY_ROLE_KEY, selectedComboValue(displayRoleBox));
         putOptionalMetadata(metadata, BACKGROUND_COLOR_KEY, backgroundColorField.getText());
         putOptionalMetadata(metadata, TRANSPARENCY_KEY, selectedComboValue(transparencyBox));
@@ -513,7 +544,7 @@ public final class ScreenDesignerApplication {
                 isFieldType(effectiveType) ? content : null,
                 parseSequence(sequenceField.getText()),
                 editableSelection(effectiveType, editableBox.isSelected()),
-                existing == null ? null : existing.styleClass(),
+                blankToNull(styleClassField.getText()),
                 Map.copyOf(metadata)));
     }
 
@@ -523,16 +554,24 @@ public final class ScreenDesignerApplication {
         JComboBox<ScreenLayoutType> layoutBox = new JComboBox<>(blockLayoutOptions());
         layoutBox.setSelectedItem(existing == null ? defaultLayoutType() : layoutTypeOrDefault(existing.layoutType()));
         JComboBox<String> parentBlockBox = new JComboBox<>(parentBlockOptions(existing == null ? null : existing.id()));
+        JTextField styleClassField = new JTextField(existing == null ? "" : nullToBlank(existing.styleClass()));
         JComboBox<String> borderStyleBox = borderStyleBox();
         JComboBox<String> borderCornerBox = borderCornerBox();
         JComboBox<String> borderThicknessBox = borderThicknessBox();
         JComboBox<String> transparencyBox = transparencyBox();
         JTextField backgroundColorField = new JTextField(existing == null ? "" : metadataValue(existing.metadata(), BACKGROUND_COLOR_KEY));
+        JTextField backgroundImageField = new JTextField(existing == null ? "" : metadataValue(existing.metadata(), BACKGROUND_IMAGE_KEY));
+        JComboBox<String> backgroundImageTransparencyBox = transparencyBox();
         JTextField borderColorField = new JTextField(existing == null ? "" : metadataValue(existing.metadata(), BORDER_COLOR_KEY));
         JTextArea conditionsArea = new JTextArea(existing == null ? "" : conditionsText(existing.conditions()), 3, 20);
+        JTextArea metadataArea = new JTextArea(existing == null
+                ? ""
+                : metadataText(existing.metadata(), BLOCK_EXPOSED_METADATA_KEYS), 4, 20);
         conditionsArea.setLineWrap(true);
         conditionsArea.setWrapStyleWord(true);
+        metadataArea.setLineWrap(false);
         setComboValue(transparencyBox, existing == null ? "" : metadataValue(existing.metadata(), TRANSPARENCY_KEY));
+        setComboValue(backgroundImageTransparencyBox, existing == null ? "" : metadataValue(existing.metadata(), BACKGROUND_IMAGE_TRANSPARENCY_KEY));
         setComboValue(borderStyleBox, existing == null ? "" : metadataValue(existing.metadata(), BORDER_STYLE_KEY));
         setComboValue(borderCornerBox, existing == null ? "" : metadataValue(existing.metadata(), BORDER_CORNER_KEY));
         setComboValue(borderThicknessBox, existing == null ? "" : metadataValue(existing.metadata(), BORDER_THICKNESS_KEY));
@@ -543,7 +582,7 @@ public final class ScreenDesignerApplication {
         } else {
             parentBlockBox.setSelectedItem(SCREEN_PARENT_OPTION);
         }
-        JPanel fields = new JPanel(new GridLayout(11, 2, 6, 6));
+        JPanel fields = new JPanel(new GridLayout(15, 2, 6, 6));
         fields.add(new JLabel("Block id"));
         fields.add(blockIdField);
         fields.add(new JLabel("Title"));
@@ -552,10 +591,16 @@ public final class ScreenDesignerApplication {
         fields.add(layoutBox);
         fields.add(new JLabel("Parent block"));
         fields.add(parentBlockBox);
+        fields.add(new JLabel("Style class"));
+        fields.add(styleClassField);
         fields.add(new JLabel("Conditions"));
         fields.add(new JScrollPane(conditionsArea));
         fields.add(new JLabel("Background color"));
         fields.add(colorSelector(backgroundColorField));
+        fields.add(new JLabel("Background image"));
+        fields.add(fileSelector(backgroundImageField, "Choose...", () -> chooseImagePath(backgroundImageField)));
+        fields.add(new JLabel("Background image transparency"));
+        fields.add(backgroundImageTransparencyBox);
         fields.add(new JLabel("Transparency"));
         fields.add(transparencyBox);
         fields.add(new JLabel("Border style"));
@@ -566,6 +611,8 @@ public final class ScreenDesignerApplication {
         fields.add(borderThicknessBox);
         fields.add(new JLabel("Border color"));
         fields.add(colorSelector(borderColorField));
+        fields.add(new JLabel("Extra metadata"));
+        fields.add(new JScrollPane(metadataArea));
         int result = JOptionPane.showConfirmDialog(null, fields, title, JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
         String blockId = blockIdField.getText();
         if (result != JOptionPane.OK_OPTION || blockId == null || blockId.isBlank()) {
@@ -573,8 +620,10 @@ public final class ScreenDesignerApplication {
         }
         String parentBlockId = parentBlockSelection((String) parentBlockBox.getSelectedItem());
         String blockTitle = blankToNull(titleField.getText());
-        Map<String, String> metadata = existing == null ? new LinkedHashMap<>() : new LinkedHashMap<>(existing.metadata());
+        Map<String, String> metadata = new LinkedHashMap<>(parseMetadataText(metadataArea.getText()));
         putOptionalMetadata(metadata, BACKGROUND_COLOR_KEY, backgroundColorField.getText());
+        putOptionalMetadata(metadata, BACKGROUND_IMAGE_KEY, backgroundImageField.getText());
+        putOptionalMetadata(metadata, BACKGROUND_IMAGE_TRANSPARENCY_KEY, selectedComboValue(backgroundImageTransparencyBox));
         putOptionalMetadata(metadata, TRANSPARENCY_KEY, selectedComboValue(transparencyBox));
         putOptionalMetadata(metadata, BORDER_STYLE_KEY, selectedComboValue(borderStyleBox));
         putOptionalMetadata(metadata, BORDER_CORNER_KEY, selectedComboValue(borderCornerBox));
@@ -586,7 +635,7 @@ public final class ScreenDesignerApplication {
                 layoutTypeOrDefault((ScreenLayoutType) layoutBox.getSelectedItem()),
                 parentBlockId,
                 parseConditions(conditionsArea.getText()),
-                existing == null ? null : existing.styleClass(),
+                blankToNull(styleClassField.getText()),
                 Map.copyOf(metadata)));
     }
 
@@ -972,6 +1021,38 @@ public final class ScreenDesignerApplication {
                 .toList();
     }
 
+    static String metadataText(Map<String, String> metadata, Set<String> excludedKeys) {
+        return orderedDefaultAttributeKeys(metadata).stream()
+                .filter(key -> !excludedKeys.contains(key))
+                .map(key -> key + "=" + metadata.getOrDefault(key, ""))
+                .reduce("", (left, right) -> left.isEmpty() ? right : left + "\n" + right);
+    }
+
+    static Map<String, String> parseMetadataText(String text) {
+        LinkedHashMap<String, String> metadata = new LinkedHashMap<>();
+        if (text == null || text.isBlank()) {
+            return metadata;
+        }
+        int lineNumber = 0;
+        for (String rawLine : text.lines().toList()) {
+            lineNumber++;
+            String line = rawLine.trim();
+            if (line.isEmpty()) {
+                continue;
+            }
+            int separator = line.indexOf('=');
+            if (separator < 1) {
+                throw new IllegalArgumentException("Metadata line " + lineNumber + " must use key=value format.");
+            }
+            String key = line.substring(0, separator).trim();
+            if (key.isEmpty()) {
+                throw new IllegalArgumentException("Metadata line " + lineNumber + " is missing a key.");
+            }
+            metadata.put(key, line.substring(separator + 1).trim());
+        }
+        return metadata;
+    }
+
     private static Integer parseSequence(String text) {
         String value = blankToNull(text);
         if (value == null) {
@@ -1295,6 +1376,7 @@ public final class ScreenDesignerApplication {
         screenDialogBox.setSelected(booleanMetadataValue(design.metadata(), DIALOG_KEY));
         screenDismissOnClickOutsideBox.setSelected(booleanMetadataValue(design.metadata(), DISMISS_ON_CLICK_OUTSIDE_KEY));
         screenDismissOnEscapeBox.setSelected(booleanMetadataValue(design.metadata(), DISMISS_ON_ESCAPE_KEY));
+        configureMetadataArea(screenMetadataArea, metadataText(design.metadata(), SCREEN_EXPOSED_METADATA_KEYS));
         JPanel fields = propertyGrid(propertyLabelsFor(NavigationNode.screen(design.id())).size());
         addPropertyRow(fields, 0, "Screen id", screenIdField);
         addPropertyRow(fields, 1, "Title", titleField);
@@ -1311,6 +1393,7 @@ public final class ScreenDesignerApplication {
         addPropertyRow(fields, 12, "Dialog", screenDialogBox);
         addPropertyRow(fields, 13, "Dismiss on click outside", screenDismissOnClickOutsideBox);
         addPropertyRow(fields, 14, "Dismiss on Escape", screenDismissOnEscapeBox);
+        addPropertyRow(fields, 15, "Extra metadata", new JScrollPane(screenMetadataArea));
         return fields;
     }
 
@@ -1321,11 +1404,14 @@ public final class ScreenDesignerApplication {
         blockLayoutTypeBox.setSelectedItem(layoutTypeOrDefault(block.layoutType()));
         replaceComboItems(parentBlockBox, parentBlockOptions(block.id()));
         parentBlockBox.setSelectedItem(block.parentBlockId() == null ? SCREEN_PARENT_OPTION : block.parentBlockId());
+        blockStyleClassField.setText(nullToBlank(block.styleClass()));
         setComboValue(blockFontFamilyBox, metadataValue(block.metadata(), FONT_FAMILY_KEY));
         setComboValue(blockFontSizeBox, metadataValue(block.metadata(), ITEM_FONT_SIZE_KEY));
         setComboValue(blockFontStyleBox, metadataValue(block.metadata(), ITEM_FONT_STYLE_KEY));
         blockColorField.setText(metadataValue(block.metadata(), ITEM_COLOR_KEY));
         blockBackgroundColorField.setText(metadataValue(block.metadata(), BACKGROUND_COLOR_KEY));
+        blockBackgroundImageField.setText(metadataValue(block.metadata(), BACKGROUND_IMAGE_KEY));
+        setComboValue(blockBackgroundImageTransparencyBox, metadataValue(block.metadata(), BACKGROUND_IMAGE_TRANSPARENCY_KEY));
         setComboValue(blockTransparencyBox, metadataValue(block.metadata(), TRANSPARENCY_KEY));
         setComboValue(blockBorderStyleBox, metadataValue(block.metadata(), BORDER_STYLE_KEY));
         setComboValue(blockBorderCornerBox, metadataValue(block.metadata(), BORDER_CORNER_KEY));
@@ -1334,22 +1420,27 @@ public final class ScreenDesignerApplication {
         blockConditionsArea.setText(conditionsText(block.conditions()));
         blockConditionsArea.setLineWrap(true);
         blockConditionsArea.setWrapStyleWord(true);
+        configureMetadataArea(blockMetadataArea, metadataText(block.metadata(), BLOCK_EXPOSED_METADATA_KEYS));
         JPanel fields = propertyGrid(propertyLabelsFor(NavigationNode.block(blockId)).size());
         addPropertyRow(fields, 0, "Block id", blockIdField);
         addPropertyRow(fields, 1, "Title", blockTitleField);
         addPropertyRow(fields, 2, "Layout type", blockLayoutTypeBox);
         addPropertyRow(fields, 3, "Parent block", parentBlockBox);
-        addPropertyRow(fields, 4, "Conditions", new JScrollPane(blockConditionsArea));
-        addPropertyRow(fields, 5, "Font", blockFontFamilyBox);
-        addPropertyRow(fields, 6, "Font size", blockFontSizeBox);
-        addPropertyRow(fields, 7, "Font style", blockFontStyleBox);
-        addPropertyRow(fields, 8, "Color", colorSelector(blockColorField));
-        addPropertyRow(fields, 9, "Background color", colorSelector(blockBackgroundColorField));
-        addPropertyRow(fields, 10, "Transparency", blockTransparencyBox);
-        addPropertyRow(fields, 11, "Border style", blockBorderStyleBox);
-        addPropertyRow(fields, 12, "Border corner", blockBorderCornerBox);
-        addPropertyRow(fields, 13, "Border thickness", blockBorderThicknessBox);
-        addPropertyRow(fields, 14, "Border color", colorSelector(blockBorderColorField));
+        addPropertyRow(fields, 4, "Style class", blockStyleClassField);
+        addPropertyRow(fields, 5, "Conditions", new JScrollPane(blockConditionsArea));
+        addPropertyRow(fields, 6, "Font", blockFontFamilyBox);
+        addPropertyRow(fields, 7, "Font size", blockFontSizeBox);
+        addPropertyRow(fields, 8, "Font style", blockFontStyleBox);
+        addPropertyRow(fields, 9, "Color", colorSelector(blockColorField));
+        addPropertyRow(fields, 10, "Background color", colorSelector(blockBackgroundColorField));
+        addPropertyRow(fields, 11, "Background image", fileSelector(blockBackgroundImageField, "Choose...", () -> chooseImagePath(blockBackgroundImageField)));
+        addPropertyRow(fields, 12, "Background image transparency", blockBackgroundImageTransparencyBox);
+        addPropertyRow(fields, 13, "Transparency", blockTransparencyBox);
+        addPropertyRow(fields, 14, "Border style", blockBorderStyleBox);
+        addPropertyRow(fields, 15, "Border corner", blockBorderCornerBox);
+        addPropertyRow(fields, 16, "Border thickness", blockBorderThicknessBox);
+        addPropertyRow(fields, 17, "Border color", colorSelector(blockBorderColorField));
+        addPropertyRow(fields, 18, "Extra metadata", new JScrollPane(blockMetadataArea));
         return fields;
     }
 
@@ -1359,6 +1450,7 @@ public final class ScreenDesignerApplication {
         itemBlockBox.setSelectedItem(item.blockId());
         itemTypeBox.setSelectedItem(item.type());
         itemIdField.setText(item.id());
+        itemStyleClassField.setText(nullToBlank(item.styleClass()));
         itemLabelField.setText(nullToBlank(item.label()));
         itemContentField.setText(itemContent(item));
         itemContentArea.setText(itemContent(item));
@@ -1378,11 +1470,13 @@ public final class ScreenDesignerApplication {
         setComboValue(itemLabelFontSizeBox, metadataValue(item.metadata(), LABEL_FONT_SIZE_KEY));
         setComboValue(itemLabelFontStyleBox, metadataValue(item.metadata(), LABEL_FONT_STYLE_KEY));
         itemLabelColorField.setText(metadataValue(item.metadata(), LABEL_COLOR_KEY));
+        configureMetadataArea(itemMetadataArea, metadataText(item.metadata(), ITEM_EXPOSED_METADATA_KEYS));
         refreshItemTypeState();
         JPanel fields = propertyGrid(itemPropertyLabelsFor(item.type()).size());
         int row = 0;
         addPropertyRow(fields, row++, "Target block", itemBlockBox);
         addPropertyRow(fields, row++, "Item id", itemIdField);
+        addPropertyRow(fields, row++, "Style class", itemStyleClassField);
         addPropertyRow(fields, row++, "Type", itemTypeBox);
         addPropertyRow(fields, row++, "Sequence", itemSequenceField);
         if (isFieldType(item.type())) {
@@ -1404,8 +1498,9 @@ public final class ScreenDesignerApplication {
             addPropertyRow(fields, row++, "Label font", itemLabelFontFamilyBox);
             addPropertyRow(fields, row++, "Label font size", itemLabelFontSizeBox);
             addPropertyRow(fields, row++, "Label font style", itemLabelFontStyleBox);
-            addPropertyRow(fields, row, "Label color", colorSelector(itemLabelColorField));
+            addPropertyRow(fields, row++, "Label color", colorSelector(itemLabelColorField));
         }
+        addPropertyRow(fields, row, "Extra metadata", new JScrollPane(itemMetadataArea));
         return fields;
     }
 
@@ -1440,12 +1535,35 @@ public final class ScreenDesignerApplication {
         return panel;
     }
 
+    private static Component fileSelector(JTextField textField, String buttonLabel, Runnable chooseAction) {
+        JPanel panel = new JPanel(new BorderLayout(6, 0));
+        JButton choose = new JButton(buttonLabel);
+        choose.addActionListener(event -> chooseAction.run());
+        panel.add(textField, BorderLayout.CENTER);
+        panel.add(choose, BorderLayout.EAST);
+        return panel;
+    }
+
     private static Color initialColor(String value) {
         try {
             return value != null && value.matches("#[0-9a-fA-F]{6}") ? Color.decode(value) : Color.WHITE;
         } catch (NumberFormatException exception) {
             return Color.WHITE;
         }
+    }
+
+    private void chooseImagePath(JTextField targetField) {
+        JFileChooser chooser = new JFileChooser(jsonChooser().getCurrentDirectory());
+        chooser.setCurrentDirectory(jsonChooser().getCurrentDirectory());
+        if (chooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
+            targetField.setText(chooser.getSelectedFile().toPath().toAbsolutePath().normalize().toUri().toString());
+        }
+    }
+
+    private static void configureMetadataArea(JTextArea metadataArea, String value) {
+        metadataArea.setText(value);
+        metadataArea.setLineWrap(false);
+        metadataArea.setWrapStyleWord(false);
     }
 
     private static GridBagConstraints propertyConstraints(int row, int column, double weightx) {
@@ -1517,7 +1635,8 @@ public final class ScreenDesignerApplication {
     }
 
     private Map<String, String> itemMetadata(Map<String, String> existingMetadata, ScreenDesignItemType type) {
-        Map<String, String> metadata = fontMetadata(existingMetadata, itemFontFamilyBox, itemFontSizeBox, itemFontStyleBox, itemColorField);
+        Map<String, String> metadata = fontMetadata(parseMetadataText(itemMetadataArea.getText()),
+                itemFontFamilyBox, itemFontSizeBox, itemFontStyleBox, itemColorField);
         putOptionalMetadata(metadata, DISPLAY_ROLE_KEY, selectedComboValue(itemDisplayRoleBox));
         putOptionalMetadata(metadata, BACKGROUND_COLOR_KEY, itemBackgroundColorField.getText());
         putOptionalMetadata(metadata, TRANSPARENCY_KEY, selectedComboValue(itemTransparencyBox));
@@ -1536,7 +1655,8 @@ public final class ScreenDesignerApplication {
     }
 
     private Map<String, String> screenMetadata(Map<String, String> existingMetadata) {
-        Map<String, String> metadata = fontMetadata(existingMetadata, screenFontFamilyBox, screenFontSizeBox, screenFontStyleBox, screenColorField);
+        Map<String, String> metadata = fontMetadata(parseMetadataText(screenMetadataArea.getText()),
+                screenFontFamilyBox, screenFontSizeBox, screenFontStyleBox, screenColorField);
         putOptionalMetadata(metadata, BACKGROUND_COLOR_KEY, screenBackgroundColorField.getText());
         putOptionalMetadata(metadata, BORDER_STYLE_KEY, selectedComboValue(screenBorderStyleBox));
         putOptionalMetadata(metadata, BORDER_CORNER_KEY, selectedComboValue(screenBorderCornerBox));
@@ -1549,8 +1669,11 @@ public final class ScreenDesignerApplication {
     }
 
     private Map<String, String> blockMetadata(Map<String, String> existingMetadata) {
-        Map<String, String> metadata = fontMetadata(existingMetadata, blockFontFamilyBox, blockFontSizeBox, blockFontStyleBox, blockColorField);
+        Map<String, String> metadata = fontMetadata(parseMetadataText(blockMetadataArea.getText()),
+                blockFontFamilyBox, blockFontSizeBox, blockFontStyleBox, blockColorField);
         putOptionalMetadata(metadata, BACKGROUND_COLOR_KEY, blockBackgroundColorField.getText());
+        putOptionalMetadata(metadata, BACKGROUND_IMAGE_KEY, blockBackgroundImageField.getText());
+        putOptionalMetadata(metadata, BACKGROUND_IMAGE_TRANSPARENCY_KEY, selectedComboValue(blockBackgroundImageTransparencyBox));
         putOptionalMetadata(metadata, TRANSPARENCY_KEY, selectedComboValue(blockTransparencyBox));
         putOptionalMetadata(metadata, BORDER_STYLE_KEY, selectedComboValue(blockBorderStyleBox));
         putOptionalMetadata(metadata, BORDER_CORNER_KEY, selectedComboValue(blockBorderCornerBox));
@@ -1822,15 +1945,16 @@ public final class ScreenDesignerApplication {
         return switch (navigationNode.type()) {
             case SCREEN -> List.of("Screen id", "Title", "Layout type", "Font", "Font size", "Font style", "Color", "Background color",
                     "Border style", "Border corner", "Border thickness", "Border color",
-                    "Dialog", "Dismiss on click outside", "Dismiss on Escape");
-            case BLOCK -> List.of("Block id", "Title", "Layout type", "Parent block", "Conditions", "Font", "Font size", "Font style", "Color", "Background color",
-                    "Transparency", "Border style", "Border corner", "Border thickness", "Border color");
+                    "Dialog", "Dismiss on click outside", "Dismiss on Escape", "Extra metadata");
+            case BLOCK -> List.of("Block id", "Title", "Layout type", "Parent block", "Style class", "Conditions", "Font", "Font size", "Font style", "Color", "Background color",
+                    "Background image", "Background image transparency", "Transparency", "Border style", "Border corner", "Border thickness", "Border color",
+                    "Extra metadata");
             case ITEM, TEMPORARY_ITEM -> itemPropertyLabelsFor(ScreenDesignItemType.FIELD);
         };
     }
 
     static List<String> itemPropertyLabelsFor(ScreenDesignItemType type) {
-        ArrayList<String> labels = new ArrayList<>(List.of("Target block", "Item id", "Type", "Sequence"));
+        ArrayList<String> labels = new ArrayList<>(List.of("Target block", "Item id", "Style class", "Type", "Sequence"));
         if (isFieldType(type)) {
             labels.add("Label");
         }
@@ -1843,6 +1967,7 @@ public final class ScreenDesignerApplication {
         if (isFieldType(type)) {
             labels.addAll(List.of("Label font", "Label font size", "Label font style", "Label color"));
         }
+        labels.add("Extra metadata");
         return labels;
     }
 

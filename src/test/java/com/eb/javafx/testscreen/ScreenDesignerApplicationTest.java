@@ -18,6 +18,7 @@ import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.swing.JButton;
 import javax.swing.JPanel;
@@ -234,29 +235,55 @@ final class ScreenDesignerApplicationTest {
                 ScreenDesignerApplication.NavigationNode.screen("sample.screen")));
         assertEquals(List.of("Screen id", "Title", "Layout type", "Font", "Font size", "Font style", "Color", "Background color",
                         "Border style", "Border corner", "Border thickness", "Border color",
-                        "Dialog", "Dismiss on click outside", "Dismiss on Escape"),
+                        "Dialog", "Dismiss on click outside", "Dismiss on Escape", "Extra metadata"),
                 ScreenDesignerApplication.propertyLabelsFor(
                         ScreenDesignerApplication.NavigationNode.screen("sample.screen")));
         assertEquals("Block Properties", ScreenDesignerApplication.propertiesTitleFor(
                 ScreenDesignerApplication.NavigationNode.block("main")));
-        assertEquals(List.of("Block id", "Title", "Layout type", "Parent block", "Conditions",
+        assertEquals(List.of("Block id", "Title", "Layout type", "Parent block", "Style class", "Conditions",
                         "Font", "Font size", "Font style", "Color", "Background color",
-                        "Transparency", "Border style", "Border corner", "Border thickness", "Border color"),
+                        "Background image", "Background image transparency", "Transparency", "Border style",
+                        "Border corner", "Border thickness", "Border color", "Extra metadata"),
                 ScreenDesignerApplication.propertyLabelsFor(
                         ScreenDesignerApplication.NavigationNode.block("main")));
         assertEquals("Item Properties", ScreenDesignerApplication.propertiesTitleFor(
                 ScreenDesignerApplication.NavigationNode.item("title.text", "main", false)));
-        assertEquals(List.of("Target block", "Item id", "Type", "Sequence", "Label",
+        assertEquals(List.of("Target block", "Item id", "Style class", "Type", "Sequence", "Label",
                         "Text/default value", "Current value", "Editable", "Display role",
                         "Font", "Font size", "Font style", "Color", "Background color", "Transparency", "Label font",
-                        "Label font size", "Label font style", "Label color"),
+                        "Label font size", "Label font style", "Label color", "Extra metadata"),
                 ScreenDesignerApplication.propertyLabelsFor(
                         ScreenDesignerApplication.NavigationNode.item("title.text", "main", false)));
-        assertEquals(List.of("Target block", "Item id", "Type", "Sequence", "Text/default value", "Display role",
-                        "Font", "Font size", "Font style", "Color", "Background color", "Transparency"),
+        assertEquals(List.of("Target block", "Item id", "Style class", "Type", "Sequence", "Text/default value", "Display role",
+                        "Font", "Font size", "Font style", "Color", "Background color", "Transparency", "Extra metadata"),
                 ScreenDesignerApplication.itemPropertyLabelsFor(ScreenDesignItemType.TEXT));
         assertEquals("Item Properties", ScreenDesignerApplication.propertiesTitleFor(
                 ScreenDesignerApplication.NavigationNode.item("temp.field", "main", true)));
+    }
+
+    @Test
+    void metadataTextRoundTripsExtraMetadataAndSkipsExposedKeys() {
+        Map<String, String> metadata = new LinkedHashMap<>();
+        metadata.put("backgroundColor", "#112233");
+        metadata.put("description", "Shown in editor");
+        metadata.put("eventName", "save.slot");
+        metadata.put("zCustom", "tail");
+
+        assertEquals("description=Shown in editor\neventName=save.slot\nzCustom=tail",
+                ScreenDesignerApplication.metadataText(metadata, Set.of("backgroundColor")));
+        assertEquals(Map.of(
+                        "description", "Shown in editor",
+                        "eventName", "save.slot",
+                        "zCustom", "tail"),
+                ScreenDesignerApplication.parseMetadataText("description=Shown in editor\neventName=save.slot\nzCustom=tail"));
+    }
+
+    @Test
+    void metadataParserRejectsMalformedLines() {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> ScreenDesignerApplication.parseMetadataText("not-valid"));
+
+        assertEquals("Metadata line 1 must use key=value format.", exception.getMessage());
     }
 
     @Test

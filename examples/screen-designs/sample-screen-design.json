@@ -23,6 +23,8 @@
       "styleClass": "profile-block",
       "metadata": {
         "backgroundColor": "#1d3b73",
+        "backgroundImage": "/com/eb/javafx/images/svg/background-gradient-rectangle.svg",
+        "backgroundImageTransparency": "0.35",
         "transparency": "0.1",
         "borderStyle": "solid",
         "borderCorner": "rounded",
