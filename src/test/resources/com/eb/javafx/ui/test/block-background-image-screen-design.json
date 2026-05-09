@@ -1,0 +1,287 @@
+{
+  "id": "test.block-background-image-json",
+  "title": "JSON Block Background Image Test",
+  "layoutType": "FORM",
+  "metadata": {
+    "screenBackgroundImage": "/com/eb/javafx/images/svg/circle-background.svg",
+    "screenBackgroundImageTransparency": "0.5",
+    "backgroundColor": "#08111f"
+  },
+  "blocks": [
+    {
+      "id": "block-background-image-demo",
+      "title": "Block background image preview",
+      "layoutType": "TWO_COLUMN",
+      "parentBlockId": null,
+      "conditions": [],
+      "styleClass": "block-background-image-demo",
+      "metadata": {}
+    },
+    {
+      "id": "left-block",
+      "title": "Left block",
+      "layoutType": null,
+      "parentBlockId": "block-background-image-demo",
+      "conditions": [],
+      "styleClass": "block-background-image-demo-section",
+      "metadata": {
+        "backgroundColor": "#203a67",
+        "transparency": "0.15",
+        "backgroundImage": "/com/eb/javafx/images/svg/circle2-background.svg",
+        "backgroundImageTransparency": "0.5",
+        "backgroundImagePlacement": "stretch to fit",
+        "borderStyle": "solid",
+        "borderCorner": "rounded",
+        "borderThickness": "3",
+        "borderColor": "#d7e7ff"
+      }
+    },
+    {
+      "id": "right-block",
+      "title": "Right block",
+      "layoutType": null,
+      "parentBlockId": "block-background-image-demo",
+      "conditions": [],
+      "styleClass": "block-background-image-demo-section",
+      "metadata": {
+        "backgroundColor": "#5a2b5f",
+        "transparency": "0.15",
+        "backgroundImage": "/com/eb/javafx/images/svg/circle2-background.svg",
+        "backgroundImageTransparency": "0.5",
+        "backgroundImagePlacement": "stretch to fit",
+        "borderStyle": "solid",
+        "borderCorner": "rounded",
+        "borderThickness": "3",
+        "borderColor": "#d7e7ff"
+      }
+    }
+  ],
+  "items": [
+    {
+      "id": "outside.screen",
+      "blockId": "block-background-image-demo",
+      "type": "TEXT",
+      "label": null,
+      "text": "Outside item: the full screen uses circle-background.svg at 50% transparency.",
+      "value": null,
+      "defaultValue": null,
+      "sequence": 10,
+      "editable": false,
+      "styleClass": null,
+      "metadata": {
+        "fontStyle": "bold"
+      }
+    },
+    {
+      "id": "outside.blocks",
+      "blockId": "block-background-image-demo",
+      "type": "TEXT",
+      "label": null,
+      "text": "Outside item: the two blocks below use circle2-background.svg at 50% transparency.",
+      "value": null,
+      "defaultValue": null,
+      "sequence": 20,
+      "editable": false,
+      "styleClass": null,
+      "metadata": {}
+    },
+    {
+      "id": "left-block.line1",
+      "blockId": "left-block",
+      "type": "TEXT",
+      "label": null,
+      "text": "Inside item: left block background image is circle2-background.svg.",
+      "value": null,
+      "defaultValue": null,
+      "sequence": 10,
+      "editable": false,
+      "styleClass": null,
+      "metadata": {
+        "fontStyle": "bold",
+        "color": "#ffffff"
+      }
+    },
+    {
+      "id": "left-block.line2",
+      "blockId": "left-block",
+      "type": "TEXT",
+      "label": null,
+      "text": "Inside item: left block image transparency is 50%.",
+      "value": null,
+      "defaultValue": null,
+      "sequence": 20,
+      "editable": false,
+      "styleClass": null,
+      "metadata": {
+        "color": "#ffffff"
+      }
+    },
+    {
+      "id": "left-block.line3",
+      "blockId": "left-block",
+      "type": "TEXT",
+      "label": null,
+      "text": "Inside item: left block text stays readable with white labels over the artwork.",
+      "value": null,
+      "defaultValue": null,
+      "sequence": 30,
+      "editable": false,
+      "styleClass": null,
+      "metadata": {
+        "color": "#ffffff"
+      }
+    },
+    {
+      "id": "left-block.line4",
+      "blockId": "left-block",
+      "type": "TEXT",
+      "label": null,
+      "text": "Inside item: left block clipping keeps the SVG image inside the rounded border.",
+      "value": null,
+      "defaultValue": null,
+      "sequence": 40,
+      "editable": false,
+      "styleClass": null,
+      "metadata": {
+        "color": "#ffffff"
+      }
+    },
+    {
+      "id": "left-block.button1",
+      "blockId": "left-block",
+      "type": "BUTTON",
+      "label": "Open left action",
+      "text": null,
+      "value": "left-block.open",
+      "defaultValue": null,
+      "sequence": 50,
+      "editable": false,
+      "styleClass": null,
+      "metadata": {
+        "eventName": "blockButtonPreview",
+        "color": "#ffffff",
+        "backgroundColor": "#1d2433",
+        "transparency": "0.1",
+        "fontStyle": "bold"
+      }
+    },
+    {
+      "id": "left-block.button2",
+      "blockId": "left-block",
+      "type": "BUTTON",
+      "label": "Confirm left action",
+      "text": null,
+      "value": "left-block.confirm",
+      "defaultValue": null,
+      "sequence": 60,
+      "editable": false,
+      "styleClass": null,
+      "metadata": {
+        "eventName": "blockButtonPreview",
+        "color": "#ffffff",
+        "backgroundColor": "#1d2433",
+        "transparency": "0.1",
+        "fontStyle": "bold"
+      }
+    },
+    {
+      "id": "right-block.line1",
+      "blockId": "right-block",
+      "type": "TEXT",
+      "label": null,
+      "text": "Inside item: right block background image is circle2-background.svg.",
+      "value": null,
+      "defaultValue": null,
+      "sequence": 10,
+      "editable": false,
+      "styleClass": null,
+      "metadata": {
+        "fontStyle": "bold",
+        "color": "#ffffff"
+      }
+    },
+    {
+      "id": "right-block.line2",
+      "blockId": "right-block",
+      "type": "TEXT",
+      "label": null,
+      "text": "Inside item: right block image transparency is 50%.",
+      "value": null,
+      "defaultValue": null,
+      "sequence": 20,
+      "editable": false,
+      "styleClass": null,
+      "metadata": {
+        "color": "#ffffff"
+      }
+    },
+    {
+      "id": "right-block.line3",
+      "blockId": "right-block",
+      "type": "TEXT",
+      "label": null,
+      "text": "Inside item: right block text stays readable with white labels over the artwork.",
+      "value": null,
+      "defaultValue": null,
+      "sequence": 30,
+      "editable": false,
+      "styleClass": null,
+      "metadata": {
+        "color": "#ffffff"
+      }
+    },
+    {
+      "id": "right-block.line4",
+      "blockId": "right-block",
+      "type": "TEXT",
+      "label": null,
+      "text": "Inside item: right block clipping keeps the SVG image inside the rounded border.",
+      "value": null,
+      "defaultValue": null,
+      "sequence": 40,
+      "editable": false,
+      "styleClass": null,
+      "metadata": {
+        "color": "#ffffff"
+      }
+    },
+    {
+      "id": "right-block.button1",
+      "blockId": "right-block",
+      "type": "BUTTON",
+      "label": "Open right action",
+      "text": null,
+      "value": "right-block.open",
+      "defaultValue": null,
+      "sequence": 50,
+      "editable": false,
+      "styleClass": null,
+      "metadata": {
+        "eventName": "blockButtonPreview",
+        "color": "#ffffff",
+        "backgroundColor": "#1d2433",
+        "transparency": "0.1",
+        "fontStyle": "bold"
+      }
+    },
+    {
+      "id": "right-block.button2",
+      "blockId": "right-block",
+      "type": "BUTTON",
+      "label": "Confirm right action",
+      "text": null,
+      "value": "right-block.confirm",
+      "defaultValue": null,
+      "sequence": 60,
+      "editable": false,
+      "styleClass": null,
+      "metadata": {
+        "eventName": "blockButtonPreview",
+        "color": "#ffffff",
+        "backgroundColor": "#1d2433",
+        "transparency": "0.1",
+        "fontStyle": "bold"
+      }
+    }
+  ]
+}
