@@ -123,6 +123,7 @@ final class PreferencesFooterTestScreenTest {
                     started.countDown();
                 });
             } catch (IllegalStateException exception) {
+                // TestScreenApplication may already have started JavaFX before this manual test runs.
                 Platform.setImplicitExit(false);
                 started.countDown();
             }
