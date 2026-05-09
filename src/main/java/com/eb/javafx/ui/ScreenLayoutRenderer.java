@@ -223,10 +223,15 @@ public final class ScreenLayoutRenderer {
             configureSectionRegion(content, section, styleClass);
             return content;
         }
-        StackPane layeredSection = new StackPane(backgroundLayer, content);
+        StackPane sectionSurface = new StackPane(backgroundLayer, content);
+        sectionSurface.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
         StackPane.setAlignment(content, Pos.TOP_LEFT);
-        configureSectionRegion(layeredSection, section, styleClass);
-        applyBackgroundImageClip(layeredSection, section.metadata());
+        applySurfaceStyle(sectionSurface, section.metadata());
+        applyBackgroundImageClip(sectionSurface, section.metadata());
+
+        StackPane layeredSection = new StackPane(sectionSurface);
+        layeredSection.setPadding(borderInsets(section.metadata()));
+        configureSectionRegion(layeredSection, section, styleClass, true);
         return layeredSection;
     }
 
@@ -358,6 +363,10 @@ public final class ScreenLayoutRenderer {
     }
 
     private static void configureSectionRegion(Region region, ScreenLayoutSection section, String styleClass) {
+        configureSectionRegion(region, section, styleClass, false);
+    }
+
+    private static void configureSectionRegion(Region region, ScreenLayoutSection section, String styleClass, boolean hideBackground) {
         region.setId(section.id());
         region.getStyleClass().add(ScreenShell.LAYOUT_SECTION_STYLE_CLASS);
         if (styleClass != null && !styleClass.isBlank()) {
@@ -366,7 +375,17 @@ public final class ScreenLayoutRenderer {
         if (section.styleClass() != null && !section.styleClass().isBlank()) {
             region.getStyleClass().add(section.styleClass());
         }
-        applyContainerStyle(region, section.metadata(), isLayoutOnlyContainer(section));
+        applyContainerStyle(region, section.metadata(), hideBackground || isLayoutOnlyContainer(section));
+    }
+
+    private static void applySurfaceStyle(Region region, Map<String, String> metadata) {
+        StringBuilder style = new StringBuilder();
+        appendBackgroundColor(style, metadata.get("backgroundColor"));
+        appendOpacity(style, metadata.get("transparency"));
+        appendBorderRadius(style, metadata.get("borderCorner"));
+        if (!style.isEmpty()) {
+            region.setStyle(style.toString());
+        }
     }
 
     private static Region backgroundImageLayer(Map<String, String> metadata) {
@@ -399,6 +418,22 @@ public final class ScreenLayoutRenderer {
             return;
         }
         clippedRegion.setClip(clip);
+    }
+
+    private static Insets borderInsets(Map<String, String> metadata) {
+        String borderThickness = metadata.get("borderThickness");
+        if (borderThickness == null || borderThickness.isBlank()) {
+            return Insets.EMPTY;
+        }
+        java.util.regex.Matcher matcher = DECIMAL_PATTERN.matcher(borderThickness);
+        if (!matcher.find()) {
+            return Insets.EMPTY;
+        }
+        double thickness = Double.parseDouble(matcher.group());
+        if (thickness <= 0.0) {
+            return Insets.EMPTY;
+        }
+        return new Insets(thickness);
     }
 
     private static double backgroundImageOpacity(String transparency) {

@@ -117,7 +117,7 @@ public final class BlockBackgroundImageTestScreen {
                         "backgroundImage", BLOCK_BACKGROUND_RESOURCE,
                         "backgroundImageTransparency", BACKGROUND_TRANSPARENCY,
                         "borderStyle", "solid",
-                        "borderCorner", "pill",
+                        "borderCorner", "rounded",
                         "borderThickness", "3",
                         "borderColor", "#d7e7ff"),
                 List.of(id + ".line1", id + ".line2", id + ".line3", id + ".line4", id + ".button1", id + ".button2"),

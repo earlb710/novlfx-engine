@@ -56,7 +56,7 @@ final class BlockBackgroundImageTestScreenTest {
             assertEquals(BlockBackgroundImageTestScreen.BLOCK_BACKGROUND_RESOURCE, block.metadata().get("backgroundImage"));
             assertEquals(BlockBackgroundImageTestScreen.BACKGROUND_TRANSPARENCY, block.metadata().get("backgroundImageTransparency"));
             assertEquals("3", block.metadata().get("borderThickness"));
-            assertEquals("pill", block.metadata().get("borderCorner"));
+            assertEquals("rounded", block.metadata().get("borderCorner"));
             assertEquals(BlockBackgroundImageTestScreen.BLOCK_TEXT_COLOR, block.lineMetadata().get(0).get("color"));
             assertEquals(BlockBackgroundImageTestScreen.BLOCK_TEXT_COLOR, block.lineMetadata().get(3).get("color"));
             assertEquals("blockButtonPreview", block.lineMetadata().get(4).get("eventName"));
@@ -97,12 +97,18 @@ final class BlockBackgroundImageTestScreenTest {
                             .allMatch(BlockBackgroundImageTestScreenTest::hasRoundedBackgroundClip),
                     "Expected block background images to be clipped to the rounded border shape.");
             assertTrue(layeredSections.stream().filter(BlockBackgroundImageTestScreenTest::isBlockBackgroundLayer)
-                            .allMatch(BlockBackgroundImageTestScreenTest::pillClipMatchesRegionSize),
+                            .allMatch(BlockBackgroundImageTestScreenTest::clipMatchesRegionSize),
                     "Expected block background clips to match the initial rendered size.");
+            assertTrue(layeredSections.stream().filter(BlockBackgroundImageTestScreenTest::isBlockBackgroundLayer)
+                            .allMatch(BlockBackgroundImageTestScreenTest::hasVisibleBorderWrapper),
+                    "Expected the border wrapper to remain unclipped around the background image.");
+            assertTrue(layeredSections.stream().filter(BlockBackgroundImageTestScreenTest::isBlockBackgroundLayer)
+                            .allMatch(BlockBackgroundImageTestScreenTest::usesRoundedInsteadOfPillClip),
+                    "Expected the sample blocks to use rounded corners instead of pill corners.");
             root.resize(960, 540);
             root.layout();
             assertTrue(layeredSections.stream().filter(BlockBackgroundImageTestScreenTest::isBlockBackgroundLayer)
-                            .allMatch(BlockBackgroundImageTestScreenTest::pillClipMatchesRegionSize),
+                            .allMatch(BlockBackgroundImageTestScreenTest::clipMatchesRegionSize),
                     "Expected block background clips to update after the block resizes.");
             VBox body = assertInstanceOf(VBox.class, content.getCenter());
             assertTrue(body.getChildren().size() >= 1);
@@ -161,14 +167,31 @@ final class BlockBackgroundImageTestScreenTest {
                 && clip.getArcHeight() > 0;
     }
 
-    private static boolean pillClipMatchesRegionSize(StackPane stackPane) {
+    private static boolean clipMatchesRegionSize(StackPane stackPane) {
         if (!(stackPane.getClip() instanceof Rectangle clip)) {
             return false;
         }
         return Math.abs(clip.getWidth() - stackPane.getWidth()) < 0.0001
                 && Math.abs(clip.getHeight() - stackPane.getHeight()) < 0.0001
-                && Math.abs(clip.getArcWidth() - stackPane.getWidth()) < 0.0001
-                && Math.abs(clip.getArcHeight() - stackPane.getHeight()) < 0.0001;
+                && clip.getArcWidth() > 0
+                && clip.getArcHeight() > 0;
+    }
+
+    private static boolean hasVisibleBorderWrapper(StackPane stackPane) {
+        if (!(stackPane.getParent() instanceof StackPane wrapper)) {
+            return false;
+        }
+        return wrapper.getClip() == null
+                && wrapper.getPadding().getTop() > 0
+                && wrapper.getStyle().contains("-fx-border-width");
+    }
+
+    private static boolean usesRoundedInsteadOfPillClip(StackPane stackPane) {
+        if (!(stackPane.getClip() instanceof Rectangle clip)) {
+            return false;
+        }
+        return clip.getArcWidth() < stackPane.getWidth()
+                && clip.getArcHeight() < stackPane.getHeight();
     }
 
     private static void runOnJavaFxThread(Runnable action) throws Exception {
