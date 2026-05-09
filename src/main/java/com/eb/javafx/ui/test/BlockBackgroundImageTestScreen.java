@@ -24,6 +24,7 @@ public final class BlockBackgroundImageTestScreen {
     static final String SCREEN_BACKGROUND_COLOR = "#08111f";
     static final String LEFT_BLOCK_BACKGROUND_COLOR = "#203a67";
     static final String RIGHT_BLOCK_BACKGROUND_COLOR = "#5a2b5f";
+    static final String BLOCK_TEXT_COLOR = "#ffffff";
     static final String BACKGROUND_TRANSPARENCY = "0.5";
     static final double BACKGROUND_OPACITY = 0.5;
 
@@ -71,14 +72,18 @@ public final class BlockBackgroundImageTestScreen {
                                         LEFT_BLOCK_BACKGROUND_COLOR,
                                         List.of(
                                                 "Inside item: left block background image is circle2-background.svg.",
-                                                "Inside item: left block image transparency is 50%.")),
+                                                "Inside item: left block image transparency is 50%.",
+                                                "Open left action",
+                                                "Confirm left action")),
                                 blockSection(
                                         "right-block",
                                         "Right block",
                                         RIGHT_BLOCK_BACKGROUND_COLOR,
                                         List.of(
                                                 "Inside item: right block background image is circle2-background.svg.",
-                                                "Inside item: right block image transparency is 50%."))))),
+                                                "Inside item: right block image transparency is 50%.",
+                                                "Open right action",
+                                                "Confirm right action"))))),
                 List.of(),
                 List.of(),
                 List.of(),
@@ -101,13 +106,31 @@ public final class BlockBackgroundImageTestScreen {
                         "backgroundImage", BLOCK_BACKGROUND_RESOURCE,
                         "backgroundImageTransparency", BACKGROUND_TRANSPARENCY,
                         "borderStyle", "solid",
-                        "borderCorner", "rounded",
-                        "borderThickness", "1",
+                        "borderCorner", "pill",
+                        "borderThickness", "3",
                         "borderColor", "#d7e7ff"),
-                List.of(id + ".line1", id + ".line2"),
+                List.of(id + ".line1", id + ".line2", id + ".button1", id + ".button2"),
                 List.of(
-                        Map.of("fontStyle", "bold"),
-                        Map.of()));
+                        textMetadata(true),
+                        textMetadata(false),
+                        buttonMetadata(id + ".open"),
+                        buttonMetadata(id + ".confirm")));
+    }
+
+    private static Map<String, String> textMetadata(boolean bold) {
+        return bold
+                ? Map.of("fontStyle", "bold", "color", BLOCK_TEXT_COLOR)
+                : Map.of("color", BLOCK_TEXT_COLOR);
+    }
+
+    private static Map<String, String> buttonMetadata(String actionValue) {
+        return Map.of(
+                "eventName", "blockButtonPreview",
+                "actionValue", actionValue,
+                "color", BLOCK_TEXT_COLOR,
+                "backgroundColor", "#1d2433",
+                "transparency", "0.1",
+                "fontStyle", "bold");
     }
 
     private static Region createBackgroundLayer(StackPane root) {

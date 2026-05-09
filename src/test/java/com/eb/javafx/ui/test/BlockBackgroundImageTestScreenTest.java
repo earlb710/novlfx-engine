@@ -10,6 +10,7 @@ import com.eb.javafx.ui.ScreenShell;
 import com.eb.javafx.ui.UiTheme;
 import javafx.application.Platform;
 import javafx.scene.Node;
+import javafx.scene.control.Button;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.Region;
@@ -47,8 +48,14 @@ final class BlockBackgroundImageTestScreenTest {
         assertEquals(ScreenLayoutType.TWO_COLUMN, outerSection.layoutType());
         assertEquals(2, outerSection.childSections().size());
         for (ScreenLayoutSection block : outerSection.childSections()) {
+            assertEquals(4, block.lines().size());
             assertEquals(BlockBackgroundImageTestScreen.BLOCK_BACKGROUND_RESOURCE, block.metadata().get("backgroundImage"));
             assertEquals(BlockBackgroundImageTestScreen.BACKGROUND_TRANSPARENCY, block.metadata().get("backgroundImageTransparency"));
+            assertEquals("3", block.metadata().get("borderThickness"));
+            assertEquals("pill", block.metadata().get("borderCorner"));
+            assertEquals(BlockBackgroundImageTestScreen.BLOCK_TEXT_COLOR, block.lineMetadata().get(0).get("color"));
+            assertEquals("blockButtonPreview", block.lineMetadata().get(2).get("eventName"));
+            assertEquals(BlockBackgroundImageTestScreen.BLOCK_TEXT_COLOR, block.lineMetadata().get(2).get("color"));
         }
     }
 
@@ -71,8 +78,11 @@ final class BlockBackgroundImageTestScreenTest {
             long blockBackgroundLayers = layeredSections.stream()
                     .filter(BlockBackgroundImageTestScreenTest::isBlockBackgroundLayer)
                     .count();
+            List<Button> buttons = new ArrayList<>();
+            collectNodes(content, Button.class, buttons);
 
             assertTrue(blockBackgroundLayers >= 2, "Expected at least two layered block background sections.");
+            assertTrue(buttons.size() >= 4, "Expected block action buttons to render inside the blocks.");
             VBox body = assertInstanceOf(VBox.class, content.getCenter());
             assertTrue(body.getChildren().size() >= 1);
         });
