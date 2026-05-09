@@ -1,0 +1,1 @@
+Expanded `.github/copilot-instructions.md` with repository-specific onboarding guidance for Copilot cloud agents, including project layout, validation strategy, manual app usage, setup secrets, change-summary conventions, and onboarding workarounds.
