@@ -52,18 +52,21 @@ final class PreferencesSummaryScreenTest {
     }
 
     @Test
-    void settingsBlockWrapsRowsInCardPanel() {
-        Label firstRow = new Label("first");
-        Label secondRow = new Label("second");
+    void settingsBlockWrapsRowsInCardPanel() throws Exception {
+        assumeTrue(!GraphicsEnvironment.isHeadless(), "JavaFX control test requires a display.");
+        runOnJavaFxThread(() -> {
+            Label firstRow = new Label("first");
+            Label secondRow = new Label("second");
 
-        VBox block = PreferencesSummaryScreen.settingsBlock("Audio", firstRow, secondRow);
+            VBox block = PreferencesSummaryScreen.settingsBlock("Audio", firstRow, secondRow);
 
-        assertTrue(block.getStyleClass().contains(ScreenShell.SCREEN_PANEL_STYLE_CLASS));
-        assertTrue(block.getStyleClass().contains(ScreenShell.LAYOUT_CARD_STYLE_CLASS));
-        assertEquals("Audio", ((Label) block.getChildren().get(0)).getText());
-        assertTrue(block.getChildren().get(0).getStyleClass().contains(ScreenShell.LAYOUT_SECTION_TITLE_STYLE_CLASS));
-        assertTrue(block.getChildren().contains(firstRow));
-        assertTrue(block.getChildren().contains(secondRow));
+            assertTrue(block.getStyleClass().contains(ScreenShell.SCREEN_PANEL_STYLE_CLASS));
+            assertTrue(block.getStyleClass().contains(ScreenShell.LAYOUT_CARD_STYLE_CLASS));
+            assertEquals("Audio", ((Label) block.getChildren().get(0)).getText());
+            assertTrue(block.getChildren().get(0).getStyleClass().contains(ScreenShell.LAYOUT_SECTION_TITLE_STYLE_CLASS));
+            assertTrue(block.getChildren().contains(firstRow));
+            assertTrue(block.getChildren().contains(secondRow));
+        });
     }
 
     @Test

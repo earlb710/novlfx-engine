@@ -22,3 +22,5 @@ Extended the generated/default JavaFX theme stylesheet with explicit combo-box a
 Expanded `UiThemeTest` to cover the new themed selection and combo-box stylesheet rules.
 23. Updated `PreferencesSummaryScreen` so the preferences footer keeps only the preferences icon enabled, clicking it closes back to the main menu, and Ctrl+P now mirrors that close behavior while the preferences screen is open.
 24. Added `PreferencesSummaryScreenTest` coverage for the new preferences-screen footer enablement, tooltip, shortcut, and close-navigation behavior.
+25. Grouped the preferences audio controls into a dedicated `Audio` card block and the theme/footer display controls into a dedicated `Visual` card block.
+26. Extended `PreferencesSummaryScreenTest` to verify the new grouped card block structure while keeping the existing preferences footer behavior coverage.
