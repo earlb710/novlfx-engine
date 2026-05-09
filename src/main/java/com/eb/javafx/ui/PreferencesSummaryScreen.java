@@ -125,7 +125,9 @@ public final class PreferencesSummaryScreen {
     static VBox settingsBlock(String title, Node... rows) {
         Node[] blockChildren = new Node[rows.length + 1];
         blockChildren[0] = sectionHeading(title);
-        System.arraycopy(rows, 0, blockChildren, 1, rows.length);
+        for (int index = 0; index < rows.length; index++) {
+            blockChildren[index + 1] = rows[index];
+        }
         return ScreenShell.styledPanel(ScreenShell.LAYOUT_CARD_STYLE_CLASS, blockChildren);
     }
 
