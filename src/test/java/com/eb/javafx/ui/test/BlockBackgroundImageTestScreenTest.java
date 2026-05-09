@@ -69,11 +69,7 @@ final class BlockBackgroundImageTestScreenTest {
             List<StackPane> layeredSections = new ArrayList<>();
             collectNodes(content, StackPane.class, layeredSections);
             long blockBackgroundLayers = layeredSections.stream()
-                    .filter(stackPane -> stackPane.getChildren().size() == 2
-                            && stackPane.getChildren().get(0) instanceof Region region
-                            && region.getChildrenUnmodifiable().size() == 1
-                            && region.getChildrenUnmodifiable().get(0) instanceof ImageView imageView
-                            && Math.abs(imageView.getOpacity() - BlockBackgroundImageTestScreen.BACKGROUND_OPACITY) < 0.0001)
+                    .filter(BlockBackgroundImageTestScreenTest::isBlockBackgroundLayer)
                     .count();
 
             assertTrue(blockBackgroundLayers >= 2, "Expected at least two layered block background sections.");
@@ -116,6 +112,14 @@ final class BlockBackgroundImageTestScreenTest {
                 collectNodes(child, type, nodes);
             }
         }
+    }
+
+    private static boolean isBlockBackgroundLayer(StackPane stackPane) {
+        return stackPane.getChildren().size() == 2
+                && stackPane.getChildren().get(0) instanceof Region region
+                && region.getChildrenUnmodifiable().size() == 1
+                && region.getChildrenUnmodifiable().get(0) instanceof ImageView imageView
+                && Math.abs(imageView.getOpacity() - BlockBackgroundImageTestScreen.BACKGROUND_OPACITY) < 0.0001;
     }
 
     private static void runOnJavaFxThread(Runnable action) throws Exception {
