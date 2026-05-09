@@ -42,6 +42,8 @@ final class UiThemeTest {
         assertEquals(1.5, theme.fontScale());
         assertTrue(theme.stylesheet().startsWith("file:"));
         assertTrue(theme.stylesheetContent().contains("-fx-background-color: #faf6ff;"));
+        assertTrue(theme.stylesheetContent().contains("-fx-selection-bar: #775fc1;"));
+        assertTrue(theme.stylesheetContent().contains(".combo-box-popup .list-cell:selected"));
         assertTrue(theme.stylesheetContent().contains("-fx-text-fill: #775fc1;"));
     }
 
@@ -63,5 +65,6 @@ final class UiThemeTest {
         assertTrue(theme.highContrast());
         assertTrue(theme.reducedMotion());
         assertTrue(theme.stylesheetContent().contains("-fx-background-color: #000000;"));
+        assertTrue(theme.stylesheetContent().contains("-fx-selection-bar-text: #ffffff;"));
     }
 }

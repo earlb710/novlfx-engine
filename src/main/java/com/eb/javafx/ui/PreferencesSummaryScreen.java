@@ -191,11 +191,7 @@ public final class PreferencesSummaryScreen {
     private static void applyTheme(RouteContext context, ThemeFamily family, ThemeVariant variant) {
         context.preferencesService().saveThemePreferences(family, variant);
         context.uiTheme().initialize(context.preferencesService());
-        Scene scene = context.primaryStage().getScene();
-        if (scene != null) {
-            scene.getStylesheets().setAll(context.uiTheme().stylesheet());
-        }
-        applyCurrentFooterPreferences(context);
+        context.primaryStage().setScene(createScene(context));
     }
 
     private static void applyCurrentFooterPreferences(RouteContext context) {

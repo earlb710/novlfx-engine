@@ -17,6 +17,17 @@ public final class UiTheme {
             .root {
                 -fx-background-color: %s;
                 -fx-font-family: "%s";
+                -fx-accent: %s;
+                -fx-default-button: %s;
+                -fx-focus-color: %s;
+                -fx-faint-focus-color: transparent;
+                -fx-selection-bar: %s;
+                -fx-selection-bar-text: %s;
+                -fx-text-background-color: %s;
+                -fx-control-inner-background: %s;
+                -fx-control-inner-background-alt: %s;
+                -fx-cell-hover-color: %s;
+                -fx-mark-color: %s;
             }
 
             .screen-root {
@@ -173,6 +184,49 @@ public final class UiTheme {
                 -fx-background-color: %s;
                 -fx-text-fill: %s;
                 -fx-border-color: %s;
+            }
+
+            .combo-box-base,
+            .combo-box-base:editable > .text-field,
+            .combo-box > .list-cell {
+                -fx-background-color: %s;
+                -fx-text-fill: %s;
+                -fx-border-color: %s;
+                -fx-control-inner-background: %s;
+                -fx-prompt-text-fill: %s;
+            }
+
+            .combo-box-base:hover,
+            .combo-box-base:showing {
+                -fx-background-color: %s;
+                -fx-text-fill: %s;
+                -fx-border-color: %s;
+            }
+
+            .combo-box-base .arrow {
+                -fx-background-color: %s;
+            }
+
+            .combo-box-popup .list-view {
+                -fx-background-color: %s;
+                -fx-border-color: %s;
+                -fx-control-inner-background: %s;
+            }
+
+            .combo-box-popup .list-cell {
+                -fx-background-color: %s;
+                -fx-text-fill: %s;
+            }
+
+            .combo-box-popup .list-cell:hover {
+                -fx-background-color: %s;
+                -fx-text-fill: %s;
+            }
+
+            .combo-box-popup .list-cell:selected,
+            .combo-box-popup .list-cell:hover:selected {
+                -fx-background-color: %s;
+                -fx-text-fill: %s;
             }
 
             .svg-button-artwork-text {
@@ -425,6 +479,16 @@ public final class UiTheme {
             return STYLESHEET_TEMPLATE.formatted(
                     rootBackground,
                     cssQuoted(fontFamily == null || fontFamily.isBlank() ? "System" : fontFamily),
+                    accentColor,
+                    accentColor,
+                    accentColor,
+                    accentColor,
+                    buttonHoverText,
+                    labelText,
+                    screenPanelBackground,
+                    layoutPanelBackground,
+                    buttonHoverBackground,
+                    accentColor,
                     screenGradientStart,
                     screenGradientEnd,
                     accentColor,
@@ -450,6 +514,24 @@ public final class UiTheme {
                     buttonPressedBackground,
                     buttonPressedText,
                     buttonPressedBorder,
+                    buttonBackground,
+                    buttonText,
+                    buttonBorder,
+                    screenPanelBackground,
+                    sectionText,
+                    buttonHoverBackground,
+                    buttonHoverText,
+                    buttonHoverBorder,
+                    sectionText,
+                    screenPanelBackground,
+                    screenPanelBorder,
+                    screenPanelBackground,
+                    screenPanelBackground,
+                    labelText,
+                    buttonHoverBackground,
+                    buttonHoverText,
+                    buttonPressedBackground,
+                    buttonPressedText,
                     svgButtonText,
                     svgButtonHoverText);
         }
