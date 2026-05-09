@@ -55,7 +55,7 @@ public final class PreferencesFooterTestScreen {
         ScreenShell.applyFooterPreferences(footer, preferencesService);
         wireFooter(footer, openPreferencesAction, backAction);
 
-        Scene scene = new Scene(root, preferencesService.windowWidth(), preferencesService.windowHeight());
+        Scene scene = new Scene(root, TestUiScreenSize.sceneWidth(preferencesService), TestUiScreenSize.sceneHeight(preferencesService));
         scene.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
             if (isPreferencesShortcut(event.getCode(), event.isShortcutDown())) {
                 openPreferencesAction.run();

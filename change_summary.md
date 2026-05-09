@@ -11,3 +11,7 @@ Updated tests, sample screen JSON, and the user manual to cover the new metadata
 Simplified `PreferencesSummaryScreen` so it only shows editable preferences: master/music/sound audio, theme color, and footer display mode.
 Removed inline save buttons from the preferences route and switched those controls to immediate persistence/application, leaving a single Close button at the bottom.
 Updated preferences-related tests, manual footer-test copy, and the user manual to reflect the narrower editable preferences surface.
+
+Updated `PreferencesFooterTestScreenTest` to handle an already-initialized JavaFX toolkit when launched from the manual test app.
+Added shared `TestUiScreenSize` limits and capped JavaFX test/support scenes to 800x600.
+Capped Swing-based test/support windows and the screen-designer preview/test harness sizing so test UI windows stay within 800x600.

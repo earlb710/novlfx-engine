@@ -2,6 +2,7 @@ package com.eb.javafx.testscreen;
 
 import com.eb.javafx.util.JsonStrings;
 import com.eb.javafx.util.PathUtils;
+import com.eb.javafx.ui.test.TestUiScreenSize;
 import org.junit.platform.engine.TestExecutionResult;
 import org.junit.platform.engine.discovery.DiscoverySelectors;
 import org.junit.platform.launcher.Launcher;
@@ -190,7 +191,7 @@ public final class TestScreenApplication {
         frame = new JFrame("eb Test Screen");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setContentPane(buildContent());
-        frame.setMinimumSize(new Dimension(1100, 650));
+        frame.setMinimumSize(new Dimension(TestUiScreenSize.MAX_WIDTH, TestUiScreenSize.MAX_HEIGHT));
         frame.setLocationByPlatform(true);
         frame.addWindowListener(new WindowAdapter() {
             @Override
@@ -201,6 +202,7 @@ public final class TestScreenApplication {
 
         loadTests();
         frame.pack();
+        frame.setSize(TestUiScreenSize.MAX_WIDTH, TestUiScreenSize.MAX_HEIGHT);
         frame.setVisible(true);
     }
 
@@ -236,19 +238,19 @@ public final class TestScreenApplication {
         rightPanel.add(buildActionPanel(), BorderLayout.SOUTH);
 
         JScrollPane testTreePane = new JScrollPane(testTree);
-        testTreePane.setPreferredSize(new Dimension(300, 600));
+        testTreePane.setPreferredSize(new Dimension(240, 540));
         JPanel treePanel = new JPanel(new BorderLayout(4, 4));
         treePanel.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 0));
         treePanel.add(manualOnlyCheckBox, BorderLayout.NORTH);
         treePanel.add(testTreePane, BorderLayout.CENTER);
-        rightPanel.setPreferredSize(new Dimension(820, 600));
+        rightPanel.setPreferredSize(new Dimension(520, 540));
 
         JSplitPane splitPane = new JSplitPane(
                 JSplitPane.HORIZONTAL_SPLIT,
                 treePanel,
                 rightPanel);
         splitPane.setResizeWeight(0.25);
-        splitPane.setDividerLocation(300);
+        splitPane.setDividerLocation(240);
 
         JPanel root = new JPanel(new BorderLayout());
         root.add(splitPane, BorderLayout.CENTER);

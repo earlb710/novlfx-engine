@@ -14,6 +14,7 @@ import com.eb.javafx.ui.DisplayDefaults;
 import com.eb.javafx.ui.ScreenLayoutModel;
 import com.eb.javafx.ui.ScreenLayoutRenderer;
 import com.eb.javafx.ui.ScreenLayoutType;
+import com.eb.javafx.ui.test.TestUiScreenSize;
 import com.eb.javafx.ui.UiTheme;
 import com.eb.javafx.util.FontResources;
 import com.eb.javafx.util.HierarchyTraversal;
@@ -244,7 +245,7 @@ public final class ScreenDesignerApplication {
         });
         frame.setJMenuBar(menuBar());
         frame.setContentPane(content());
-        frame.setSize(1200, 760);
+        frame.setSize(TestUiScreenSize.capWidth(1200), TestUiScreenSize.capHeight(760));
         frame.setLocationByPlatform(true);
         refreshAll();
         frame.setVisible(true);
@@ -1153,8 +1154,8 @@ public final class ScreenDesignerApplication {
             ScreenLayoutModel previewModel = ScreenDesignLayoutAdapter.toLayoutModel(designSnapshot, true, defaultsSnapshot);
             Scene scene = new Scene(
                     ScreenLayoutRenderer.createRoot(previewModel),
-                    preferencesService.windowWidth(),
-                    preferencesService.windowHeight());
+                    TestUiScreenSize.sceneWidth(preferencesService),
+                    TestUiScreenSize.sceneHeight(preferencesService));
             scene.getStylesheets().add(uiTheme.stylesheet());
 
             if (previewStage != null) {
