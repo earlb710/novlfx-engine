@@ -299,7 +299,7 @@ public final class ScreenDesignJson {
                     .orElseThrow(() -> new IllegalArgumentException("Missing JSON object for screen design texts."))
                     .forEach((key, value) -> {
                         if (!(value instanceof String stringValue)) {
-                            throw new IllegalArgumentException("Expected JSON string for screen design texts." + key + ".");
+                            throw new IllegalArgumentException("Expected JSON string for screen design texts. " + key + ".");
                         }
                         texts.put(key, stringValue);
                     });
