@@ -18,6 +18,7 @@ public record LocationDescriptionVariant(String text, List<String> conditions) {
         return !conditions.isEmpty();
     }
 
+    /** Returns true when all variant conditions are active; unconditional variants match any active-condition set. */
     public boolean matchesConditions(Collection<String> activeConditions) {
         if (conditions.isEmpty()) {
             return true;

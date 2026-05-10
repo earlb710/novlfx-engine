@@ -4,6 +4,7 @@ import com.eb.javafx.util.Validation;
 
 /** Localized text for a single authored map. */
 public record MapTextEntry(String mapId, String description) implements IdentifiedDefinition {
+    /** JSON fallback used when a map text entry omits its localized description. */
     public static final String DEFAULT_DESCRIPTION = "Main Map";
 
     public MapTextEntry {
