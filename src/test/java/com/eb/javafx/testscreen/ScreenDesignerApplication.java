@@ -51,6 +51,7 @@ import javax.swing.table.AbstractTableModel;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.TableCellEditor;
 import javax.swing.table.TableCellRenderer;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
@@ -1109,6 +1110,7 @@ public final class ScreenDesignerApplication {
                 ? currentPath.getParent()
                 : screenDesignExamplesDirectory();
         JFileChooser chooser = new JFileChooser(initialDirectory.toFile());
+        chooser.setFileFilter(new FileNameExtensionFilter("Screen design JSON (*.json)", "json"));
         chooser.setCurrentDirectory(initialDirectory.toFile());
         if (currentPath != null) {
             chooser.setSelectedFile(currentPath.toFile());

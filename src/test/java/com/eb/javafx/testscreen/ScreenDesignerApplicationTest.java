@@ -45,7 +45,7 @@ final class ScreenDesignerApplicationTest {
     void bundledScreenDesignExamplesLoadAndValidate() throws IOException {
         try (var paths = Files.list(ScreenDesignerApplication.screenDesignExamplesDirectory())) {
             List<Path> jsonFiles = paths
-                    .filter(path -> path.getFileName().toString().endsWith(".json"))
+                    .filter(ScreenDesignerApplicationTest::isScreenDesignJson)
                     .sorted()
                     .toList();
 
@@ -61,7 +61,7 @@ final class ScreenDesignerApplicationTest {
     void bundledScreenDesignExamplesDemonstrateNewStylingMetadata() throws IOException {
         try (var paths = Files.list(ScreenDesignerApplication.screenDesignExamplesDirectory())) {
             List<ScreenDesignModel> designs = paths
-                    .filter(path -> path.getFileName().toString().endsWith(".json"))
+                    .filter(ScreenDesignerApplicationTest::isScreenDesignJson)
                     .sorted()
                     .map(ScreenDesignJson::load)
                     .toList();
@@ -83,11 +83,32 @@ final class ScreenDesignerApplicationTest {
     }
 
     @Test
+    void bundledScreenDesignExamplesHaveTextSidecars() throws IOException {
+        try (var paths = Files.list(ScreenDesignerApplication.screenDesignExamplesDirectory())) {
+            List<Path> jsonFiles = paths
+                    .filter(ScreenDesignerApplicationTest::isScreenDesignJson)
+                    .sorted()
+                    .toList();
+
+            assertFalse(jsonFiles.isEmpty());
+            for (Path jsonFile : jsonFiles) {
+                assertTrue(Files.isRegularFile(ScreenDesignJson.textPathFor(jsonFile)),
+                        () -> "Missing text sidecar for " + jsonFile);
+            }
+        }
+    }
+
+    @Test
     void statusTextNamesSavedOrUnsavedDesignsAndValidationState() {
         assertEquals("Unsaved screen design | Screen design is valid.",
                 ScreenDesignerApplication.statusText(null, List.of()));
         assertEquals("sample-screen-design.json | Screen design is valid.",
                 ScreenDesignerApplication.statusText(Path.of("sample-screen-design.json"), List.of()));
+    }
+
+    private static boolean isScreenDesignJson(Path path) {
+        String fileName = path.getFileName().toString();
+        return fileName.endsWith(".json") && !fileName.endsWith("_text.json");
     }
 
     @Test

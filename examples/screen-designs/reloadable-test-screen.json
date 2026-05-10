@@ -1,6 +1,6 @@
 {
   "id": "test.reloadable-json",
-  "title": "Reloadable JSON Screen",
+  "title": "screen.title",
   "layoutType": "FORM",
   "metadata": {
     "description": "Manual test screen definition that can be edited and reloaded.",
@@ -13,7 +13,7 @@
   "blocks": [
     {
       "id": "instructions",
-      "title": "Edit and Reload",
+      "title": "block.instructions.title",
       "layoutType": "FORM",
       "parentBlockId": null,
       "conditions": [],
@@ -29,7 +29,7 @@
     },
     {
       "id": "preview",
-      "title": "Rendered from JSON",
+      "title": "block.preview.title",
       "layoutType": "TITLED_PANEL",
       "parentBlockId": null,
       "conditions": [],
@@ -50,7 +50,7 @@
       "blockId": "instructions",
       "type": "TEXT",
       "label": null,
-      "text": "Edit this file, then press Reload JSON in the test screen to see the updated layout.",
+      "text": "item.instructions.edit.text",
       "value": null,
       "defaultValue": null,
       "sequence": 10,
@@ -66,7 +66,7 @@
       "blockId": "instructions",
       "type": "TEXT",
       "label": null,
-      "text": "Default file: examples/screen-designs/reloadable-test-screen.json",
+      "text": "item.instructions.path.text",
       "value": null,
       "defaultValue": null,
       "sequence": 20,
@@ -81,10 +81,10 @@
       "id": "preview.field",
       "blockId": "preview",
       "type": "FIELD",
-      "label": "Sample field",
+      "label": "item.preview.field.label",
       "text": null,
       "value": null,
-      "defaultValue": "Change me in JSON",
+      "defaultValue": "item.preview.field.defaultValue",
       "sequence": 10,
       "editable": false,
       "styleClass": null,

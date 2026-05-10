@@ -1,0 +1,15 @@
+{
+  "language": "en",
+  "texts": {
+    "screen.title": "Location Gallery",
+    "block.harbor.title": "Harbor",
+    "block.market.title": "Night Market",
+    "block.observatory.title": "Observatory",
+    "item.harbor.summary.label": "Summary",
+    "item.harbor.summary.text": "Fog, cargo lights, and late ferries.",
+    "item.market.summary.label": "Summary",
+    "item.market.summary.text": "Lanterns, tea stalls, and rumor hunters.",
+    "item.observatory.summary.label": "Summary",
+    "item.observatory.summary.text": "Star charts, static, and a locked archive wing."
+  }
+}

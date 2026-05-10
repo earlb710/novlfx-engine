@@ -1,6 +1,6 @@
 {
   "id": "gallery.preview",
-  "title": "Location Gallery",
+  "title": "screen.title",
   "layoutType": "PREVIEW_GRID",
   "metadata": {
     "description": "Preview-grid sample showing card-like sections",
@@ -13,7 +13,7 @@
   "blocks": [
     {
       "id": "harbor",
-      "title": "Harbor",
+      "title": "block.harbor.title",
       "styleClass": null,
       "metadata": {
         "backgroundColor": "#17304d",
@@ -26,7 +26,7 @@
     },
     {
       "id": "market",
-      "title": "Night Market",
+      "title": "block.market.title",
       "styleClass": null,
       "metadata": {
         "backgroundColor": "#35204f",
@@ -39,7 +39,7 @@
     },
     {
       "id": "observatory",
-      "title": "Observatory",
+      "title": "block.observatory.title",
       "styleClass": null,
       "metadata": {
         "backgroundColor": "#20384f",
@@ -56,8 +56,8 @@
       "id": "harbor.summary",
       "blockId": "harbor",
       "type": "TEXT",
-      "label": "Summary",
-      "text": "Fog, cargo lights, and late ferries.",
+      "label": "item.harbor.summary.label",
+      "text": "item.harbor.summary.text",
       "value": null,
       "defaultValue": null,
       "styleClass": null,
@@ -70,8 +70,8 @@
       "id": "market.summary",
       "blockId": "market",
       "type": "TEXT",
-      "label": "Summary",
-      "text": "Lanterns, tea stalls, and rumor hunters.",
+      "label": "item.market.summary.label",
+      "text": "item.market.summary.text",
       "value": null,
       "defaultValue": null,
       "styleClass": null,
@@ -84,8 +84,8 @@
       "id": "observatory.summary",
       "blockId": "observatory",
       "type": "TEXT",
-      "label": "Summary",
-      "text": "Star charts, static, and a locked archive wing.",
+      "label": "item.observatory.summary.label",
+      "text": "item.observatory.summary.text",
       "value": null,
       "defaultValue": null,
       "styleClass": null,

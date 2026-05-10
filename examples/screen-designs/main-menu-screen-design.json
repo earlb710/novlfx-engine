@@ -1,6 +1,6 @@
 {
   "id": "main.menu",
-  "title": "Main Menu",
+  "title": "screen.title",
   "layoutType": "MENU_ACTION_LIST",
   "metadata": {
     "description": "Menu-focused sample screen design",
@@ -13,7 +13,7 @@
   "blocks": [
     {
       "id": "status",
-      "title": "Session",
+      "title": "block.status.title",
       "layoutType": "TITLED_PANEL",
       "parentBlockId": null,
       "styleClass": null,
@@ -28,7 +28,7 @@
     },
     {
       "id": "actions",
-      "title": "Actions",
+      "title": "block.actions.title",
       "layoutType": "MENU_ACTION_LIST",
       "parentBlockId": null,
       "styleClass": null,
@@ -43,7 +43,7 @@
     },
     {
       "id": "actions.primary",
-      "title": "Primary Actions",
+      "title": "block.actions.primary.title",
       "layoutType": "MENU_ACTION_LIST",
       "parentBlockId": "actions",
       "styleClass": null,
@@ -58,7 +58,7 @@
     },
     {
       "id": "actions.secondary",
-      "title": "Secondary Actions",
+      "title": "block.actions.secondary.title",
       "layoutType": "MENU_ACTION_LIST",
       "parentBlockId": "actions",
       "styleClass": null,
@@ -77,8 +77,8 @@
       "id": "status.summary",
       "blockId": "status",
       "type": "TEXT",
-      "label": "Summary",
-      "text": "Continue from $chapterTitle",
+      "label": "item.status.summary.label",
+      "text": "item.status.summary.text",
       "value": null,
       "defaultValue": null,
       "styleClass": null,
@@ -91,7 +91,7 @@
       "id": "actions.new-game",
       "blockId": "actions.primary",
       "type": "BUTTON",
-      "label": "New Game",
+      "label": "item.actions.new-game.label",
       "text": null,
       "value": "new-game",
       "defaultValue": null,
@@ -106,7 +106,7 @@
       "id": "actions.load-save",
       "blockId": "actions.primary",
       "type": "BUTTON",
-      "label": "Load Save",
+      "label": "item.actions.load-save.label",
       "text": null,
       "value": "load-save",
       "defaultValue": null,
@@ -121,7 +121,7 @@
       "id": "actions.settings",
       "blockId": "actions.secondary",
       "type": "BUTTON",
-      "label": "Settings",
+      "label": "item.actions.settings.label",
       "text": null,
       "value": "settings",
       "defaultValue": null,

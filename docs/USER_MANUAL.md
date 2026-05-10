@@ -565,6 +565,11 @@ The designer opens a Swing editor backed by `ScreenDesignModel` and starts in `e
 Typical designer workflow:
 
 1. Use **File > New**, **Load**, **Save**, or **Save As** to manage the JSON document.
+   Saving a screen design also writes a sibling localized text file named after the screen JSON, such as
+   `main-menu-screen-design_text.json`. The screen JSON stores stable text ids for screen titles, block titles,
+   item labels, text areas, field defaults, and buttons; the `_text.json` file stores the actual fixed text under
+   a `language` field and a `texts` map. Text values may include runtime lookup variables such as `$name` or
+   `${player.name}`.
 2. Use **Edit Default Values** to adjust the preview-time display defaults loaded from `display-defaults.json`; this is useful for testing inherited screen/block/item styling without changing every document node.
 3. Use **Add Block** to create root or nested blocks.
 4. Select a block, then use **Add Item** for a saved item or **Add Temporary Field** for a preview-only field.

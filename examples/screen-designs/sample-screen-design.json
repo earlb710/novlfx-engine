@@ -1,6 +1,6 @@
 {
   "id": "settings.profile",
-  "title": "Profile Settings",
+  "title": "screen.title",
   "layoutType": "FORM",
   "metadata": {
     "description": "Example screen design document",
@@ -16,7 +16,7 @@
   "blocks": [
     {
       "id": "profile",
-      "title": "Profile",
+      "title": "block.profile.title",
       "conditions": [
         "profile.ready"
       ],
@@ -38,10 +38,10 @@
       "id": "profile.name",
       "blockId": "profile",
       "type": "FIELD",
-      "label": "Name",
+      "label": "item.profile.name.label",
       "text": null,
       "value": null,
-      "defaultValue": "Player",
+      "defaultValue": "item.profile.name.defaultValue",
       "sequence": 10,
       "styleClass": null,
       "metadata": {
@@ -53,10 +53,10 @@
       "id": "profile.note",
       "blockId": "profile",
       "type": "TEXT_AREA",
-      "label": "Note",
+      "label": "item.profile.note.label",
       "text": null,
       "value": null,
-      "defaultValue": "Temporary test fields can be added in the designer without saving.",
+      "defaultValue": "item.profile.note.defaultValue",
       "sequence": 20,
       "styleClass": null,
       "metadata": {
