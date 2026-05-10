@@ -5,3 +5,12 @@ Added JSON-backed map and location text support for gamesupport:
 - Added focused tests and test resources for parsing, defaults, duplicate validation, condition matching, references, and JSON round trips.
 - Documented both JSON formats in the user manual and added matching user-manual example JSON files.
 - Validated with `./gradlew --no-daemon compileJava test --tests com.eb.javafx.gamesupport.MapAndLocationTextDefinitionTest --tests com.eb.javafx.gamesupport.LocationSupportTest`.
+
+Added Default App Values management support for editing the bundled map/location JSON examples:
+
+- Added a new **Locations** tab next to **Application Values** in `DefaultDisplayValuesApplication`.
+- Embedded map-text and location-text JSON editors with **Save**, **Format**, and **Reset** actions backed by `MapTextDefinition` and `LocationTextDefinition`.
+- Loaded the editor content from the user-manual example JSON files with deterministic fallbacks for tests.
+- Added focused UI/helper tests for the new tab labels, sample JSON loading, and editor actions.
+- Updated the user manual to describe the new Locations tab workflow.
+- Validated with `./gradlew --no-daemon compileJava test --tests com.eb.javafx.testscreen.DefaultDisplayValuesApplicationTest --tests com.eb.javafx.testscreen.ManagementApplicationTest`.
