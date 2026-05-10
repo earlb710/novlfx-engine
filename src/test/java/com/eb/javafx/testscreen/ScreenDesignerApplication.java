@@ -19,11 +19,14 @@ import com.eb.javafx.ui.UiTheme;
 import com.eb.javafx.util.FontResources;
 import com.eb.javafx.util.HierarchyTraversal;
 import javafx.application.Platform;
+import javafx.embed.swing.JFXPanel;
 import javafx.scene.Scene;
+import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
 
 import javax.swing.JButton;
 import javax.swing.AbstractCellEditor;
+import javax.swing.BorderFactory;
 import javax.swing.DefaultCellEditor;
 import javax.swing.JCheckBox;
 import javax.swing.JColorChooser;
@@ -31,6 +34,7 @@ import javax.swing.JComboBox;
 import javax.swing.JDialog;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
+import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JMenu;
@@ -44,6 +48,7 @@ import javax.swing.JSplitPane;
 import javax.swing.JTable;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
+import javax.swing.Scrollable;
 import javax.swing.ListSelectionModel;
 import javax.swing.SwingUtilities;
 import javax.swing.WindowConstants;
@@ -51,9 +56,11 @@ import javax.swing.table.AbstractTableModel;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.TableCellEditor;
 import javax.swing.table.TableCellRenderer;
+import javax.swing.tree.DefaultTreeCellRenderer;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.Frame;
 import java.awt.GraphicsEnvironment;
@@ -61,6 +68,7 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.GridLayout;
 import java.awt.Insets;
+import java.awt.Rectangle;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
@@ -88,6 +96,11 @@ import javax.swing.tree.TreeSelectionModel;
 
 /** Manual Swing screen designer for editing JSON-backed reusable screen designs. */
 public final class ScreenDesignerApplication {
+    static final int DEFAULT_FRAME_WIDTH = 1560;
+    static final int DEFAULT_FRAME_HEIGHT = 988;
+    private static final int PROPERTY_FIELD_MIN_COLUMNS = 10;
+    private static final Color INLINE_ERROR_COLOR = new Color(0x9b1c1c);
+    private static final Color INLINE_HINT_COLOR = new Color(0x5f6368);
     private static final String SCREEN_PARENT_OPTION = "<screen>";
     private static final String DEFAULT_OPTION = "<default>";
     private static final String CSS_INHERITANCE_HINT = "<inherit from CSS>";
@@ -107,6 +120,9 @@ public final class ScreenDesignerApplication {
     private static final String BACKGROUND_IMAGE_KEY = "backgroundImage";
     private static final String BACKGROUND_IMAGE_TRANSPARENCY_KEY = "backgroundImageTransparency";
     private static final String BACKGROUND_IMAGE_PLACEMENT_KEY = "backgroundImagePlacement";
+    private static final String EVENT_NAME_KEY = "eventName";
+    private static final String ACTION_EVENT_KEY = "actionEvent";
+    private static final String ACTION_VALUE_KEY = "actionValue";
     private static final String DIALOG_KEY = "dialog";
     private static final String DISMISS_ON_CLICK_OUTSIDE_KEY = "dismissOnClickOutside";
     private static final String DISMISS_ON_ESCAPE_KEY = "dismissOnEscape";
@@ -141,14 +157,15 @@ public final class ScreenDesignerApplication {
             BORDER_COLOR_KEY, BACKGROUND_IMAGE_KEY, BACKGROUND_IMAGE_TRANSPARENCY_KEY, BACKGROUND_IMAGE_PLACEMENT_KEY);
     private static final Set<String> ITEM_EXPOSED_METADATA_KEYS = Set.of(
             DISPLAY_ROLE_KEY, FONT_FAMILY_KEY, ITEM_FONT_SIZE_KEY, ITEM_FONT_STYLE_KEY, ITEM_COLOR_KEY,
-            BACKGROUND_COLOR_KEY, TRANSPARENCY_KEY,
-            LABEL_FONT_FAMILY_KEY, LABEL_FONT_SIZE_KEY, LABEL_FONT_STYLE_KEY, LABEL_COLOR_KEY);
+            BACKGROUND_COLOR_KEY, HOVER_BACKGROUND_COLOR_KEY, PRESSED_BACKGROUND_COLOR_KEY, TRANSPARENCY_KEY,
+            LABEL_FONT_FAMILY_KEY, LABEL_FONT_SIZE_KEY, LABEL_FONT_STYLE_KEY, LABEL_COLOR_KEY,
+            EVENT_NAME_KEY, ACTION_EVENT_KEY, ACTION_VALUE_KEY);
     private static final AtomicBoolean JAVAFX_STARTED = new AtomicBoolean();
     private ScreenDesignModel design = sampleDesign();
     private final DefaultTreeModel objectTreeModel = new DefaultTreeModel(new DefaultMutableTreeNode());
     private final JTree objectTree = new JTree(objectTreeModel);
     private final JButton addItemButton = new JButton("Add Item");
-    private final JPanel propertiesPanel = new JPanel(new BorderLayout(8, 8));
+    private final JPanel propertiesPanel = new ViewportWidthTrackingPanel(new BorderLayout(8, 8));
     private final JButton editDefaultValuesButton = new JButton("Edit Default Values");
     private final JButton applyPropertiesButton = new JButton("Apply Properties");
     private final JButton resetPropertiesButton = new JButton("Reset Properties");
@@ -180,6 +197,7 @@ public final class ScreenDesignerApplication {
     private final JTextField blockBackgroundColorField = new JTextField();
     private final JTextField blockBackgroundImageField = new JTextField();
     private final JComboBox<String> blockBackgroundImageTransparencyBox = transparencyBox();
+    private final JComboBox<String> blockBackgroundImagePlacementBox = new JComboBox<>(BACKGROUND_IMAGE_PLACEMENT_OPTIONS);
     private final JComboBox<String> blockTransparencyBox = transparencyBox();
     private final JComboBox<String> blockBorderStyleBox = borderStyleBox();
     private final JComboBox<String> blockBorderCornerBox = borderCornerBox();
@@ -203,14 +221,22 @@ public final class ScreenDesignerApplication {
     private final JComboBox<String> itemFontStyleBox = fontStyleBox();
     private final JTextField itemColorField = new JTextField();
     private final JTextField itemBackgroundColorField = new JTextField();
+    private final JTextField itemHoverBackgroundColorField = new JTextField();
+    private final JTextField itemPressedBackgroundColorField = new JTextField();
     private final JComboBox<String> itemTransparencyBox = transparencyBox();
+    private final JTextField itemEventNameField = new JTextField();
+    private final JTextField itemActionValueField = new JTextField();
     private final JComboBox<String> itemLabelFontFamilyBox = fontFamilyBox();
     private final JComboBox<String> itemLabelFontSizeBox = fontSizeBox();
     private final JComboBox<String> itemLabelFontStyleBox = fontStyleBox();
     private final JTextField itemLabelColorField = new JTextField();
     private final JTextArea itemMetadataArea = new JTextArea(4, 20);
     private final JTextArea jsonArea = new JTextArea();
+    private final JTextArea validationArea = new JTextArea(3, 20);
     private final JLabel statusLabel = new JLabel();
+    private JFXPanel dockedPreviewPanel;
+    private Map<String, String> copiedMetadata = Map.of();
+    private String copiedStyleClass;
     private Path currentPath;
     private String savedJsonSnapshot = ScreenDesignJson.toJson(design);
     private DisplayDefaults displayDefaults = DisplayDefaults.defaults();
@@ -249,7 +275,7 @@ public final class ScreenDesignerApplication {
         });
         frame.setJMenuBar(menuBar());
         frame.setContentPane(content());
-        frame.setSize(TestUiScreenSize.capWidth(1200), TestUiScreenSize.capHeight(760));
+        frame.setSize(DEFAULT_FRAME_WIDTH, DEFAULT_FRAME_HEIGHT);
         frame.setLocationByPlatform(true);
         refreshAll();
         frame.setVisible(true);
@@ -257,12 +283,38 @@ public final class ScreenDesignerApplication {
 
     private JPanel content() {
         JPanel root = new JPanel(new BorderLayout(8, 8));
+        configureFieldGuidance();
         root.add(actionToolbar(), BorderLayout.NORTH);
-        JSplitPane split = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, navigation(), editor());
+        JSplitPane split = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, navigation(), workspace());
         split.setDividerLocation(300);
+        split.setResizeWeight(0.18);
         root.add(split, BorderLayout.CENTER);
         root.add(statusLabel, BorderLayout.SOUTH);
         return root;
+    }
+
+    private JPanel workspace() {
+        JPanel preview = dockedPreview();
+        JSplitPane split = workspaceSplit(editor(), preview);
+        JPanel panel = new JPanel(new BorderLayout(8, 8));
+        panel.add(split, BorderLayout.CENTER);
+        return panel;
+    }
+
+    static JSplitPane workspaceSplit(Component editor, Component preview) {
+        JSplitPane split = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, editor, preview);
+        split.setResizeWeight(0.68);
+        split.setDividerLocation(640);
+        return split;
+    }
+
+    private JPanel dockedPreview() {
+        dockedPreviewPanel = new JFXPanel();
+        dockedPreviewPanel.setPreferredSize(new Dimension(320, 0));
+        JPanel panel = new JPanel(new BorderLayout(6, 6));
+        panel.add(new JLabel("Live Preview (right column; auto-refreshes after Apply, create, load, and default-value edits)"), BorderLayout.NORTH);
+        panel.add(dockedPreviewPanel, BorderLayout.CENTER);
+        return panel;
     }
 
     private JMenuBar menuBar() {
@@ -282,6 +334,7 @@ public final class ScreenDesignerApplication {
     private JMenuItem fileMenuItem(String label) {
         Runnable action = switch (label) {
             case "New" -> this::newScreen;
+            case "New From Template" -> this::newFromTemplate;
             case "Load" -> this::loadJson;
             case "Save" -> this::saveJson;
             case "Save As" -> this::saveJsonAs;
@@ -295,16 +348,19 @@ public final class ScreenDesignerApplication {
     private JPanel actionToolbar() {
         JPanel panel = new JPanel();
         JButton validate = new JButton("Validate");
+        JButton firstIssue = new JButton("Go To First Issue");
         JButton preview = new JButton("Open Preview");
         JButton addTemp = new JButton("Add Temporary Field");
         JButton promote = new JButton("Promote Temporary");
         editDefaultValuesButton.addActionListener(event -> runSafely("Edit Default Values", this::editDefaultValues));
         validate.addActionListener(event -> runSafely("Validate", this::showValidation));
+        firstIssue.addActionListener(event -> runSafely("Go To First Issue", this::goToFirstValidationIssue));
         preview.addActionListener(event -> runSafely("Open Preview", this::openPreview));
         addTemp.addActionListener(event -> runSafely("Add Temporary Field", () -> addItem(true)));
         promote.addActionListener(event -> runSafely("Promote Temporary", this::promoteTemporary));
         panel.add(editDefaultValuesButton);
         panel.add(validate);
+        panel.add(firstIssue);
         panel.add(preview);
         panel.add(addTemp);
         panel.add(promote);
@@ -314,6 +370,7 @@ public final class ScreenDesignerApplication {
     private JPanel navigation() {
         objectTree.getSelectionModel().setSelectionMode(TreeSelectionModel.SINGLE_TREE_SELECTION);
         objectTree.setRootVisible(true);
+        objectTree.setCellRenderer(new ValidationTreeCellRenderer());
         objectTree.addTreeSelectionListener(event -> updateSelectedNavigationState());
         installTreeContextMenu();
         JPanel panel = new JPanel(new BorderLayout(8, 8));
@@ -339,13 +396,52 @@ public final class ScreenDesignerApplication {
         resetPropertiesButton.addActionListener(event -> resetSelectedProperties());
         itemTypeBox.addActionListener(event -> refreshItemEditableState());
         jsonArea.setEditable(false);
+        validationArea.setEditable(false);
+        validationArea.setLineWrap(true);
+        validationArea.setWrapStyleWord(true);
         JScrollPane propertiesScrollPane = new JScrollPane(propertiesPanel);
         propertiesScrollPane.setPreferredSize(new Dimension(0, 340));
-        JSplitPane split = new JSplitPane(JSplitPane.VERTICAL_SPLIT, propertiesScrollPane, new JScrollPane(jsonArea));
+        JSplitPane lowerSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT, new JScrollPane(validationArea), new JScrollPane(jsonArea));
+        lowerSplit.setDividerLocation(95);
+        JSplitPane split = new JSplitPane(JSplitPane.VERTICAL_SPLIT, propertiesScrollPane, lowerSplit);
         split.setDividerLocation(340);
         panel.add(split, BorderLayout.CENTER);
         panel.add(propertyActionPanel(), BorderLayout.SOUTH);
         return panel;
+    }
+
+    private static final class ViewportWidthTrackingPanel extends JPanel implements Scrollable {
+        private ViewportWidthTrackingPanel(BorderLayout layout) {
+            super(layout);
+        }
+
+        @Override
+        public Dimension getPreferredScrollableViewportSize() {
+            return getPreferredSize();
+        }
+
+        @Override
+        public int getScrollableUnitIncrement(Rectangle visibleRect, int orientation, int direction) {
+            return 16;
+        }
+
+        @Override
+        public int getScrollableBlockIncrement(Rectangle visibleRect, int orientation, int direction) {
+            return orientation == javax.swing.SwingConstants.VERTICAL ? visibleRect.height : visibleRect.width;
+        }
+
+        @Override
+        public boolean getScrollableTracksViewportWidth() {
+            if (getParent() instanceof javax.swing.JViewport viewport) {
+                return viewport.getWidth() >= getMinimumSize().width;
+            }
+            return false;
+        }
+
+        @Override
+        public boolean getScrollableTracksViewportHeight() {
+            return false;
+        }
     }
 
     private void applySelectedProperties() {
@@ -423,6 +519,26 @@ public final class ScreenDesignerApplication {
         refreshAll();
     }
 
+    private void newFromTemplate() {
+        List<ScreenTemplate> templates = screenTemplates();
+        ScreenTemplate selected = (ScreenTemplate) JOptionPane.showInputDialog(
+                null,
+                "Choose a generic starter layout.",
+                "New From Template",
+                JOptionPane.PLAIN_MESSAGE,
+                null,
+                templates.toArray(),
+                templates.get(0));
+        if (selected == null) {
+            return;
+        }
+        currentPath = null;
+        design = selected.design();
+        savedJsonSnapshot = ScreenDesignJson.toJson(design);
+        refreshAll();
+        selectNavigationNode(NavigationNode.screen(design.id()));
+    }
+
     private void addBlock() {
         addBlock(selectedBlockId().orElse(null));
     }
@@ -483,6 +599,12 @@ public final class ScreenDesignerApplication {
         JTextField backgroundColorField = new JTextField(existing == null ? "" : metadataValue(existing.metadata(), BACKGROUND_COLOR_KEY));
         JComboBox<String> transparencyBox = transparencyBox();
         setComboValue(transparencyBox, existing == null ? "" : metadataValue(existing.metadata(), TRANSPARENCY_KEY));
+        JTextField eventNameField = new JTextField(existing == null ? "" : firstNonBlank(
+                metadataValue(existing.metadata(), EVENT_NAME_KEY),
+                metadataValue(existing.metadata(), ACTION_EVENT_KEY)));
+        JTextField actionValueField = new JTextField(existing == null ? "" : metadataValue(existing.metadata(), ACTION_VALUE_KEY));
+        JTextField hoverBackgroundColorField = new JTextField(existing == null ? "" : metadataValue(existing.metadata(), HOVER_BACKGROUND_COLOR_KEY));
+        JTextField pressedBackgroundColorField = new JTextField(existing == null ? "" : metadataValue(existing.metadata(), PRESSED_BACKGROUND_COLOR_KEY));
         JTextArea metadataArea = new JTextArea(existing == null
                 ? ""
                 : metadataText(existing.metadata(), ITEM_EXPOSED_METADATA_KEYS), 4, 20);
@@ -494,7 +616,7 @@ public final class ScreenDesignerApplication {
         typeBox.addActionListener(event -> refreshItemTypeState(typeBox, labelField, editableBox));
         refreshItemTypeState(typeBox, labelField, editableBox);
         boolean fieldType = isFieldType((ScreenDesignItemType) typeBox.getSelectedItem());
-        JPanel fields = new JPanel(new GridLayout(fieldType ? 13 : 10, 2, 6, 6));
+        JPanel fields = new JPanel(new GridLayout(fieldType ? 17 : 14, 2, 6, 6));
         fields.add(new JLabel("Target block"));
         fields.add(blockBox);
         fields.add(new JLabel("Item id"));
@@ -509,8 +631,16 @@ public final class ScreenDesignerApplication {
         fields.add(displayRoleBox);
         fields.add(new JLabel("Background color"));
         fields.add(colorSelector(backgroundColorField));
+        fields.add(new JLabel("Hover background color"));
+        fields.add(colorSelector(hoverBackgroundColorField));
+        fields.add(new JLabel("Pressed background color"));
+        fields.add(colorSelector(pressedBackgroundColorField));
         fields.add(new JLabel("Transparency"));
         fields.add(transparencyBox);
+        fields.add(new JLabel("Action event name"));
+        fields.add(eventNameField);
+        fields.add(new JLabel("Action value"));
+        fields.add(actionValueField);
         if (fieldType) {
             fields.add(new JLabel("Label"));
             fields.add(labelField);
@@ -523,7 +653,7 @@ public final class ScreenDesignerApplication {
             fields.add(new JLabel("Editable"));
             fields.add(editableBox);
         }
-        fields.add(new JLabel("Extra metadata"));
+        fields.add(new JLabel("Advanced metadata"));
         fields.add(new JScrollPane(metadataArea));
         int result = JOptionPane.showConfirmDialog(null, fields, title, JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
         String itemId = itemIdField.getText();
@@ -538,7 +668,10 @@ public final class ScreenDesignerApplication {
         Map<String, String> metadata = new LinkedHashMap<>(parseMetadataText(metadataArea.getText()));
         putOptionalMetadata(metadata, DISPLAY_ROLE_KEY, selectedComboValue(displayRoleBox));
         putOptionalMetadata(metadata, BACKGROUND_COLOR_KEY, backgroundColorField.getText());
+        putOptionalMetadata(metadata, HOVER_BACKGROUND_COLOR_KEY, hoverBackgroundColorField.getText());
+        putOptionalMetadata(metadata, PRESSED_BACKGROUND_COLOR_KEY, pressedBackgroundColorField.getText());
         putOptionalMetadata(metadata, TRANSPARENCY_KEY, selectedComboValue(transparencyBox));
+        putActionMetadata(metadata, eventNameField.getText(), actionValueField.getText());
         return Optional.of(new ScreenDesignItem(
                 normalizedItemId(itemId, temporary),
                 blockId,
@@ -620,7 +753,7 @@ public final class ScreenDesignerApplication {
         fields.add(borderThicknessBox);
         fields.add(new JLabel("Border color"));
         fields.add(colorSelector(borderColorField));
-        fields.add(new JLabel("Extra metadata"));
+        fields.add(new JLabel("Advanced metadata"));
         fields.add(new JScrollPane(metadataArea));
         int result = JOptionPane.showConfirmDialog(null, fields, title, JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
         String blockId = blockIdField.getText();
@@ -681,9 +814,9 @@ public final class ScreenDesignerApplication {
         refreshAll();
     }
 
-    private void removeItem(String itemId) {
+    private void removeItem(String itemId, boolean temporary) {
         if (JOptionPane.showConfirmDialog(null,
-                "Remove item '" + itemId + "'?",
+                "Remove " + (temporary ? "temporary " : "") + "item '" + itemId + "'?",
                 "Remove Item",
                 JOptionPane.OK_CANCEL_OPTION,
                 JOptionPane.WARNING_MESSAGE) != JOptionPane.OK_OPTION) {
@@ -691,6 +824,80 @@ public final class ScreenDesignerApplication {
         }
         design = ScreenDesignService.removeItem(design, itemId);
         refreshAll();
+    }
+
+    private void duplicateBlock(String blockId) {
+        ScreenDesignBlock source = findBlock(blockId);
+        ScreenDesignBlock copy = copyOfBlock(source, uniqueBlockId(source.id()));
+        design = ScreenDesignService.addBlock(design, copy);
+        refreshAll();
+        selectNavigationNode(NavigationNode.block(copy.id()));
+    }
+
+    private void duplicateItem(String itemId, boolean temporary) {
+        ScreenDesignItem source = findItem(itemId, temporary);
+        ScreenDesignItem copy = source.withId(uniqueItemId(source.id()));
+        design = temporary
+                ? ScreenDesignService.addTemporaryItemToBlock(design, copy.blockId(), copy)
+                : ScreenDesignService.addItemToBlock(design, copy.blockId(), copy);
+        refreshAll();
+        selectNavigationNode(NavigationNode.item(copy.id(), copy.blockId(), temporary));
+    }
+
+    private void moveBlock(String blockId, int direction) {
+        design = moveBlockInDesign(design, blockId, direction);
+        refreshAll();
+        selectNavigationNode(NavigationNode.block(blockId));
+    }
+
+    private void moveItem(String itemId, boolean temporary, int direction) {
+        design = moveItemInDesign(design, itemId, temporary, direction);
+        ScreenDesignItem item = findItem(itemId, temporary);
+        refreshAll();
+        selectNavigationNode(NavigationNode.item(itemId, item.blockId(), temporary));
+    }
+
+    private void copyStyleAndMetadata(NavigationNode navigationNode) {
+        switch (navigationNode.type()) {
+            case BLOCK -> {
+                ScreenDesignBlock block = findBlock(navigationNode.id());
+                copiedStyleClass = block.styleClass();
+                copiedMetadata = new LinkedHashMap<>(block.metadata());
+            }
+            case ITEM, TEMPORARY_ITEM -> {
+                ScreenDesignItem item = findItem(navigationNode.id(), navigationNode.type() == NodeType.TEMPORARY_ITEM);
+                copiedStyleClass = item.styleClass();
+                copiedMetadata = new LinkedHashMap<>(item.metadata());
+            }
+            case SCREEN -> {
+                copiedStyleClass = null;
+                copiedMetadata = new LinkedHashMap<>(design.metadata());
+            }
+        }
+        statusLabel.setText("Copied style and metadata from " + navigationNode.id() + ".");
+    }
+
+    private void pasteStyleAndMetadata(NavigationNode navigationNode) {
+        switch (navigationNode.type()) {
+            case BLOCK -> {
+                ScreenDesignBlock block = findBlock(navigationNode.id());
+                design = replaceBlock(design, block.id(), new ScreenDesignBlock(
+                        block.id(), block.title(), block.layoutType(), block.parentBlockId(),
+                        block.conditions(), copiedStyleClass, copiedMetadata));
+            }
+            case ITEM, TEMPORARY_ITEM -> {
+                boolean temporary = navigationNode.type() == NodeType.TEMPORARY_ITEM;
+                ScreenDesignItem item = findItem(navigationNode.id(), temporary);
+                design = replaceItem(design, item.id(), new ScreenDesignItem(
+                        item.id(), item.blockId(), item.type(), item.label(), item.text(), item.value(),
+                        item.defaultValue(), item.sequence(), item.editable(), copiedStyleClass, copiedMetadata), temporary);
+            }
+            case SCREEN -> design = new ScreenDesignModel(
+                    design.id(), design.title(), design.layoutType(), copiedMetadata,
+                    design.blocks(), design.items(), design.temporaryItems());
+        }
+        refreshAll();
+        selectNavigationNode(navigationNode);
     }
 
     private void promoteTemporary() {
@@ -745,6 +952,15 @@ public final class ScreenDesignerApplication {
     private void showValidation() {
         List<ScreenDesignValidationProblem> problems = ScreenDesignValidator.validate(design);
         JOptionPane.showMessageDialog(null, validationSummary(problems));
+    }
+
+    private void goToFirstValidationIssue() {
+        List<ScreenDesignValidationProblem> problems = ScreenDesignValidator.validate(design);
+        if (problems.isEmpty()) {
+            statusLabel.setText("Screen design is valid.");
+            return;
+        }
+        selectNavigationNode(navigationNodeForValidationPath(problems.get(0).path()));
     }
 
     private void editDefaultValues() {
@@ -844,6 +1060,7 @@ public final class ScreenDesignerApplication {
     }
 
     private void refreshAll() {
+        NavigationNode previousSelection = selectedNavigationNode().orElse(null);
         screenIdField.setText(design.id());
         titleField.setText(design.title());
         layoutTypeBox.setSelectedItem(design.layoutType());
@@ -851,9 +1068,15 @@ public final class ScreenDesignerApplication {
         for (int row = 0; row < objectTree.getRowCount(); row++) {
             objectTree.expandRow(row);
         }
+        if (previousSelection != null) {
+            selectNavigationNode(previousSelection);
+        }
         updateSelectedNavigationState();
         jsonArea.setText(ScreenDesignJson.toJson(design));
-        statusLabel.setText(statusText(currentPath, ScreenDesignValidator.validate(design)));
+        List<ScreenDesignValidationProblem> problems = ScreenDesignValidator.validate(design);
+        validationArea.setText(validationSummary(problems));
+        statusLabel.setText(statusText(currentPath, problems));
+        refreshPreview();
     }
 
     private Optional<String> selectedBlockId() {
@@ -921,12 +1144,22 @@ public final class ScreenDesignerApplication {
                 labels.add("Add Block");
                 labels.add("Add Item");
                 labels.add("Edit Block");
+                labels.add("Duplicate Block");
+                labels.add("Move Block Up");
+                labels.add("Move Block Down");
+                labels.add("Copy Style/Metadata");
+                labels.add("Paste Style/Metadata");
                 labels.add("Remove Block");
             }
             case ITEM, TEMPORARY_ITEM -> {
                 labels.add("Add Block");
                 labels.add("Add Item");
                 labels.add("Edit Item");
+                labels.add("Duplicate Item");
+                labels.add("Move Item Up");
+                labels.add("Move Item Down");
+                labels.add("Copy Style/Metadata");
+                labels.add("Paste Style/Metadata");
                 labels.add("Remove Item");
             }
         }
@@ -934,11 +1167,11 @@ public final class ScreenDesignerApplication {
     }
 
     static List<String> fileMenuActionLabels() {
-        return List.of("New", "Load", "Save", "Save As");
+        return List.of("New", "New From Template", "Load", "Save", "Save As");
     }
 
     static List<String> actionToolbarLabels() {
-        return List.of("Edit Default Values", "Validate", "Open Preview", "Add Temporary Field", "Promote Temporary");
+        return List.of("Edit Default Values", "Validate", "Go To First Issue", "Open Preview", "Add Temporary Field", "Promote Temporary");
     }
 
     static Path screenDesignExamplesDirectory() {
@@ -962,9 +1195,77 @@ public final class ScreenDesignerApplication {
         if (problems.isEmpty()) {
             return "Screen design is valid.";
         }
+        return validationProblemLines(problems).lines()
+                .reduce("Validation issues:\n", (a, b) -> a + b + "\n");
+    }
+
+    private static String validationProblemLines(List<ScreenDesignValidationProblem> problems) {
         return problems.stream()
                 .map(problem -> problem.path() + ": " + problem.message())
-                .reduce("Validation issues:\n", (a, b) -> a + b + "\n");
+                .reduce("", (a, b) -> a.isEmpty() ? b : a + "\n" + b);
+    }
+
+    static String validationTextForNode(List<ScreenDesignValidationProblem> problems, NavigationNode navigationNode) {
+        String prefix = validationPathPrefix(navigationNode);
+        return problems.stream()
+                .filter(problem -> prefix.isEmpty() || problem.path().equals(prefix) || problem.path().startsWith(prefix + "."))
+                .map(ScreenDesignValidationProblem::message)
+                .reduce("", (left, right) -> left.isEmpty() ? right : left + "\n" + right);
+    }
+
+    private static String validationPathPrefix(NavigationNode navigationNode) {
+        return switch (navigationNode.type()) {
+            case SCREEN -> "";
+            case BLOCK -> "blocks." + navigationNode.id();
+            case ITEM -> "items." + navigationNode.id();
+            case TEMPORARY_ITEM -> "temporaryItems." + navigationNode.id();
+        };
+    }
+
+    private NavigationNode navigationNodeForValidationPath(String path) {
+        if (path.startsWith("blocks.")) {
+            Optional<String> blockId = matchingId(path.substring("blocks.".length()), design.blocks().stream().map(ScreenDesignBlock::id).toList());
+            return blockId.map(NavigationNode::block).orElseGet(() -> NavigationNode.screen(design.id()));
+        }
+        if (path.startsWith("items.")) {
+            String itemId = matchingId(path.substring("items.".length()), design.items().stream().map(ScreenDesignItem::id).toList()).orElse("");
+            Optional<ScreenDesignItem> item = design.items().stream().filter(candidate -> candidate.id().equals(itemId)).findFirst();
+            if (item.isPresent()) {
+                return NavigationNode.item(itemId, item.get().blockId(), false);
+            }
+        }
+        if (path.startsWith("temporaryItems.")) {
+            String itemId = matchingId(path.substring("temporaryItems.".length()), design.temporaryItems().stream().map(ScreenDesignItem::id).toList()).orElse("");
+            Optional<ScreenDesignItem> item = design.temporaryItems().stream().filter(candidate -> candidate.id().equals(itemId)).findFirst();
+            if (item.isPresent()) {
+                return NavigationNode.item(itemId, item.get().blockId(), true);
+            }
+        }
+        return NavigationNode.screen(design.id());
+    }
+
+    private static Optional<String> matchingId(String pathRemainder, List<String> ids) {
+        return ids.stream()
+                .filter(id -> pathRemainder.equals(id)
+                        || pathRemainder.startsWith(id + ".")
+                        || pathRemainder.startsWith(id + "["))
+                .max(Comparator.comparingInt(String::length));
+    }
+
+    private static String escapeBasicHtmlContent(String value) {
+        StringBuilder escaped = new StringBuilder(value.length());
+        for (int index = 0; index < value.length(); index++) {
+            char character = value.charAt(index);
+            switch (character) {
+                case '&' -> escaped.append("&amp;");
+                case '<' -> escaped.append("&lt;");
+                case '>' -> escaped.append("&gt;");
+                case '"' -> escaped.append("&quot;");
+                case '\'' -> escaped.append("&apos;");
+                default -> escaped.append(character);
+            }
+        }
+        return escaped.toString();
     }
 
     private void closeIfConfirmed(JFrame frame) {
@@ -1011,6 +1312,36 @@ public final class ScreenDesignerApplication {
 
     private static String nullToBlank(String value) {
         return value == null ? "" : value;
+    }
+
+    private static String firstNonBlank(String first, String second) {
+        String normalizedFirst = blankToNull(first);
+        return normalizedFirst == null ? nullToBlank(second) : normalizedFirst;
+    }
+
+    private void configureFieldGuidance() {
+        screenBorderStyleBox.setToolTipText(hintTextForProperty("Border style"));
+        screenBorderCornerBox.setToolTipText(hintTextForProperty("Border corner"));
+        blockBorderStyleBox.setToolTipText(hintTextForProperty("Border style"));
+        blockBorderCornerBox.setToolTipText(hintTextForProperty("Border corner"));
+        blockTransparencyBox.setToolTipText(hintTextForProperty("Transparency"));
+        blockBackgroundImageTransparencyBox.setToolTipText(hintTextForProperty("Background image transparency"));
+        itemTransparencyBox.setToolTipText(hintTextForProperty("Transparency"));
+        blockBackgroundImageField.setToolTipText(hintTextForProperty("Background image"));
+        itemHoverBackgroundColorField.setToolTipText(hintTextForProperty("Hover background color"));
+        itemPressedBackgroundColorField.setToolTipText(hintTextForProperty("Pressed background color"));
+        blockBackgroundImagePlacementBox.setToolTipText("Background image placement: fixed modes anchor the image at the named position; stretch to fit resizes it to the block. Options: "
+                + String.join(", ", Arrays.stream(BACKGROUND_IMAGE_PLACEMENT_OPTIONS)
+                .filter(option -> !DEFAULT_OPTION.equals(option))
+                .toList())
+                + ".");
+        itemEventNameField.setToolTipText("Optional eventName metadata. Items with an event name render as clickable buttons in preview/runtime.");
+        itemActionValueField.setToolTipText("Optional actionValue metadata sent with the item action event.");
+        blockConditionsArea.setToolTipText(hintTextForProperty("Conditions"));
+        itemSequenceField.setToolTipText("Optional whole-number ordering hint. Blank keeps authored order.");
+        itemMetadataArea.setToolTipText("Advanced key=value metadata for uncommon properties that do not have typed fields.");
+        blockMetadataArea.setToolTipText("Advanced key=value metadata. Typed fields above override matching keys.");
+        screenMetadataArea.setToolTipText("Advanced key=value metadata. Typed fields above override matching keys.");
     }
 
     private static String itemContent(ScreenDesignItem item) {
@@ -1143,29 +1474,42 @@ public final class ScreenDesignerApplication {
     }
 
     private void refreshPreview() {
-        if (previewStage == null) {
+        if (previewStage == null && dockedPreviewPanel == null) {
             return;
         }
         ensureJavaFxStarted();
         ScreenDesignModel designSnapshot = design;
         DisplayDefaults defaultsSnapshot = displayDefaults;
-        Platform.runLater(() -> showPreviewStage(designSnapshot, defaultsSnapshot));
+        List<ScreenDesignValidationProblem> problems = ScreenDesignValidator.validate(designSnapshot);
+        Platform.runLater(() -> {
+            if (dockedPreviewPanel != null) {
+                showDockedPreview(designSnapshot, defaultsSnapshot, problems);
+            }
+            if (previewStage != null && problems.isEmpty()) {
+                showPreviewStage(designSnapshot, defaultsSnapshot);
+            }
+        });
+    }
+
+    private void showDockedPreview(
+            ScreenDesignModel designSnapshot,
+            DisplayDefaults defaultsSnapshot,
+            List<ScreenDesignValidationProblem> problems) {
+        try {
+            if (!problems.isEmpty()) {
+                dockedPreviewPanel.setScene(messageScene("Preview paused until validation issues are fixed.\n\n" + validationProblemLines(problems)));
+                return;
+            }
+            dockedPreviewPanel.setScene(createPreviewScene(designSnapshot, defaultsSnapshot));
+        } catch (RuntimeException exception) {
+            dockedPreviewPanel.setScene(messageScene("Preview error:\n" + exception.getMessage()));
+        }
     }
 
     private void showPreviewStage(ScreenDesignModel designSnapshot, DisplayDefaults defaultsSnapshot) {
         try {
-            PreferencesService preferencesService = new PreferencesService();
-            preferencesService.load();
-
-            UiTheme uiTheme = new UiTheme();
-            uiTheme.initialize(preferencesService);
-
+            Scene scene = createPreviewScene(designSnapshot, defaultsSnapshot);
             ScreenLayoutModel previewModel = ScreenDesignLayoutAdapter.toLayoutModel(designSnapshot, true, defaultsSnapshot);
-            Scene scene = new Scene(
-                    ScreenLayoutRenderer.createRoot(previewModel),
-                    TestUiScreenSize.sceneWidth(preferencesService),
-                    TestUiScreenSize.sceneHeight(preferencesService));
-            scene.getStylesheets().add(uiTheme.stylesheet());
 
             if (previewStage != null) {
                 Stage previousStage = previewStage;
@@ -1194,12 +1538,101 @@ public final class ScreenDesignerApplication {
         }
     }
 
+    private static Scene createPreviewScene(ScreenDesignModel designSnapshot, DisplayDefaults defaultsSnapshot) {
+        PreferencesService preferencesService = new PreferencesService();
+        preferencesService.load();
+
+        UiTheme uiTheme = new UiTheme();
+        uiTheme.initialize(preferencesService);
+
+        ScreenLayoutModel previewModel = ScreenDesignLayoutAdapter.toLayoutModel(designSnapshot, true, defaultsSnapshot);
+        Scene scene = new Scene(
+                ScreenLayoutRenderer.createRoot(previewModel),
+                TestUiScreenSize.sceneWidth(preferencesService),
+                TestUiScreenSize.sceneHeight(preferencesService));
+        scene.getStylesheets().add(uiTheme.stylesheet());
+        return scene;
+    }
+
+    private static Scene messageScene(String message) {
+        javafx.scene.control.Label label = new javafx.scene.control.Label(message);
+        label.setWrapText(true);
+        return new Scene(new StackPane(label), 640, 260);
+    }
+
     private static ScreenDesignModel sampleDesign() {
         return new ScreenDesignModel("sample.screen", "Sample Screen", ScreenLayoutType.FORM, Map.of(),
                 List.of(new ScreenDesignBlock("main", "Main")),
                 List.of(new ScreenDesignItem("title.text", "main", ScreenDesignItemType.TEXT,
                         "Title", "Saved item", null, null, null, Map.of())),
                 List.of());
+    }
+
+    static List<ScreenTemplate> screenTemplates() {
+        return List.of(
+                new ScreenTemplate("Form screen", new ScreenDesignModel(
+                        "form.screen",
+                        "Form Screen",
+                        ScreenLayoutType.FORM,
+                        Map.of(BACKGROUND_COLOR_KEY, "#101820", BORDER_STYLE_KEY, "solid"),
+                        List.of(new ScreenDesignBlock("form", "Form", ScreenLayoutType.FORM, null, null, Map.of(
+                                BACKGROUND_COLOR_KEY, "#ffffff",
+                                TRANSPARENCY_KEY, "0.9",
+                                BORDER_STYLE_KEY, "solid",
+                                BORDER_CORNER_KEY, "rounded"))),
+                        List.of(
+                                new ScreenDesignItem("heading.text", "form", ScreenDesignItemType.TEXT,
+                                        null, "Form title", null, null, 0, null, Map.of(DISPLAY_ROLE_KEY, DisplayDefaults.ROLE_HEADING)),
+                                new ScreenDesignItem("name.field", "form", ScreenDesignItemType.FIELD,
+                                        "Name", null, null, "", 1, null, Map.of(DISPLAY_ROLE_KEY, DisplayDefaults.ROLE_FIELD)),
+                                new ScreenDesignItem("submit.button", "form", ScreenDesignItemType.BUTTON,
+                                        "Submit", null, null, null, 2, null, Map.of(
+                                        DISPLAY_ROLE_KEY, DisplayDefaults.ROLE_BUTTON,
+                                        EVENT_NAME_KEY, "submit",
+                                        ACTION_VALUE_KEY, "submit"))),
+                        List.of())),
+                new ScreenTemplate("Menu/action list", new ScreenDesignModel(
+                        "menu.screen",
+                        "Menu Screen",
+                        ScreenLayoutType.MENU_ACTION_LIST,
+                        Map.of(BACKGROUND_COLOR_KEY, "#0a1426"),
+                        List.of(new ScreenDesignBlock("actions", "Actions", ScreenLayoutType.MENU_ACTION_LIST, null, null, Map.of(
+                                BACKGROUND_COLOR_KEY, "#17233d",
+                                TRANSPARENCY_KEY, "0.85",
+                                BORDER_STYLE_KEY, "solid",
+                                BORDER_CORNER_KEY, "rounded"))),
+                        List.of(
+                                new ScreenDesignItem("title.text", "actions", ScreenDesignItemType.TEXT,
+                                        null, "Choose an action", null, null, 0, null, Map.of(DISPLAY_ROLE_KEY, DisplayDefaults.ROLE_HEADING)),
+                                new ScreenDesignItem("primary.action", "actions", ScreenDesignItemType.BUTTON,
+                                        "Primary Action", null, null, null, 1, null, Map.of(
+                                        DISPLAY_ROLE_KEY, DisplayDefaults.ROLE_BUTTON,
+                                        EVENT_NAME_KEY, "primaryAction",
+                                        ACTION_VALUE_KEY, "primary")),
+                                new ScreenDesignItem("secondary.action", "actions", ScreenDesignItemType.BUTTON,
+                                        "Secondary Action", null, null, null, 2, null, Map.of(
+                                        DISPLAY_ROLE_KEY, DisplayDefaults.ROLE_BUTTON,
+                                        EVENT_NAME_KEY, "secondaryAction",
+                                        ACTION_VALUE_KEY, "secondary"))),
+                        List.of())),
+                new ScreenTemplate("Preview grid", new ScreenDesignModel(
+                        "preview.grid",
+                        "Preview Grid",
+                        ScreenLayoutType.PREVIEW_GRID,
+                        Map.of(BACKGROUND_COLOR_KEY, "#101820"),
+                        List.of(new ScreenDesignBlock("gallery", "Gallery", ScreenLayoutType.PREVIEW_GRID, null, null, Map.of(
+                                BACKGROUND_COLOR_KEY, "#ffffff",
+                                TRANSPARENCY_KEY, "0.85",
+                                BORDER_STYLE_KEY, "solid",
+                                BORDER_CORNER_KEY, "rounded"))),
+                        List.of(
+                                new ScreenDesignItem("heading.text", "gallery", ScreenDesignItemType.TEXT,
+                                        null, "Preview gallery", null, null, 0, null, Map.of(DISPLAY_ROLE_KEY, DisplayDefaults.ROLE_HEADING)),
+                                new ScreenDesignItem("first.preview", "gallery", ScreenDesignItemType.TEXT,
+                                        null, "First preview card", null, null, 1, null, Map.of()),
+                                new ScreenDesignItem("second.preview", "gallery", ScreenDesignItemType.TEXT,
+                                        null, "Second preview card", null, null, 2, null, Map.of())),
+                        List.of())));
     }
 
     private void installTreeContextMenu() {
@@ -1275,9 +1708,17 @@ public final class ScreenDesignerApplication {
             case "Add Block" -> addBlock(navigationNode.type() == NodeType.SCREEN ? null : navigationNode.blockId());
             case "Add Item" -> addItem(false);
             case "Edit Block" -> editBlock(navigationNode.id());
+            case "Duplicate Block" -> duplicateBlock(navigationNode.id());
+            case "Move Block Up" -> moveBlock(navigationNode.id(), -1);
+            case "Move Block Down" -> moveBlock(navigationNode.id(), 1);
             case "Remove Block" -> removeBlock(navigationNode.id());
             case "Edit Item" -> editItem(navigationNode.id(), navigationNode.type() == NodeType.TEMPORARY_ITEM);
-            case "Remove Item" -> removeItem(navigationNode.id());
+            case "Duplicate Item" -> duplicateItem(navigationNode.id(), navigationNode.type() == NodeType.TEMPORARY_ITEM);
+            case "Move Item Up" -> moveItem(navigationNode.id(), navigationNode.type() == NodeType.TEMPORARY_ITEM, -1);
+            case "Move Item Down" -> moveItem(navigationNode.id(), navigationNode.type() == NodeType.TEMPORARY_ITEM, 1);
+            case "Copy Style/Metadata" -> copyStyleAndMetadata(navigationNode);
+            case "Paste Style/Metadata" -> pasteStyleAndMetadata(navigationNode);
+            case "Remove Item" -> removeItem(navigationNode.id(), navigationNode.type() == NodeType.TEMPORARY_ITEM);
             default -> throw new IllegalArgumentException("Unknown context action: " + label);
         }
     }
@@ -1329,6 +1770,87 @@ public final class ScreenDesignerApplication {
         return new ScreenDesignModel(design.id(), design.title(), design.layoutType(), design.metadata(), design.blocks(), items, temporaryItems);
     }
 
+    static ScreenDesignModel moveBlockInDesign(ScreenDesignModel design, String blockId, int direction) {
+        ArrayList<ScreenDesignBlock> blocks = new ArrayList<>(design.blocks());
+        int index = indexOfBlock(blocks, blockId);
+        int targetIndex = boundedMoveIndex(index, direction, blocks.size());
+        if (index != targetIndex) {
+            ScreenDesignBlock block = blocks.remove(index);
+            blocks.add(targetIndex, block);
+        }
+        return new ScreenDesignModel(design.id(), design.title(), design.layoutType(), design.metadata(), blocks, design.items(), design.temporaryItems());
+    }
+
+    static ScreenDesignModel moveItemInDesign(ScreenDesignModel design, String itemId, boolean temporary, int direction) {
+        List<ScreenDesignItem> source = temporary ? design.temporaryItems() : design.items();
+        ArrayList<ScreenDesignItem> items = new ArrayList<>(source);
+        int index = indexOfItem(items, itemId);
+        int targetIndex = boundedMoveIndex(index, direction, items.size());
+        if (index != targetIndex) {
+            ScreenDesignItem item = items.remove(index);
+            items.add(targetIndex, item);
+        }
+        return temporary
+                ? new ScreenDesignModel(design.id(), design.title(), design.layoutType(), design.metadata(), design.blocks(), design.items(), items)
+                : new ScreenDesignModel(design.id(), design.title(), design.layoutType(), design.metadata(), design.blocks(), items, design.temporaryItems());
+    }
+
+    static ScreenDesignBlock copyOfBlock(ScreenDesignBlock source, String newBlockId) {
+        return new ScreenDesignBlock(
+                newBlockId,
+                source.title() + " Copy",
+                source.layoutType(),
+                source.parentBlockId(),
+                source.conditions(),
+                source.styleClass(),
+                source.metadata());
+    }
+
+    private String uniqueBlockId(String sourceId) {
+        return uniqueId(sourceId, design.blocks().stream().map(ScreenDesignBlock::id).collect(java.util.stream.Collectors.toSet()));
+    }
+
+    private String uniqueItemId(String sourceId) {
+        java.util.Set<String> ids = new java.util.LinkedHashSet<>();
+        design.items().stream().map(ScreenDesignItem::id).forEach(ids::add);
+        design.temporaryItems().stream().map(ScreenDesignItem::id).forEach(ids::add);
+        return uniqueId(sourceId, ids);
+    }
+
+    static String uniqueId(String sourceId, Set<String> existingIds) {
+        String base = sourceId + ".copy";
+        if (!existingIds.contains(base)) {
+            return base;
+        }
+        int suffix = 2;
+        while (existingIds.contains(base + suffix)) {
+            suffix++;
+        }
+        return base + suffix;
+    }
+
+    private static int indexOfBlock(List<ScreenDesignBlock> blocks, String blockId) {
+        for (int index = 0; index < blocks.size(); index++) {
+            if (blockId.equals(blocks.get(index).id())) {
+                return index;
+            }
+        }
+        throw new IllegalArgumentException("Unknown screen design block id: " + blockId);
+    }
+
+    private static int indexOfItem(List<ScreenDesignItem> items, String itemId) {
+        for (int index = 0; index < items.size(); index++) {
+            if (itemId.equals(items.get(index).id())) {
+                return index;
+            }
+        }
+        throw new IllegalArgumentException("Unknown screen design item id: " + itemId);
+    }
+
+    private static int boundedMoveIndex(int index, int direction, int size) {
+        return Math.max(0, Math.min(size - 1, index + direction));
+    }
+
     private static List<ScreenDesignItem> remapItems(List<ScreenDesignItem> items, String oldBlockId, String newBlockId) {
         return items.stream()
                 .map(item -> oldBlockId.equals(item.blockId()) ? item.inBlock(newBlockId) : item)
@@ -1346,7 +1868,14 @@ public final class ScreenDesignerApplication {
 
     private void refreshPropertiesPanel(NavigationNode navigationNode) {
         propertiesPanel.removeAll();
-        propertiesPanel.add(new JLabel(propertiesTitleFor(navigationNode)), BorderLayout.NORTH);
+        JPanel header = new JPanel(new BorderLayout(4, 4));
+        header.add(new JLabel(propertiesTitleFor(navigationNode)), BorderLayout.NORTH);
+        String validationText = validationTextForNode(ScreenDesignValidator.validate(design), navigationNode);
+        if (!validationText.isBlank()) {
+            JLabel validationLabel = new JLabel("<html><body style='color:#b36b00'>" + escapeBasicHtmlContent(validationText).replace("\n", "<br>") + "</body></html>");
+            header.add(validationLabel, BorderLayout.SOUTH);
+        }
+        propertiesPanel.add(header, BorderLayout.NORTH);
         propertiesPanel.add(propertiesFieldsFor(navigationNode), BorderLayout.CENTER);
         propertiesPanel.revalidate();
         propertiesPanel.repaint();
@@ -1384,6 +1913,7 @@ public final class ScreenDesignerApplication {
         screenDismissOnClickOutsideBox.setSelected(booleanMetadataValue(design.metadata(), DISMISS_ON_CLICK_OUTSIDE_KEY));
         screenDismissOnEscapeBox.setSelected(booleanMetadataValue(design.metadata(), DISMISS_ON_ESCAPE_KEY));
         configureMetadataArea(screenMetadataArea, metadataText(design.metadata(), SCREEN_EXPOSED_METADATA_KEYS));
+        List<ScreenDesignValidationProblem> problems = ScreenDesignValidator.validate(design);
         JPanel fields = propertyGrid(propertyLabelsFor(NavigationNode.screen(design.id())).size());
         addPropertyRow(fields, 0, "Screen id", screenIdField);
         addPropertyRow(fields, 1, "Title", titleField);
@@ -1393,14 +1923,16 @@ public final class ScreenDesignerApplication {
         addPropertyRow(fields, 5, "Font style", screenFontStyleBox);
         addPropertyRow(fields, 6, "Color", colorSelector(screenColorField));
         addPropertyRow(fields, 7, "Background color", colorSelector(screenBackgroundColorField));
-        addPropertyRow(fields, 8, "Border style", screenBorderStyleBox);
-        addPropertyRow(fields, 9, "Border corner", screenBorderCornerBox);
+        addPropertyRow(fields, 8, "Border style", screenBorderStyleBox,
+                validationTextForField(problems, "metadata." + BORDER_STYLE_KEY));
+        addPropertyRow(fields, 9, "Border corner", screenBorderCornerBox,
+                validationTextForField(problems, "metadata." + BORDER_CORNER_KEY));
         addPropertyRow(fields, 10, "Border thickness", screenBorderThicknessBox);
         addPropertyRow(fields, 11, "Border color", colorSelector(screenBorderColorField));
         addPropertyRow(fields, 12, "Dialog", screenDialogBox);
         addPropertyRow(fields, 13, "Dismiss on click outside", screenDismissOnClickOutsideBox);
         addPropertyRow(fields, 14, "Dismiss on Escape", screenDismissOnEscapeBox);
-        addPropertyRow(fields, 15, "Extra metadata", new JScrollPane(screenMetadataArea));
+        addPropertyRow(fields, 15, "Advanced metadata", advancedMetadataEditor(screenMetadataArea));
         return fields;
     }
 
@@ -1419,6 +1951,7 @@ public final class ScreenDesignerApplication {
         blockBackgroundColorField.setText(metadataValue(block.metadata(), BACKGROUND_COLOR_KEY));
         blockBackgroundImageField.setText(metadataValue(block.metadata(), BACKGROUND_IMAGE_KEY));
         setComboValue(blockBackgroundImageTransparencyBox, metadataValue(block.metadata(), BACKGROUND_IMAGE_TRANSPARENCY_KEY));
+        setComboValue(blockBackgroundImagePlacementBox, metadataValue(block.metadata(), BACKGROUND_IMAGE_PLACEMENT_KEY));
         setComboValue(blockTransparencyBox, metadataValue(block.metadata(), TRANSPARENCY_KEY));
         setComboValue(blockBorderStyleBox, metadataValue(block.metadata(), BORDER_STYLE_KEY));
         setComboValue(blockBorderCornerBox, metadataValue(block.metadata(), BORDER_CORNER_KEY));
@@ -1428,26 +1961,36 @@ public final class ScreenDesignerApplication {
         blockConditionsArea.setLineWrap(true);
         blockConditionsArea.setWrapStyleWord(true);
         configureMetadataArea(blockMetadataArea, metadataText(block.metadata(), BLOCK_EXPOSED_METADATA_KEYS));
+        List<ScreenDesignValidationProblem> problems = ScreenDesignValidator.validate(design);
+        String metadataPath = "blocks." + blockId + ".metadata.";
         JPanel fields = propertyGrid(propertyLabelsFor(NavigationNode.block(blockId)).size());
         addPropertyRow(fields, 0, "Block id", blockIdField);
         addPropertyRow(fields, 1, "Title", blockTitleField);
         addPropertyRow(fields, 2, "Layout type", blockLayoutTypeBox);
         addPropertyRow(fields, 3, "Parent block", parentBlockBox);
         addPropertyRow(fields, 4, "Style class", blockStyleClassField);
-        addPropertyRow(fields, 5, "Conditions", new JScrollPane(blockConditionsArea));
+        addPropertyRow(fields, 5, "Conditions", new JScrollPane(blockConditionsArea),
+                validationTextForField(problems, "blocks." + blockId + ".conditions"));
         addPropertyRow(fields, 6, "Font", blockFontFamilyBox);
         addPropertyRow(fields, 7, "Font size", blockFontSizeBox);
         addPropertyRow(fields, 8, "Font style", blockFontStyleBox);
         addPropertyRow(fields, 9, "Color", colorSelector(blockColorField));
         addPropertyRow(fields, 10, "Background color", colorSelector(blockBackgroundColorField));
-        addPropertyRow(fields, 11, "Background image", fileSelector(blockBackgroundImageField, "Choose...", () -> chooseImagePath(blockBackgroundImageField)));
-        addPropertyRow(fields, 12, "Background image transparency", blockBackgroundImageTransparencyBox);
-        addPropertyRow(fields, 13, "Transparency", blockTransparencyBox);
-        addPropertyRow(fields, 14, "Border style", blockBorderStyleBox);
-        addPropertyRow(fields, 15, "Border corner", blockBorderCornerBox);
-        addPropertyRow(fields, 16, "Border thickness", blockBorderThicknessBox);
-        addPropertyRow(fields, 17, "Border color", colorSelector(blockBorderColorField));
-        addPropertyRow(fields, 18, "Extra metadata", new JScrollPane(blockMetadataArea));
+        addPropertyRow(fields, 11, "Background image", fileSelector(blockBackgroundImageField, "Choose...", () -> chooseImagePath(blockBackgroundImageField)),
+                validationTextForField(problems, metadataPath + BACKGROUND_IMAGE_KEY));
+        addPropertyRow(fields, 12, "Background image transparency", blockBackgroundImageTransparencyBox,
+                validationTextForField(problems, metadataPath + BACKGROUND_IMAGE_TRANSPARENCY_KEY));
+        addPropertyRow(fields, 13, "Background image placement", blockBackgroundImagePlacementBox,
+                validationTextForField(problems, metadataPath + BACKGROUND_IMAGE_PLACEMENT_KEY));
+        addPropertyRow(fields, 14, "Transparency", blockTransparencyBox,
+                validationTextForField(problems, metadataPath + TRANSPARENCY_KEY));
+        addPropertyRow(fields, 15, "Border style", blockBorderStyleBox,
+                validationTextForField(problems, metadataPath + BORDER_STYLE_KEY));
+        addPropertyRow(fields, 16, "Border corner", blockBorderCornerBox,
+                validationTextForField(problems, metadataPath + BORDER_CORNER_KEY));
+        addPropertyRow(fields, 17, "Border thickness", blockBorderThicknessBox);
+        addPropertyRow(fields, 18, "Border color", colorSelector(blockBorderColorField));
+        addPropertyRow(fields, 19, "Advanced metadata", advancedMetadataEditor(blockMetadataArea));
         return fields;
     }
 
@@ -1472,13 +2015,21 @@ public final class ScreenDesignerApplication {
         setComboValue(itemFontStyleBox, metadataValue(item.metadata(), ITEM_FONT_STYLE_KEY));
         itemColorField.setText(metadataValue(item.metadata(), ITEM_COLOR_KEY));
         itemBackgroundColorField.setText(metadataValue(item.metadata(), BACKGROUND_COLOR_KEY));
+        itemHoverBackgroundColorField.setText(metadataValue(item.metadata(), HOVER_BACKGROUND_COLOR_KEY));
+        itemPressedBackgroundColorField.setText(metadataValue(item.metadata(), PRESSED_BACKGROUND_COLOR_KEY));
         setComboValue(itemTransparencyBox, metadataValue(item.metadata(), TRANSPARENCY_KEY));
+        itemEventNameField.setText(firstNonBlank(
+                metadataValue(item.metadata(), EVENT_NAME_KEY),
+                metadataValue(item.metadata(), ACTION_EVENT_KEY)));
+        itemActionValueField.setText(metadataValue(item.metadata(), ACTION_VALUE_KEY));
         setComboValue(itemLabelFontFamilyBox, metadataValue(item.metadata(), LABEL_FONT_FAMILY_KEY));
         setComboValue(itemLabelFontSizeBox, metadataValue(item.metadata(), LABEL_FONT_SIZE_KEY));
         setComboValue(itemLabelFontStyleBox, metadataValue(item.metadata(), LABEL_FONT_STYLE_KEY));
         itemLabelColorField.setText(metadataValue(item.metadata(), LABEL_COLOR_KEY));
         configureMetadataArea(itemMetadataArea, metadataText(item.metadata(), ITEM_EXPOSED_METADATA_KEYS));
         refreshItemTypeState();
+        List<ScreenDesignValidationProblem> problems = ScreenDesignValidator.validate(design);
+        String metadataPath = (temporary ? "temporaryItems." : "items.") + itemId + ".metadata.";
         JPanel fields = propertyGrid(itemPropertyLabelsFor(item.type()).size());
         int row = 0;
         addPropertyRow(fields, row++, "Target block", itemBlockBox);
@@ -1500,14 +2051,19 @@ public final class ScreenDesignerApplication {
         addPropertyRow(fields, row++, "Font style", itemFontStyleBox);
         addPropertyRow(fields, row++, "Color", colorSelector(itemColorField));
         addPropertyRow(fields, row++, "Background color", colorSelector(itemBackgroundColorField));
-        addPropertyRow(fields, row++, "Transparency", itemTransparencyBox);
+        addPropertyRow(fields, row++, "Hover background color", colorSelector(itemHoverBackgroundColorField));
+        addPropertyRow(fields, row++, "Pressed background color", colorSelector(itemPressedBackgroundColorField));
+        addPropertyRow(fields, row++, "Transparency", itemTransparencyBox,
+                validationTextForField(problems, metadataPath + TRANSPARENCY_KEY));
+        addPropertyRow(fields, row++, "Action event name", itemEventNameField);
+        addPropertyRow(fields, row++, "Action value", itemActionValueField);
         if (isFieldType(item.type())) {
             addPropertyRow(fields, row++, "Label font", itemLabelFontFamilyBox);
             addPropertyRow(fields, row++, "Label font size", itemLabelFontSizeBox);
             addPropertyRow(fields, row++, "Label font style", itemLabelFontStyleBox);
             addPropertyRow(fields, row++, "Label color", colorSelector(itemLabelColorField));
         }
-        addPropertyRow(fields, row, "Extra metadata", new JScrollPane(itemMetadataArea));
+        addPropertyRow(fields, row, "Advanced metadata", advancedMetadataEditor(itemMetadataArea));
         return fields;
     }
 
@@ -1524,8 +2080,139 @@ public final class ScreenDesignerApplication {
     }
 
     private static void addPropertyRow(JPanel panel, int row, String label, Component component) {
-        panel.add(new JLabel(label), propertyConstraints(row, 0, 0.0));
-        panel.add(component, propertyConstraints(row, 1, 1.0));
+        addPropertyRow(panel, row, label, component, "", hintTextForProperty(label));
+    }
+
+    private static void addPropertyRow(
+            JPanel panel,
+            int row,
+            String label,
+            Component component,
+            String validationText) {
+        addPropertyRow(panel, row, label, component, validationText, hintTextForProperty(label));
+    }
+
+    private static void addPropertyRow(
+            JPanel panel,
+            int row,
+            String label,
+            Component component,
+            String validationText,
+            String hintText) {
+        applyPropertyComponentSizing(component);
+        boolean invalid = validationText != null && !validationText.isBlank();
+        JLabel labelComponent = new JLabel(invalid ? label + " ⚠" : label);
+        if (invalid) {
+            labelComponent.setForeground(INLINE_ERROR_COLOR);
+        }
+        panel.add(labelComponent, propertyConstraints(row, 0, 0.0));
+        panel.add(inlineGuidancePanel(component, validationText, hintText), propertyConstraints(row, 1, 1.0));
+    }
+
+    private static JPanel inlineGuidancePanel(Component component, String validationText, String hintText) {
+        JPanel panel = new JPanel(new BorderLayout(2, 2));
+        panel.add(component, BorderLayout.CENTER);
+        boolean invalid = validationText != null && !validationText.isBlank();
+        String guidance = invalid ? validationText : hintText;
+        if (guidance != null && !guidance.isBlank()) {
+            JLabel guidanceLabel = new JLabel("<html>" + escapeBasicHtmlContent(guidance).replace("\n", "<br>") + "</html>");
+            guidanceLabel.setForeground(invalid ? INLINE_ERROR_COLOR : INLINE_HINT_COLOR);
+            panel.add(guidanceLabel, BorderLayout.SOUTH);
+            panel.setToolTipText(guidance);
+            if (component instanceof JComponent jComponent) {
+                jComponent.setToolTipText(guidance);
+            }
+        }
+        if (invalid) {
+            panel.setBorder(BorderFactory.createLineBorder(INLINE_ERROR_COLOR, 1));
+        } else {
+            panel.setBorder(BorderFactory.createEmptyBorder(1, 1, 1, 1));
+        }
+        return panel;
+    }
+
+    private static void applyPropertyComponentSizing(Component component) {
+        if (component instanceof JTextField field) {
+            field.setMinimumSize(minimumTextComponentSize(field));
+            return;
+        }
+        if (component instanceof JTextArea area) {
+            area.setMinimumSize(minimumTextComponentSize(area));
+            return;
+        }
+        if (component instanceof JComboBox<?> comboBox) {
+            comboBox.setMinimumSize(minimumComboBoxSize(comboBox));
+            if (comboBox.isEditable()) {
+                Component editorComponent = comboBox.getEditor().getEditorComponent();
+                applyPropertyComponentSizing(editorComponent);
+            }
+            return;
+        }
+        if (component instanceof JScrollPane scrollPane) {
+            Component view = scrollPane.getViewport().getView();
+            if (view != null) {
+                applyPropertyComponentSizing(view);
+                scrollPane.setMinimumSize(new Dimension(
+                        view.getMinimumSize().width,
+                        scrollPane.getPreferredSize().height));
+            }
+            return;
+        }
+        if (component instanceof Container container) {
+            for (Component child : container.getComponents()) {
+                applyPropertyComponentSizing(child);
+            }
+        }
+    }
+
+    private static Dimension minimumTextComponentSize(JComponent component) {
+        Dimension preferred = component.getPreferredSize();
+        return new Dimension(textWidth(component, PROPERTY_FIELD_MIN_COLUMNS), preferred.height);
+    }
+
+    private static Dimension minimumComboBoxSize(JComboBox<?> comboBox) {
+        Dimension preferred = comboBox.getPreferredSize();
+        int editorWidth = comboBox.isEditable() && comboBox.getEditor().getEditorComponent() instanceof JComponent editor
+                ? textWidth(editor, PROPERTY_FIELD_MIN_COLUMNS)
+                : textWidth(comboBox, PROPERTY_FIELD_MIN_COLUMNS);
+        return new Dimension(editorWidth + 32, preferred.height);
+    }
+
+    private static int textWidth(JComponent component, int columns) {
+        int charWidth = component.getFontMetrics(component.getFont()).charWidth('m');
+        Insets insets = component.getInsets();
+        return charWidth * columns + insets.left + insets.right;
+    }
+
+    static String hintTextForProperty(String label) {
+        return switch (label) {
+            case "Border style" -> optionHint(BORDER_STYLE_OPTIONS);
+            case "Border corner" -> optionHint(BORDER_CORNER_OPTIONS);
+            case "Transparency", "Background image transparency" ->
+                    "Use a number from 0 to 1; 0 is opaque and 1 is fully transparent.";
+            case "Background image" -> "Use a filesystem path, file URI, or classpath resource. SVG images are supported.";
+            case "Hover background color" -> "Optional button hover/background state color metadata.";
+            case "Pressed background color" -> "Optional button pressed/background state color metadata.";
+            case "Background image placement" -> optionHint(BACKGROUND_IMAGE_PLACEMENT_OPTIONS);
+            case "Conditions" -> "One condition per line. Leave blank when the block should always be shown.";
+            case "Advanced metadata" -> "Optional key=value metadata for uncommon properties. Typed controls override matching keys.";
+            default -> "";
+        };
+    }
+
+    private static String optionHint(String[] options) {
+        return "Allowed: " + String.join(", ", Arrays.stream(options)
+                .filter(option -> !DEFAULT_OPTION.equals(option))
+                .toList()) + ".";
+    }
+
+    static String validationTextForField(List<ScreenDesignValidationProblem> problems, String fieldPath) {
+        return problems.stream()
+                .filter(problem -> problem.path().equals(fieldPath)
+                        || problem.path().startsWith(fieldPath + ".")
+                        || problem.path().startsWith(fieldPath + "["))
+                .map(ScreenDesignValidationProblem::message)
+                .reduce("", (left, right) -> left.isEmpty() ? right : left + "\n" + right);
     }
 
     private static Component colorSelector(JTextField colorField) {
@@ -1548,6 +2235,16 @@ public final class ScreenDesignerApplication {
         choose.addActionListener(event -> chooseAction.run());
         panel.add(textField, BorderLayout.CENTER);
         panel.add(choose, BorderLayout.EAST);
+        return panel;
+    }
+
+    private static Component advancedMetadataEditor(JTextArea metadataArea) {
+        JPanel panel = new JPanel(new BorderLayout(4, 4));
+        panel.setBorder(BorderFactory.createTitledBorder("Advanced"));
+        JLabel help = new JLabel("<html>Optional key=value metadata for uncommon properties. Typed controls above override matching keys.</html>");
+        help.setForeground(INLINE_HINT_COLOR);
+        panel.add(help, BorderLayout.NORTH);
+        panel.add(new JScrollPane(metadataArea), BorderLayout.CENTER);
         return panel;
     }
 
@@ -1645,7 +2342,10 @@ public final class ScreenDesignerApplication {
                 itemFontFamilyBox, itemFontSizeBox, itemFontStyleBox, itemColorField);
         putOptionalMetadata(metadata, DISPLAY_ROLE_KEY, selectedComboValue(itemDisplayRoleBox));
         putOptionalMetadata(metadata, BACKGROUND_COLOR_KEY, itemBackgroundColorField.getText());
+        putOptionalMetadata(metadata, HOVER_BACKGROUND_COLOR_KEY, itemHoverBackgroundColorField.getText());
+        putOptionalMetadata(metadata, PRESSED_BACKGROUND_COLOR_KEY, itemPressedBackgroundColorField.getText());
         putOptionalMetadata(metadata, TRANSPARENCY_KEY, selectedComboValue(itemTransparencyBox));
+        putActionMetadata(metadata, itemEventNameField.getText(), itemActionValueField.getText());
         if (isFieldType(type)) {
             putOptionalMetadata(metadata, LABEL_FONT_FAMILY_KEY, selectedComboValue(itemLabelFontFamilyBox));
             putOptionalMetadata(metadata, LABEL_FONT_SIZE_KEY, selectedComboValue(itemLabelFontSizeBox));
@@ -1680,6 +2380,7 @@ public final class ScreenDesignerApplication {
         putOptionalMetadata(metadata, BACKGROUND_COLOR_KEY, blockBackgroundColorField.getText());
         putOptionalMetadata(metadata, BACKGROUND_IMAGE_KEY, blockBackgroundImageField.getText());
         putOptionalMetadata(metadata, BACKGROUND_IMAGE_TRANSPARENCY_KEY, selectedComboValue(blockBackgroundImageTransparencyBox));
+        putOptionalMetadata(metadata, BACKGROUND_IMAGE_PLACEMENT_KEY, selectedComboValue(blockBackgroundImagePlacementBox));
         putOptionalMetadata(metadata, TRANSPARENCY_KEY, selectedComboValue(blockTransparencyBox));
         putOptionalMetadata(metadata, BORDER_STYLE_KEY, selectedComboValue(blockBorderStyleBox));
         putOptionalMetadata(metadata, BORDER_CORNER_KEY, selectedComboValue(blockBorderCornerBox));
@@ -1709,6 +2410,12 @@ public final class ScreenDesignerApplication {
         } else {
             metadata.put(key, nonBlankValue);
         }
+    }
+
+    private static void putActionMetadata(Map<String, String> metadata, String eventName, String actionValue) {
+        putOptionalMetadata(metadata, EVENT_NAME_KEY, eventName);
+        metadata.remove(ACTION_EVENT_KEY);
+        putOptionalMetadata(metadata, ACTION_VALUE_KEY, actionValue);
     }
 
     private static String metadataValue(Map<String, String> metadata, String key) {
@@ -1951,10 +2658,10 @@ public final class ScreenDesignerApplication {
         return switch (navigationNode.type()) {
             case SCREEN -> List.of("Screen id", "Title", "Layout type", "Font", "Font size", "Font style", "Color", "Background color",
                     "Border style", "Border corner", "Border thickness", "Border color",
-                    "Dialog", "Dismiss on click outside", "Dismiss on Escape", "Extra metadata");
+                    "Dialog", "Dismiss on click outside", "Dismiss on Escape", "Advanced metadata");
             case BLOCK -> List.of("Block id", "Title", "Layout type", "Parent block", "Style class", "Conditions", "Font", "Font size", "Font style", "Color", "Background color",
-                    "Background image", "Background image transparency", "Transparency", "Border style", "Border corner", "Border thickness", "Border color",
-                    "Extra metadata");
+                    "Background image", "Background image transparency", "Background image placement", "Transparency", "Border style", "Border corner", "Border thickness", "Border color",
+                    "Advanced metadata");
             case ITEM, TEMPORARY_ITEM -> itemPropertyLabelsFor(ScreenDesignItemType.FIELD);
         };
     }
@@ -1969,11 +2676,13 @@ public final class ScreenDesignerApplication {
             labels.add("Current value");
             labels.add("Editable");
         }
-        labels.addAll(List.of("Display role", "Font", "Font size", "Font style", "Color", "Background color", "Transparency"));
+        labels.addAll(List.of("Display role", "Font", "Font size", "Font style", "Color", "Background color",
+                "Hover background color", "Pressed background color", "Transparency",
+                "Action event name", "Action value"));
         if (isFieldType(type)) {
             labels.addAll(List.of("Label font", "Label font size", "Label font style", "Label color"));
         }
-        labels.add("Extra metadata");
+        labels.add("Advanced metadata");
         return labels;
     }
 
@@ -2119,6 +2828,13 @@ public final class ScreenDesignerApplication {
         BORDER_STYLE,
         BORDER_CORNER,
         COLOR
+    }
+
+    static record ScreenTemplate(String label, ScreenDesignModel design) {
+        @Override
+        public String toString() {
+            return label;
+        }
     }
 
     static record DefaultValueType(DefaultValueCategory category, String label, String role) {
@@ -2272,6 +2988,35 @@ public final class ScreenDesignerApplication {
             button.setText(this.value.isBlank() ? "Choose..." : this.value);
             SwingUtilities.invokeLater(button::doClick);
             return button;
+        }
+    }
+
+    private final class ValidationTreeCellRenderer extends DefaultTreeCellRenderer {
+        @Override
+        public Component getTreeCellRendererComponent(
+                JTree tree,
+                Object value,
+                boolean selected,
+                boolean expanded,
+                boolean leaf,
+                int row,
+                boolean hasFocus) {
+            Component component = super.getTreeCellRendererComponent(tree, value, selected, expanded, leaf, row, hasFocus);
+            navigationNodeFor(value).ifPresent(node -> {
+                String validationText = validationTextForNode(ScreenDesignValidator.validate(design), node);
+                if (!validationText.isBlank()) {
+                    int issueCount = (int) validationText.lines().count();
+                    setText(node + " ⚠ " + issueCount);
+                    setToolTipText("<html>" + escapeBasicHtmlContent(validationText).replace("\n", "<br>") + "</html>");
+                    if (!selected) {
+                        setForeground(INLINE_ERROR_COLOR);
+                    }
+                } else {
+                    setText(node.toString());
+                    setToolTipText(null);
+                }
+            });
+            return component;
         }
     }
 

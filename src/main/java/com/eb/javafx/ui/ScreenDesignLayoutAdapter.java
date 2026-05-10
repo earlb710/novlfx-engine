@@ -30,6 +30,14 @@ public final class ScreenDesignLayoutAdapter {
     static final String ACTION_VALUE_KEY = "actionValue";
     static final String CONDITIONS_KEY = "conditions";
     static final String SEQUENCE_KEY = "sequence";
+    static final String LABEL_FONT_FAMILY_KEY = "labelFontFamily";
+    static final String LABEL_FONT_SIZE_KEY = "labelFontSize";
+    static final String LABEL_FONT_STYLE_KEY = "labelFontStyle";
+    static final String LABEL_COLOR_KEY = "labelColor";
+    static final String SCREEN_DESIGN_ITEM_TYPE_KEY = "screenDesignItemType";
+    static final String SCREEN_DESIGN_LABEL_KEY = "screenDesignLabel";
+    static final String SCREEN_DESIGN_VALUE_KEY = "screenDesignValue";
+    static final String SCREEN_DESIGN_EDITABLE_KEY = "screenDesignEditable";
     // Matches $name and ${name}; names may contain letters, numbers, underscore, dot, or hyphen after the first letter.
     private static final Pattern BINDING_PATTERN = Pattern.compile("\\$\\{?([A-Za-z][A-Za-z0-9_.-]*)}?");
 
@@ -121,6 +129,7 @@ public final class ScreenDesignLayoutAdapter {
             DisplayDefaults defaults,
             Map<String, String> screenOverrides,
             Map<String, String> bindings) {
+        Map<String, String> resolvedItemMetadata = resolveMetadata(item.metadata(), bindings);
         Map<String, String> metadata = mergedMetadata(
                 mergedMetadata(
                         mergedMetadata(
@@ -129,7 +138,7 @@ public final class ScreenDesignLayoutAdapter {
                                         defaults.itemDefaults(itemRole(item))),
                                 textStyleMetadata(screenOverrides)),
                                 textStyleMetadata(blockOverrides)),
-                resolveMetadata(item.metadata(), bindings));
+                resolvedItemMetadata);
         LinkedHashMap<String, String> withAction = new LinkedHashMap<>(metadata);
         if (item.sequence() != null) {
             withAction.put(SEQUENCE_KEY, Integer.toString(item.sequence()));
@@ -140,6 +149,17 @@ public final class ScreenDesignLayoutAdapter {
         }
         if (item.value() != null) {
             withAction.put(ACTION_VALUE_KEY, resolve(item.value(), bindings));
+        }
+        if (ScreenDesignItem.supportsEditable(item.type())) {
+            withAction.put(SCREEN_DESIGN_ITEM_TYPE_KEY, item.type().name());
+            withAction.put(SCREEN_DESIGN_LABEL_KEY, item.label() == null ? item.id() : resolve(item.label(), bindings));
+            withAction.put(SCREEN_DESIGN_VALUE_KEY, resolve(fallback(item.value(), item.defaultValue()), bindings));
+            withAction.put(SCREEN_DESIGN_EDITABLE_KEY, Boolean.toString(item.editable()));
+            Map<String, String> labelDefaults = defaults.labelDefaults(DisplayDefaults.ROLE_FIELD_LABEL);
+            copyIfAbsent(labelDefaults, "fontFamily", withAction, LABEL_FONT_FAMILY_KEY);
+            copyIfAbsent(labelDefaults, "fontSize", withAction, LABEL_FONT_SIZE_KEY);
+            copyIfAbsent(labelDefaults, "fontStyle", withAction, LABEL_FONT_STYLE_KEY);
+            copyIfAbsent(labelDefaults, "color", withAction, LABEL_COLOR_KEY);
         }
         return Map.copyOf(withAction);
     }
@@ -182,6 +202,13 @@ public final class ScreenDesignLayoutAdapter {
         String value = metadata.get(key);
         if (value != null && !value.isBlank()) {
             target.put(key, value);
+        }
+    }
+
+    private static void copyIfAbsent(Map<String, String> metadata, String sourceKey, Map<String, String> target, String targetKey) {
+        String value = metadata.get(sourceKey);
+        if ((target.get(targetKey) == null || target.get(targetKey).isBlank()) && value != null && !value.isBlank()) {
+            target.put(targetKey, value);
         }
     }
 

@@ -225,6 +225,27 @@ final class ScreenDesignModelTest {
     }
 
     @Test
+    void adaptsFieldPreviewMetadataForRendererInputs() {
+        ScreenDesignModel model = new ScreenDesignModel("x", "X", ScreenLayoutType.FORM, Map.of(),
+                List.of(new ScreenDesignBlock("profile", "Profile")),
+                List.of(new ScreenDesignItem("profile.name", "profile", ScreenDesignItemType.FIELD,
+                        "Name", null, null, "Ava", true, null, Map.of())),
+                List.of());
+
+        Map<String, String> metadata = ScreenDesignLayoutAdapter.toLayoutModel(model)
+                .contentSections()
+                .get(0)
+                .lineMetadata()
+                .get(0);
+
+        assertEquals(ScreenDesignItemType.FIELD.name(), metadata.get(ScreenDesignLayoutAdapter.SCREEN_DESIGN_ITEM_TYPE_KEY));
+        assertEquals("Name", metadata.get(ScreenDesignLayoutAdapter.SCREEN_DESIGN_LABEL_KEY));
+        assertEquals("Ava", metadata.get(ScreenDesignLayoutAdapter.SCREEN_DESIGN_VALUE_KEY));
+        assertEquals("true", metadata.get(ScreenDesignLayoutAdapter.SCREEN_DESIGN_EDITABLE_KEY));
+        assertEquals("bold", metadata.get(ScreenDesignLayoutAdapter.LABEL_FONT_STYLE_KEY));
+    }
+
+    @Test
     void layoutMetadataInheritsFromScreenAndBlockBeforeItemOverrides() {
         ScreenDesignModel model = new ScreenDesignModel("x", "X", ScreenLayoutType.FORM, Map.of(
                 "fontSize", "18",
