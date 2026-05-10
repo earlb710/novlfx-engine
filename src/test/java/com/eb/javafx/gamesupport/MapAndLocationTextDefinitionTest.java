@@ -26,7 +26,10 @@ final class MapAndLocationTextDefinitionTest {
         assertEquals("en", definition.language());
         assertEquals(List.of("town", "main"), definition.maps().stream().map(MapTextEntry::mapId).toList());
         assertEquals("Town Map", definition.map("town").orElseThrow().description());
+        assertEquals(Optional.of("Town Map"), definition.mapDescription("town"));
         assertEquals(MapTextEntry.DEFAULT_DESCRIPTION, definition.map("main").orElseThrow().description());
+        assertEquals(Optional.of(MapTextEntry.DEFAULT_DESCRIPTION), definition.mapDescription("main"));
+        assertEquals(Optional.empty(), definition.mapDescription("missing"));
         assertTrue(definition.toJson().contains("\"description\": \"Main Map\""));
     }
 
@@ -65,6 +68,15 @@ final class MapAndLocationTextDefinitionTest {
         assertEquals("town.square", definition.reference("square"));
         assertEquals(Optional.of(definition.location("square").orElseThrow()), definition.locationByReference("town.square"));
         assertFalse(definition.locationByReference("other.square").isPresent());
+        assertEquals(Optional.of("The market square is quiet after dark."),
+                definition.locationDescription("square", List.of("time of day=night")));
+        assertEquals(Optional.of("The market square is open."),
+                definition.locationDescription("square", List.of("weather=rain")));
+        assertEquals(Optional.of("The market square is open."),
+                definition.locationDescription("square"));
+        assertEquals(Optional.of("The market square is quiet after dark."),
+                definition.locationDescriptionByReference("town.square", List.of("time of day=night")));
+        assertEquals(Optional.empty(), definition.locationDescriptionByReference("other.square", List.of("time of day=night")));
 
         LocationTextEntry square = definition.location("square").orElseThrow();
         assertEquals("town.square", square.reference(definition.mapId()));

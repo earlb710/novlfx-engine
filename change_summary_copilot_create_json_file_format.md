@@ -20,3 +20,9 @@ Refreshed the user manual for the new map/location JSON editing flow:
 - Updated the management-app overview to call out the Default App Values **Locations** tab.
 - Expanded the `MapTextDefinition` and `LocationTextDefinition` sections with load/save/toJson usage guidance.
 - Added the bundled `map-text.demo.json` and `location-text-town.demo.json` files to the manual’s example list for section 9.
+
+Added description helper APIs for localized map and location text:
+
+- Added `MapTextDefinition.mapDescription(mapId)` for direct map-description lookup.
+- Added `LocationTextDefinition.locationDescription(...)` and `locationDescriptionByReference(...)` helpers, including condition-aware fallback behavior.
+- Extended the focused gamesupport tests and documented the new helper methods in the user manual.

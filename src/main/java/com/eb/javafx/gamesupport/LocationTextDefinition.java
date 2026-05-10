@@ -9,6 +9,7 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -78,6 +79,14 @@ public final class LocationTextDefinition {
         return locations.definition(locId);
     }
 
+    public Optional<String> locationDescription(String locId) {
+        return locationDescription(locId, List.of());
+    }
+
+    public Optional<String> locationDescription(String locId, Collection<String> activeConditions) {
+        return location(locId).map(entry -> entry.descriptionForConditions(activeConditions).text());
+    }
+
     public boolean containsLocation(String locId) {
         return locations.contains(locId);
     }
@@ -89,6 +98,14 @@ public final class LocationTextDefinition {
             return Optional.empty();
         }
         return location(checkedReference.substring(prefix.length()));
+    }
+
+    public Optional<String> locationDescriptionByReference(String reference) {
+        return locationDescriptionByReference(reference, List.of());
+    }
+
+    public Optional<String> locationDescriptionByReference(String reference, Collection<String> activeConditions) {
+        return locationByReference(reference).map(entry -> entry.descriptionForConditions(activeConditions).text());
     }
 
     public String reference(String locId) {

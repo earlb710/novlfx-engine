@@ -69,6 +69,10 @@ public final class MapTextDefinition {
         return maps.definition(mapId);
     }
 
+    public Optional<String> mapDescription(String mapId) {
+        return map(mapId).map(MapTextEntry::description);
+    }
+
     public boolean containsMap(String mapId) {
         return maps.contains(mapId);
     }

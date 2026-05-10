@@ -676,7 +676,7 @@ Use `TimeScheduler`, `TimeScheduledCommand`, `TimeAdvanceHook`, and `TimeAdvance
 
 Use `LocationRegistry`, `LocationDescriptor`, and `LocationOccupancy` for reusable location metadata and per-save character placement. Location descriptors store stable location IDs, display/localization titles, route IDs, optional parent locations, tags, and generic action IDs. `LocationRegistry.validateReferences(...)` checks parent-location and action references after static modules register definitions, while `LocationOccupancy` tracks where generic character IDs are currently placed without owning authored movement rules. Use `MovementValidator`, `MovementValidationResult`, and `LocationMovementService` to layer application-supplied movement checks over reusable occupancy changes.
 
-Use `MapTextDefinition` for localized map labels. Load authored files with `MapTextDefinition.load(path)` or `loadResource(...)`, inspect/update them in memory, and persist normalized output with `save(path)` or `toJson()`. The JSON root stores `language` and a `maps` array. Each map entry stores `mapId` and optional `description`; omitted descriptions default to `Main Map`.
+Use `MapTextDefinition` for localized map labels. Load authored files with `MapTextDefinition.load(path)` or `loadResource(...)`, inspect/update them in memory, resolve a stored description with `mapDescription(mapId)`, and persist normalized output with `save(path)` or `toJson()`. The JSON root stores `language` and a `maps` array. Each map entry stores `mapId` and optional `description`; omitted descriptions default to `Main Map`.
 
 ```json
 {
@@ -688,7 +688,7 @@ Use `MapTextDefinition` for localized map labels. Load authored files with `MapT
 }
 ```
 
-Use `LocationTextDefinition` for localized location descriptions within one map. Load authored files with `LocationTextDefinition.load(path)` or `loadResource(...)`, normalize them with `toJson()` / `save(path)`, and resolve locations either by `locId` or by `mapId.locId` references. The JSON root stores `language`, `mapId`, and a `locations` array. Each location stores `locId` and a `description` array of variants. Variants store `text` and optional string `conditions`, such as `time of day=night`; application code can resolve locations by `mapId.locId` references such as `town.square`.
+Use `LocationTextDefinition` for localized location descriptions within one map. Load authored files with `LocationTextDefinition.load(path)` or `loadResource(...)`, normalize them with `toJson()` / `save(path)`, and resolve descriptions either by `locId` with `locationDescription(...)` or by `mapId.locId` reference with `locationDescriptionByReference(...)`. When multiple variants exist, pass the active condition strings to select the first matching conditional text; otherwise the helper falls back to the first unconditional variant, then the first authored variant. The JSON root stores `language`, `mapId`, and a `locations` array. Each location stores `locId` and a `description` array of variants. Variants store `text` and optional string `conditions`, such as `time of day=night`; application code can resolve locations by `mapId.locId` references such as `town.square`.
 
 ```json
 {
