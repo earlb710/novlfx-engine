@@ -2094,19 +2094,24 @@ public final class ScreenDesignerApplication {
 
     static String hintTextForProperty(String label) {
         return switch (label) {
-            case "Border style" -> "Allowed: solid, dashed, dotted, none.";
-            case "Border corner" -> "Allowed: square, rounded, pill.";
+            case "Border style" -> optionHint(BORDER_STYLE_OPTIONS);
+            case "Border corner" -> optionHint(BORDER_CORNER_OPTIONS);
             case "Transparency", "Background image transparency" ->
                     "Use a number from 0 to 1; 0 is opaque and 1 is fully transparent.";
             case "Background image" -> "Use a filesystem path, file URI, or classpath resource. SVG images are supported.";
             case "Hover background color" -> "Optional button hover/background state color metadata.";
             case "Pressed background color" -> "Optional button pressed/background state color metadata.";
-            case "Background image placement" ->
-                    "Allowed: fixed top left, fixed center, fixed bottom right, stretch to fit.";
+            case "Background image placement" -> optionHint(BACKGROUND_IMAGE_PLACEMENT_OPTIONS);
             case "Conditions" -> "One condition per line. Leave blank when the block should always be shown.";
             case "Advanced metadata" -> "Optional key=value metadata for uncommon properties. Typed controls override matching keys.";
             default -> "";
         };
+    }
+
+    private static String optionHint(String[] options) {
+        return "Allowed: " + String.join(", ", Arrays.stream(options)
+                .filter(option -> !DEFAULT_OPTION.equals(option))
+                .toList()) + ".";
     }
 
     static String validationTextForField(List<ScreenDesignValidationProblem> problems, String fieldPath) {
