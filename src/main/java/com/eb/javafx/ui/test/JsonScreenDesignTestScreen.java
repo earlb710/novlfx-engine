@@ -80,22 +80,23 @@ public final class JsonScreenDesignTestScreen {
     }
 
     public static Path defaultDesignPath(Path workingDirectory) {
-        Path normalizedWorkingDirectory = workingDirectory == null ? null : workingDirectory.toAbsolutePath().normalize();
-        if (normalizedWorkingDirectory != null) {
-            Path fileNameCandidate = normalizedWorkingDirectory.resolve(DEFAULT_DESIGN_RELATIVE_PATH.getFileName()).normalize();
-            if (Files.isRegularFile(fileNameCandidate)) {
-                return fileNameCandidate;
-            }
-            Path relativeCandidate = normalizedWorkingDirectory.resolve(DEFAULT_DESIGN_RELATIVE_PATH).normalize();
-            if (Files.isRegularFile(relativeCandidate)) {
-                return relativeCandidate;
-            }
-            Path screensCandidate = normalizedWorkingDirectory.resolve("screens")
-                    .resolve(DEFAULT_DESIGN_RELATIVE_PATH.getFileName())
-                    .normalize();
-            if (Files.isRegularFile(screensCandidate)) {
-                return screensCandidate;
-            }
+        if (workingDirectory == null) {
+            return defaultDesignPath();
+        }
+        Path normalizedWorkingDirectory = workingDirectory.toAbsolutePath().normalize();
+        Path fileNameCandidate = normalizedWorkingDirectory.resolve(DEFAULT_DESIGN_RELATIVE_PATH.getFileName()).normalize();
+        if (Files.isRegularFile(fileNameCandidate)) {
+            return fileNameCandidate;
+        }
+        Path relativeCandidate = normalizedWorkingDirectory.resolve(DEFAULT_DESIGN_RELATIVE_PATH).normalize();
+        if (Files.isRegularFile(relativeCandidate)) {
+            return relativeCandidate;
+        }
+        Path screensCandidate = normalizedWorkingDirectory.resolve("screens")
+                .resolve(DEFAULT_DESIGN_RELATIVE_PATH.getFileName())
+                .normalize();
+        if (Files.isRegularFile(screensCandidate)) {
+            return screensCandidate;
         }
         return defaultDesignPath();
     }

@@ -406,7 +406,7 @@ public final class ScreenDesignerApplication {
     private JPanel workingDirectoryPanel() {
         JPanel panel = new JPanel(new BorderLayout(6, 6));
         workingDirectoryField.setEditable(false);
-        workingDirectoryField.setText(currentFolder.toString());
+        updateCurrentFolder(currentFolder);
         panel.add(new JLabel("Working Directory"), BorderLayout.NORTH);
         panel.add(workingDirectoryField, BorderLayout.CENTER);
         return panel;
@@ -1014,9 +1014,13 @@ public final class ScreenDesignerApplication {
 
     private void refreshCurrentFolderFromPath() {
         if (currentPath != null && currentPath.getParent() != null) {
-            currentFolder = currentPath.getParent().toAbsolutePath().normalize();
-            workingDirectoryField.setText(currentFolder.toString());
+            updateCurrentFolder(currentPath.getParent());
         }
+    }
+
+    private void updateCurrentFolder(Path folder) {
+        currentFolder = folder.toAbsolutePath().normalize();
+        workingDirectoryField.setText(currentFolder.toString());
     }
 
     private void showValidation() {

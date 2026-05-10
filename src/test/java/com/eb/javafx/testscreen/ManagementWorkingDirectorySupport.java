@@ -2,6 +2,7 @@ package com.eb.javafx.testscreen;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Objects;
 import java.util.prefs.Preferences;
 
 /** Shared working-directory helpers for manual management screens. */
@@ -57,7 +58,7 @@ final class ManagementWorkingDirectorySupport {
     }
 
     static Path normalizeDirectory(Path directory) {
-        Path normalized = java.util.Objects.requireNonNull(directory, "Working directory is required.")
+        Path normalized = Objects.requireNonNull(directory, "Working directory is required.")
                 .toAbsolutePath()
                 .normalize();
         if (!Files.isDirectory(normalized)) {
