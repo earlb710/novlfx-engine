@@ -1,0 +1,4 @@
+- Added screen design text sidecar support so saving a screen JSON writes a sibling `_text.json` file with a `language` field and localized `texts` map.
+- Updated screen design loading to resolve sidecar text ids back to authored screen, block, item, field, and button text while preserving legacy embedded text JSON support.
+- Converted bundled screen design examples to reference generated text ids and added matching `_text.json` files.
+- Documented the screen designer text sidecar workflow and added focused tests for save/load and example coverage.
