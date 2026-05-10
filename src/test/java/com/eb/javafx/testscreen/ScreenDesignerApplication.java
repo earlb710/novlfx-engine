@@ -611,9 +611,7 @@ public final class ScreenDesignerApplication {
         putOptionalMetadata(metadata, DISPLAY_ROLE_KEY, selectedComboValue(displayRoleBox));
         putOptionalMetadata(metadata, BACKGROUND_COLOR_KEY, backgroundColorField.getText());
         putOptionalMetadata(metadata, TRANSPARENCY_KEY, selectedComboValue(transparencyBox));
-        putOptionalMetadata(metadata, EVENT_NAME_KEY, eventNameField.getText());
-        metadata.remove(ACTION_EVENT_KEY);
-        putOptionalMetadata(metadata, ACTION_VALUE_KEY, actionValueField.getText());
+        putActionMetadata(metadata, eventNameField.getText(), actionValueField.getText());
         return Optional.of(new ScreenDesignItem(
                 normalizedItemId(itemId, temporary),
                 blockId,
@@ -1195,7 +1193,17 @@ public final class ScreenDesignerApplication {
     }
 
     private static String escapeBasicHtmlContent(String value) {
-        return value.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
+        StringBuilder escaped = new StringBuilder(value.length());
+        for (int index = 0; index < value.length(); index++) {
+            char character = value.charAt(index);
+            switch (character) {
+                case '&' -> escaped.append("&amp;");
+                case '<' -> escaped.append("&lt;");
+                case '>' -> escaped.append("&gt;");
+                default -> escaped.append(character);
+            }
+        }
+        return escaped.toString();
     }
 
     private void closeIfConfirmed(JFrame frame) {
@@ -1250,7 +1258,7 @@ public final class ScreenDesignerApplication {
     }
 
     private void configureFieldGuidance() {
-        blockBackgroundImagePlacementBox.setToolTipText("Choose how the block background image is placed: "
+        blockBackgroundImagePlacementBox.setToolTipText("Background image placement: fixed modes anchor the image at the named position; stretch to fit resizes it to the block. Options: "
                 + String.join(", ", Arrays.stream(BACKGROUND_IMAGE_PLACEMENT_OPTIONS)
                 .filter(option -> !DEFAULT_OPTION.equals(option))
                 .toList())
@@ -2103,9 +2111,7 @@ public final class ScreenDesignerApplication {
         putOptionalMetadata(metadata, DISPLAY_ROLE_KEY, selectedComboValue(itemDisplayRoleBox));
         putOptionalMetadata(metadata, BACKGROUND_COLOR_KEY, itemBackgroundColorField.getText());
         putOptionalMetadata(metadata, TRANSPARENCY_KEY, selectedComboValue(itemTransparencyBox));
-        putOptionalMetadata(metadata, EVENT_NAME_KEY, itemEventNameField.getText());
-        metadata.remove(ACTION_EVENT_KEY);
-        putOptionalMetadata(metadata, ACTION_VALUE_KEY, itemActionValueField.getText());
+        putActionMetadata(metadata, itemEventNameField.getText(), itemActionValueField.getText());
         if (isFieldType(type)) {
             putOptionalMetadata(metadata, LABEL_FONT_FAMILY_KEY, selectedComboValue(itemLabelFontFamilyBox));
             putOptionalMetadata(metadata, LABEL_FONT_SIZE_KEY, selectedComboValue(itemLabelFontSizeBox));
@@ -2170,6 +2176,12 @@ public final class ScreenDesignerApplication {
         } else {
             metadata.put(key, nonBlankValue);
         }
+    }
+
+    private static void putActionMetadata(Map<String, String> metadata, String eventName, String actionValue) {
+        putOptionalMetadata(metadata, EVENT_NAME_KEY, eventName);
+        metadata.remove(ACTION_EVENT_KEY);
+        putOptionalMetadata(metadata, ACTION_VALUE_KEY, actionValue);
     }
 
     private static String metadataValue(Map<String, String> metadata, String key) {
