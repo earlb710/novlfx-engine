@@ -24,10 +24,15 @@ public record LocationTextEntry(String locId, List<LocationDescriptionVariant> d
     }
 
     public LocationDescriptionVariant descriptionForConditions(Collection<String> activeConditions) {
-        return descriptions.stream()
-                .filter(variant -> variant.hasConditions() && variant.matchesConditions(activeConditions))
-                .findFirst()
-                .or(() -> descriptions.stream().filter(variant -> !variant.hasConditions()).findFirst())
-                .orElse(descriptions.get(0));
+        LocationDescriptionVariant fallback = null;
+        for (LocationDescriptionVariant variant : descriptions) {
+            if (variant.hasConditions() && variant.matchesConditions(activeConditions)) {
+                return variant;
+            }
+            if (!variant.hasConditions() && fallback == null) {
+                fallback = variant;
+            }
+        }
+        return fallback == null ? descriptions.get(0) : fallback;
     }
 }

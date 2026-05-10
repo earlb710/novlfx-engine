@@ -27,6 +27,7 @@ final class MapAndLocationTextDefinitionTest {
         assertEquals(List.of("town", "main"), definition.maps().stream().map(MapTextEntry::mapId).toList());
         assertEquals("Town Map", definition.map("town").orElseThrow().description());
         assertEquals(MapTextEntry.DEFAULT_DESCRIPTION, definition.map("main").orElseThrow().description());
+        assertTrue(definition.toJson().contains("\"description\": \"Main Map\""));
     }
 
     @Test

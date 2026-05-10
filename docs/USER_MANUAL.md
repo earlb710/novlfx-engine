@@ -698,7 +698,7 @@ Use `LocationTextDefinition` for localized location descriptions within one map.
       "description": [
         {"text": "The market square is busy.", "conditions": ["time of day=day"]},
         {"text": "The market square is quiet after dark.", "conditions": ["time of day=night"]},
-        {"text": "The market square is open."}
+        {"text": "The market square is open.", "conditions": []}
       ]
     }
   ]
