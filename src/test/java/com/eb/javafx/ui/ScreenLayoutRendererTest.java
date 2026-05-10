@@ -1,5 +1,6 @@
 package com.eb.javafx.ui;
 
+import com.eb.javafx.routing.RouteContext;
 import javafx.application.Platform;
 import javafx.scene.Node;
 import javafx.scene.Parent;
@@ -7,8 +8,11 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import java.awt.GraphicsEnvironment;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -25,6 +29,9 @@ import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 final class ScreenLayoutRendererTest {
     private static final AtomicBoolean JAVAFX_STARTED = new AtomicBoolean();
+
+    @TempDir
+    Path tempDir;
 
     @Test
     void rendererExposesStableSemanticStyleHooksForReusableLayouts() {
@@ -53,7 +60,7 @@ final class ScreenLayoutRendererTest {
                 null);
 
         assertThrows(IllegalArgumentException.class, () -> ScreenLayoutRenderer.createRoot(null));
-        assertThrows(IllegalArgumentException.class, () -> ScreenLayoutRenderer.createRoot(null, null));
+        assertThrows(IllegalArgumentException.class, () -> ScreenLayoutRenderer.createRoot((RouteContext) null, null));
         assertThrows(IllegalArgumentException.class, () -> ScreenLayoutRenderer.createScene(null, model));
     }
 
@@ -134,6 +141,18 @@ final class ScreenLayoutRendererTest {
     @Test
     void rendererLoadsPackagedSvgBackgroundImages() {
         assertTrue(ScreenLayoutRenderer.loadBackgroundImage("/com/eb/javafx/images/svg/background-gradient-rectangle.svg").getWidth() > 0);
+    }
+
+    @Test
+    void rendererLoadsRelativeBackgroundImagesFromProvidedWorkingDirectory() throws Exception {
+        Path imagePath = tempDir.resolve("background.svg");
+        Files.writeString(imagePath, """
+                <svg xmlns="http://www.w3.org/2000/svg" width="8" height="8">
+                  <rect width="8" height="8" fill="#336699"/>
+                </svg>
+                """);
+
+        assertTrue(ScreenLayoutRenderer.loadBackgroundImage("background.svg", tempDir).getWidth() > 0);
     }
 
     @Test

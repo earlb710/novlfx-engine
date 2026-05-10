@@ -35,35 +35,41 @@ public final class JsonScreenDesignTestScreen {
 
     public static void main(String[] args) {
         Path designPath = args.length > 0 ? Path.of(args[0]) : defaultDesignPath();
-        show(designPath, true);
+        show(designPath, designPath.getParent(), true);
     }
 
     public static void showFromManagement() {
-        show(defaultDesignPath(), false);
+        Path designPath = defaultDesignPath();
+        show(designPath, designPath.getParent(), false);
     }
 
     public static void showFromManagement(Path workingDirectory) {
-        show(defaultDesignPath(workingDirectory), false);
+        show(defaultDesignPath(workingDirectory), workingDirectory, false);
     }
 
     public static Scene createScene(Path designPath, PreferencesService preferencesService, UiTheme uiTheme) {
+        return createScene(designPath, designPath.getParent(), preferencesService, uiTheme);
+    }
+
+    public static Scene createScene(Path designPath, Path workingDirectory, PreferencesService preferencesService, UiTheme uiTheme) {
         Validation.requireNonNull(preferencesService, "Preferences service is required.");
         Validation.requireNonNull(uiTheme, "UI theme is required.");
         Path initialDesignPath = Validation.requireNonNull(designPath, "Screen design JSON path is required.")
                 .toAbsolutePath()
                 .normalize();
+        Path initialWorkingDirectory = defaultWorkingDirectory(workingDirectory, initialDesignPath);
 
         BorderPane shell = new BorderPane();
         Label status = new Label();
         TextField pathField = new TextField(initialDesignPath.toString());
         Button reloadButton = new Button("Reload JSON");
         pathField.setPrefColumnCount(64);
-        reloadButton.setOnAction(event -> reload(pathField, shell, status));
+        reloadButton.setOnAction(event -> reload(pathField, shell, status, initialWorkingDirectory));
         HBox toolbar = new HBox(8, new Label("Screen design JSON:"), pathField, reloadButton);
         toolbar.setPadding(new Insets(8));
         shell.setTop(toolbar);
         shell.setBottom(status);
-        render(initialDesignPath, shell, status);
+        render(initialDesignPath, shell, status, initialWorkingDirectory);
 
         Scene scene = new Scene(shell, TestUiScreenSize.sceneWidth(preferencesService), TestUiScreenSize.sceneHeight(preferencesService));
         scene.getStylesheets().add(uiTheme.stylesheet());
@@ -118,7 +124,7 @@ public final class JsonScreenDesignTestScreen {
         return findRepositoryRootFrom(currentDirectory).orElse(currentDirectory);
     }
 
-    private static void show(Path designPath, boolean exitOnClose) {
+    private static void show(Path designPath, Path workingDirectory, boolean exitOnClose) {
         ensureJavaFxStarted(exitOnClose);
         Platform.runLater(() -> {
             PreferencesService preferencesService = new PreferencesService();
@@ -129,7 +135,7 @@ public final class JsonScreenDesignTestScreen {
 
             Stage stage = new Stage();
             stage.setTitle("Reloadable JSON Screen Design");
-            stage.setScene(createScene(designPath, preferencesService, uiTheme));
+            stage.setScene(createScene(designPath, workingDirectory, preferencesService, uiTheme));
             if (exitOnClose) {
                 stage.setOnHidden(event -> Platform.exit());
             }
@@ -137,18 +143,28 @@ public final class JsonScreenDesignTestScreen {
         });
     }
 
-    private static void reload(TextField pathField, BorderPane shell, Label status) {
+    private static void reload(TextField pathField, BorderPane shell, Label status, Path workingDirectory) {
         try {
-            render(Path.of(pathField.getText()).toAbsolutePath().normalize(), shell, status);
+            render(Path.of(pathField.getText()).toAbsolutePath().normalize(), shell, status, workingDirectory);
         } catch (RuntimeException exception) {
             status.setText("Reload failed: " + exception.getMessage());
         }
     }
 
-    private static void render(Path designPath, BorderPane shell, Label status) {
+    private static void render(Path designPath, BorderPane shell, Label status, Path workingDirectory) {
         ScreenLayoutModel model = loadLayoutModel(designPath);
-        shell.setCenter(ScreenLayoutRenderer.createRoot(model));
+        shell.setCenter(ScreenLayoutRenderer.createRoot(model, defaultWorkingDirectory(workingDirectory, designPath)));
         status.setText("Loaded " + designPath + " as \"" + model.title() + "\".");
+    }
+
+    private static Path defaultWorkingDirectory(Path workingDirectory, Path designPath) {
+        if (workingDirectory != null) {
+            return workingDirectory.toAbsolutePath().normalize();
+        }
+        if (designPath != null && designPath.getParent() != null) {
+            return designPath.getParent().toAbsolutePath().normalize();
+        }
+        return repositoryRoot();
     }
 
     private static void ensureJavaFxStarted(boolean implicitExit) {

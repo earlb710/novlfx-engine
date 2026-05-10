@@ -52,7 +52,7 @@ Launch the management app with:
 ./gradlew --no-daemon runManagementApp
 ```
 
-The management app includes a shared **Working Directory** picker above the launcher buttons and remembers the last chosen folder between launches. That working directory is passed into the manual authoring and diagnostic screens so file pickers and related browsing actions start from the same folder, including the screen designer, reloadable JSON screen, conversation editor, code table manager, and file catalog. The **Default App Values** screen also includes a **Locations** tab for reviewing and formatting bundled location JSON examples while comparing them with other startup defaults.
+The management app includes a shared **Working Directory** picker above the launcher buttons and remembers the last chosen folder between launches. That working directory is passed into the manual authoring and diagnostic screens so file pickers, relative screen resources, and related browsing actions start from the same folder, including the screen designer, reloadable JSON screen, conversation editor, code table manager, and file catalog. The **Default App Values** screen also includes a **Locations** tab for reviewing and formatting bundled location JSON examples while comparing them with other startup defaults.
 
 Launch the manual conversation editor with:
 
@@ -612,17 +612,17 @@ Typical designer workflow:
    and slider-position descriptions in code tables; and put reusable shared labels, empty states, status text, dialog
    support text, and generic errors in `sys_message`. Java should provide bindings, current values, event handling,
    and navigation only.
-2. Use **Edit Default Values** to adjust the preview-time display defaults loaded from `display-defaults.json`; this is useful for testing inherited screen/block/item styling without changing every document node. The docked live preview refreshes after those defaults are saved.
+2. Use **Edit > Edit Default Values** to adjust the preview-time display defaults loaded from `display-defaults.json`; this is useful for testing inherited screen/block/item styling without changing every document node. The docked live preview refreshes after those defaults are saved.
 3. Use **Add Block** to create root or nested blocks, or right-click a screen/block/item and choose a quick-add block action for common form, menu/action-list, or preview-grid sections.
-4. Select a block, then use **Add Item** for a saved item or **Add Temporary Field** for a preview-only field.
+4. Select a block, then use **Add Item** for a saved item or the tree context menu **Add Temporary Field** action for a preview-only field.
 5. Select a tree node and edit its properties on the right.
 6. Press **Apply Properties** to keep the selection on the current node while applying any renamed ids or moved items/blocks; the docked preview refreshes automatically.
-7. Use **Validate** to run the screen design validator, or **Go To First Issue** to select the first affected screen, block, item, or temporary item. Validation messages also appear near the selected property panel and warning markers appear in the tree.
+7. Use **Edit > Validate** to run the screen design validator, or **Edit > Go To First Issue** to select the first affected screen, block, item, or temporary item. Validation messages also appear near the selected property panel and warning markers appear in the tree.
 8. Drag blocks or items in the navigation tree to reorder siblings or move them into another compatible block.
-9. Use **Open Preview** when you want a separate preview stage in addition to the docked live preview.
-10. Use **Promote Temporary** to convert a temporary field into a saved item when it should be persisted.
+9. Use **Edit > Open Preview** when you want a separate preview stage in addition to the docked live preview.
+10. Use the temporary-item tree context menu **Promote Temporary** action to convert a preview-only field into a saved item when it should be persisted.
 
-The management launcher also includes **Reloadable JSON Screen**, which opens the shared working-directory copy of `reloadable-test-screen.json` when one is present, otherwise it falls back to `examples/resources/json/screens/reloadable-test-screen.json`. Edit that JSON file in an external editor or the screen designer, then press **Reload JSON** in the test window to load the latest saved definition and immediately compare the rendered change. When the screen designer is launched from the management app, it also shows the active working directory above the navigation tree.
+The management launcher also includes **Reloadable JSON Screen**, which opens the shared working-directory copy of `reloadable-test-screen.json` when one is present, otherwise it falls back to `examples/resources/json/screens/reloadable-test-screen.json`. Edit that JSON file in an external editor or the screen designer, then press **Reload JSON** in the test window to load the latest saved definition and immediately compare the rendered change. Relative screen resources are resolved from the active working directory, and when the screen designer is launched from the management app it shows that working directory above the navigation tree without changing it when other files are loaded.
 
 The property editor adapts to the selected item type:
 
