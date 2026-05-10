@@ -47,7 +47,7 @@ public final class FileCatalogApplication {
     static final String CATALOG_FILE_NAME = "file-catalog.json";
     static final String CATALOG_LOG_FILE_NAME = "file-catalog.log";
 
-    private final JTextField startFolderField = new JTextField(gameRootDirectory().toString());
+    private final JTextField startFolderField;
     private final DefaultTreeModel directoryTreeModel = new DefaultTreeModel(new DefaultMutableTreeNode());
     private final JTree directoryTree = new JTree(directoryTreeModel);
     private final DefaultTableModel fileTableModel = new DefaultTableModel(detailColumnLabels().toArray(), 0) {
@@ -59,11 +59,24 @@ public final class FileCatalogApplication {
     private final JTable fileTable = new JTable(fileTableModel);
     private final JLabel directorySummaryLabel = new JLabel("No catalog loaded.");
     private final JLabel statusLabel = new JLabel("No catalog loaded.");
-    private Path startFolder = gameRootDirectory();
+    private Path startFolder;
     private FileCatalog catalog;
+
+    public FileCatalogApplication() {
+        this(gameRootDirectory());
+    }
+
+    FileCatalogApplication(Path startFolder) {
+        this.startFolder = ManagementWorkingDirectorySupport.initialDirectory(startFolder, gameRootDirectory());
+        this.startFolderField = new JTextField(this.startFolder.toString());
+    }
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> new FileCatalogApplication().show());
+    }
+
+    static void showFromManagement(Path workingDirectory) {
+        SwingUtilities.invokeLater(() -> new FileCatalogApplication(workingDirectory).show());
     }
 
     private void show() {

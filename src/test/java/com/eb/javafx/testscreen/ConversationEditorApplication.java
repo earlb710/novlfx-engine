@@ -91,13 +91,27 @@ public final class ConversationEditorApplication {
             .limit(MAX_VISIBLE_CONDITION_ROWS)
             .toList();
     private final JLabel statusLabel = new JLabel();
-    private Path currentFolder = conversationExamplesDirectory();
+    private Path currentFolder;
     private Path currentPath;
     private String savedJsonSnapshot = ConversationDefinitionJson.toJson(conversation);
     private boolean refreshing;
 
+    public ConversationEditorApplication() {
+        this(conversationExamplesDirectory());
+    }
+
+    ConversationEditorApplication(Path currentFolder) {
+        this.currentFolder = ManagementWorkingDirectorySupport.initialDirectory(
+                currentFolder,
+                conversationExamplesDirectory());
+    }
+
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> new ConversationEditorApplication().show());
+    }
+
+    static void showFromManagement(Path workingDirectory) {
+        SwingUtilities.invokeLater(() -> new ConversationEditorApplication(workingDirectory).show());
     }
 
     private void show() {

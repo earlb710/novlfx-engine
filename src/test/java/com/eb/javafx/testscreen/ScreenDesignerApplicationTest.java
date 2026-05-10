@@ -7,6 +7,7 @@ import com.eb.javafx.ui.ScreenDesignJson;
 import com.eb.javafx.ui.ScreenDesignModel;
 import com.eb.javafx.ui.ScreenDesignValidator;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import java.io.IOException;
 import java.awt.BorderLayout;
@@ -37,6 +38,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 final class ScreenDesignerApplicationTest {
+    @TempDir
+    Path tempDir;
+
     @Test
     void resolvesScreenDesignExamplesDirectoryFromRepository() {
         Path examplesDirectory = ScreenDesignerApplication.screenDesignExamplesDirectory();
@@ -59,6 +63,18 @@ final class ScreenDesignerApplicationTest {
                 assertFalse(ScreenDesignValidator.validate(design).size() > 0, () -> "Invalid example: " + jsonFile);
             }
         }
+    }
+
+    @Test
+    void workingDirectoryPanelShowsProvidedDirectory() throws Exception {
+        ScreenDesignerApplication application = new ScreenDesignerApplication(tempDir, false);
+
+        JPanel panel = invokeWorkingDirectoryPanel(application);
+
+        assertEquals(tempDir.toAbsolutePath().normalize().toString(), workingDirectoryField(application).getText());
+        assertEquals(tempDir.toAbsolutePath().normalize(), currentFolder(application));
+        assertEquals("Working Directory", ((javax.swing.JLabel) ((BorderLayout) panel.getLayout())
+                .getLayoutComponent(BorderLayout.NORTH)).getText());
     }
 
     @Test
@@ -192,6 +208,24 @@ final class ScreenDesignerApplicationTest {
         assertTrue(ScreenDesignerApplication.blockIdForNode(root).isEmpty());
         assertEquals("main", ScreenDesignerApplication.blockIdForNode(blockNode).orElseThrow());
         assertEquals("main", ScreenDesignerApplication.blockIdForNode(itemNode).orElseThrow());
+    }
+
+    private static JPanel invokeWorkingDirectoryPanel(ScreenDesignerApplication application) throws Exception {
+        Method method = ScreenDesignerApplication.class.getDeclaredMethod("workingDirectoryPanel");
+        method.setAccessible(true);
+        return (JPanel) method.invoke(application);
+    }
+
+    private static JTextField workingDirectoryField(ScreenDesignerApplication application) throws Exception {
+        Field field = ScreenDesignerApplication.class.getDeclaredField("workingDirectoryField");
+        field.setAccessible(true);
+        return (JTextField) field.get(application);
+    }
+
+    private static Path currentFolder(ScreenDesignerApplication application) throws Exception {
+        Field field = ScreenDesignerApplication.class.getDeclaredField("currentFolder");
+        field.setAccessible(true);
+        return (Path) field.get(application);
     }
 
     @Test

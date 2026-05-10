@@ -42,6 +42,10 @@ public final class JsonScreenDesignTestScreen {
         show(defaultDesignPath(), false);
     }
 
+    public static void showFromManagement(Path workingDirectory) {
+        show(defaultDesignPath(workingDirectory), false);
+    }
+
     public static Scene createScene(Path designPath, PreferencesService preferencesService, UiTheme uiTheme) {
         Validation.requireNonNull(preferencesService, "Preferences service is required.");
         Validation.requireNonNull(uiTheme, "UI theme is required.");
@@ -73,6 +77,27 @@ public final class JsonScreenDesignTestScreen {
 
     public static Path defaultDesignPath() {
         return repositoryRoot().resolve(DEFAULT_DESIGN_RELATIVE_PATH).normalize();
+    }
+
+    public static Path defaultDesignPath(Path workingDirectory) {
+        Path normalizedWorkingDirectory = workingDirectory == null ? null : workingDirectory.toAbsolutePath().normalize();
+        if (normalizedWorkingDirectory != null) {
+            Path fileNameCandidate = normalizedWorkingDirectory.resolve(DEFAULT_DESIGN_RELATIVE_PATH.getFileName()).normalize();
+            if (Files.isRegularFile(fileNameCandidate)) {
+                return fileNameCandidate;
+            }
+            Path relativeCandidate = normalizedWorkingDirectory.resolve(DEFAULT_DESIGN_RELATIVE_PATH).normalize();
+            if (Files.isRegularFile(relativeCandidate)) {
+                return relativeCandidate;
+            }
+            Path screensCandidate = normalizedWorkingDirectory.resolve("screens")
+                    .resolve(DEFAULT_DESIGN_RELATIVE_PATH.getFileName())
+                    .normalize();
+            if (Files.isRegularFile(screensCandidate)) {
+                return screensCandidate;
+            }
+        }
+        return defaultDesignPath();
     }
 
     static Optional<Path> findRepositoryRootFrom(Path start) {

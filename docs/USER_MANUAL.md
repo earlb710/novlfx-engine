@@ -52,7 +52,7 @@ Launch the management app with:
 ./gradlew --no-daemon runManagementApp
 ```
 
-The management app is a button-only launcher for manual authoring and diagnostic screens, including default display values, the screen designer, the reloadable JSON screen, and the conversation editor. The **Default App Values** screen now also includes a **Locations** tab for reviewing and formatting bundled location JSON examples while comparing them with other startup defaults.
+The management app includes a shared **Working Directory** picker above the launcher buttons and remembers the last chosen folder between launches. That working directory is passed into the manual authoring and diagnostic screens so file pickers and related browsing actions start from the same folder, including the screen designer, reloadable JSON screen, conversation editor, code table manager, and file catalog. The **Default App Values** screen also includes a **Locations** tab for reviewing and formatting bundled location JSON examples while comparing them with other startup defaults.
 
 Launch the manual conversation editor with:
 
@@ -622,7 +622,7 @@ Typical designer workflow:
 9. Use **Open Preview** when you want a separate preview stage in addition to the docked live preview.
 10. Use **Promote Temporary** to convert a temporary field into a saved item when it should be persisted.
 
-The management launcher also includes **Reloadable JSON Screen**, which opens `examples/resources/json/screens/reloadable-test-screen.json` as a live `ScreenLayoutRenderer` view. Edit that JSON file in an external editor or the screen designer, then press **Reload JSON** in the test window to load the latest saved definition and immediately compare the rendered change.
+The management launcher also includes **Reloadable JSON Screen**, which opens the shared working-directory copy of `reloadable-test-screen.json` when one is present, otherwise it falls back to `examples/resources/json/screens/reloadable-test-screen.json`. Edit that JSON file in an external editor or the screen designer, then press **Reload JSON** in the test window to load the latest saved definition and immediately compare the rendered change. When the screen designer is launched from the management app, it also shows the active working directory above the navigation tree.
 
 The property editor adapts to the selected item type:
 

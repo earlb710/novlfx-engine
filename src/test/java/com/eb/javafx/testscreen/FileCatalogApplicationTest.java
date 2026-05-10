@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.charset.StandardCharsets;
+import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -11,6 +12,8 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import javax.swing.JTextField;
 
 final class FileCatalogApplicationTest {
     @TempDir
@@ -21,6 +24,14 @@ final class FileCatalogApplicationTest {
         assertEquals(List.of("Start Folder", "Browse Folder", "Update Catalog", "Directories", "Files"),
                 FileCatalogApplication.managementLabels());
         assertEquals(List.of("Name", "Size (K)", "Date"), FileCatalogApplication.detailColumnLabels());
+    }
+
+    @Test
+    void constructorUsesProvidedWorkingDirectory() throws Exception {
+        FileCatalogApplication application = new FileCatalogApplication(tempDirectory);
+
+        assertEquals(tempDirectory.toAbsolutePath().normalize(), startFolder(application));
+        assertEquals(tempDirectory.toAbsolutePath().normalize().toString(), startFolderField(application).getText());
     }
 
     @Test
@@ -153,5 +164,17 @@ final class FileCatalogApplicationTest {
                         List.of("sub/child.txt", "0.25 K", "2026-05-08T00:00:00Z"),
                         List.of("sub/nested/deep.txt", "0.75 K", "2026-05-08T00:00:00Z")),
                 FileCatalogApplication.directoryFileRows(directory));
+    }
+
+    private static Path startFolder(FileCatalogApplication application) throws Exception {
+        Field field = FileCatalogApplication.class.getDeclaredField("startFolder");
+        field.setAccessible(true);
+        return (Path) field.get(application);
+    }
+
+    private static JTextField startFolderField(FileCatalogApplication application) throws Exception {
+        Field field = FileCatalogApplication.class.getDeclaredField("startFolderField");
+        field.setAccessible(true);
+        return (JTextField) field.get(application);
     }
 }

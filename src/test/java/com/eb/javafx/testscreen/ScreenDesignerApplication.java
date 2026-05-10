@@ -243,9 +243,11 @@ public final class ScreenDesignerApplication {
     private final JTextArea jsonArea = new JTextArea();
     private final JTextArea validationArea = new JTextArea(3, 20);
     private final JLabel statusLabel = new JLabel();
+    private final JTextField workingDirectoryField = new JTextField();
     private JFXPanel dockedPreviewPanel;
     private Map<String, String> copiedMetadata = Map.of();
     private String copiedStyleClass;
+    private Path currentFolder;
     private Path currentPath;
     private String savedJsonSnapshot = ScreenDesignJson.toJson(design);
     private DisplayDefaults displayDefaults = DisplayDefaults.defaults();
@@ -254,10 +256,17 @@ public final class ScreenDesignerApplication {
     private final boolean exitOnClose;
 
     public ScreenDesignerApplication() {
-        this(true);
+        this(screenDesignExamplesDirectory(), true);
     }
 
     public ScreenDesignerApplication(boolean exitOnClose) {
+        this(screenDesignExamplesDirectory(), exitOnClose);
+    }
+
+    ScreenDesignerApplication(Path workingDirectory, boolean exitOnClose) {
+        this.currentFolder = ManagementWorkingDirectorySupport.initialDirectory(
+                workingDirectory,
+                screenDesignExamplesDirectory());
         this.exitOnClose = exitOnClose;
     }
 
@@ -266,7 +275,11 @@ public final class ScreenDesignerApplication {
     }
 
     static void showFromManagement() {
-        new ScreenDesignerApplication(false).show();
+        showFromManagement(screenDesignExamplesDirectory());
+    }
+
+    static void showFromManagement(Path workingDirectory) {
+        new ScreenDesignerApplication(workingDirectory, false).show();
     }
 
     boolean exitsOnClose() {
@@ -384,8 +397,18 @@ public final class ScreenDesignerApplication {
         installTreeContextMenu();
         installTreeDragAndDrop();
         JPanel panel = new JPanel(new BorderLayout(8, 8));
+        panel.add(workingDirectoryPanel(), BorderLayout.NORTH);
         panel.add(new JScrollPane(objectTree), BorderLayout.CENTER);
         panel.add(navigationActions(), BorderLayout.SOUTH);
+        return panel;
+    }
+
+    private JPanel workingDirectoryPanel() {
+        JPanel panel = new JPanel(new BorderLayout(6, 6));
+        workingDirectoryField.setEditable(false);
+        workingDirectoryField.setText(currentFolder.toString());
+        panel.add(new JLabel("Working Directory"), BorderLayout.NORTH);
+        panel.add(workingDirectoryField, BorderLayout.CENTER);
         return panel;
     }
 
@@ -948,6 +971,7 @@ public final class ScreenDesignerApplication {
         JFileChooser chooser = jsonChooser();
         if (chooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
             currentPath = chooser.getSelectedFile().toPath();
+            refreshCurrentFolderFromPath();
             design = ScreenDesignJson.load(currentPath);
             savedJsonSnapshot = ScreenDesignJson.toJson(design);
             refreshAll();
@@ -962,6 +986,7 @@ public final class ScreenDesignerApplication {
         }
         ScreenDesignJson.save(currentPath, design);
         savedJsonSnapshot = ScreenDesignJson.toJson(design);
+        refreshCurrentFolderFromPath();
         refreshAll();
     }
 
@@ -973,6 +998,7 @@ public final class ScreenDesignerApplication {
         }
         ScreenDesignJson.save(currentPath, design);
         savedJsonSnapshot = ScreenDesignJson.toJson(design);
+        refreshCurrentFolderFromPath();
         refreshAll();
     }
 
@@ -980,9 +1006,17 @@ public final class ScreenDesignerApplication {
         JFileChooser chooser = jsonChooser();
         if (chooser.showSaveDialog(null) == JFileChooser.APPROVE_OPTION) {
             currentPath = chooser.getSelectedFile().toPath();
+            refreshCurrentFolderFromPath();
             return true;
         }
         return false;
+    }
+
+    private void refreshCurrentFolderFromPath() {
+        if (currentPath != null && currentPath.getParent() != null) {
+            currentFolder = currentPath.getParent().toAbsolutePath().normalize();
+            workingDirectoryField.setText(currentFolder.toString());
+        }
     }
 
     private void showValidation() {
@@ -1483,7 +1517,7 @@ public final class ScreenDesignerApplication {
     private JFileChooser jsonChooser() {
         Path initialDirectory = currentPath != null && currentPath.getParent() != null
                 ? currentPath.getParent()
-                : screenDesignExamplesDirectory();
+                : currentFolder;
         JFileChooser chooser = new JFileChooser(initialDirectory.toFile());
         chooser.setFileFilter(new FileNameExtensionFilter("Screen design JSON (*.json)", "json"));
         chooser.setCurrentDirectory(initialDirectory.toFile());
