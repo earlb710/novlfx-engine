@@ -1,5 +1,7 @@
 package com.eb.javafx.testscreen;
 
+import com.eb.javafx.gamesupport.LocationTextDefinition;
+import com.eb.javafx.gamesupport.MapTextDefinition;
 import org.junit.jupiter.api.Test;
 
 import javax.swing.JButton;
@@ -7,6 +9,7 @@ import javax.swing.JCheckBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
+import javax.swing.JTabbedPane;
 import javax.swing.JTable;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
@@ -40,8 +43,16 @@ final class DefaultDisplayValuesApplicationTest {
 
     @Test
     void defaultAppValuesTabsStartWithApplicationAndDisplayValues() {
-        assertEquals(List.of("Application Values", "Lookup Variables", "Display Values", "Default CSS", "Layouts"),
+        assertEquals(List.of("Application Values", "Locations", "Lookup Variables", "Display Values", "Default CSS", "Layouts"),
                 DefaultDisplayValuesApplication.tabLabels());
+    }
+
+    @Test
+    void locationsTabUsesMapAndLocationJsonEditors() {
+        assertEquals(List.of("Map Text JSON", "Location Text JSON"),
+                DefaultDisplayValuesApplication.locationsTabLabels());
+        assertEquals(List.of("Save", "Format", "Reset"),
+                DefaultDisplayValuesApplication.jsonEditorActionLabels());
     }
 
     @Test
@@ -137,6 +148,23 @@ final class DefaultDisplayValuesApplicationTest {
                 DefaultDisplayValuesApplication.applicationLoadActionLabels());
         assertEquals(List.of(new DefaultDisplayValuesApplication.ApplicationLoad("code table", "", "")),
                 DefaultDisplayValuesApplication.applicationLoads());
+    }
+
+    @Test
+    void locationExamplesResolveFromRepositoryAndSampleJsonLoads() {
+        assertTrue(DefaultDisplayValuesApplication.locationExamplesDirectory()
+                .endsWith(java.nio.file.Path.of("examples", "user-manual", "09-game-support-state-save-prefs-random")));
+
+        MapTextDefinition mapText = MapTextDefinition.fromJson(
+                DefaultDisplayValuesApplication.sampleMapTextJson(),
+                "map-text.demo.json");
+        LocationTextDefinition locationText = LocationTextDefinition.fromJson(
+                DefaultDisplayValuesApplication.sampleLocationTextJson(),
+                "location-text-town.demo.json");
+
+        assertEquals("Town Map", mapText.map("town").orElseThrow().description());
+        assertEquals("town", locationText.mapId());
+        assertEquals("town.square", locationText.reference("square"));
     }
 
     @Test
@@ -367,6 +395,37 @@ final class DefaultDisplayValuesApplicationTest {
     }
 
     @Test
+    void locationsPanelIncludesMapAndLocationTabs() {
+        JPanel panel = DefaultDisplayValuesApplication.locationsPanel(
+                DefaultDisplayValuesApplication.sampleMapTextJson(),
+                DefaultDisplayValuesApplication.sampleLocationTextJson());
+        JTabbedPane tabs = (JTabbedPane) ((BorderLayout) panel.getLayout()).getLayoutComponent(BorderLayout.CENTER);
+
+        assertEquals(List.of("Map Text JSON", "Location Text JSON"),
+                List.of(tabs.getTitleAt(0), tabs.getTitleAt(1)));
+    }
+
+    @Test
+    void mapTextEditorCanFormatSaveAndResetJson() {
+        AtomicReference<String> savedJson = new AtomicReference<>();
+        JPanel panel = DefaultDisplayValuesApplication.mapTextJsonEditorPanel(
+                "{\"language\":\"en\",\"maps\":[{\"mapId\":\"main\"}]}",
+                savedJson::set);
+        JTextArea textArea = resourcePanelTextArea(panel);
+        JPanel actions = (JPanel) ((BorderLayout) panel.getLayout()).getLayoutComponent(BorderLayout.SOUTH);
+
+        ((JButton) actions.getComponent(1)).doClick();
+        assertTrue(textArea.getText().contains("\"description\": \"Main Map\""));
+
+        ((JButton) actions.getComponent(0)).doClick();
+        assertEquals(textArea.getText(), savedJson.get());
+
+        textArea.setText("{}");
+        ((JButton) actions.getComponent(2)).doClick();
+        assertEquals("{\"language\":\"en\",\"maps\":[{\"mapId\":\"main\"}]}", textArea.getText());
+    }
+
+    @Test
     void applicationValuesPanelPlacesLoadFilesBelowApplicationVariables() {
         JPanel panel = DefaultDisplayValuesApplication.applicationValuesPanel(
                 DefaultDisplayValuesApplication.applicationConfigFields());
@@ -389,6 +448,8 @@ final class DefaultDisplayValuesApplicationTest {
     void applicationValuesTabIntroDoesNotMentionManagementScreenOnly() {
         assertEquals("<html>Application config values from <code>/com/eb/javafx/bootstrap/config.json</code>.</html>",
                 DefaultDisplayValuesApplication.applicationValuesIntroText());
+        assertEquals("<html>Edit localized <code>map-text</code> and <code>location-text</code> JSON examples.</html>",
+                DefaultDisplayValuesApplication.locationsIntroText());
         assertEquals("<html>Lookup variable catalog definitions. Declare each variable name and the type it resolves to.</html>",
                 DefaultDisplayValuesApplication.lookupVariablesIntroText());
         assertEquals("<html>Edit default display values from <code>/com/eb/javafx/ui/display-defaults.json</code>.</html>",

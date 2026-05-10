@@ -1,10 +1,15 @@
 package com.eb.javafx.testscreen;
 
+import com.eb.javafx.gamesupport.LocationDescriptionVariant;
+import com.eb.javafx.gamesupport.LocationTextDefinition;
+import com.eb.javafx.gamesupport.LocationTextEntry;
+import com.eb.javafx.gamesupport.MapTextDefinition;
+import com.eb.javafx.gamesupport.MapTextEntry;
 import com.eb.javafx.text.TextVariableType;
-import com.eb.javafx.ui.test.TestUiScreenSize;
-import com.eb.javafx.util.Validation;
 import com.eb.javafx.ui.DisplayDefaults;
+import com.eb.javafx.ui.test.TestUiScreenSize;
 import com.eb.javafx.util.JsonData;
+import com.eb.javafx.util.Validation;
 
 import javax.swing.BorderFactory;
 import javax.swing.DefaultCellEditor;
@@ -35,6 +40,7 @@ import java.awt.Insets;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -52,12 +58,16 @@ public final class DefaultDisplayValuesApplication {
     private static final List<DisplayResource> DISPLAY_RESOURCES = List.of(
             new DisplayResource("Default CSS", "/com/eb/javafx/ui/default.css", true),
             new DisplayResource("Layouts", "/com/eb/javafx/ui/layout-contract.json", false));
+    private static final String MAP_TEXT_EXAMPLE_FILE = "map-text.demo.json";
+    private static final String LOCATION_TEXT_EXAMPLE_FILE = "location-text-town.demo.json";
     private static final List<String> LOOKUP_VARIABLE_TYPE_OPTIONS = Arrays.stream(TextVariableType.values())
             .map(type -> type.name().toLowerCase(Locale.ROOT))
             .toList();
     private static final Set<String> LOOKUP_VARIABLE_TYPE_OPTIONS_SET = Set.copyOf(LOOKUP_VARIABLE_TYPE_OPTIONS);
     private DisplayDefaults displayDefaults = DisplayDefaults.defaults();
     private List<ApplicationConfigField> editedApplicationConfigFields = applicationConfigFields();
+    private String editedMapTextJson = sampleMapTextJson();
+    private String editedLocationTextJson = sampleLocationTextJson();
     private List<LookupVariable> editedLookupVariables = lookupVariables();
     private final JLabel statusLabel = new JLabel("Editing default app values.");
 
@@ -82,6 +92,18 @@ public final class DefaultDisplayValuesApplication {
                 updatedFields -> {
                     editedApplicationConfigFields = updatedFields;
                     statusLabel.setText("Updated application values for this management screen.");
+                },
+                frame));
+        tabs.addTab("Locations", locationsPanel(
+                editedMapTextJson,
+                updatedJson -> {
+                    editedMapTextJson = updatedJson;
+                    statusLabel.setText("Updated map text JSON for this management screen.");
+                },
+                editedLocationTextJson,
+                updatedJson -> {
+                    editedLocationTextJson = updatedJson;
+                    statusLabel.setText("Updated location text JSON for this management screen.");
                 },
                 frame));
         tabs.addTab("Lookup Variables", lookupVariablesPanel(
@@ -256,6 +278,29 @@ public final class DefaultDisplayValuesApplication {
         }, null);
     }
 
+    static JPanel locationsPanel(String mapTextJson, String locationTextJson) {
+        return locationsPanel(mapTextJson, ignored -> {
+        }, locationTextJson, ignored -> {
+        }, null);
+    }
+
+    private static JPanel locationsPanel(
+            String mapTextJson,
+            Consumer<String> mapSaveAction,
+            String locationTextJson,
+            Consumer<String> locationSaveAction,
+            Component messageParent) {
+        Validation.requireNonNull(mapSaveAction, "Map text save action is required.");
+        Validation.requireNonNull(locationSaveAction, "Location text save action is required.");
+        JPanel panel = new JPanel(new BorderLayout(8, 8));
+        panel.add(new JLabel(locationsIntroText()), BorderLayout.NORTH);
+        JTabbedPane tabs = new JTabbedPane();
+        tabs.addTab(locationsTabLabels().get(0), mapTextJsonEditorPanel(mapTextJson, mapSaveAction, messageParent));
+        tabs.addTab(locationsTabLabels().get(1), locationTextJsonEditorPanel(locationTextJson, locationSaveAction, messageParent));
+        panel.add(tabs, BorderLayout.CENTER);
+        return panel;
+    }
+
     private static JPanel lookupVariablesPanel(
             List<LookupVariable> variables,
             Consumer<List<LookupVariable>> saveAction,
@@ -422,6 +467,10 @@ public final class DefaultDisplayValuesApplication {
     static String lookupVariablesIntroText() {
         return "<html>Lookup variable catalog definitions. "
                 + "Declare each variable name and the type it resolves to.</html>";
+    }
+
+    static String locationsIntroText() {
+        return "<html>Edit localized <code>map-text</code> and <code>location-text</code> JSON examples.</html>";
     }
 
     static String displayValuesIntroText() {
@@ -626,6 +675,90 @@ public final class DefaultDisplayValuesApplication {
         return List.of("Save", "Reset");
     }
 
+    static JPanel mapTextJsonEditorPanel(String json, Consumer<String> saveAction) {
+        return mapTextJsonEditorPanel(json, saveAction, null);
+    }
+
+    private static JPanel mapTextJsonEditorPanel(String json, Consumer<String> saveAction, Component messageParent) {
+        return jsonEditorPanel(
+                "<html>Edit <code>" + MAP_TEXT_EXAMPLE_FILE + "</code> using <code>language</code>, <code>maps</code>, "
+                        + "<code>mapId</code>, and optional <code>description</code>.</html>",
+                json,
+                content -> MapTextDefinition.fromJson(content, MAP_TEXT_EXAMPLE_FILE).toJson(),
+                saveAction,
+                messageParent,
+                "Map Text JSON Error");
+    }
+
+    static JPanel locationTextJsonEditorPanel(String json, Consumer<String> saveAction) {
+        return locationTextJsonEditorPanel(json, saveAction, null);
+    }
+
+    private static JPanel locationTextJsonEditorPanel(String json, Consumer<String> saveAction, Component messageParent) {
+        return jsonEditorPanel(
+                "<html>Edit <code>" + LOCATION_TEXT_EXAMPLE_FILE + "</code> using <code>language</code>, "
+                        + "<code>mapId</code>, <code>locations</code>, <code>locId</code>, description variants, "
+                        + "and optional <code>conditions</code>.</html>",
+                json,
+                content -> LocationTextDefinition.fromJson(content, LOCATION_TEXT_EXAMPLE_FILE).toJson(),
+                saveAction,
+                messageParent,
+                "Location Text JSON Error");
+    }
+
+    private static JPanel jsonEditorPanel(
+            String introText,
+            String initialJson,
+            JsonFormatter formatter,
+            Consumer<String> saveAction,
+            Component messageParent,
+            String errorTitle) {
+        Validation.requireNonBlank(introText, "JSON editor intro text is required.");
+        Validation.requireNonNull(initialJson, "JSON editor content is required.");
+        Validation.requireNonNull(formatter, "JSON formatter is required.");
+        Validation.requireNonNull(saveAction, "JSON editor save action is required.");
+        JPanel panel = new JPanel(new BorderLayout(6, 6));
+        panel.add(new JLabel(introText), BorderLayout.NORTH);
+        JTextArea textArea = textArea(initialJson, true);
+        panel.add(new JScrollPane(textArea), BorderLayout.CENTER);
+        JPanel actions = new JPanel(new GridLayout(1, 3, 6, 0));
+        JButton save = new JButton(jsonEditorActionLabels().get(0));
+        JButton format = new JButton(jsonEditorActionLabels().get(1));
+        JButton reset = new JButton(jsonEditorActionLabels().get(2));
+        save.addActionListener(event -> {
+            try {
+                String formatted = formatter.format(textArea.getText());
+                textArea.setText(formatted);
+                textArea.setCaretPosition(0);
+                saveAction.accept(formatted);
+            } catch (RuntimeException exception) {
+                JOptionPane.showMessageDialog(messageParent, exception.getMessage(), errorTitle, JOptionPane.ERROR_MESSAGE);
+            }
+        });
+        format.addActionListener(event -> {
+            try {
+                String formatted = formatter.format(textArea.getText());
+                textArea.setText(formatted);
+                textArea.setCaretPosition(0);
+            } catch (RuntimeException exception) {
+                JOptionPane.showMessageDialog(messageParent, exception.getMessage(), errorTitle, JOptionPane.ERROR_MESSAGE);
+            }
+        });
+        reset.addActionListener(event -> {
+            textArea.setText(initialJson);
+            textArea.setCaretPosition(0);
+        });
+        actions.add(save);
+        actions.add(format);
+        actions.add(reset);
+        panel.add(actions, BorderLayout.SOUTH);
+        return panel;
+    }
+
+    static List<String> jsonEditorActionLabels() {
+        return List.of("Save", "Format", "Reset");
+    }
+
     private static JTextArea textArea(String content, boolean editable) {
         JTextArea textArea = new JTextArea(content);
         textArea.setEditable(editable);
@@ -640,12 +773,17 @@ public final class DefaultDisplayValuesApplication {
     static List<String> tabLabels() {
         List<String> labels = new ArrayList<>();
         labels.add("Application Values");
+        labels.add("Locations");
         labels.add("Lookup Variables");
         labels.add("Display Values");
         displayResources().stream()
                 .map(DisplayResource::label)
                 .forEach(labels::add);
         return List.copyOf(labels);
+    }
+
+    static List<String> locationsTabLabels() {
+        return List.of("Map Text JSON", "Location Text JSON");
     }
 
     static List<ApplicationConfigField> applicationConfigFields() {
@@ -663,6 +801,58 @@ public final class DefaultDisplayValuesApplication {
             }
         });
         return List.copyOf(fields.values());
+    }
+
+    static Path locationExamplesDirectory() {
+        Path cwd = Path.of("").toAbsolutePath().normalize();
+        List<Path> candidates = List.of(
+                cwd,
+                cwd.resolve("examples/user-manual/09-game-support-state-save-prefs-random"),
+                cwd.getParent() == null
+                        ? cwd.resolve("examples/user-manual/09-game-support-state-save-prefs-random")
+                        : cwd.getParent().resolve("examples/user-manual/09-game-support-state-save-prefs-random"));
+        return candidates.stream()
+                .filter(DefaultDisplayValuesApplication::isLocationExamplesDirectory)
+                .findFirst()
+                .orElse(cwd.resolve("examples/user-manual/09-game-support-state-save-prefs-random"));
+    }
+
+    static String sampleMapTextJson() {
+        return exampleJsonContents(locationExamplesDirectory().resolve(MAP_TEXT_EXAMPLE_FILE), sampleMapTextDefinition().toJson());
+    }
+
+    static String sampleLocationTextJson() {
+        return exampleJsonContents(locationExamplesDirectory().resolve(LOCATION_TEXT_EXAMPLE_FILE), sampleLocationTextDefinition().toJson());
+    }
+
+    private static boolean isLocationExamplesDirectory(Path path) {
+        return Files.isDirectory(path)
+                && Files.isRegularFile(path.resolve(MAP_TEXT_EXAMPLE_FILE))
+                && Files.isRegularFile(path.resolve(LOCATION_TEXT_EXAMPLE_FILE));
+    }
+
+    private static String exampleJsonContents(Path path, String fallback) {
+        try {
+            return Files.isRegularFile(path) ? Files.readString(path, StandardCharsets.UTF_8) : fallback;
+        } catch (IOException exception) {
+            return fallback;
+        }
+    }
+
+    private static MapTextDefinition sampleMapTextDefinition() {
+        return MapTextDefinition.of("en", List.of(
+                new MapTextEntry("town", "Town Map"),
+                new MapTextEntry("main", MapTextEntry.DEFAULT_DESCRIPTION)));
+    }
+
+    private static LocationTextDefinition sampleLocationTextDefinition() {
+        return LocationTextDefinition.of("en", "town", List.of(
+                new LocationTextEntry("square", List.of(
+                        new LocationDescriptionVariant("The market square is busy.", List.of("time of day=day")),
+                        new LocationDescriptionVariant("The market square is quiet after dark.", List.of("time of day=night")),
+                        new LocationDescriptionVariant("The market square is open.", List.of()))),
+                new LocationTextEntry("gate", List.of(
+                        new LocationDescriptionVariant("A guarded gate marks the edge of town.", List.of())))));
     }
 
     private static ApplicationConfigField applicationConfigField(String key, String value) {
@@ -782,6 +972,11 @@ public final class DefaultDisplayValuesApplication {
         COLOR,
         FILE,
         DIRECTORY
+    }
+
+    @FunctionalInterface
+    private interface JsonFormatter {
+        String format(String json);
     }
 
     private record LookupVariableTableEditor(JPanel panel, JTable table, DefaultTableModel model) {
