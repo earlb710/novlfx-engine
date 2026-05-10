@@ -452,7 +452,8 @@ final class DefaultDisplayValuesApplicationTest {
     void applicationValuesTabIntroDoesNotMentionManagementScreenOnly() {
         assertEquals("<html>Application config values from <code>/com/eb/javafx/bootstrap/config.json</code>.</html>",
                 DefaultDisplayValuesApplication.applicationValuesIntroText());
-        assertEquals("<html>Edit localized <code>map-text</code> and <code>location-text</code> JSON examples.</html>",
+        assertEquals("<html>Edit localized <code>location/map-text.demo.json</code> and "
+                        + "<code>location/location-text-town.demo.json</code> examples.</html>",
                 DefaultDisplayValuesApplication.locationsIntroText());
         assertEquals("<html>Lookup variable catalog definitions. Declare each variable name and the type it resolves to.</html>",
                 DefaultDisplayValuesApplication.lookupVariablesIntroText());

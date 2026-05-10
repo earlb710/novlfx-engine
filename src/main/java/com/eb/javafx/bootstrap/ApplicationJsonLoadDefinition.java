@@ -12,7 +12,7 @@ import java.util.Map;
 
 /** JSON document describing which JSON resource directories are loaded during app startup. */
 public final class ApplicationJsonLoadDefinition {
-    public static final String DEFAULT_DIRECTORY = "app-load";
+    public static final String DEFAULT_DIRECTORY = "config";
     public static final String DEFAULT_FILE_NAME = "app-load.json";
 
     private final List<ApplicationJsonLoad> loads;

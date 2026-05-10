@@ -52,7 +52,7 @@ Launch the management app with:
 ./gradlew --no-daemon runManagementApp
 ```
 
-The management app is a button-only launcher for manual authoring and diagnostic screens, including default display values, the screen designer, the reloadable JSON screen, and the conversation editor. The **Default App Values** screen now also includes a **Locations** tab for reviewing and formatting bundled `map-text` and `location-text` JSON examples while comparing them with other startup defaults.
+The management app is a button-only launcher for manual authoring and diagnostic screens, including default display values, the screen designer, the reloadable JSON screen, and the conversation editor. The **Default App Values** screen now also includes a **Locations** tab for reviewing and formatting bundled location JSON examples while comparing them with other startup defaults.
 
 Launch the manual conversation editor with:
 
@@ -211,17 +211,16 @@ The recommended app-authored JSON layout groups resources by type beneath that r
 
 ```text
 resources/json/
-  app-load/app-load.json
   code-tables/
+  config/
   conversations/
   display/
-  location-text/
-  map-text/
+  location/
   scenes/
   screens/
 ```
 
-`app-load/app-load.json` declares which startup-safe JSON directories should be loaded automatically by `BootstrapOptions.fromConfig(...)`. Supported load types are `display`, `scene`, and `conversation`; omit `fileName` to load every `.json` file in the directory in filename order, or set `fileName` to load one file:
+`config/app-load.json` declares which startup-safe JSON directories should be loaded automatically by `BootstrapOptions.fromConfig(...)`. Supported load types are `display`, `scene`, and `conversation`; omit `fileName` to load every `.json` file in the directory in filename order, or set `fileName` to load one file:
 
 ```json
 {
@@ -242,12 +241,12 @@ BootContext context = new BootstrapService(options).boot(primaryStage);
 ```
 
 Use `context.resourceConfig().resolveCategoryCodeTables(context.applicationRoot())` when app-owned content modules need to load generic category JSON during startup.
-Use `app-load/app-load.json` plus `BootstrapOptions.fromConfig(...)` when app-owned display, scene, or conversation JSON should be loaded automatically during bootstrap. Use `resolveResource(...)` and explicit modules such as `JsonDisplayContentModule` when the application wants named one-off files or custom loading behavior instead of directory-driven startup loading.
+Use `config/app-load.json` plus `BootstrapOptions.fromConfig(...)` when app-owned display, scene, or conversation JSON should be loaded automatically during bootstrap. Use `resolveResource(...)` and explicit modules such as `JsonDisplayContentModule` when the application wants named one-off files or custom loading behavior instead of directory-driven startup loading.
 Use the route-specific background getters when the application wants shared startup defaults for app-owned shell, preferences, or save/load screen backgrounds.
 
 The management UI includes a **Default App Values** screen for inspecting these startup defaults and related display resources. The **Application Values** tab presents editable application config fields with friendly labels, local **Save** and **Reset** actions, browse buttons for file/path-backed fields, and color pickers for color values.
 
-Next to that, the **Locations** tab embeds two JSON editors for the bundled `map-text.demo.json` and `location-text-town.demo.json` examples. Each editor supports local **Save**, **Format**, and **Reset** actions; **Save** and **Format** validate the JSON through `MapTextDefinition` or `LocationTextDefinition` and rewrite the editor with the engine formatter, while **Reset** restores the staged sample content for the current management-session tab. Use this tab to experiment with localized map labels, per-map location descriptions, and conditional location variants before moving the JSON into an application-owned content tree.
+Next to that, the **Locations** tab embeds two JSON editors for the bundled `location/map-text.demo.json` and `location/location-text-town.demo.json` examples. Each editor supports local **Save**, **Format**, and **Reset** actions; **Save** and **Format** validate the JSON through `MapTextDefinition` or `LocationTextDefinition` and rewrite the editor with the engine formatter, while **Reset** restores the staged sample content for the current management-session tab. Use this tab to experiment with localized map labels, per-map location descriptions, and conditional location variants before moving the JSON into an application-owned content tree.
 
 Immediately after that, the **Lookup Variables** tab opens an editable text variable catalog for this management screen session. The catalog uses two fields per row: `name` and `value type`. The value type is limited to `string`, `number`, or `boolean`; use **Add Variable** to append a blank row and **Remove Variable** to delete selected rows, or the last row when nothing is selected. Use the tab-level **Save** and **Reset** buttons to apply or restore the staged catalog rows locally while reviewing startup defaults.
 
@@ -296,7 +295,7 @@ Example/demo code: [`examples/user-manual/04-startup-and-service-wiring/Bootstra
 Additional example/demo code:
 - [`examples/user-manual/04-startup-and-service-wiring/ApplicationResourceConfigDemo.java`](../examples/user-manual/04-startup-and-service-wiring/ApplicationResourceConfigDemo.java)
 - [`examples/resources/json/config/config.demo.json`](../examples/resources/json/config/config.demo.json)
-- [`examples/resources/json/app-load/app-load.json`](../examples/resources/json/app-load/app-load.json)
+- [`examples/resources/json/config/app-load.json`](../examples/resources/json/config/app-load.json)
 
 ## 5. Content, routing, and scenes
 
@@ -828,8 +827,8 @@ Additional example/demo code:
 - [`examples/user-manual/09-game-support-state-save-prefs-random/GenericSupportModulesDemo.java`](../examples/user-manual/09-game-support-state-save-prefs-random/GenericSupportModulesDemo.java)
 - [`examples/user-manual/09-game-support-state-save-prefs-random/GenericStateSystemsDemo.java`](../examples/user-manual/09-game-support-state-save-prefs-random/GenericStateSystemsDemo.java)
 - [`examples/resources/json/code-tables/category-code-tables.demo.json`](../examples/resources/json/code-tables/category-code-tables.demo.json)
-- [`examples/resources/json/map-text/map-text.demo.json`](../examples/resources/json/map-text/map-text.demo.json)
-- [`examples/resources/json/location-text/location-text-town.demo.json`](../examples/resources/json/location-text/location-text-town.demo.json)
+- [`examples/resources/json/location/map-text.demo.json`](../examples/resources/json/location/map-text.demo.json)
+- [`examples/resources/json/location/location-text-town.demo.json`](../examples/resources/json/location/location-text-town.demo.json)
 
 ## 10. Text and utility helpers
 
