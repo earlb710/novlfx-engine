@@ -29,7 +29,6 @@ import java.util.Set;
  * Reusable preferences route that summarizes startup preferences and exposes theme selection.
  */
 public final class PreferencesSummaryScreen {
-    private static final String CLOSE_LABEL = "Close";
     private static final String PREFERENCES_ID = "preferences";
     private static final Set<String> ENABLED_FOOTER_IDS = Set.of(PREFERENCES_ID);
     private static final double VOLUME_PERCENT_SCALE = 100.0;
@@ -46,19 +45,19 @@ public final class PreferencesSummaryScreen {
         Runnable closeAction = () -> context.navigateTo(SceneRouter.MAIN_MENU_ROUTE);
         VBox content = new VBox(10);
         content.getChildren().add(settingsBlock(
-                "Audio",
-                volumeRow(context, "Master volume", context.preferencesService().masterVolume(),
+                screenText("block.audio.title"),
+                volumeRow(context, screenText("item.master-volume.label"), context.preferencesService().masterVolume(),
                         PreferencesSummaryScreen::saveMasterVolume),
-                volumeRow(context, "Music volume", context.preferencesService().musicVolume(),
+                volumeRow(context, screenText("item.music-volume.label"), context.preferencesService().musicVolume(),
                         PreferencesSummaryScreen::saveMusicVolume),
-                volumeRow(context, "Sound volume", context.preferencesService().soundVolume(),
+                volumeRow(context, screenText("item.sound-volume.label"), context.preferencesService().soundVolume(),
                         PreferencesSummaryScreen::saveSoundVolume)));
         content.getChildren().add(settingsBlock(
-                "Visual",
+                screenText("block.visual.title"),
                 themeSelectionRow(context),
                 footerDisplayRow(context)));
 
-        Button closeButton = ScreenNavigation.button(context, CLOSE_LABEL, SceneRouter.MAIN_MENU_ROUTE);
+        Button closeButton = ScreenNavigation.button(context, screenText("item.close.label"), SceneRouter.MAIN_MENU_ROUTE);
         content.getChildren().add(closeButton);
         BorderPane root = ScreenShell.titled(viewModel.title(), content, footerOptions());
         HBox footer = (HBox) root.getBottom();
@@ -78,7 +77,7 @@ public final class PreferencesSummaryScreen {
 
     public static PreferencesSummaryViewModel viewModel(RouteContext context) {
         return viewModel(
-                context.contentRegistry().definition("ui.preferences.title"),
+                ScreenTextResources.title(ScreenTextResources.PREFERENCES),
                 context.preferencesService());
     }
 
@@ -86,13 +85,13 @@ public final class PreferencesSummaryScreen {
         return new PreferencesSummaryViewModel(
                 title,
                 List.of(
-                        new PreferencesSummaryRowViewModel("Master volume", percentLabel(preferencesService.masterVolume())),
-                        new PreferencesSummaryRowViewModel("Music volume", percentLabel(preferencesService.musicVolume())),
-                        new PreferencesSummaryRowViewModel("Sound volume", percentLabel(preferencesService.soundVolume())),
-                        new PreferencesSummaryRowViewModel("Theme color",
+                        new PreferencesSummaryRowViewModel(screenText("item.master-volume.label"), percentLabel(preferencesService.masterVolume())),
+                        new PreferencesSummaryRowViewModel(screenText("item.music-volume.label"), percentLabel(preferencesService.musicVolume())),
+                        new PreferencesSummaryRowViewModel(screenText("item.sound-volume.label"), percentLabel(preferencesService.soundVolume())),
+                        new PreferencesSummaryRowViewModel(screenText("item.theme-color.label"),
                                 themeOptionLabel(preferencesService.themeFamily(), preferencesService.themeVariant())),
-                        new PreferencesSummaryRowViewModel("Footer display", preferencesService.footerShortcutDisplay().label())),
-                List.of(new ScreenActionViewModel(CLOSE_LABEL, SceneRouter.MAIN_MENU_ROUTE, true)));
+                        new PreferencesSummaryRowViewModel(screenText("item.footer-display.label"), preferencesService.footerShortcutDisplay().label())),
+                List.of(new ScreenActionViewModel(screenText("item.close.label"), SceneRouter.MAIN_MENU_ROUTE, true)));
     }
 
     static List<String> themeOptionLabels() {
@@ -112,7 +111,7 @@ public final class PreferencesSummaryScreen {
                 .map(option -> {
                     ScreenShell.FooterOption updated = option.withEnabled(ENABLED_FOOTER_IDS.contains(option.id()));
                     if (PREFERENCES_ID.equals(updated.id())) {
-                        return updated.withTooltip("Close preferences.");
+                        return updated.withTooltip(screenText("footer.preferences.close.tooltip"));
                     }
                     return updated;
                 })
@@ -172,7 +171,7 @@ public final class PreferencesSummaryScreen {
     }
 
     private static HBox themeSelectionRow(RouteContext context) {
-        Label label = new Label("Theme");
+        Label label = new Label(screenText("item.theme.label"));
         label.getStyleClass().add(ScreenShell.SCREEN_TEXT_STYLE_CLASS);
         ComboBox<ThemeChoice> comboBox = new ComboBox<>();
         comboBox.getItems().addAll(themeChoices());
@@ -203,7 +202,7 @@ public final class PreferencesSummaryScreen {
     }
 
     private static HBox footerDisplayRow(RouteContext context) {
-        Label label = new Label("Footer shortcuts");
+        Label label = new Label(screenText("item.footer-shortcuts.label"));
         label.getStyleClass().add(ScreenShell.SCREEN_TEXT_STYLE_CLASS);
         ComboBox<FooterShortcutDisplay> comboBox = new ComboBox<>();
         comboBox.getItems().addAll(FooterShortcutDisplay.values());
@@ -313,6 +312,10 @@ public final class PreferencesSummaryScreen {
         if (audioService != null && audioService.isInitialized()) {
             audioService.setChannelVolume(AudioService.SOUND_CHANNEL, context.preferencesService().soundVolume());
         }
+    }
+
+    private static String screenText(String key) {
+        return ScreenTextResources.text(ScreenTextResources.PREFERENCES, key);
     }
 
     @FunctionalInterface

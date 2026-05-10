@@ -1,0 +1,8 @@
+{
+  "language": "en",
+  "texts": {
+    "screen.title": "Notification Overlay",
+    "line.body": "Notifications and modal overlays share this JavaFX layer strategy.",
+    "item.back.label": "Back to main menu"
+  }
+}

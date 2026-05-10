@@ -1,0 +1,8 @@
+{
+  "language": "en",
+  "texts": {
+    "screen.title": "Main Menu",
+    "line.status": "Reusable JavaFX engine shell is ready.",
+    "line.startup-complete": "Startup phase complete. Reusable engine services, routes, and support foundations are ready."
+  }
+}

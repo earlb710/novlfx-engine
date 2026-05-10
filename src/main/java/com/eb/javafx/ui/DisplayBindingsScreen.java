@@ -15,6 +15,8 @@ import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 
+import java.util.Map;
+
 /**
  * Reusable diagnostic route for display registry bindings and previews.
  *
@@ -29,10 +31,10 @@ public final class DisplayBindingsScreen {
         ImageDisplayRegistry imageDisplayRegistry = context.imageDisplayRegistry();
         VBox content = new VBox(12);
         content.getChildren().addAll(
-                new Label("Parsed image aliases: " + imageDisplayRegistry.images().size()),
-                new Label("Parsed transforms: " + imageDisplayRegistry.transforms().size()),
-                new Label("Layered character models: " + imageDisplayRegistry.layeredCharacters().size()),
-                new Label("Animation profiles: " + imageDisplayRegistry.animations().size()));
+                new Label(format("line.parsed-image-aliases", "count", imageDisplayRegistry.images().size())),
+                new Label(format("line.parsed-transforms", "count", imageDisplayRegistry.transforms().size())),
+                new Label(format("line.layered-character-models", "count", imageDisplayRegistry.layeredCharacters().size())),
+                new Label(format("line.animation-profiles", "count", imageDisplayRegistry.animations().size())));
 
         FlowPane previews = new FlowPane(12, 12);
         previews.setPrefWrapLength(680);
@@ -59,20 +61,28 @@ public final class DisplayBindingsScreen {
         }
 
         VBox layeredCharacterSummary = new VBox(8);
-        layeredCharacterSummary.getChildren().add(new Label("Layered display composition"));
+        layeredCharacterSummary.getChildren().add(new Label(screenText("block.layered-display-composition.title")));
         for (LayeredCharacterDefinition definition : imageDisplayRegistry.layeredCharacters().values()) {
-            layeredCharacterSummary.getChildren().add(new Label(
-                    definition.id() + " -> " + definition.drawOrder()
-                            + ", metadata=" + definition.metadata()));
+            layeredCharacterSummary.getChildren().add(new Label(ScreenTextResources.format(
+                    ScreenTextResources.DISPLAY_BINDINGS,
+                    "line.layered-character-summary",
+                    Map.of(
+                            "id", definition.id(),
+                            "drawOrder", definition.drawOrder().toString(),
+                            "metadata", definition.metadata().toString()))));
         }
 
         VBox animationSummary = new VBox(8);
-        animationSummary.getChildren().add(new Label("Animation profiles"));
+        animationSummary.getChildren().add(new Label(screenText("block.animation-profiles.title")));
         imageDisplayRegistry.animations().values().forEach(animation ->
-                animationSummary.getChildren().add(new Label(
-                        animation.id() + " -> steps=" + animation.steps().size()
-                                + ", repeat=" + animation.repeatCount()
-                                + ", autoReverse=" + animation.autoReverse())));
+                animationSummary.getChildren().add(new Label(ScreenTextResources.format(
+                        ScreenTextResources.DISPLAY_BINDINGS,
+                        "line.animation-summary",
+                        Map.of(
+                                "id", animation.id(),
+                                "steps", Integer.toString(animation.steps().size()),
+                                "repeat", Integer.toString(animation.repeatCount()),
+                                "autoReverse", Boolean.toString(animation.autoReverse()))))));
 
         HBox sections = new HBox(16, layeredCharacterSummary, animationSummary);
         sections.setAlignment(Pos.TOP_LEFT);
@@ -80,10 +90,21 @@ public final class DisplayBindingsScreen {
         content.getChildren().addAll(
                 previews,
                 sections,
-                ScreenNavigation.button(context, "Back to main menu", SceneRouter.MAIN_MENU_ROUTE));
+                ScreenNavigation.button(context, screenText("item.back.label"), SceneRouter.MAIN_MENU_ROUTE));
         ScrollPane scrollPane = new ScrollPane(content);
         scrollPane.setFitToWidth(true);
         return context.themedScene(ScreenShell.titled(
-                context.contentRegistry().definition("ui.displayBindings.title"), scrollPane));
+                ScreenTextResources.title(ScreenTextResources.DISPLAY_BINDINGS), scrollPane));
+    }
+
+    private static String format(String key, String bindingName, int value) {
+        return ScreenTextResources.format(
+                ScreenTextResources.DISPLAY_BINDINGS,
+                key,
+                Map.of(bindingName, Integer.toString(value)));
+    }
+
+    private static String screenText(String key) {
+        return ScreenTextResources.text(ScreenTextResources.DISPLAY_BINDINGS, key);
     }
 }

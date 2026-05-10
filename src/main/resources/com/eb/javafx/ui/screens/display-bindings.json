@@ -1,0 +1,19 @@
+{
+  "id": "display.bindings",
+  "title": "screen.title",
+  "layoutType": "FORM",
+  "metadata": {
+    "description": "Runtime display-bindings screen text contract"
+  },
+  "blocks": [
+    {
+      "id": "content",
+      "title": null,
+      "layoutType": "FORM",
+      "parentBlockId": null,
+      "styleClass": null,
+      "metadata": {}
+    }
+  ],
+  "items": []
+}

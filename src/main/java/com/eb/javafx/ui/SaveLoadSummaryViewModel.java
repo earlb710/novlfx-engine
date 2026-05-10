@@ -4,6 +4,7 @@ import com.eb.javafx.util.Validation;
 
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Structured save/load summary route model.
@@ -26,8 +27,10 @@ public record SaveLoadSummaryViewModel(
         return new ScreenViewModel(
                 title,
                 List.of(
-                        "Save schema version: " + schemaVersion,
-                        "Save directory: " + saveDirectory,
+                        ScreenTextResources.format(ScreenTextResources.SAVE_LOAD, "line.schema-version",
+                                Map.of("schemaVersion", Integer.toString(schemaVersion))),
+                        ScreenTextResources.format(ScreenTextResources.SAVE_LOAD, "line.save-directory",
+                                Map.of("saveDirectory", saveDirectory.toString())),
                         note),
                 actions);
     }

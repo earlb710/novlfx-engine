@@ -1,5 +1,7 @@
 package com.eb.javafx.prefs;
 
+import com.eb.javafx.gamesupport.SystemCodeTables;
+
 import java.util.prefs.Preferences;
 
 /**
@@ -350,16 +352,14 @@ public final class PreferencesService {
 
     /** User preference for whether footer shortcut text is visible, hidden, or represented by tooltips only. */
     public enum FooterShortcutDisplay {
-        DISPLAY("display", "Display"),
-        HIDE("hide", "Do not display"),
-        TOOLTIP_ONLY("tooltip-only", "Tooltips only");
+        DISPLAY("display"),
+        HIDE("hide"),
+        TOOLTIP_ONLY("tooltip-only");
 
         private final String preferenceValue;
-        private final String label;
 
-        FooterShortcutDisplay(String preferenceValue, String label) {
+        FooterShortcutDisplay(String preferenceValue) {
             this.preferenceValue = preferenceValue;
-            this.label = label;
         }
 
         public String preferenceValue() {
@@ -367,23 +367,21 @@ public final class PreferencesService {
         }
 
         public String label() {
-            return label;
+            return SystemCodeTables.defaultCodeTitle(SystemCodeTables.FOOTER_SHORTCUT_DISPLAY_TABLE_ID, preferenceValue);
         }
     }
 
     /** Supported UI theme color families persisted as user preference values. */
     public enum ThemeFamily {
-        OCEAN("ocean", "Ocean"),
-        FOREST("forest", "Forest"),
-        SUNSET("sunset", "Sunset"),
-        VIOLET("violet", "Violet");
+        OCEAN("ocean"),
+        FOREST("forest"),
+        SUNSET("sunset"),
+        VIOLET("violet");
 
         private final String preferenceValue;
-        private final String label;
 
-        ThemeFamily(String preferenceValue, String label) {
+        ThemeFamily(String preferenceValue) {
             this.preferenceValue = preferenceValue;
-            this.label = label;
         }
 
         public String preferenceValue() {
@@ -391,21 +389,19 @@ public final class PreferencesService {
         }
 
         public String label() {
-            return label;
+            return SystemCodeTables.defaultCodeTitle(SystemCodeTables.THEME_FAMILY_TABLE_ID, preferenceValue);
         }
     }
 
     /** Supported UI theme brightness variants persisted as user preference values. */
     public enum ThemeVariant {
-        DARK("dark", "Dark"),
-        LIGHT_PASTEL("light-pastel", "Light pastel");
+        DARK("dark"),
+        LIGHT_PASTEL("light-pastel");
 
         private final String preferenceValue;
-        private final String label;
 
-        ThemeVariant(String preferenceValue, String label) {
+        ThemeVariant(String preferenceValue) {
             this.preferenceValue = preferenceValue;
-            this.label = label;
         }
 
         public String preferenceValue() {
@@ -413,7 +409,7 @@ public final class PreferencesService {
         }
 
         public String label() {
-            return label;
+            return SystemCodeTables.defaultCodeTitle(SystemCodeTables.THEME_VARIANT_TABLE_ID, preferenceValue);
         }
     }
 }

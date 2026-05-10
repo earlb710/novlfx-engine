@@ -9,13 +9,20 @@
           "id": "context",
           "title": "Context",
           "sortOrder": 10,
-          "tags": ["conversation", "condition"]
+          "tags": [
+            "conversation",
+            "condition"
+          ]
         },
         {
           "id": "time of day",
           "title": "Time of Day",
           "sortOrder": 20,
-          "tags": ["conversation", "condition", "time"]
+          "tags": [
+            "conversation",
+            "condition",
+            "time"
+          ]
         }
       ]
     },
@@ -27,25 +34,33 @@
           "id": "morning",
           "title": "Morning",
           "sortOrder": 10,
-          "tags": ["time"]
+          "tags": [
+            "time"
+          ]
         },
         {
           "id": "afternoon",
           "title": "Afternoon",
           "sortOrder": 20,
-          "tags": ["time"]
+          "tags": [
+            "time"
+          ]
         },
         {
           "id": "evening",
           "title": "Evening",
           "sortOrder": 30,
-          "tags": ["time"]
+          "tags": [
+            "time"
+          ]
         },
         {
           "id": "night",
           "title": "Night",
           "sortOrder": 40,
-          "tags": ["time"]
+          "tags": [
+            "time"
+          ]
         }
       ]
     },
@@ -57,25 +72,33 @@
           "id": "shout",
           "title": "Shout",
           "sortOrder": 10,
-          "tags": ["conversation"]
+          "tags": [
+            "conversation"
+          ]
         },
         {
           "id": "say",
           "title": "Say",
           "sortOrder": 20,
-          "tags": ["conversation"]
+          "tags": [
+            "conversation"
+          ]
         },
         {
           "id": "whisper",
           "title": "Whisper",
           "sortOrder": 30,
-          "tags": ["conversation"]
+          "tags": [
+            "conversation"
+          ]
         },
         {
           "id": "choice",
           "title": "Choice",
           "sortOrder": 40,
-          "tags": ["conversation"]
+          "tags": [
+            "conversation"
+          ]
         }
       ]
     },
@@ -87,31 +110,41 @@
           "id": "dialogue",
           "title": "Dialogue",
           "sortOrder": 10,
-          "tags": ["scene"]
+          "tags": [
+            "scene"
+          ]
         },
         {
           "id": "narration",
           "title": "Narration",
           "sortOrder": 20,
-          "tags": ["scene"]
+          "tags": [
+            "scene"
+          ]
         },
         {
           "id": "choice",
           "title": "Choice",
           "sortOrder": 30,
-          "tags": ["scene"]
+          "tags": [
+            "scene"
+          ]
         },
         {
           "id": "action",
           "title": "Action",
           "sortOrder": 40,
-          "tags": ["scene"]
+          "tags": [
+            "scene"
+          ]
         },
         {
           "id": "transition",
           "title": "Transition",
           "sortOrder": 50,
-          "tags": ["scene"]
+          "tags": [
+            "scene"
+          ]
         }
       ]
     },
@@ -123,37 +156,55 @@
           "id": "next",
           "title": "Next",
           "sortOrder": 10,
-          "tags": ["scene", "transition"]
+          "tags": [
+            "scene",
+            "transition"
+          ]
         },
         {
           "id": "jump",
           "title": "Jump",
           "sortOrder": 20,
-          "tags": ["scene", "transition"]
+          "tags": [
+            "scene",
+            "transition"
+          ]
         },
         {
           "id": "call",
           "title": "Call",
           "sortOrder": 30,
-          "tags": ["scene", "transition"]
+          "tags": [
+            "scene",
+            "transition"
+          ]
         },
         {
           "id": "return",
           "title": "Return",
           "sortOrder": 40,
-          "tags": ["scene", "transition"]
+          "tags": [
+            "scene",
+            "transition"
+          ]
         },
         {
           "id": "complete",
           "title": "Complete",
           "sortOrder": 50,
-          "tags": ["scene", "transition"]
+          "tags": [
+            "scene",
+            "transition"
+          ]
         },
         {
           "id": "fail",
           "title": "Fail",
           "sortOrder": 60,
-          "tags": ["scene", "transition"]
+          "tags": [
+            "scene",
+            "transition"
+          ]
         }
       ]
     },
@@ -165,43 +216,57 @@
           "id": "menu",
           "title": "Menu",
           "sortOrder": 10,
-          "tags": ["route"]
+          "tags": [
+            "route"
+          ]
         },
         {
           "id": "settings",
           "title": "Settings",
           "sortOrder": 20,
-          "tags": ["route"]
+          "tags": [
+            "route"
+          ]
         },
         {
           "id": "save_load",
           "title": "Save/Load",
           "sortOrder": 30,
-          "tags": ["route"]
+          "tags": [
+            "route"
+          ]
         },
         {
           "id": "dialogue",
           "title": "Dialogue",
           "sortOrder": 40,
-          "tags": ["route"]
+          "tags": [
+            "route"
+          ]
         },
         {
           "id": "hud",
           "title": "HUD",
           "sortOrder": 50,
-          "tags": ["route"]
+          "tags": [
+            "route"
+          ]
         },
         {
           "id": "overlay",
           "title": "Overlay",
           "sortOrder": 60,
-          "tags": ["route"]
+          "tags": [
+            "route"
+          ]
         },
         {
           "id": "tooltip",
           "title": "Tooltip",
           "sortOrder": 70,
-          "tags": ["route"]
+          "tags": [
+            "route"
+          ]
         }
       ]
     },
@@ -213,25 +278,455 @@
           "id": "boolean",
           "title": "Boolean",
           "sortOrder": 10,
-          "tags": ["settings"]
+          "tags": [
+            "settings"
+          ]
         },
         {
           "id": "integer",
           "title": "Integer",
           "sortOrder": 20,
-          "tags": ["settings"]
+          "tags": [
+            "settings"
+          ]
         },
         {
           "id": "decimal",
           "title": "Decimal",
           "sortOrder": 30,
-          "tags": ["settings"]
+          "tags": [
+            "settings"
+          ]
         },
         {
           "id": "text",
           "title": "Text",
           "sortOrder": 40,
-          "tags": ["settings"]
+          "tags": [
+            "settings"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sys_message",
+      "title": "System Messages",
+      "codes": [
+        {
+          "id": "action.back.main-menu",
+          "title": "Back to main menu",
+          "sortOrder": 10,
+          "tags": [
+            "ui",
+            "action"
+          ]
+        },
+        {
+          "id": "footer.back.label",
+          "title": "Back",
+          "sortOrder": 20,
+          "tags": [
+            "ui",
+            "footer"
+          ]
+        },
+        {
+          "id": "footer.back.tooltip",
+          "title": "Return to the previous screen.",
+          "sortOrder": 30,
+          "tags": [
+            "ui",
+            "footer"
+          ]
+        },
+        {
+          "id": "footer.history.label",
+          "title": "History",
+          "sortOrder": 40,
+          "tags": [
+            "ui",
+            "footer"
+          ]
+        },
+        {
+          "id": "footer.history.tooltip",
+          "title": "Open conversation history.",
+          "sortOrder": 50,
+          "tags": [
+            "ui",
+            "footer"
+          ]
+        },
+        {
+          "id": "footer.skip-mode.label",
+          "title": "Skip mode",
+          "sortOrder": 60,
+          "tags": [
+            "ui",
+            "footer"
+          ]
+        },
+        {
+          "id": "footer.skip-mode.tooltip",
+          "title": "Toggle skip mode.",
+          "sortOrder": 70,
+          "tags": [
+            "ui",
+            "footer"
+          ]
+        },
+        {
+          "id": "footer.load.label",
+          "title": "Load",
+          "sortOrder": 80,
+          "tags": [
+            "ui",
+            "footer"
+          ]
+        },
+        {
+          "id": "footer.load.tooltip",
+          "title": "Open the load screen.",
+          "sortOrder": 90,
+          "tags": [
+            "ui",
+            "footer"
+          ]
+        },
+        {
+          "id": "footer.save.label",
+          "title": "Save",
+          "sortOrder": 100,
+          "tags": [
+            "ui",
+            "footer"
+          ]
+        },
+        {
+          "id": "footer.save.tooltip",
+          "title": "Open the save screen.",
+          "sortOrder": 110,
+          "tags": [
+            "ui",
+            "footer"
+          ]
+        },
+        {
+          "id": "footer.quick-save.label",
+          "title": "Quick save",
+          "sortOrder": 120,
+          "tags": [
+            "ui",
+            "footer"
+          ]
+        },
+        {
+          "id": "footer.quick-save.tooltip",
+          "title": "Save to the quick-save slot.",
+          "sortOrder": 130,
+          "tags": [
+            "ui",
+            "footer"
+          ]
+        },
+        {
+          "id": "footer.preferences.label",
+          "title": "Preferences",
+          "sortOrder": 140,
+          "tags": [
+            "ui",
+            "footer"
+          ]
+        },
+        {
+          "id": "footer.preferences.tooltip",
+          "title": "Open preferences.",
+          "sortOrder": 150,
+          "tags": [
+            "ui",
+            "footer"
+          ]
+        },
+        {
+          "id": "footer.forward.label",
+          "title": "Forward",
+          "sortOrder": 160,
+          "tags": [
+            "ui",
+            "footer"
+          ]
+        },
+        {
+          "id": "footer.forward.tooltip",
+          "title": "Advance the scene.",
+          "sortOrder": 170,
+          "tags": [
+            "ui",
+            "footer"
+          ]
+        },
+        {
+          "id": "footer.keyboard-shortcut",
+          "title": "Keyboard shortcut: $shortcut.",
+          "sortOrder": 180,
+          "tags": [
+            "ui",
+            "footer"
+          ]
+        },
+        {
+          "id": "footer.accessible-text",
+          "title": "$label - Keyboard shortcut: $shortcut",
+          "sortOrder": 190,
+          "tags": [
+            "ui",
+            "footer"
+          ]
+        },
+        {
+          "id": "conversation.status.open",
+          "title": "open",
+          "sortOrder": 200,
+          "tags": [
+            "ui",
+            "conversation"
+          ]
+        },
+        {
+          "id": "conversation.status.ended",
+          "title": "ended $endedAt",
+          "sortOrder": 210,
+          "tags": [
+            "ui",
+            "conversation"
+          ]
+        },
+        {
+          "id": "conversation.participants.unknown",
+          "title": "unknown participants",
+          "sortOrder": 220,
+          "tags": [
+            "ui",
+            "conversation"
+          ]
+        },
+        {
+          "id": "scene-flow.back",
+          "title": "Back",
+          "sortOrder": 230,
+          "tags": [
+            "ui",
+            "scene-flow"
+          ]
+        },
+        {
+          "id": "scene-flow.forward",
+          "title": "Forward",
+          "sortOrder": 240,
+          "tags": [
+            "ui",
+            "scene-flow"
+          ]
+        },
+        {
+          "id": "scene-flow.continue",
+          "title": "Continue",
+          "sortOrder": 250,
+          "tags": [
+            "ui",
+            "scene-flow"
+          ]
+        },
+        {
+          "id": "scene-flow.narrator",
+          "title": "narrator",
+          "sortOrder": 260,
+          "tags": [
+            "ui",
+            "scene-flow"
+          ]
+        },
+        {
+          "id": "scene-flow.display",
+          "title": "Display: $displayReference",
+          "sortOrder": 270,
+          "tags": [
+            "ui",
+            "scene-flow"
+          ]
+        },
+        {
+          "id": "scene-flow.selected-history",
+          "title": "Selected in history",
+          "sortOrder": 280,
+          "tags": [
+            "ui",
+            "scene-flow"
+          ]
+        },
+        {
+          "id": "scene-flow.no-choices",
+          "title": "No choices available.",
+          "sortOrder": 290,
+          "tags": [
+            "ui",
+            "scene-flow"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "footer-shortcut-display",
+      "title": "Footer Shortcut Display",
+      "codes": [
+        {
+          "id": "display",
+          "title": "Display",
+          "sortOrder": 10,
+          "tags": [
+            "settings",
+            "ui"
+          ]
+        },
+        {
+          "id": "hide",
+          "title": "Do not display",
+          "sortOrder": 20,
+          "tags": [
+            "settings",
+            "ui"
+          ]
+        },
+        {
+          "id": "tooltip-only",
+          "title": "Tooltips only",
+          "sortOrder": 30,
+          "tags": [
+            "settings",
+            "ui"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "theme-family",
+      "title": "Theme Family",
+      "codes": [
+        {
+          "id": "ocean",
+          "title": "Ocean",
+          "sortOrder": 10,
+          "tags": [
+            "settings",
+            "ui"
+          ]
+        },
+        {
+          "id": "forest",
+          "title": "Forest",
+          "sortOrder": 20,
+          "tags": [
+            "settings",
+            "ui"
+          ]
+        },
+        {
+          "id": "sunset",
+          "title": "Sunset",
+          "sortOrder": 30,
+          "tags": [
+            "settings",
+            "ui"
+          ]
+        },
+        {
+          "id": "violet",
+          "title": "Violet",
+          "sortOrder": 40,
+          "tags": [
+            "settings",
+            "ui"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "theme-variant",
+      "title": "Theme Variant",
+      "codes": [
+        {
+          "id": "dark",
+          "title": "Dark",
+          "sortOrder": 10,
+          "tags": [
+            "settings",
+            "ui"
+          ]
+        },
+        {
+          "id": "light-pastel",
+          "title": "Light pastel",
+          "sortOrder": 20,
+          "tags": [
+            "settings",
+            "ui"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "volume-level",
+      "title": "Volume Level",
+      "codes": [
+        {
+          "id": "0",
+          "title": "Muted",
+          "sortOrder": 0,
+          "tags": [
+            "settings",
+            "audio",
+            "slider"
+          ]
+        },
+        {
+          "id": "25",
+          "title": "Low",
+          "sortOrder": 25,
+          "tags": [
+            "settings",
+            "audio",
+            "slider"
+          ]
+        },
+        {
+          "id": "50",
+          "title": "Medium",
+          "sortOrder": 50,
+          "tags": [
+            "settings",
+            "audio",
+            "slider"
+          ]
+        },
+        {
+          "id": "75",
+          "title": "High",
+          "sortOrder": 75,
+          "tags": [
+            "settings",
+            "audio",
+            "slider"
+          ]
+        },
+        {
+          "id": "100",
+          "title": "Maximum",
+          "sortOrder": 100,
+          "tags": [
+            "settings",
+            "audio",
+            "slider"
+          ]
         }
       ]
     }

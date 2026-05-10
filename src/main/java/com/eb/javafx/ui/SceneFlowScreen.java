@@ -44,9 +44,9 @@ public final class SceneFlowScreen {
         session.start(sceneId);
         ScenePresenter presenter = new ScenePresenter();
         VBox content = new VBox(ScreenShell.BODY_SPACING);
-        Button mainMenu = ScreenNavigation.button(context, "Back to main menu", SceneRouter.MAIN_MENU_ROUTE);
+        Button mainMenu = ScreenNavigation.button(context, screenText(titleDefinition, "item.back.label"), SceneRouter.MAIN_MENU_ROUTE);
         renderCheckpointScene(actionContext, session, presenter, content, mainMenu);
-        return context.themedScene(ScreenShell.titled(context.contentRegistry().definition(titleDefinition), content));
+        return context.themedScene(ScreenShell.titled(title(titleDefinition), content));
     }
 
     private static void renderCheckpointScene(
@@ -74,5 +74,17 @@ public final class SceneFlowScreen {
             renderCheckpointScene(actionContext, session, presenter, content, mainMenu);
         });
         content.getChildren().setAll(sceneContent, mainMenu);
+    }
+
+    private static String title(String titleDefinition) {
+        return ScreenTextResources.title(screenId(titleDefinition));
+    }
+
+    private static String screenText(String titleDefinition, String key) {
+        return ScreenTextResources.text(screenId(titleDefinition), key);
+    }
+
+    private static String screenId(String titleDefinition) {
+        return "ui.choice.title".equals(titleDefinition) ? ScreenTextResources.CHOICE : ScreenTextResources.DIALOGUE;
     }
 }

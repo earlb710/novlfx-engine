@@ -1,0 +1,17 @@
+{
+  "language": "en",
+  "texts": {
+    "screen.title": "Preferences",
+    "block.audio.title": "Audio",
+    "block.visual.title": "Visual",
+    "item.master-volume.label": "Master volume",
+    "item.music-volume.label": "Music volume",
+    "item.sound-volume.label": "Sound volume",
+    "item.theme.label": "Theme",
+    "item.theme-color.label": "Theme color",
+    "item.footer-shortcuts.label": "Footer shortcuts",
+    "item.footer-display.label": "Footer display",
+    "item.close.label": "Close",
+    "footer.preferences.close.tooltip": "Close preferences."
+  }
+}
