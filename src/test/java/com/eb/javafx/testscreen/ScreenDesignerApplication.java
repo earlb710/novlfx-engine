@@ -1137,9 +1137,14 @@ public final class ScreenDesignerApplication {
         if (problems.isEmpty()) {
             return "Screen design is valid.";
         }
+        return validationProblemLines(problems).lines()
+                .reduce("Validation issues:\n", (a, b) -> a + b + "\n");
+    }
+
+    private static String validationProblemLines(List<ScreenDesignValidationProblem> problems) {
         return problems.stream()
                 .map(problem -> problem.path() + ": " + problem.message())
-                .reduce("Validation issues:\n", (a, b) -> a + b + "\n");
+                .reduce("", (a, b) -> a.isEmpty() ? b : a + "\n" + b);
     }
 
     static String validationTextForNode(List<ScreenDesignValidationProblem> problems, NavigationNode navigationNode) {
@@ -1189,7 +1194,7 @@ public final class ScreenDesignerApplication {
                 .max(Comparator.comparingInt(String::length));
     }
 
-    private static String escapeHtml(String value) {
+    private static String escapeBasicHtmlContent(String value) {
         return value.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
     }
 
@@ -1245,7 +1250,11 @@ public final class ScreenDesignerApplication {
     }
 
     private void configureFieldGuidance() {
-        blockBackgroundImagePlacementBox.setToolTipText("Choose how the block background image is placed: fixed top left, fixed center, fixed bottom right, or stretch to fit.");
+        blockBackgroundImagePlacementBox.setToolTipText("Choose how the block background image is placed: "
+                + String.join(", ", Arrays.stream(BACKGROUND_IMAGE_PLACEMENT_OPTIONS)
+                .filter(option -> !DEFAULT_OPTION.equals(option))
+                .toList())
+                + ".");
         itemEventNameField.setToolTipText("Optional eventName metadata. Items with an event name render as clickable buttons in preview/runtime.");
         itemActionValueField.setToolTipText("Optional actionValue metadata sent with the item action event.");
         blockConditionsArea.setToolTipText("One condition per line. Blank means this block is always shown.");
@@ -1408,7 +1417,7 @@ public final class ScreenDesignerApplication {
             List<ScreenDesignValidationProblem> problems) {
         try {
             if (!problems.isEmpty()) {
-                dockedPreviewPanel.setScene(messageScene("Preview paused until validation issues are fixed.\n\n" + validationSummary(problems)));
+                dockedPreviewPanel.setScene(messageScene("Preview paused until validation issues are fixed.\n\n" + validationProblemLines(problems)));
                 return;
             }
             dockedPreviewPanel.setScene(createPreviewScene(designSnapshot, defaultsSnapshot));
@@ -1783,7 +1792,7 @@ public final class ScreenDesignerApplication {
         header.add(new JLabel(propertiesTitleFor(navigationNode)), BorderLayout.NORTH);
         String validationText = validationTextForNode(ScreenDesignValidator.validate(design), navigationNode);
         if (!validationText.isBlank()) {
-            JLabel validationLabel = new JLabel("<html><body style='color:#b36b00'>" + escapeHtml(validationText).replace("\n", "<br>") + "</body></html>");
+            JLabel validationLabel = new JLabel("<html><body style='color:#b36b00'>" + escapeBasicHtmlContent(validationText).replace("\n", "<br>") + "</body></html>");
             header.add(validationLabel, BorderLayout.SOUTH);
         }
         propertiesPanel.add(header, BorderLayout.NORTH);
