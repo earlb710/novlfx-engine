@@ -665,14 +665,6 @@ public final class DefaultDisplayValuesApplication {
         return ManagementWorkingDirectorySupport.chooserStartDirectory(currentValue, workingDirectory);
     }
 
-    private static Path chooserStartDirectory(Path path) {
-        if (path.toFile().isDirectory()) {
-            return path;
-        }
-        Path parent = path.getParent();
-        return parent == null ? path : parent;
-    }
-
     private static Color initialColor(String value) {
         try {
             return value != null && value.matches(HEX_COLOR_PATTERN) ? Color.decode(value) : Color.WHITE;
