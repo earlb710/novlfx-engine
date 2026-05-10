@@ -1,0 +1,7 @@
+{
+  "language": "en",
+  "maps": [
+    {"mapId": "town", "description": "Town Map"},
+    {"mapId": "main"}
+  ]
+}
