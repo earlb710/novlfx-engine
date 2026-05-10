@@ -49,8 +49,10 @@ import javax.swing.JTable;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.Scrollable;
+import javax.swing.DropMode;
 import javax.swing.ListSelectionModel;
 import javax.swing.SwingUtilities;
+import javax.swing.TransferHandler;
 import javax.swing.WindowConstants;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.table.AbstractTableModel;
@@ -70,10 +72,14 @@ import java.awt.GridBagLayout;
 import java.awt.GridLayout;
 import java.awt.Insets;
 import java.awt.Rectangle;
+import java.awt.datatransfer.DataFlavor;
+import java.awt.datatransfer.Transferable;
+import java.awt.datatransfer.UnsupportedFlavorException;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -102,6 +108,8 @@ public final class ScreenDesignerApplication {
     private static final int PROPERTY_FIELD_MIN_COLUMNS = 10;
     private static final Color INLINE_ERROR_COLOR = new Color(0x9b1c1c);
     private static final Color INLINE_HINT_COLOR = new Color(0x5f6368);
+    private static final int MIN_DROP_ZONE_HEIGHT = 4;
+    private static final int DROP_ZONE_EDGE_DIVISOR = 4;
     private static final String SCREEN_PARENT_OPTION = "<screen>";
     private static final String DEFAULT_OPTION = "<default>";
     private static final String CSS_INHERITANCE_HINT = "<inherit from CSS>";
@@ -374,6 +382,7 @@ public final class ScreenDesignerApplication {
         objectTree.setCellRenderer(new ValidationTreeCellRenderer());
         objectTree.addTreeSelectionListener(event -> updateSelectedNavigationState());
         installTreeContextMenu();
+        installTreeDragAndDrop();
         JPanel panel = new JPanel(new BorderLayout(8, 8));
         panel.add(new JScrollPane(objectTree), BorderLayout.CENTER);
         panel.add(navigationActions(), BorderLayout.SOUTH);
@@ -551,6 +560,32 @@ public final class ScreenDesignerApplication {
         }
         design = ScreenDesignService.addBlock(design, created.orElseThrow());
         refreshAll();
+    }
+
+    private void quickAddBlock(ScreenLayoutType layoutType, String parentBlockId) {
+        QuickBlockTemplate template = quickBlockTemplate(layoutType);
+        String blockId = uniqueBlockId(template.blockId());
+        ScreenDesignBlock block = new ScreenDesignBlock(
+                blockId,
+                template.title(),
+                layoutType,
+                parentBlockId,
+                null,
+                template.metadata());
+        ArrayList<ScreenDesignItem> items = new ArrayList<>(design.items());
+        for (ScreenDesignItem item : template.items()) {
+            items.add(item.withId(uniqueId(item.id(), itemIds(items, design.temporaryItems()))).inBlock(blockId));
+        }
+        design = new ScreenDesignModel(
+                design.id(),
+                design.title(),
+                design.layoutType(),
+                design.metadata(),
+                appendBlock(design.blocks(), block),
+                items,
+                design.temporaryItems());
+        refreshAll();
+        selectNavigationNode(NavigationNode.block(blockId));
     }
 
     private void addItem(boolean temporary) {
@@ -1140,9 +1175,13 @@ public final class ScreenDesignerApplication {
     static List<String> contextActionLabelsFor(NavigationNode navigationNode, boolean hasBlocks) {
         ArrayList<String> labels = new ArrayList<>();
         switch (navigationNode.type()) {
-            case SCREEN -> labels.add("Add Block");
+            case SCREEN -> {
+                labels.add("Add Block");
+                labels.addAll(quickAddBlockActionLabels());
+            }
             case BLOCK -> {
                 labels.add("Add Block");
+                labels.addAll(quickAddBlockActionLabels());
                 labels.add("Add Item");
                 labels.add("Edit Block");
                 labels.add("Duplicate Block");
@@ -1154,6 +1193,7 @@ public final class ScreenDesignerApplication {
             }
             case ITEM, TEMPORARY_ITEM -> {
                 labels.add("Add Block");
+                labels.addAll(quickAddBlockActionLabels());
                 labels.add("Add Item");
                 labels.add("Edit Item");
                 labels.add("Duplicate Item");
@@ -1165,6 +1205,10 @@ public final class ScreenDesignerApplication {
             }
         }
         return List.copyOf(labels);
+    }
+
+    static List<String> quickAddBlockActionLabels() {
+        return List.of("Quick Add Form Block", "Quick Add Menu Action List Block", "Quick Add Preview Grid Block");
     }
 
     static List<String> fileMenuActionLabels() {
@@ -1637,6 +1681,52 @@ public final class ScreenDesignerApplication {
                         List.of())));
     }
 
+    static QuickBlockTemplate quickBlockTemplate(ScreenLayoutType layoutType) {
+        return switch (layoutType) {
+            case FORM -> new QuickBlockTemplate(
+                    "form",
+                    "Form",
+                    Map.of(BACKGROUND_COLOR_KEY, "#ffffff", TRANSPARENCY_KEY, "0.9",
+                            BORDER_STYLE_KEY, "solid", BORDER_CORNER_KEY, "rounded"),
+                    List.of(
+                            new ScreenDesignItem("form.heading", "form", ScreenDesignItemType.TEXT,
+                                    null, "Form section", null, null, 0, null,
+                                    Map.of(DISPLAY_ROLE_KEY, DisplayDefaults.ROLE_HEADING)),
+                            new ScreenDesignItem("form.field", "form", ScreenDesignItemType.FIELD,
+                                    "Field", null, null, "", 1, null,
+                                    Map.of(DISPLAY_ROLE_KEY, DisplayDefaults.ROLE_FIELD))));
+            case MENU_ACTION_LIST -> new QuickBlockTemplate(
+                    "actions",
+                    "Actions",
+                    Map.of(BACKGROUND_COLOR_KEY, "#17233d", TRANSPARENCY_KEY, "0.85",
+                            BORDER_STYLE_KEY, "solid", BORDER_CORNER_KEY, "rounded"),
+                    List.of(
+                            new ScreenDesignItem("actions.heading", "actions", ScreenDesignItemType.TEXT,
+                                    null, "Choose an action", null, null, 0, null,
+                                    Map.of(DISPLAY_ROLE_KEY, DisplayDefaults.ROLE_HEADING)),
+                            new ScreenDesignItem("primary.action", "actions", ScreenDesignItemType.BUTTON,
+                                    "Primary Action", null, null, null, 1, null,
+                                    Map.of(DISPLAY_ROLE_KEY, DisplayDefaults.ROLE_BUTTON,
+                                            EVENT_NAME_KEY, "primaryAction", ACTION_VALUE_KEY, "primary"))));
+            case PREVIEW_GRID -> new QuickBlockTemplate(
+                    "preview.grid",
+                    "Preview Grid",
+                    Map.of(BACKGROUND_COLOR_KEY, "#ffffff", TRANSPARENCY_KEY, "0.85",
+                            BORDER_STYLE_KEY, "solid", BORDER_CORNER_KEY, "rounded"),
+                    List.of(
+                            new ScreenDesignItem("preview.heading", "preview.grid", ScreenDesignItemType.TEXT,
+                                    null, "Preview grid", null, null, 0, null,
+                                    Map.of(DISPLAY_ROLE_KEY, DisplayDefaults.ROLE_HEADING)),
+                            new ScreenDesignItem("preview.card", "preview.grid", ScreenDesignItemType.TEXT,
+                                    null, "Preview card", null, null, 1, null, Map.of())));
+            default -> new QuickBlockTemplate(
+                    layoutType.name().toLowerCase(java.util.Locale.ROOT).replace('_', '.'),
+                    layoutType.name(),
+                    Map.of(),
+                    List.of());
+        };
+    }
+
     private void installTreeContextMenu() {
         objectTree.addMouseListener(new MouseAdapter() {
             @Override
@@ -1649,6 +1739,15 @@ public final class ScreenDesignerApplication {
                 maybeShowContextMenu(event);
             }
         });
+    }
+
+    private void installTreeDragAndDrop() {
+        // Keep Swing in ON mode and infer before/on/after ourselves to avoid BasicTreeUI insert-line NPEs.
+        objectTree.setDropMode(DropMode.ON);
+        objectTree.setTransferHandler(new NavigationTreeTransferHandler());
+        if (!GraphicsEnvironment.isHeadless()) {
+            objectTree.setDragEnabled(true);
+        }
     }
 
     private void maybeShowContextMenu(MouseEvent event) {
@@ -1708,6 +1807,12 @@ public final class ScreenDesignerApplication {
     private void performContextAction(String label, NavigationNode navigationNode) {
         switch (label) {
             case "Add Block" -> addBlock(navigationNode.type() == NodeType.SCREEN ? null : navigationNode.blockId());
+            case "Quick Add Form Block" -> quickAddBlock(ScreenLayoutType.FORM,
+                    navigationNode.type() == NodeType.SCREEN ? null : navigationNode.blockId());
+            case "Quick Add Menu Action List Block" -> quickAddBlock(ScreenLayoutType.MENU_ACTION_LIST,
+                    navigationNode.type() == NodeType.SCREEN ? null : navigationNode.blockId());
+            case "Quick Add Preview Grid Block" -> quickAddBlock(ScreenLayoutType.PREVIEW_GRID,
+                    navigationNode.type() == NodeType.SCREEN ? null : navigationNode.blockId());
             case "Add Item" -> addItem(false);
             case "Edit Block" -> editBlock(navigationNode.id());
             case "Duplicate Block" -> duplicateBlock(navigationNode.id());
@@ -1723,6 +1828,127 @@ public final class ScreenDesignerApplication {
             case "Remove Item" -> removeItem(navigationNode.id(), navigationNode.type() == NodeType.TEMPORARY_ITEM);
             default -> throw new IllegalArgumentException("Unknown context action: " + label);
         }
+    }
+
+    private boolean performNavigationDrop(NavigationNode sourceNode, JTree.DropLocation dropLocation) {
+        Optional<NavigationDropTarget> target = navigationDropTarget(sourceNode, dropLocation);
+        if (target.isEmpty()) {
+            return false;
+        }
+        NavigationDropTarget dropTarget = target.orElseThrow();
+        if (sourceNode.type() == NodeType.BLOCK) {
+            design = moveBlockToParentInDesign(design, sourceNode.id(), dropTarget.blockId(), dropTarget.siblingIndex());
+            refreshAll();
+            selectNavigationNode(NavigationNode.block(sourceNode.id()));
+            return true;
+        }
+        if (sourceNode.type() == NodeType.ITEM || sourceNode.type() == NodeType.TEMPORARY_ITEM) {
+            boolean temporary = sourceNode.type() == NodeType.TEMPORARY_ITEM;
+            design = moveItemToBlockInDesign(design, sourceNode.id(), temporary, dropTarget.blockId(), dropTarget.siblingIndex());
+            refreshAll();
+            selectNavigationNode(NavigationNode.item(sourceNode.id(), dropTarget.blockId(), temporary));
+            return true;
+        }
+        return false;
+    }
+
+    private Optional<NavigationDropTarget> navigationDropTarget(NavigationNode sourceNode, JTree.DropLocation dropLocation) {
+        if (dropLocation == null || dropLocation.getPath() == null || sourceNode.type() == NodeType.SCREEN) {
+            return Optional.empty();
+        }
+        DefaultMutableTreeNode targetTreeNode = (DefaultMutableTreeNode) dropLocation.getPath().getLastPathComponent();
+        NavigationNode targetNode = navigationNodeFor(targetTreeNode).orElse(null);
+        if (targetNode == null || sourceNode.equals(targetNode)) {
+            return Optional.empty();
+        }
+        DropPosition dropPosition = dropPositionFor(objectTree.getPathBounds(dropLocation.getPath()), dropLocation.getDropPoint().y);
+        if (sourceNode.type() == NodeType.BLOCK) {
+            return blockDropTarget(sourceNode.id(), targetTreeNode, targetNode, dropPosition);
+        }
+        if (sourceNode.type() == NodeType.ITEM || sourceNode.type() == NodeType.TEMPORARY_ITEM) {
+            return itemDropTarget(targetTreeNode, targetNode, dropPosition, sourceNode.type() == NodeType.TEMPORARY_ITEM);
+        }
+        return Optional.empty();
+    }
+
+    private Optional<NavigationDropTarget> blockDropTarget(
+            String sourceBlockId,
+            DefaultMutableTreeNode targetTreeNode,
+            NavigationNode targetNode,
+            DropPosition dropPosition) {
+        String parentBlockId;
+        int siblingIndex;
+        if (targetNode.type() == NodeType.SCREEN) {
+            parentBlockId = null;
+            siblingIndex = -1;
+        } else if (targetNode.type() == NodeType.BLOCK && dropPosition == DropPosition.ON) {
+            parentBlockId = targetNode.id();
+            siblingIndex = -1;
+        } else if (targetNode.type() == NodeType.BLOCK) {
+            DefaultMutableTreeNode parentNode = (DefaultMutableTreeNode) targetTreeNode.getParent();
+            NavigationNode parentNavigationNode = navigationNodeFor(parentNode).orElseThrow();
+            parentBlockId = parentNavigationNode.type() == NodeType.SCREEN ? null : parentNavigationNode.id();
+            int targetIndex = parentNode.getIndex(targetTreeNode);
+            siblingIndex = blockSiblingIndex(parentNode, targetIndex + (dropPosition == DropPosition.AFTER ? 1 : 0));
+        } else {
+            return Optional.empty();
+        }
+        if (sourceBlockId.equals(parentBlockId) || isDescendantBlock(design.blocks(), parentBlockId, sourceBlockId)) {
+            return Optional.empty();
+        }
+        return Optional.of(new NavigationDropTarget(parentBlockId, siblingIndex));
+    }
+
+    private Optional<NavigationDropTarget> itemDropTarget(
+            DefaultMutableTreeNode targetTreeNode,
+            NavigationNode targetNode,
+            DropPosition dropPosition,
+            boolean temporary) {
+        if (targetNode.type() == NodeType.BLOCK) {
+            return Optional.of(new NavigationDropTarget(targetNode.id(), -1));
+        }
+        if (targetNode.type() == NodeType.ITEM || targetNode.type() == NodeType.TEMPORARY_ITEM) {
+            DefaultMutableTreeNode parent = (DefaultMutableTreeNode) targetTreeNode.getParent();
+            int targetIndex = parent.getIndex(targetTreeNode);
+            int insertionIndex = targetIndex + (dropPosition == DropPosition.BEFORE ? 0 : 1);
+            return Optional.of(new NavigationDropTarget(targetNode.blockId(), itemSiblingIndex(parent, insertionIndex, temporary)));
+        }
+        return Optional.empty();
+    }
+
+    static DropPosition dropPositionFor(Rectangle bounds, int pointerY) {
+        if (bounds == null || bounds.height <= 0) {
+            return DropPosition.ON;
+        }
+        int dropZoneHeight = Math.max(MIN_DROP_ZONE_HEIGHT, bounds.height / DROP_ZONE_EDGE_DIVISOR);
+        if (pointerY < bounds.y + dropZoneHeight) {
+            return DropPosition.BEFORE;
+        }
+        if (pointerY >= bounds.y + bounds.height - dropZoneHeight) {
+            return DropPosition.AFTER;
+        }
+        return DropPosition.ON;
+    }
+
+    private static int blockSiblingIndex(DefaultMutableTreeNode parentNode, int childIndex) {
+        int siblingIndex = 0;
+        for (int index = 0; index < childIndex; index++) {
+            if (navigationNodeFor(parentNode.getChildAt(index)).map(NavigationNode::type).filter(NodeType.BLOCK::equals).isPresent()) {
+                siblingIndex++;
+            }
+        }
+        return siblingIndex;
+    }
+
+    private static int itemSiblingIndex(DefaultMutableTreeNode parentNode, int childIndex, boolean temporary) {
+        NodeType expectedType = temporary ? NodeType.TEMPORARY_ITEM : NodeType.ITEM;
+        int siblingIndex = 0;
+        for (int index = 0; index < childIndex; index++) {
+            if (navigationNodeFor(parentNode.getChildAt(index)).map(NavigationNode::type).filter(expectedType::equals).isPresent()) {
+                siblingIndex++;
+            }
+        }
+        return siblingIndex;
     }
 
     private ScreenDesignBlock findBlock(String blockId) {
@@ -1783,6 +2009,32 @@ public final class ScreenDesignerApplication {
         return new ScreenDesignModel(design.id(), design.title(), design.layoutType(), design.metadata(), blocks, design.items(), design.temporaryItems());
     }
 
+    static ScreenDesignModel moveBlockToParentInDesign(
+            ScreenDesignModel design,
+            String blockId,
+            String newParentBlockId,
+            int siblingIndex) {
+        ScreenDesignBlock source = blockById(design.blocks(), blockId);
+        if (newParentBlockId != null) {
+            blockById(design.blocks(), newParentBlockId);
+        }
+        if (blockId.equals(newParentBlockId) || isDescendantBlock(design.blocks(), newParentBlockId, blockId)) {
+            throw new IllegalArgumentException("Cannot move a block into itself or one of its child blocks.");
+        }
+        ScreenDesignBlock updated = new ScreenDesignBlock(
+                source.id(),
+                source.title(),
+                source.layoutType(),
+                newParentBlockId,
+                source.conditions(),
+                source.styleClass(),
+                source.metadata());
+        ArrayList<ScreenDesignBlock> blocks = new ArrayList<>(design.blocks());
+        blocks.removeIf(block -> blockId.equals(block.id()));
+        blocks.add(absoluteBlockInsertionIndex(blocks, newParentBlockId, siblingIndex), updated);
+        return new ScreenDesignModel(design.id(), design.title(), design.layoutType(), design.metadata(), blocks, design.items(), design.temporaryItems());
+    }
+
     static ScreenDesignModel moveItemInDesign(ScreenDesignModel design, String itemId, boolean temporary, int direction) {
         List<ScreenDesignItem> source = temporary ? design.temporaryItems() : design.items();
         ArrayList<ScreenDesignItem> items = new ArrayList<>(source);
@@ -1792,6 +2044,23 @@ public final class ScreenDesignerApplication {
             ScreenDesignItem item = items.remove(index);
             items.add(targetIndex, item);
         }
+        return temporary
+                ? new ScreenDesignModel(design.id(), design.title(), design.layoutType(), design.metadata(), design.blocks(), design.items(), items)
+                : new ScreenDesignModel(design.id(), design.title(), design.layoutType(), design.metadata(), design.blocks(), items, design.temporaryItems());
+    }
+
+    static ScreenDesignModel moveItemToBlockInDesign(
+            ScreenDesignModel design,
+            String itemId,
+            boolean temporary,
+            String newBlockId,
+            int siblingIndex) {
+        blockById(design.blocks(), newBlockId);
+        List<ScreenDesignItem> source = temporary ? design.temporaryItems() : design.items();
+        ScreenDesignItem sourceItem = itemById(source, itemId);
+        ArrayList<ScreenDesignItem> items = new ArrayList<>(source);
+        items.removeIf(item -> itemId.equals(item.id()));
+        items.add(absoluteItemInsertionIndex(items, newBlockId, siblingIndex), sourceItem.inBlock(newBlockId));
         return temporary
                 ? new ScreenDesignModel(design.id(), design.title(), design.layoutType(), design.metadata(), design.blocks(), design.items(), items)
                 : new ScreenDesignModel(design.id(), design.title(), design.layoutType(), design.metadata(), design.blocks(), items, design.temporaryItems());
@@ -1840,6 +2109,13 @@ public final class ScreenDesignerApplication {
         throw new IllegalArgumentException("Unknown screen design block id: " + blockId);
     }
 
+    private static ScreenDesignBlock blockById(List<ScreenDesignBlock> blocks, String blockId) {
+        return blocks.stream()
+                .filter(block -> blockId.equals(block.id()))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Unknown screen design block id: " + blockId));
+    }
+
     private static int indexOfItem(List<ScreenDesignItem> items, String itemId) {
         for (int index = 0; index < items.size(); index++) {
             if (itemId.equals(items.get(index).id())) {
@@ -1849,8 +2125,86 @@ public final class ScreenDesignerApplication {
         throw new IllegalArgumentException("Unknown screen design item id: " + itemId);
     }
 
+    private static ScreenDesignItem itemById(List<ScreenDesignItem> items, String itemId) {
+        return items.stream()
+                .filter(item -> itemId.equals(item.id()))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Unknown screen design item id: " + itemId));
+    }
+
     private static int boundedMoveIndex(int index, int direction, int size) {
         return Math.max(0, Math.min(size - 1, index + direction));
+    }
+
+    private static boolean isDescendantBlock(List<ScreenDesignBlock> blocks, String candidateBlockId, String ancestorBlockId) {
+        String current = candidateBlockId;
+        LinkedHashSet<String> visitedBlockIds = new LinkedHashSet<>();
+        while (current != null) {
+            if (!visitedBlockIds.add(current)) {
+                throw new IllegalArgumentException("Screen design blocks contain a parent cycle: "
+                        + String.join(" -> ", visitedBlockIds) + " -> " + current + ".");
+            }
+            if (ancestorBlockId.equals(current)) {
+                return true;
+            }
+            current = blockById(blocks, current).parentBlockId();
+        }
+        return false;
+    }
+
+    private static int absoluteBlockInsertionIndex(List<ScreenDesignBlock> blocks, String parentBlockId, int siblingIndex) {
+        int requestedIndex = siblingIndex < 0 ? Integer.MAX_VALUE : siblingIndex;
+        int matchingSiblings = 0;
+        int lastSiblingIndex = -1;
+        for (int index = 0; index < blocks.size(); index++) {
+            if (sameParent(parentBlockId, blocks.get(index).parentBlockId())) {
+                if (matchingSiblings == requestedIndex) {
+                    return index;
+                }
+                matchingSiblings++;
+                lastSiblingIndex = index;
+            }
+        }
+        if (lastSiblingIndex >= 0) {
+            return lastSiblingIndex + 1;
+        }
+        if (parentBlockId != null) {
+            return indexOfBlock(blocks, parentBlockId) + 1;
+        }
+        return blocks.size();
+    }
+
+    private static int absoluteItemInsertionIndex(List<ScreenDesignItem> items, String blockId, int siblingIndex) {
+        int requestedIndex = siblingIndex < 0 ? Integer.MAX_VALUE : siblingIndex;
+        int matchingSiblings = 0;
+        int lastSiblingIndex = -1;
+        for (int index = 0; index < items.size(); index++) {
+            if (blockId.equals(items.get(index).blockId())) {
+                if (matchingSiblings == requestedIndex) {
+                    return index;
+                }
+                matchingSiblings++;
+                lastSiblingIndex = index;
+            }
+        }
+        return lastSiblingIndex >= 0 ? lastSiblingIndex + 1 : items.size();
+    }
+
+    private static boolean sameParent(String left, String right) {
+        return left == null ? right == null : left.equals(right);
+    }
+
+    private static List<ScreenDesignBlock> appendBlock(List<ScreenDesignBlock> blocks, ScreenDesignBlock block) {
+        ArrayList<ScreenDesignBlock> updated = new ArrayList<>(blocks);
+        updated.add(block);
+        return updated;
+    }
+
+    private static Set<String> itemIds(List<ScreenDesignItem> savedItems, List<ScreenDesignItem> temporaryItems) {
+        LinkedHashSet<String> ids = new LinkedHashSet<>();
+        savedItems.stream().map(ScreenDesignItem::id).forEach(ids::add);
+        temporaryItems.stream().map(ScreenDesignItem::id).forEach(ids::add);
+        return ids;
     }
 
     private static List<ScreenDesignItem> remapItems(List<ScreenDesignItem> items, String oldBlockId, String newBlockId) {
@@ -2816,6 +3170,12 @@ public final class ScreenDesignerApplication {
         TEMPORARY_ITEM
     }
 
+    enum DropPosition {
+        BEFORE,
+        ON,
+        AFTER
+    }
+
     enum DefaultValueCategory {
         SCREEN,
         BLOCK,
@@ -2832,11 +3192,20 @@ public final class ScreenDesignerApplication {
         COLOR
     }
 
+    private static final DataFlavor NAVIGATION_NODE_FLAVOR = new DataFlavor(NavigationNode.class, "Navigation node");
+
     static record ScreenTemplate(String label, ScreenDesignModel design) {
         @Override
         public String toString() {
             return label;
         }
+    }
+
+    static record QuickBlockTemplate(
+            String blockId,
+            String title,
+            Map<String, String> metadata,
+            List<ScreenDesignItem> items) {
     }
 
     static record DefaultValueType(DefaultValueCategory category, String label, String role) {
@@ -2991,6 +3360,77 @@ public final class ScreenDesignerApplication {
             SwingUtilities.invokeLater(button::doClick);
             return button;
         }
+    }
+
+    private final class NavigationTreeTransferHandler extends TransferHandler {
+        @Override
+        protected Transferable createTransferable(JComponent component) {
+            return selectedNavigationNode()
+                    .filter(node -> node.type() != NodeType.SCREEN)
+                    .<Transferable>map(NavigationNodeTransferable::new)
+                    .orElse(null);
+        }
+
+        @Override
+        public int getSourceActions(JComponent component) {
+            return MOVE;
+        }
+
+        @Override
+        public boolean canImport(TransferSupport support) {
+            if (!support.isDrop() || !support.isDataFlavorSupported(NAVIGATION_NODE_FLAVOR)
+                    || !(support.getDropLocation() instanceof JTree.DropLocation dropLocation)) {
+                return false;
+            }
+            try {
+                NavigationNode sourceNode = (NavigationNode) support.getTransferable().getTransferData(NAVIGATION_NODE_FLAVOR);
+                return navigationDropTarget(sourceNode, dropLocation).isPresent();
+            } catch (UnsupportedFlavorException | IOException exception) {
+                return false;
+            }
+        }
+
+        @Override
+        public boolean importData(TransferSupport support) {
+            if (!canImport(support) || !(support.getDropLocation() instanceof JTree.DropLocation dropLocation)) {
+                return false;
+            }
+            try {
+                NavigationNode sourceNode = (NavigationNode) support.getTransferable().getTransferData(NAVIGATION_NODE_FLAVOR);
+                return performNavigationDrop(sourceNode, dropLocation);
+            } catch (UnsupportedFlavorException | IOException | IllegalArgumentException exception) {
+                return false;
+            }
+        }
+    }
+
+    private static final class NavigationNodeTransferable implements Transferable {
+        private final NavigationNode navigationNode;
+
+        private NavigationNodeTransferable(NavigationNode navigationNode) {
+            this.navigationNode = navigationNode;
+        }
+
+        @Override
+        public DataFlavor[] getTransferDataFlavors() {
+            return new DataFlavor[]{NAVIGATION_NODE_FLAVOR};
+        }
+
+        @Override
+        public boolean isDataFlavorSupported(DataFlavor flavor) {
+            return NAVIGATION_NODE_FLAVOR.equals(flavor);
+        }
+
+        @Override
+        public Object getTransferData(DataFlavor flavor) throws UnsupportedFlavorException {
+            if (!isDataFlavorSupported(flavor)) {
+                throw new UnsupportedFlavorException(flavor);
+            }
+            return navigationNode;
+        }
+    }
+
+    private static record NavigationDropTarget(String blockId, int siblingIndex) {
     }
 
     private final class ValidationTreeCellRenderer extends DefaultTreeCellRenderer {

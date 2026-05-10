@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.awt.BorderLayout;
 import java.awt.Component;
+import java.awt.Rectangle;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.nio.file.Files;
@@ -225,20 +226,22 @@ final class ScreenDesignerApplicationTest {
 
     @Test
     void contextActionLabelsMatchNavigationNodeType() {
-        assertEquals(List.of("Add Block"),
+        assertEquals(List.of("Add Block", "Quick Add Form Block", "Quick Add Menu Action List Block", "Quick Add Preview Grid Block"),
                 ScreenDesignerApplication.contextActionLabelsFor(
                         ScreenDesignerApplication.NavigationNode.screen("sample.screen"),
                         false));
-        assertEquals(List.of("Add Block"),
+        assertEquals(List.of("Add Block", "Quick Add Form Block", "Quick Add Menu Action List Block", "Quick Add Preview Grid Block"),
                 ScreenDesignerApplication.contextActionLabelsFor(
                         ScreenDesignerApplication.NavigationNode.screen("sample.screen"),
                         true));
-        assertEquals(List.of("Add Block", "Add Item", "Edit Block", "Duplicate Block", "Move Block Up", "Move Block Down",
+        assertEquals(List.of("Add Block", "Quick Add Form Block", "Quick Add Menu Action List Block", "Quick Add Preview Grid Block",
+                        "Add Item", "Edit Block", "Duplicate Block", "Move Block Up", "Move Block Down",
                         "Copy Style/Metadata", "Paste Style/Metadata", "Remove Block"),
                 ScreenDesignerApplication.contextActionLabelsFor(
                         ScreenDesignerApplication.NavigationNode.block("main"),
                         true));
-        assertEquals(List.of("Add Block", "Add Item", "Edit Item", "Duplicate Item", "Move Item Up", "Move Item Down",
+        assertEquals(List.of("Add Block", "Quick Add Form Block", "Quick Add Menu Action List Block", "Quick Add Preview Grid Block",
+                        "Add Item", "Edit Item", "Duplicate Item", "Move Item Up", "Move Item Down",
                         "Copy Style/Metadata", "Paste Style/Metadata", "Remove Item"),
                 ScreenDesignerApplication.contextActionLabelsFor(
                         ScreenDesignerApplication.NavigationNode.item("title.text", "main", false),
@@ -643,6 +646,107 @@ final class ScreenDesignerApplicationTest {
 
         assertEquals("secondary", movedBlock.blocks().get(0).id());
         assertEquals("second.text", movedItem.items().get(0).id());
+    }
+
+    @Test
+    void dragDropBlockHelperReparentsAndReordersNestedBlocks() {
+        ScreenDesignModel design = new ScreenDesignModel(
+                "sample.screen",
+                "Sample Screen",
+                com.eb.javafx.ui.ScreenLayoutType.FORM,
+                Map.of(),
+                List.of(
+                        new ScreenDesignBlock("main", "Main"),
+                        new ScreenDesignBlock("details", "Details", com.eb.javafx.ui.ScreenLayoutType.FORM, "main", null, Map.of()),
+                        new ScreenDesignBlock("sidebar", "Sidebar")),
+                List.of(),
+                List.of());
+
+        ScreenDesignModel nested = ScreenDesignerApplication.moveBlockToParentInDesign(design, "sidebar", "main", 0);
+
+        assertEquals("sidebar", nested.blocks().get(1).id());
+        assertEquals("main", nested.blocks().get(1).parentBlockId());
+        assertEquals("details", nested.blocks().get(2).id());
+        IllegalArgumentException descendantException = assertThrows(IllegalArgumentException.class,
+                () -> ScreenDesignerApplication.moveBlockToParentInDesign(nested, "main", "details", -1));
+        assertEquals("Cannot move a block into itself or one of its child blocks.", descendantException.getMessage());
+    }
+
+    @Test
+    void descendantCheckRejectsCyclicParentChains() {
+        List<ScreenDesignBlock> cyclicBlocks = List.of(
+                new ScreenDesignBlock("main", "Main", com.eb.javafx.ui.ScreenLayoutType.FORM, "details", null, Map.of()),
+                new ScreenDesignBlock("details", "Details", com.eb.javafx.ui.ScreenLayoutType.FORM, "main", null, Map.of()),
+                new ScreenDesignBlock("sidebar", "Sidebar"));
+
+        IllegalArgumentException cycleException = assertThrows(IllegalArgumentException.class,
+                () -> ScreenDesignerApplication.moveBlockToParentInDesign(
+                        new ScreenDesignModel("sample.screen", "Sample Screen", com.eb.javafx.ui.ScreenLayoutType.FORM,
+                                Map.of(), cyclicBlocks, List.of(), List.of()),
+                        "sidebar",
+                        "main",
+                        -1));
+        assertTrue(cycleException.getMessage().contains("parent cycle"));
+    }
+
+    @Test
+    void dragDropItemHelperMovesItemsBetweenBlocksAndReordersWithinTarget() {
+        ScreenDesignModel design = new ScreenDesignModel(
+                "sample.screen",
+                "Sample Screen",
+                com.eb.javafx.ui.ScreenLayoutType.FORM,
+                Map.of(),
+                List.of(
+                        new ScreenDesignBlock("main", "Main"),
+                        new ScreenDesignBlock("secondary", "Secondary")),
+                List.of(
+                        new ScreenDesignItem("first.text", "main", ScreenDesignItemType.TEXT,
+                                "First", "First", null, null, null, Map.of()),
+                        new ScreenDesignItem("second.text", "secondary", ScreenDesignItemType.TEXT,
+                                "Second", "Second", null, null, null, Map.of()),
+                        new ScreenDesignItem("third.text", "secondary", ScreenDesignItemType.TEXT,
+                                "Third", "Third", null, null, null, Map.of())),
+                List.of());
+
+        ScreenDesignModel updated = ScreenDesignerApplication.moveItemToBlockInDesign(
+                design,
+                "first.text",
+                false,
+                "secondary",
+                1);
+
+        assertEquals(List.of("second.text", "first.text", "third.text"),
+                updated.items().stream().filter(item -> "secondary".equals(item.blockId())).map(ScreenDesignItem::id).toList());
+    }
+
+    @Test
+    void dropPositionUsesTopMiddleAndBottomBandsWithoutSwingInsertMode() {
+        Rectangle bounds = new Rectangle(0, 100, 200, 24);
+        int beforeY = bounds.y + 3;
+        int middleY = bounds.y + (bounds.height / 2);
+        int afterY = bounds.y + bounds.height - 1;
+
+        assertEquals(ScreenDesignerApplication.DropPosition.BEFORE,
+                ScreenDesignerApplication.dropPositionFor(bounds, beforeY));
+        assertEquals(ScreenDesignerApplication.DropPosition.ON,
+                ScreenDesignerApplication.dropPositionFor(bounds, middleY));
+        assertEquals(ScreenDesignerApplication.DropPosition.AFTER,
+                ScreenDesignerApplication.dropPositionFor(bounds, afterY));
+        assertEquals(ScreenDesignerApplication.DropPosition.ON,
+                ScreenDesignerApplication.dropPositionFor(null, 0));
+    }
+
+    @Test
+    void quickBlockTemplatesSeedGenericCommonBlockStructures() {
+        ScreenDesignerApplication.QuickBlockTemplate formTemplate =
+                ScreenDesignerApplication.quickBlockTemplate(com.eb.javafx.ui.ScreenLayoutType.FORM);
+
+        assertEquals("form", formTemplate.blockId());
+        assertEquals("Form", formTemplate.title());
+        assertTrue(formTemplate.metadata().containsKey("backgroundColor"));
+        assertTrue(formTemplate.items().stream().anyMatch(item -> item.type() == ScreenDesignItemType.FIELD));
+        assertEquals(List.of("Quick Add Form Block", "Quick Add Menu Action List Block", "Quick Add Preview Grid Block"),
+                ScreenDesignerApplication.quickAddBlockActionLabels());
     }
 
     @Test
