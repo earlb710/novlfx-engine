@@ -1,0 +1,15 @@
+{
+  "language": "en",
+  "texts": {
+    "screen.title": "Main Menu",
+    "block.status.title": "Session",
+    "block.actions.title": "Actions",
+    "block.actions.primary.title": "Primary Actions",
+    "block.actions.secondary.title": "Secondary Actions",
+    "item.status.summary.label": "Summary",
+    "item.status.summary.text": "Continue from $chapterTitle",
+    "item.actions.new-game.label": "New Game",
+    "item.actions.load-save.label": "Load Save",
+    "item.actions.settings.label": "Settings"
+  }
+}

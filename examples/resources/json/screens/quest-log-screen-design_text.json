@@ -1,0 +1,16 @@
+{
+  "language": "en",
+  "texts": {
+    "screen.title": "Quest Log",
+    "block.active-quests.title": "Active Quests",
+    "block.details.title": "Selected Quest",
+    "item.active-quests.find-ava.label": "Find Ava",
+    "item.active-quests.find-ava.text": "Find Ava at the tram station",
+    "item.active-quests.repair-radio.label": "Repair Radio",
+    "item.active-quests.repair-radio.text": "Collect 2 spare coils",
+    "item.details.priority.label": "Priority",
+    "item.details.priority.defaultValue": "High",
+    "item.details.notes.label": "Notes",
+    "item.details.notes.defaultValue": "Ava was last seen near the east platform after curfew."
+  }
+}

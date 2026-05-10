@@ -367,7 +367,7 @@ final class TestScreenApplicationTest {
 
         assertTrue(examples.stream().anyMatch(path -> normalizedPath(path).endsWith("02-project-setup-and-validation/demo.sh")));
         assertTrue(examples.stream().anyMatch(path -> normalizedPath(path).endsWith("08-audio-support/AudioServiceDemo.java")));
-        assertFalse(examples.stream().anyMatch(path -> normalizedPath(path).endsWith("07-display-support/display-definitions.demo.json")));
+        assertFalse(examples.stream().anyMatch(path -> normalizedPath(path).endsWith(".json")));
     }
 
     @Test

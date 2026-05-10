@@ -59,7 +59,7 @@ final class JsonScreenDesignTestScreenTest {
         Path root = JsonScreenDesignTestScreen.findRepositoryRootFrom(JsonScreenDesignTestScreen.defaultDesignPath())
                 .orElseThrow();
 
-        assertTrue(Files.isDirectory(root.resolve(Path.of("examples", "screen-designs"))));
+        assertTrue(Files.isDirectory(root.resolve(Path.of("examples", "resources", "json", "screens"))));
     }
 
     @Test

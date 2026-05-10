@@ -61,7 +61,7 @@ tasks.register('runScreenDesigner', JavaExec) {
     description = 'Launches the manual screen designer UI from the test source set.'
     classpath = sourceSets.test.runtimeClasspath
     mainClass = 'com.eb.javafx.testscreen.ScreenDesignerApplication'
-    workingDir = file("$projectDir/examples/screen-designs")
+    workingDir = file("$projectDir/examples/resources/json/screens")
 }
 
 tasks.register('runConversationEditor', JavaExec) {
@@ -69,7 +69,7 @@ tasks.register('runConversationEditor', JavaExec) {
     description = 'Launches the manual conversation JSON editor UI from the test source set.'
     classpath = sourceSets.test.runtimeClasspath
     mainClass = 'com.eb.javafx.testscreen.ConversationEditorApplication'
-    workingDir = file("$projectDir/examples/conversations")
+    workingDir = file("$projectDir/examples/resources/json/conversations")
 }
 
 tasks.register('runCodeTableManager', JavaExec) {
@@ -77,5 +77,5 @@ tasks.register('runCodeTableManager', JavaExec) {
     description = 'Launches the manual category code table management UI from the test source set.'
     classpath = sourceSets.test.runtimeClasspath
     mainClass = 'com.eb.javafx.testscreen.CodeTableManagementApplication'
-    workingDir = file("$projectDir/examples/user-manual/09-game-support-state-save-prefs-random")
+    workingDir = file("$projectDir/examples/resources/json/code-tables")
 }

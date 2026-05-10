@@ -23,7 +23,7 @@ public final class DisplaySupportDemo {
     public static void main(String[] args) {
         Path repoRoot = PathUtils.currentDirectory();
         Path configPath = PathUtils.currentDirectory(
-                "examples/user-manual/04-startup-and-service-wiring/config.demo.json");
+                "examples/resources/json/config/config.demo.json");
         ApplicationResourceConfig resourceConfig = ApplicationResourceConfig.load(configPath);
         Path definitionsPath = resourceConfig.resolveResource(repoRoot, "displayDefinitions").orElseThrow();
         Path imageAssetRoot = resourceConfig.resolveImageAssetRoot(repoRoot);

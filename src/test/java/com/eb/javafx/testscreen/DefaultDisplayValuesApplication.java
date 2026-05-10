@@ -59,9 +59,9 @@ public final class DefaultDisplayValuesApplication {
             new DisplayResource("Default CSS", "/com/eb/javafx/ui/default.css", true),
             new DisplayResource("Layouts", "/com/eb/javafx/ui/layout-contract.json", false));
     private static final Path LOCATION_EXAMPLES_RELATIVE_PATH =
-            Path.of("examples", "user-manual", "09-game-support-state-save-prefs-random");
-    private static final String MAP_TEXT_EXAMPLE_FILE = "map-text.demo.json";
-    private static final String LOCATION_TEXT_EXAMPLE_FILE = "location-text-town.demo.json";
+            Path.of("examples", "resources", "json");
+    private static final String MAP_TEXT_EXAMPLE_FILE = "map-text/map-text.demo.json";
+    private static final String LOCATION_TEXT_EXAMPLE_FILE = "location-text/location-text-town.demo.json";
     private static final List<String> LOOKUP_VARIABLE_TYPE_OPTIONS = Arrays.stream(TextVariableType.values())
             .map(type -> type.name().toLowerCase(Locale.ROOT))
             .toList();
@@ -222,7 +222,7 @@ public final class DefaultDisplayValuesApplication {
     }
 
     static List<String> applicationLoadTypeOptions() {
-        return List.of("code table", "conversation");
+        return List.of("display", "scene", "conversation");
     }
 
     static List<ApplicationLoad> applicationLoads() {
@@ -887,6 +887,7 @@ public final class DefaultDisplayValuesApplication {
             case "defaultSaveLoadScreenBackgroundColor" -> "Default save/load screen background color";
             case "defaultSaveLoadScreenBackgroundImage" -> "Default save/load screen background image";
             case "defaultSaveLoadScreenBackgroundImageTransparency" -> "Default save/load screen background image transparency [0-1]";
+            case "resources.jsonResourceRoot" -> "JSON resource root folder";
             case "resources.uiTheme" -> "UI theme file";
             default -> humanizeConfigKey(key);
         };
@@ -907,6 +908,9 @@ public final class DefaultDisplayValuesApplication {
             return ApplicationConfigFieldEditorType.COLOR;
         }
         if ("imageAssetRoot".equals(key)) {
+            return ApplicationConfigFieldEditorType.DIRECTORY;
+        }
+        if ("resources.jsonResourceRoot".equals(key)) {
             return ApplicationConfigFieldEditorType.DIRECTORY;
         }
         if (key.endsWith("Path") || key.endsWith("Image") || key.startsWith("resources.")) {

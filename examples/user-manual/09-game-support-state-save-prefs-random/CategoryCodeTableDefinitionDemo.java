@@ -19,7 +19,7 @@ public final class CategoryCodeTableDefinitionDemo {
     public static void main(String[] args) {
         Path appRoot = PathUtils.currentDirectory();
         Path configPath = PathUtils.currentDirectory(
-                "examples/user-manual/04-startup-and-service-wiring/config.demo.json");
+                "examples/resources/json/config/config.demo.json");
         Path jsonPath = ApplicationResourceConfig.load(configPath).resolveCategoryCodeTables(appRoot);
         CategoryCodeTableDefinition tables = CategoryCodeTableDefinition.load(jsonPath);
 

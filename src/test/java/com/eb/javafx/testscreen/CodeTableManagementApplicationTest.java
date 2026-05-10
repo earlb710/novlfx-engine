@@ -18,8 +18,7 @@ final class CodeTableManagementApplicationTest {
         Path examplesDirectory = CodeTableManagementApplication.codeTableExamplesDirectory();
 
         assertTrue(Files.isDirectory(examplesDirectory));
-        assertTrue(examplesDirectory.endsWith(Path.of("examples", "user-manual",
-                "09-game-support-state-save-prefs-random")));
+        assertTrue(examplesDirectory.endsWith(Path.of("examples", "resources", "json", "code-tables")));
     }
 
     @Test

@@ -2,7 +2,6 @@ import com.eb.javafx.bootstrap.BootContext;
 import com.eb.javafx.bootstrap.BootstrapOptions;
 import com.eb.javafx.bootstrap.BootstrapService;
 import com.eb.javafx.content.ContentRegistry;
-import com.eb.javafx.content.JsonDisplayContentModule;
 import com.eb.javafx.content.StaticContentModule;
 import com.eb.javafx.display.ImageDisplayRegistry;
 import com.eb.javafx.routing.RouteCategory;
@@ -16,8 +15,6 @@ import com.eb.javafx.ui.ViewModelScreen;
 import com.eb.javafx.util.PathUtils;
 import javafx.application.Application;
 import javafx.stage.Stage;
-
-import java.nio.file.Path;
 import java.util.List;
 
 /**
@@ -29,17 +26,10 @@ import java.util.List;
 public final class GameApplicationDemo extends Application {
     @Override
     public void start(Stage primaryStage) {
-        Path configPath = PathUtils.currentDirectory("config.json");
-
-        BootstrapOptions baseOptions = BootstrapOptions.fromConfig(configPath);
-        Path displayDefinitions = baseOptions.resourceConfig()
-                .resolveResource(baseOptions.applicationRoot(), "displayDefinitions")
-                .orElseThrow(() -> new IllegalStateException("displayDefinitions must be configured by the application."));
+        BootstrapOptions baseOptions = BootstrapOptions.fromConfig(PathUtils.currentDirectory("config.json"));
 
         BootstrapOptions options = baseOptions
-                .withStaticContentModules(List.of(
-                        new DemoStaticContentModule(),
-                        new JsonDisplayContentModule(displayDefinitions)))
+                .withStaticContentModules(List.of(new DemoStaticContentModule()))
                 .withSceneModules(List.<SceneModule>of(sceneRegistry -> {
                 }))
                 .withRouteModules(List.of(new DemoRouteModule()));

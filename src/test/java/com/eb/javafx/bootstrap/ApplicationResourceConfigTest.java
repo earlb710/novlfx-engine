@@ -31,6 +31,7 @@ final class ApplicationResourceConfigTest {
                 .withDefaultSaveLoadScreenBackgroundColor("#304050")
                 .withDefaultSaveLoadScreenBackgroundImage("backgrounds/save-load.png")
                 .withDefaultSaveLoadScreenBackgroundImageTransparency("0.5")
+                .withJsonResourceRoot("resources/json")
                 .putResource("backgrounds", "assets/backgrounds")
                 .putResource("portraits", "assets/portraits");
         Path output = tempDir.resolve("config.json");
@@ -57,6 +58,9 @@ final class ApplicationResourceConfigTest {
                 tempDir.resolve("assets/images").normalize(),
                 reloaded.resolveImageAssetRoot(tempDir));
         assertEquals(
+                tempDir.resolve("resources/json").normalize(),
+                reloaded.resolveJsonResourceRoot(tempDir));
+        assertEquals(
                 tempDir.resolve("assets/backgrounds").normalize(),
                 reloaded.resolveResource(tempDir, "backgrounds").orElseThrow());
         assertTrue(Files.readString(output).contains("\"debug\": false"));
@@ -79,6 +83,7 @@ final class ApplicationResourceConfigTest {
         assertEquals("", config.defaultAppBackgroundColor());
         assertEquals("", config.defaultPreferencesScreenBackgroundImage());
         assertEquals("", config.defaultSaveLoadScreenBackgroundImageTransparency());
+        assertEquals("resources/json", config.jsonResourceRoot());
         assertTrue(config.resourcePath("backgrounds").isPresent());
         assertFalse(config.removeResource("backgrounds").resourcePath("backgrounds").isPresent());
         assertThrows(IllegalArgumentException.class, () -> config.removeResource("missing"));
@@ -94,6 +99,24 @@ final class ApplicationResourceConfigTest {
 
         assertFalse(config.debug());
         assertTrue(ApplicationResourceConfig.defaults().debug());
+    }
+
+    @Test
+    void parsesApplicationJsonLoadDefinition() {
+        ApplicationJsonLoadDefinition definition = ApplicationJsonLoadDefinition.fromJson("""
+                {
+                  "loads": [
+                    {"type": "display", "path": "display"},
+                    {"type": "scene", "path": "scenes", "fileName": "intro.json"}
+                  ]
+                }
+                """, "inline");
+
+        assertEquals(2, definition.loads().size());
+        assertEquals(ApplicationJsonLoadType.DISPLAY, definition.loads().get(0).type());
+        assertEquals("display", definition.loads().get(0).path());
+        assertEquals("", definition.loads().get(0).fileName());
+        assertEquals("intro.json", definition.loads().get(1).fileName());
     }
 
     @Test

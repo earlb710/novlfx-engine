@@ -12,6 +12,7 @@
   "defaultSaveLoadScreenBackgroundImage": "",
   "defaultSaveLoadScreenBackgroundImageTransparency": "",
   "resources": {
+    "jsonResourceRoot": "examples/resources/json",
     "uiTheme": "src/main/resources/com/eb/javafx/ui/default.css"
   }
 }

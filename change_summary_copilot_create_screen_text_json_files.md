@@ -1,0 +1,12 @@
+- Added screen design text sidecar support so saving a screen JSON writes a sibling `_text.json` file with a `language` field and localized `texts` map.
+- Updated screen design loading to resolve sidecar text ids back to authored screen, block, item, field, and button text while preserving legacy embedded text JSON support.
+- Converted bundled screen design examples to reference generated text ids and added matching `_text.json` files.
+- Documented the screen designer text sidecar workflow and added focused tests for save/load and example coverage.
+- Added app-load JSON directory support with `ApplicationJsonLoadDefinition`, load entries, and automatic `BootstrapOptions.fromConfig(...)` startup loading for display, scene, and conversation JSON directories.
+- Added a configurable `jsonResourceRoot` resource path and `JsonSceneModule` for data-only scene JSON startup registration.
+- Moved authored example JSON files under `examples/resources/json` with type subdirectories and added `app-load/app-load.json`.
+- Updated manual apps, docs, examples, tests, and Copilot instructions to use the new JSON resource directory structure.
+- Updated the user manual and example docs to describe `app-load/app-load.json`, the `examples/resources/json` directory layout, and the new startup-loading workflow.
+- Refreshed startup and application example snippets so they demonstrate `BootstrapOptions.fromConfig(...)` with directory-based JSON auto-loading instead of manually wiring display JSON in those examples.
+- Resolved the merge conflicts with `origin/main` by keeping both the new screen-text sidecar documentation and the newer screen designer live-preview guidance, and by preserving both required Swing imports in `ScreenDesignerApplication`.
+- Created a true merge commit for origin/main and resolved the remaining USER_MANUAL.md conflict by preserving the screen-text sidecar workflow details.

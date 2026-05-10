@@ -70,11 +70,15 @@ final class DefaultDisplayValuesApplicationTest {
                         "Default save/load screen background color",
                         "Default save/load screen background image",
                         "Default save/load screen background image transparency [0-1]",
+                        "JSON resource root folder",
                         "UI theme file"),
                 DefaultDisplayValuesApplication.applicationConfigFields().stream()
                         .map(DefaultDisplayValuesApplication.ApplicationConfigField::label)
                         .toList());
         assertEquals("true", DefaultDisplayValuesApplication.applicationConfigFields().get(0).value());
+        assertTrue(DefaultDisplayValuesApplication.applicationConfigFields().stream()
+                .anyMatch(field -> field.key().equals("resources.jsonResourceRoot")
+                        && field.value().equals("examples/resources/json")));
         assertTrue(DefaultDisplayValuesApplication.applicationConfigFields().stream()
                 .anyMatch(field -> field.key().equals("resources.uiTheme")
                         && field.value().equals("src/main/resources/com/eb/javafx/ui/default.css")));
@@ -142,18 +146,18 @@ final class DefaultDisplayValuesApplicationTest {
     void applicationLoadsExposeFieldsTypesAndDefaultRows() {
         assertEquals(List.of("Type", "Path", "File Name"),
                 DefaultDisplayValuesApplication.applicationLoadFieldLabels());
-        assertEquals(List.of("code table", "conversation"),
+        assertEquals(List.of("display", "scene", "conversation"),
                 DefaultDisplayValuesApplication.applicationLoadTypeOptions());
         assertEquals(List.of("Add Load", "Remove Load"),
                 DefaultDisplayValuesApplication.applicationLoadActionLabels());
-        assertEquals(List.of(new DefaultDisplayValuesApplication.ApplicationLoad("code table", "", "")),
+        assertEquals(List.of(new DefaultDisplayValuesApplication.ApplicationLoad("display", "", "")),
                 DefaultDisplayValuesApplication.applicationLoads());
     }
 
     @Test
     void locationExamplesResolveFromRepositoryAndSampleJsonLoads() {
         assertTrue(DefaultDisplayValuesApplication.locationExamplesDirectory()
-                .endsWith(java.nio.file.Path.of("examples", "user-manual", "09-game-support-state-save-prefs-random")));
+                .endsWith(java.nio.file.Path.of("examples", "resources", "json")));
 
         MapTextDefinition mapText = MapTextDefinition.fromJson(
                 DefaultDisplayValuesApplication.sampleMapTextJson(),
@@ -320,7 +324,7 @@ final class DefaultDisplayValuesApplicationTest {
         assertEquals(1, model.getRowCount());
         ((JButton) actions.getComponent(0)).doClick();
         assertEquals(2, model.getRowCount());
-        assertEquals("code table", model.getValueAt(1, 0));
+        assertEquals("display", model.getValueAt(1, 0));
 
         table.setRowSelectionInterval(0, 0);
         ((JButton) actions.getComponent(1)).doClick();
@@ -361,14 +365,14 @@ final class DefaultDisplayValuesApplicationTest {
     @Test
     void loadFileRemoveActionRemovesLastRowWhenNothingSelected() {
         DefaultTableModel model = DefaultDisplayValuesApplication.applicationLoadsTableModel(List.of(
-                new DefaultDisplayValuesApplication.ApplicationLoad("code table", "config/codes", ""),
+                new DefaultDisplayValuesApplication.ApplicationLoad("display", "display", ""),
                 new DefaultDisplayValuesApplication.ApplicationLoad("conversation", "content/conversations", "intro.json")));
         JTable table = new JTable(model);
 
         DefaultDisplayValuesApplication.removeApplicationLoadRows(table);
 
         assertEquals(1, model.getRowCount());
-        assertEquals("code table", model.getValueAt(0, 0));
+        assertEquals("display", model.getValueAt(0, 0));
     }
 
     @Test

@@ -1,0 +1,11 @@
+{
+  "language": "en",
+  "texts": {
+    "screen.title": "Profile Settings",
+    "block.profile.title": "Profile",
+    "item.profile.name.label": "Name",
+    "item.profile.name.defaultValue": "Player",
+    "item.profile.note.label": "Note",
+    "item.profile.note.defaultValue": "Temporary test fields can be added in the designer without saving."
+  }
+}

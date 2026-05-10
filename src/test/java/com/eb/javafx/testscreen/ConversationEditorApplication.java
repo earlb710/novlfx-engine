@@ -706,12 +706,12 @@ public final class ConversationEditorApplication {
     static Path conversationExamplesDirectory() {
         Path cwd = Path.of("").toAbsolutePath().normalize();
         List<Path> candidates = List.of(
-                cwd.resolve("examples/conversations"),
-                cwd.getParent() == null ? cwd.resolve("examples/conversations") : cwd.getParent().resolve("examples/conversations"));
+                cwd.resolve("examples/resources/json/conversations"),
+                cwd.getParent() == null ? cwd.resolve("examples/resources/json/conversations") : cwd.getParent().resolve("examples/resources/json/conversations"));
         return candidates.stream()
                 .filter(Files::isDirectory)
                 .findFirst()
-                .orElse(cwd.resolve("examples/conversations"));
+                .orElse(cwd.resolve("examples/resources/json/conversations"));
     }
 
     static List<Path> conversationJsonFiles(Path folder) {

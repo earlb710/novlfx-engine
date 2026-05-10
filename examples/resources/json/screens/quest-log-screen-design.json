@@ -1,6 +1,6 @@
 {
   "id": "journal.quests",
-  "title": "Quest Log",
+  "title": "screen.title",
   "layoutType": "TWO_COLUMN",
   "metadata": {
     "description": "Two-column quest tracker sample",
@@ -13,7 +13,7 @@
   "blocks": [
     {
       "id": "active-quests",
-      "title": "Active Quests",
+      "title": "block.active-quests.title",
       "styleClass": null,
       "metadata": {
         "backgroundColor": "#173255",
@@ -26,7 +26,7 @@
     },
     {
       "id": "details",
-      "title": "Selected Quest",
+      "title": "block.details.title",
       "styleClass": null,
       "metadata": {
         "backgroundColor": "#1b2740",
@@ -43,8 +43,8 @@
       "id": "active-quests.find-ava",
       "blockId": "active-quests",
       "type": "TEXT",
-      "label": "Find Ava",
-      "text": "Find Ava at the tram station",
+      "label": "item.active-quests.find-ava.label",
+      "text": "item.active-quests.find-ava.text",
       "value": null,
       "defaultValue": null,
       "styleClass": null,
@@ -57,8 +57,8 @@
       "id": "active-quests.repair-radio",
       "blockId": "active-quests",
       "type": "TEXT",
-      "label": "Repair Radio",
-      "text": "Collect 2 spare coils",
+      "label": "item.active-quests.repair-radio.label",
+      "text": "item.active-quests.repair-radio.text",
       "value": null,
       "defaultValue": null,
       "styleClass": null,
@@ -71,10 +71,10 @@
       "id": "details.priority",
       "blockId": "details",
       "type": "FIELD",
-      "label": "Priority",
+      "label": "item.details.priority.label",
       "text": null,
       "value": null,
-      "defaultValue": "High",
+      "defaultValue": "item.details.priority.defaultValue",
       "styleClass": null,
       "metadata": {
         "backgroundColor": "#1a2438",
@@ -85,10 +85,10 @@
       "id": "details.notes",
       "blockId": "details",
       "type": "TEXT_AREA",
-      "label": "Notes",
+      "label": "item.details.notes.label",
       "text": null,
       "value": null,
-      "defaultValue": "Ava was last seen near the east platform after curfew.",
+      "defaultValue": "item.details.notes.defaultValue",
       "styleClass": null,
       "metadata": {
         "backgroundColor": "#1d2b43",

@@ -7,6 +7,7 @@
 - Main engine code lives under `src/main/java/com/eb/javafx/*`; automated tests and manual support apps live under `src/test/java/com/eb/javafx/*`.
 - Public reusable APIs are organized by feature package, including `bootstrap`, `routing`, `scene`, `ui`, `display`, `audio`, `save`, `prefs`, `gamesupport`, `text`, and `util`.
 - Keep this repository generic and reusable. Do not add game-specific story content, route names, assets, save schemas, or one-off migration helpers to engine code.
+- App-authored example JSON is grouped under `examples/resources/json` by type: `code-tables`, `config`, `conversations`, `display`, `location`, `scenes`, and `screens`. Screen text sidecars(_text) live next to their screen JSON files in `screens`.
 
 ## First files to read
 
@@ -30,7 +31,7 @@
 
 - Manual launchers are Gradle `JavaExec` tasks in `build.gradle`: `runTestScreen`, `runManagementApp`, `runScreenDesigner`, `runConversationEditor`, and `runCodeTableManager`.
 - These applications are for human/manual checks and authoring diagnostics, not routine automated validation.
-- Example files under `examples/user-manual` are reference snippets and are not compiled by the Gradle build unless a task explicitly wires them in.
+- Example code under `examples/user-manual` is reference material and is not compiled by the Gradle build unless a task explicitly wires it in; JSON data examples live under `examples/resources/json`.
 
 ## Coding guidance
 

@@ -4,6 +4,7 @@ import com.eb.javafx.scene.ConversationConditionVariables;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
@@ -25,6 +26,7 @@ final class ScreenDesignModelTest {
         ScreenDesignJson.save(path, design);
         ScreenDesignModel loaded = ScreenDesignJson.load(path);
 
+        assertTrue(Files.exists(ScreenDesignJson.textPathFor(path)));
         assertEquals("profile", loaded.blocks().get(0).id());
         assertEquals("summary", loaded.blocks().get(1).id());
         assertEquals("profile", loaded.blocks().get(1).parentBlockId());
@@ -35,6 +37,36 @@ final class ScreenDesignModelTest {
         assertEquals("summary.text", loaded.items().get(1).id());
         assertEquals(20, loaded.items().get(1).sequence());
         assertEquals(List.of(), loaded.temporaryItems());
+    }
+
+    @Test
+    void saveExternalizesFixedScreenTextIntoLanguageSidecar() throws java.io.IOException {
+        ScreenDesignModel design = new ScreenDesignModel("profile", "Profile for $name", ScreenLayoutType.FORM, Map.of(),
+                List.of(new ScreenDesignBlock("actions", "Actions")),
+                List.of(
+                        new ScreenDesignItem("welcome", "actions", ScreenDesignItemType.TEXT,
+                                null, "Welcome $name", null, null, 10, null, Map.of()),
+                        new ScreenDesignItem("save", "actions", ScreenDesignItemType.BUTTON,
+                                "Save", null, "slot-1", null, 20, null, Map.of())),
+                List.of(new ScreenDesignItem("temporary", "actions", ScreenDesignItemType.FIELD,
+                        "Temporary", null, null, "Temp", null, Map.of())));
+        Path path = tempDir.resolve("profile.json");
+
+        ScreenDesignJson.save(path, design, "fr");
+
+        String layoutJson = Files.readString(path);
+        String textJson = Files.readString(ScreenDesignJson.textPathFor(path));
+        assertTrue(layoutJson.contains("\"title\": \"screen.title\""));
+        assertTrue(layoutJson.contains("\"text\": \"item.welcome.text\""));
+        assertTrue(layoutJson.contains("\"label\": \"item.save.label\""));
+        assertFalse(layoutJson.contains("Profile for $name"));
+        assertFalse(layoutJson.contains("temporary"));
+        assertTrue(textJson.contains("\"language\": \"fr\""));
+        assertTrue(textJson.contains("\"screen.title\": \"Profile for $name\""));
+        assertTrue(textJson.contains("\"item.welcome.text\": \"Welcome $name\""));
+        assertTrue(textJson.contains("\"item.save.label\": \"Save\""));
+        assertEquals("Profile for $name", ScreenDesignJson.load(path).title());
+        assertEquals("Save", ScreenDesignJson.load(path).items().get(1).label());
     }
 
     @Test

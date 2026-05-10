@@ -1,0 +1,12 @@
+{
+  "language": "en",
+  "texts": {
+    "screen.title": "Reloadable JSON Screen",
+    "block.instructions.title": "Edit and Reload",
+    "block.preview.title": "Rendered from JSON",
+    "item.instructions.edit.text": "Edit this file, then press Reload JSON in the test screen to see the updated layout.",
+    "item.instructions.path.text": "Default file: examples/screen-designs/reloadable-test-screen.json",
+    "item.preview.field.label": "Sample field",
+    "item.preview.field.defaultValue": "Change me in JSON"
+  }
+}

@@ -52,6 +52,7 @@ import javax.swing.Scrollable;
 import javax.swing.ListSelectionModel;
 import javax.swing.SwingUtilities;
 import javax.swing.WindowConstants;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.TableCellEditor;
@@ -1179,7 +1180,7 @@ public final class ScreenDesignerApplication {
         Path search = current;
         while (search != null) {
             if (Files.isRegularFile(search.resolve("build.gradle"))) {
-                return search.resolve("examples").resolve("screen-designs").normalize();
+                return search.resolve(Path.of("examples", "resources", "json", "screens")).normalize();
             }
             search = search.getParent();
         }
@@ -1440,6 +1441,7 @@ public final class ScreenDesignerApplication {
                 ? currentPath.getParent()
                 : screenDesignExamplesDirectory();
         JFileChooser chooser = new JFileChooser(initialDirectory.toFile());
+        chooser.setFileFilter(new FileNameExtensionFilter("Screen design JSON (*.json)", "json"));
         chooser.setCurrentDirectory(initialDirectory.toFile());
         if (currentPath != null) {
             chooser.setSelectedFile(currentPath.toFile());

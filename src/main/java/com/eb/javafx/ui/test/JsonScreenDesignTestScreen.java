@@ -27,7 +27,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /** Manual test screen that renders a JSON-backed {@link com.eb.javafx.ui.ScreenDesignModel} and can reload it. */
 public final class JsonScreenDesignTestScreen {
     private static final AtomicBoolean JAVAFX_STARTED = new AtomicBoolean();
-    private static final Path DEFAULT_DESIGN_RELATIVE_PATH = Path.of("examples", "screen-designs", "reloadable-test-screen.json");
+    private static final Path DEFAULT_DESIGN_RELATIVE_PATH =
+            Path.of("examples", "resources", "json", "screens", "reloadable-test-screen.json");
 
     private JsonScreenDesignTestScreen() {
     }
@@ -78,7 +79,7 @@ public final class JsonScreenDesignTestScreen {
         Path candidate = Files.isRegularFile(start) ? start.getParent() : start;
         while (candidate != null) {
             if (Files.isRegularFile(candidate.resolve("build.gradle"))
-                    && Files.isDirectory(candidate.resolve(Path.of("examples", "screen-designs")))) {
+                    && Files.isDirectory(candidate.resolve(Path.of("examples", "resources", "json", "screens")))) {
                 return Optional.of(candidate.toAbsolutePath().normalize());
             }
             candidate = candidate.getParent();

@@ -273,14 +273,14 @@ public final class CodeTableManagementApplication {
         Path cwd = Path.of("").toAbsolutePath().normalize();
         List<Path> candidates = List.of(
                 cwd,
-                cwd.resolve("examples/user-manual/09-game-support-state-save-prefs-random"),
+                cwd.resolve("examples/resources/json/code-tables"),
                 cwd.getParent() == null
-                        ? cwd.resolve("examples/user-manual/09-game-support-state-save-prefs-random")
-                        : cwd.getParent().resolve("examples/user-manual/09-game-support-state-save-prefs-random"));
+                        ? cwd.resolve("examples/resources/json/code-tables")
+                        : cwd.getParent().resolve("examples/resources/json/code-tables"));
         return candidates.stream()
                 .filter(CodeTableManagementApplication::isCodeTableExamplesDirectory)
                 .findFirst()
-                .orElse(cwd.resolve("examples/user-manual/09-game-support-state-save-prefs-random"));
+                .orElse(cwd.resolve("examples/resources/json/code-tables"));
     }
 
     private static boolean isCodeTableExamplesDirectory(Path path) {

@@ -30,7 +30,7 @@ public final class SceneExecutionAndJsonDemo {
     public static void main(String[] args) {
         Path appRoot = PathUtils.currentDirectory();
         Path configPath = PathUtils.currentDirectory(
-                "examples/user-manual/04-startup-and-service-wiring/config.demo.json");
+                "examples/resources/json/config/config.demo.json");
         Path jsonPath = ApplicationResourceConfig.load(configPath)
                 .resolveResource(appRoot, "sceneDefinitions")
                 .orElseThrow();
