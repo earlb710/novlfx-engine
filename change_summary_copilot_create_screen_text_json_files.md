@@ -9,3 +9,4 @@
 - Updated the user manual and example docs to describe `app-load/app-load.json`, the `examples/resources/json` directory layout, and the new startup-loading workflow.
 - Refreshed startup and application example snippets so they demonstrate `BootstrapOptions.fromConfig(...)` with directory-based JSON auto-loading instead of manually wiring display JSON in those examples.
 - Resolved the merge conflicts with `origin/main` by keeping both the new screen-text sidecar documentation and the newer screen designer live-preview guidance, and by preserving both required Swing imports in `ScreenDesignerApplication`.
+- Created a true merge commit for origin/main and resolved the remaining USER_MANUAL.md conflict by preserving the screen-text sidecar workflow details.
