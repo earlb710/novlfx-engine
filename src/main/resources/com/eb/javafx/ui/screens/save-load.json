@@ -1,0 +1,19 @@
+{
+  "id": "save.load",
+  "title": "screen.title",
+  "layoutType": "FORM",
+  "metadata": {
+    "description": "Runtime save-load screen text contract"
+  },
+  "blocks": [
+    {
+      "id": "content",
+      "title": null,
+      "layoutType": "FORM",
+      "parentBlockId": null,
+      "styleClass": null,
+      "metadata": {}
+    }
+  ],
+  "items": []
+}

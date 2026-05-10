@@ -1,0 +1,10 @@
+{
+  "language": "en",
+  "texts": {
+    "screen.title": "Save / Load",
+    "line.schema-version": "Save schema version: $schemaVersion",
+    "line.save-directory": "Save directory: $saveDirectory",
+    "line.transient-state-note": "Transient UI state is intentionally excluded from save data.",
+    "item.back.label": "Back to main menu"
+  }
+}

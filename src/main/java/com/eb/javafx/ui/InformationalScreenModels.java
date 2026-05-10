@@ -1,5 +1,6 @@
 package com.eb.javafx.ui;
 
+import com.eb.javafx.gamesupport.SystemCodeTables;
 import com.eb.javafx.routing.SceneRouter;
 
 import java.util.List;
@@ -18,6 +19,9 @@ public final class InformationalScreenModels {
         return new ScreenViewModel(
                 title,
                 List.of(bodyText),
-                List.of(new ScreenActionViewModel("Back to main menu", SceneRouter.MAIN_MENU_ROUTE, true)));
+                List.of(new ScreenActionViewModel(
+                        SystemCodeTables.defaultMessage("action.back.main-menu"),
+                        SceneRouter.MAIN_MENU_ROUTE,
+                        true)));
     }
 }

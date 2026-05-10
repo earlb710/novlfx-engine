@@ -14,9 +14,6 @@ import java.util.List;
  * applications a working HUD diagnostics screen before they add authored overlays.</p>
  */
 public final class HudSummaryScreen {
-    private static final String BACK_LABEL = "Back to main menu";
-    private static final String LAYER_DESCRIPTION = "Persistent HUD layer";
-
     private HudSummaryScreen() {
     }
 
@@ -26,15 +23,18 @@ public final class HudSummaryScreen {
 
     public static HudSummaryViewModel viewModel(RouteContext context) {
         return viewModel(
-                context.contentRegistry().definition("ui.hud.title"),
+                ScreenTextResources.title(ScreenTextResources.HUD),
                 context.preferencesService());
     }
 
     public static HudSummaryViewModel viewModel(String title, PreferencesService preferencesService) {
         return new HudSummaryViewModel(
                 title,
-                LAYER_DESCRIPTION,
+                ScreenTextResources.text(ScreenTextResources.HUD, "line.layer-description"),
                 preferencesService.hudAlpha(),
-                List.of(new ScreenActionViewModel(BACK_LABEL, SceneRouter.MAIN_MENU_ROUTE, true)));
+                List.of(new ScreenActionViewModel(
+                        ScreenTextResources.text(ScreenTextResources.HUD, "item.back.label"),
+                        SceneRouter.MAIN_MENU_ROUTE,
+                        true)));
     }
 }

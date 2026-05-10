@@ -1,5 +1,6 @@
 package com.eb.javafx.ui;
 
+import com.eb.javafx.gamesupport.SystemCodeTables;
 import com.eb.javafx.routing.RouteContext;
 import com.eb.javafx.routing.SceneRouter;
 import com.eb.javafx.state.GameState;
@@ -22,6 +23,7 @@ import javafx.scene.layout.VBox;
 
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -50,7 +52,7 @@ public final class ConversationHistoryScreen {
 
     public static ConversationHistoryViewModel viewModel(RouteContext context) {
         return viewModel(
-                context.contentRegistry().definition("ui.conversationHistory.title"),
+                ScreenTextResources.title(ScreenTextResources.CONVERSATION_HISTORY),
                 context.gameState());
     }
 
@@ -58,7 +60,7 @@ public final class ConversationHistoryScreen {
         List<String> messages;
         List<ConversationHistoryEntryViewModel> entries;
         if (gameState == null) {
-            messages = List.of("Conversation history is unavailable.");
+            messages = List.of(screenText("line.unavailable"));
             entries = List.of();
         } else {
             messages = messagesFor(gameState.conversationHistory());
@@ -68,7 +70,7 @@ public final class ConversationHistoryScreen {
                 title,
                 messages,
                 entries,
-                List.of(new ScreenActionViewModel("Back to main menu", SceneRouter.MAIN_MENU_ROUTE, true)));
+                List.of(new ScreenActionViewModel(screenText("item.back.label"), SceneRouter.MAIN_MENU_ROUTE, true)));
     }
 
     private static VBox createContent(RouteContext context, ConversationHistoryViewModel viewModel) {
@@ -143,7 +145,11 @@ public final class ConversationHistoryScreen {
     }
 
     private static String formatEntryHeader(ConversationHistoryEntryViewModel entry) {
-        return entry.dialogId() + " started " + entry.startedAt() + " with " + entry.participants() + " (" + entry.status() + ")";
+        return ScreenTextResources.format(ScreenTextResources.CONVERSATION_HISTORY, "entry.header", Map.of(
+                "dialogId", entry.dialogId(),
+                "startedAt", entry.startedAt(),
+                "participants", entry.participants(),
+                "status", entry.status()));
     }
 
     private static String rowText(ConversationHistoryRowViewModel row) {
@@ -157,7 +163,7 @@ public final class ConversationHistoryScreen {
 
     private static List<String> messagesFor(DialogHistory history) {
         return history.entries().isEmpty()
-                ? List.of("No conversations have been recorded yet.")
+                ? List.of(screenText("line.empty"))
                 : List.of();
     }
 
@@ -171,7 +177,9 @@ public final class ConversationHistoryScreen {
         return new ConversationHistoryEntryViewModel(
                 entry.dialogId(),
                 entry.startedAt().toString(),
-                entry.isOpen() ? "open" : "ended " + entry.endedAt(),
+                entry.isOpen()
+                        ? SystemCodeTables.defaultMessage("conversation.status.open")
+                        : SystemCodeTables.defaultMessage("conversation.status.ended", Map.of("endedAt", entry.endedAt().toString())),
                 participants(entry),
                 entry.messages().stream()
                         .map(ConversationHistoryScreen::rowViewModel)
@@ -195,7 +203,7 @@ public final class ConversationHistoryScreen {
                 names.add(speaker.label());
             }
         }
-        return names.isEmpty() ? "unknown participants" : String.join(", ", names);
+        return names.isEmpty() ? SystemCodeTables.defaultMessage("conversation.participants.unknown") : String.join(", ", names);
     }
 
     private static String messageText(DialogMessage message) {
@@ -227,5 +235,9 @@ public final class ConversationHistoryScreen {
             }
         }
         return text.toString().trim();
+    }
+
+    private static String screenText(String key) {
+        return ScreenTextResources.text(ScreenTextResources.CONVERSATION_HISTORY, key);
     }
 }

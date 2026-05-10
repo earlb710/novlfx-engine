@@ -14,9 +14,6 @@ import java.util.List;
  * reusable save foundation visible before an application provides a custom save browser.</p>
  */
 public final class SaveLoadSummaryScreen {
-    private static final String BACK_LABEL = "Back to main menu";
-    private static final String TRANSIENT_STATE_NOTE = "Transient UI state is intentionally excluded from save data.";
-
     private SaveLoadSummaryScreen() {
     }
 
@@ -29,7 +26,7 @@ public final class SaveLoadSummaryScreen {
 
     public static SaveLoadSummaryViewModel viewModel(RouteContext context) {
         return viewModel(
-                context.contentRegistry().definition("ui.saveLoad.title"),
+                ScreenTextResources.title(ScreenTextResources.SAVE_LOAD),
                 context.saveLoadService());
     }
 
@@ -38,7 +35,10 @@ public final class SaveLoadSummaryScreen {
                 title,
                 saveLoadService.schema().version(),
                 saveLoadService.schema().saveDirectory(),
-                TRANSIENT_STATE_NOTE,
-                List.of(new ScreenActionViewModel(BACK_LABEL, SceneRouter.MAIN_MENU_ROUTE, true)));
+                ScreenTextResources.text(ScreenTextResources.SAVE_LOAD, "line.transient-state-note"),
+                List.of(new ScreenActionViewModel(
+                        ScreenTextResources.text(ScreenTextResources.SAVE_LOAD, "item.back.label"),
+                        SceneRouter.MAIN_MENU_ROUTE,
+                        true)));
     }
 }

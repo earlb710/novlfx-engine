@@ -1,0 +1,15 @@
+{
+  "language": "en",
+  "texts": {
+    "screen.title": "Display Bindings Preview",
+    "line.parsed-image-aliases": "Parsed image aliases: $count",
+    "line.parsed-transforms": "Parsed transforms: $count",
+    "line.layered-character-models": "Layered character models: $count",
+    "line.animation-profiles": "Animation profiles: $count",
+    "block.layered-display-composition.title": "Layered display composition",
+    "block.animation-profiles.title": "Animation profiles",
+    "line.layered-character-summary": "$id -> $drawOrder, metadata=$metadata",
+    "line.animation-summary": "$id -> steps=$steps, repeat=$repeat, autoReverse=$autoReverse",
+    "item.back.label": "Back to main menu"
+  }
+}

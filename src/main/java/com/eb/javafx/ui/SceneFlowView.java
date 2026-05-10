@@ -6,6 +6,7 @@ import com.eb.javafx.scene.SceneEffectPreviewViewModel;
 import com.eb.javafx.scene.SceneExecutionStatus;
 import com.eb.javafx.scene.SceneStatusRowViewModel;
 import com.eb.javafx.scene.SceneViewModel;
+import com.eb.javafx.gamesupport.SystemCodeTables;
 import com.eb.javafx.util.Validation;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
@@ -16,6 +17,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 
 import java.util.Objects;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -101,13 +103,15 @@ public final class SceneFlowView {
 
     private static Node checkpointNavigationPanel(SceneViewModel viewModel, Runnable backwardHandler, Runnable forwardHandler) {
         HBox panel = new HBox(ScreenShell.BODY_SPACING);
-        Button back = new Button("Back");
+        Button back = new Button(SystemCodeTables.defaultMessage("scene-flow.back"));
         back.getStyleClass().add("scene-checkpoint-back-button");
         back.setDisable(!viewModel.rollbackAvailable() || backwardHandler == null);
         if (backwardHandler != null) {
             back.setOnAction(event -> backwardHandler.run());
         }
-        Button forward = new Button(viewModel.rollForwardAvailable() ? "Forward" : "Continue");
+        Button forward = new Button(viewModel.rollForwardAvailable()
+                ? SystemCodeTables.defaultMessage("scene-flow.forward")
+                : SystemCodeTables.defaultMessage("scene-flow.continue"));
         forward.getStyleClass().add("scene-checkpoint-forward-button");
         boolean forwardAvailable = viewModel.rollForwardAvailable()
                 || viewModel.status() == SceneExecutionStatus.DISPLAYING_TEXT;
@@ -127,10 +131,14 @@ public final class SceneFlowView {
     private static Node dialoguePanel(SceneViewModel viewModel) {
         VBox panel = ScreenShell.styledPanel(ScreenShell.SCENE_DIALOGUE_PANEL_STYLE_CLASS);
         for (SceneDialogueRowViewModel row : viewModel.dialogueRows()) {
-            String speaker = row.speakerId() == null || row.speakerId().isBlank() ? "narrator" : row.speakerId();
+            String speaker = row.speakerId() == null || row.speakerId().isBlank()
+                    ? SystemCodeTables.defaultMessage("scene-flow.narrator")
+                    : row.speakerId();
             panel.getChildren().add(new Label(speaker + ": " + row.textDefinition()));
             if (row.displayReference() != null && !row.displayReference().isBlank()) {
-                Label display = new Label("Display: " + row.displayReference());
+                Label display = new Label(SystemCodeTables.defaultMessage(
+                        "scene-flow.display",
+                        Map.of("displayReference", row.displayReference())));
                 display.getStyleClass().add("scene-effect-preview");
                 panel.getChildren().add(display);
             }
@@ -160,7 +168,7 @@ public final class SceneFlowView {
             }
             panel.getChildren().add(button);
             if (choice.selected()) {
-                Label selected = new Label("Selected in history");
+                Label selected = new Label(SystemCodeTables.defaultMessage("scene-flow.selected-history"));
                 selected.getStyleClass().add("scene-choice-state");
                 panel.getChildren().add(selected);
             }
@@ -179,7 +187,7 @@ public final class SceneFlowView {
             }
         }
         if (viewModel.choices().isEmpty()) {
-            panel.getChildren().add(new Label("No choices available."));
+            panel.getChildren().add(new Label(SystemCodeTables.defaultMessage("scene-flow.no-choices")));
         }
         return panel;
     }

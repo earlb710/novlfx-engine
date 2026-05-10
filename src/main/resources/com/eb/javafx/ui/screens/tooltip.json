@@ -1,0 +1,19 @@
+{
+  "id": "tooltip",
+  "title": "screen.title",
+  "layoutType": "FORM",
+  "metadata": {
+    "description": "Runtime tooltip screen text contract"
+  },
+  "blocks": [
+    {
+      "id": "content",
+      "title": null,
+      "layoutType": "FORM",
+      "parentBlockId": null,
+      "styleClass": null,
+      "metadata": {}
+    }
+  ],
+  "items": []
+}

@@ -1,0 +1,9 @@
+{
+  "language": "en",
+  "texts": {
+    "screen.title": "HUD",
+    "line.layer-description": "Persistent HUD layer",
+    "line.opacity": "HUD opacity: $opacity",
+    "item.back.label": "Back to main menu"
+  }
+}

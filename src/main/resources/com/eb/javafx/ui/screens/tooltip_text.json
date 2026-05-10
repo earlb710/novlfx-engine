@@ -1,0 +1,8 @@
+{
+  "language": "en",
+  "texts": {
+    "screen.title": "Tooltip",
+    "line.body": "Reusable tooltip panels for domain data, actions, requirements, and generic help render here.",
+    "item.back.label": "Back to main menu"
+  }
+}

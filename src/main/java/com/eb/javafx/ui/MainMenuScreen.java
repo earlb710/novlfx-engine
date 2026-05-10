@@ -30,8 +30,8 @@ public final class MainMenuScreen {
     public static ScreenViewModel viewModel(RouteContext context) {
         List<String> lines = List.of(
                 context.contentRegistry().definition("application.name"),
-                context.contentRegistry().definition("ui.mainMenu.status"),
-                "Startup phase complete. Reusable engine services, routes, and support foundations are ready.");
+                ScreenTextResources.text(ScreenTextResources.MAIN_MENU, "line.status"),
+                ScreenTextResources.text(ScreenTextResources.MAIN_MENU, "line.startup-complete"));
         List<ScreenActionViewModel> actions = new ArrayList<>();
 
         for (RouteDescriptor descriptor : context.sceneRouter().routeDescriptors().values()) {
@@ -43,6 +43,6 @@ public final class MainMenuScreen {
             }
         }
 
-        return new ScreenViewModel(context.contentRegistry().definition("ui.mainMenu.title"), lines, actions);
+        return new ScreenViewModel(ScreenTextResources.title(ScreenTextResources.MAIN_MENU), lines, actions);
     }
 }

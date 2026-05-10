@@ -3,6 +3,7 @@ package com.eb.javafx.ui;
 import com.eb.javafx.util.Validation;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Structured HUD summary route model.
@@ -24,7 +25,8 @@ public record HudSummaryViewModel(
                 title,
                 List.of(
                         layerDescription,
-                        "HUD opacity: " + opacity),
+                        ScreenTextResources.format(ScreenTextResources.HUD, "line.opacity",
+                                Map.of("opacity", Double.toString(opacity)))),
                 actions);
     }
 }

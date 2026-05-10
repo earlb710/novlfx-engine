@@ -1,6 +1,7 @@
 package com.eb.javafx.ui;
 
 import com.eb.javafx.localization.LocalizationService;
+import com.eb.javafx.gamesupport.SystemCodeTables;
 import com.eb.javafx.prefs.PreferencesService;
 import com.eb.javafx.prefs.PreferencesService.FooterShortcutDisplay;
 import com.eb.javafx.state.GameState;
@@ -125,16 +126,25 @@ public final class ScreenShell {
     private static final FooterShortcutDisplay DEFAULT_FOOTER_SHORTCUT_DISPLAY = FooterShortcutDisplay.TOOLTIP_ONLY;
     private static final Map<String, Image> FOOTER_ICON_CACHE = new ConcurrentHashMap<>();
     private static final List<FooterOption> FOOTER_OPTIONS = List.of(
-            new FooterOption("back", "‹", "Back", "Backspace", "Return to the previous screen."),
-            new FooterOption("history", "◷", "History", "Ctrl+H", "Open conversation history."),
-            new FooterOption("skip-mode", "⇥", "Skip mode", "Tab", "Toggle skip mode."),
-            new FooterOption("load", "⇩", "Load", "Ctrl+L", "Open the load screen."),
-            new FooterOption("save", "▣", "Save", "Ctrl+S", "Open the save screen."),
-            new FooterOption("quick-save", "⚡", "Quick save", "Ctrl+Q", "Save to the quick-save slot."),
-            new FooterOption("preferences", "⚙", "Preferences", "Ctrl+P", "Open preferences."),
-            new FooterOption("forward", "›", "Forward", "Space", "Advance the scene."));
+            footerOption("back", "‹", "Backspace"),
+            footerOption("history", "◷", "Ctrl+H"),
+            footerOption("skip-mode", "⇥", "Tab"),
+            footerOption("load", "⇩", "Ctrl+L"),
+            footerOption("save", "▣", "Ctrl+S"),
+            footerOption("quick-save", "⚡", "Ctrl+Q"),
+            footerOption("preferences", "⚙", "Ctrl+P"),
+            footerOption("forward", "›", "Space"));
 
     private ScreenShell() {
+    }
+
+    private static FooterOption footerOption(String id, String icon, String shortcut) {
+        return new FooterOption(
+                id,
+                icon,
+                SystemCodeTables.defaultMessage("footer." + id + ".label"),
+                shortcut,
+                SystemCodeTables.defaultMessage("footer." + id + ".tooltip"));
     }
 
     /**
@@ -1028,7 +1038,7 @@ public final class ScreenShell {
             if (checkedDisplay == FooterShortcutDisplay.HIDE) {
                 return tooltip;
             }
-            String shortcutText = "Keyboard shortcut: " + shortcut + ".";
+            String shortcutText = SystemCodeTables.defaultMessage("footer.keyboard-shortcut", Map.of("shortcut", shortcut));
             if (tooltip == null || tooltip.isBlank()) {
                 return shortcutText;
             }
@@ -1036,7 +1046,9 @@ public final class ScreenShell {
         }
 
         public String accessibleText() {
-            return label + " - Keyboard shortcut: " + shortcut;
+            return SystemCodeTables.defaultMessage("footer.accessible-text", Map.of(
+                    "label", label,
+                    "shortcut", shortcut));
         }
 
         public FooterOption withIcon(String icon) {

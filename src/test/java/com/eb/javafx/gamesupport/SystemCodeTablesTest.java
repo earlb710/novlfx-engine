@@ -20,6 +20,11 @@ final class SystemCodeTablesTest {
         assertTrue(codeTables.containsTable(SystemCodeTables.SCENE_TRANSITION_TYPES_TABLE_ID));
         assertTrue(codeTables.containsTable(SystemCodeTables.ROUTE_CATEGORIES_TABLE_ID));
         assertTrue(codeTables.containsTable(SystemCodeTables.SETTING_TYPES_TABLE_ID));
+        assertTrue(codeTables.containsTable(SystemCodeTables.SYS_MESSAGE_TABLE_ID));
+        assertTrue(codeTables.containsTable(SystemCodeTables.FOOTER_SHORTCUT_DISPLAY_TABLE_ID));
+        assertTrue(codeTables.containsTable(SystemCodeTables.THEME_FAMILY_TABLE_ID));
+        assertTrue(codeTables.containsTable(SystemCodeTables.THEME_VARIANT_TABLE_ID));
+        assertTrue(codeTables.containsTable(SystemCodeTables.VOLUME_LEVEL_TABLE_ID));
     }
 
     @Test
@@ -36,6 +41,13 @@ final class SystemCodeTablesTest {
     void systemTimeOfDayValuesIncludeConversationEditorDefaults() {
         assertEquals(List.of("morning", "afternoon", "evening", "night"),
                 SystemCodeTables.defaultCodeIds(SystemCodeTables.TIME_OF_DAY_TABLE_ID));
+    }
+
+    @Test
+    void systemMessagesResolveReusableUiText() {
+        assertEquals("Back to main menu", SystemCodeTables.defaultMessage("action.back.main-menu"));
+        assertEquals("Keyboard shortcut: Ctrl+P.",
+                SystemCodeTables.defaultMessage("footer.keyboard-shortcut", java.util.Map.of("shortcut", "Ctrl+P")));
     }
 
     @Test

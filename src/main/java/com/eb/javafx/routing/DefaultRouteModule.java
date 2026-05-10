@@ -8,6 +8,7 @@ import com.eb.javafx.ui.MainMenuScreen;
 import com.eb.javafx.ui.PreferencesSummaryScreen;
 import com.eb.javafx.ui.SaveLoadSummaryScreen;
 import com.eb.javafx.ui.SceneFlowScreen;
+import com.eb.javafx.ui.ScreenTextResources;
 import com.eb.javafx.ui.ViewModelScreen;
 import com.eb.javafx.ui.test.CaptureTestScreen;
 import com.eb.javafx.ui.test.ComplexFooterBarTestScreen;
@@ -66,8 +67,8 @@ public final class DefaultRouteModule implements RouteModule {
                         true,
                         "Reusable view-model route for notification and modal overlay layering."),
                 context -> ViewModelScreen.createScene(context, InformationalScreenModels.backToMainMenu(
-                        context.contentRegistry().definition("ui.notification.title"),
-                        "Notifications and modal overlays share this JavaFX layer strategy.")));
+                        ScreenTextResources.title(ScreenTextResources.NOTIFICATION),
+                        ScreenTextResources.text(ScreenTextResources.NOTIFICATION, "line.body"))));
         router.registerRoute(new RouteDescriptor(
                         SceneRouter.TOOLTIP_ROUTE,
                         "ui.tooltip.title",
@@ -75,8 +76,8 @@ public final class DefaultRouteModule implements RouteModule {
                         true,
                         "Reusable view-model route for tooltip panels."),
                 context -> ViewModelScreen.createScene(context, InformationalScreenModels.backToMainMenu(
-                        context.contentRegistry().definition("ui.tooltip.title"),
-                        "Reusable tooltip panels for domain data, actions, requirements, and generic help render here.")));
+                        ScreenTextResources.title(ScreenTextResources.TOOLTIP),
+                        ScreenTextResources.text(ScreenTextResources.TOOLTIP, "line.body"))));
         router.registerRoute(new RouteDescriptor(
                         SceneRouter.CONVERSATION_HISTORY_ROUTE,
                         "ui.conversationHistory.title",

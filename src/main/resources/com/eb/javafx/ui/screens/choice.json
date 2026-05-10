@@ -1,0 +1,19 @@
+{
+  "id": "choice",
+  "title": "screen.title",
+  "layoutType": "FORM",
+  "metadata": {
+    "description": "Runtime choice screen text contract"
+  },
+  "blocks": [
+    {
+      "id": "content",
+      "title": null,
+      "layoutType": "FORM",
+      "parentBlockId": null,
+      "styleClass": null,
+      "metadata": {}
+    }
+  ],
+  "items": []
+}

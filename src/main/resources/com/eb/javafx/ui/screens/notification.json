@@ -1,0 +1,19 @@
+{
+  "id": "notification",
+  "title": "screen.title",
+  "layoutType": "FORM",
+  "metadata": {
+    "description": "Runtime notification screen text contract"
+  },
+  "blocks": [
+    {
+      "id": "content",
+      "title": null,
+      "layoutType": "FORM",
+      "parentBlockId": null,
+      "styleClass": null,
+      "metadata": {}
+    }
+  ],
+  "items": []
+}
