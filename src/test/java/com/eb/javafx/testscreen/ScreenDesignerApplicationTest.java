@@ -701,13 +701,16 @@ final class ScreenDesignerApplicationTest {
     @Test
     void dropPositionUsesTopMiddleAndBottomBandsWithoutSwingInsertMode() {
         Rectangle bounds = new Rectangle(0, 100, 200, 24);
+        int beforeY = bounds.y + 3;
+        int middleY = bounds.y + (bounds.height / 2);
+        int afterY = bounds.y + bounds.height - 1;
 
         assertEquals(ScreenDesignerApplication.DropPosition.BEFORE,
-                ScreenDesignerApplication.dropPositionFor(bounds, 103));
+                ScreenDesignerApplication.dropPositionFor(bounds, beforeY));
         assertEquals(ScreenDesignerApplication.DropPosition.ON,
-                ScreenDesignerApplication.dropPositionFor(bounds, 112));
+                ScreenDesignerApplication.dropPositionFor(bounds, middleY));
         assertEquals(ScreenDesignerApplication.DropPosition.AFTER,
-                ScreenDesignerApplication.dropPositionFor(bounds, 123));
+                ScreenDesignerApplication.dropPositionFor(bounds, afterY));
         assertEquals(ScreenDesignerApplication.DropPosition.ON,
                 ScreenDesignerApplication.dropPositionFor(null, 0));
     }

@@ -107,6 +107,8 @@ public final class ScreenDesignerApplication {
     private static final int PROPERTY_FIELD_MIN_COLUMNS = 10;
     private static final Color INLINE_ERROR_COLOR = new Color(0x9b1c1c);
     private static final Color INLINE_HINT_COLOR = new Color(0x5f6368);
+    private static final int MIN_DROP_ZONE_HEIGHT = 4;
+    private static final int DROP_ZONE_EDGE_DIVISOR = 4;
     private static final String SCREEN_PARENT_OPTION = "<screen>";
     private static final String DEFAULT_OPTION = "<default>";
     private static final String CSS_INHERITANCE_HINT = "<inherit from CSS>";
@@ -1738,6 +1740,7 @@ public final class ScreenDesignerApplication {
     }
 
     private void installTreeDragAndDrop() {
+        // Keep Swing in ON mode and infer before/on/after ourselves to avoid BasicTreeUI insert-line NPEs.
         objectTree.setDropMode(DropMode.ON);
         objectTree.setTransferHandler(new NavigationTreeTransferHandler());
         if (!GraphicsEnvironment.isHeadless()) {
@@ -1915,7 +1918,7 @@ public final class ScreenDesignerApplication {
         if (bounds == null || bounds.height <= 0) {
             return DropPosition.ON;
         }
-        int dropZoneHeight = Math.max(4, bounds.height / 4);
+        int dropZoneHeight = Math.max(MIN_DROP_ZONE_HEIGHT, bounds.height / DROP_ZONE_EDGE_DIVISOR);
         if (pointerY < bounds.y + dropZoneHeight) {
             return DropPosition.BEFORE;
         }
@@ -2136,7 +2139,8 @@ public final class ScreenDesignerApplication {
         LinkedHashSet<String> visitedBlockIds = new LinkedHashSet<>();
         while (current != null) {
             if (!visitedBlockIds.add(current)) {
-                throw new IllegalArgumentException("Screen design blocks contain a parent cycle involving '" + current + "'.");
+                throw new IllegalArgumentException("Screen design blocks contain a parent cycle: "
+                        + String.join(" -> ", visitedBlockIds) + " -> " + current + ".");
             }
             if (ancestorBlockId.equals(current)) {
                 return true;
