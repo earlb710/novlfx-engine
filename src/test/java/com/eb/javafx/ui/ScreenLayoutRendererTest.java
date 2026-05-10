@@ -1,15 +1,31 @@
 package com.eb.javafx.ui;
 
+import javafx.application.Platform;
+import javafx.scene.Node;
+import javafx.scene.Parent;
+import javafx.scene.control.Label;
+import javafx.scene.control.TextArea;
+import javafx.scene.control.TextField;
 import org.junit.jupiter.api.Test;
 
+import java.awt.GraphicsEnvironment;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 final class ScreenLayoutRendererTest {
+    private static final AtomicBoolean JAVAFX_STARTED = new AtomicBoolean();
+
     @Test
     void rendererExposesStableSemanticStyleHooksForReusableLayouts() {
         assertTrue(ScreenShell.LAYOUT_CONTENT_STYLE_CLASS.startsWith("layout-"));
@@ -118,6 +134,85 @@ final class ScreenLayoutRendererTest {
     @Test
     void rendererLoadsPackagedSvgBackgroundImages() {
         assertTrue(ScreenLayoutRenderer.loadBackgroundImage("/com/eb/javafx/images/svg/background-gradient-rectangle.svg").getWidth() > 0);
+    }
+
+    @Test
+    void rendererShowsFieldItemsAsEditablePreviewInputs() throws Exception {
+        assumeFalse(GraphicsEnvironment.isHeadless(), "Renderer control test requires a display.");
+        startJavaFxToolkit();
+        ScreenLayoutModel model = new ScreenLayoutModel(
+                ScreenLayoutType.FORM,
+                "Profile",
+                null,
+                List.of(new ScreenLayoutSection(
+                        "profile",
+                        "Profile",
+                        List.of("Name: Ava", "Notes: Saved"),
+                        null,
+                        Map.of(),
+                        List.of("profile.name", "profile.notes"),
+                        List.of(
+                                Map.of(
+                                        ScreenDesignLayoutAdapter.SCREEN_DESIGN_ITEM_TYPE_KEY, ScreenDesignItemType.FIELD.name(),
+                                        ScreenDesignLayoutAdapter.SCREEN_DESIGN_LABEL_KEY, "Name",
+                                        ScreenDesignLayoutAdapter.SCREEN_DESIGN_VALUE_KEY, "Ava",
+                                        ScreenDesignLayoutAdapter.SCREEN_DESIGN_EDITABLE_KEY, "true"),
+                                Map.of(
+                                        ScreenDesignLayoutAdapter.SCREEN_DESIGN_ITEM_TYPE_KEY, ScreenDesignItemType.MULTI_LINE_FIELD.name(),
+                                        ScreenDesignLayoutAdapter.SCREEN_DESIGN_LABEL_KEY, "Notes",
+                                        ScreenDesignLayoutAdapter.SCREEN_DESIGN_VALUE_KEY, "Saved",
+                                        ScreenDesignLayoutAdapter.SCREEN_DESIGN_EDITABLE_KEY, "false")))),
+                List.of(),
+                List.of(),
+                List.of(),
+                null);
+
+        Parent root = ScreenLayoutRenderer.createRoot(model);
+
+        Label nameLabel = findNode(root, "profile.name.label", Label.class);
+        TextField nameField = findNode(root, "profile.name", TextField.class);
+        TextArea notesField = findNode(root, "profile.notes", TextArea.class);
+
+        assertNotNull(nameLabel);
+        assertEquals("Name", nameLabel.getText());
+        assertEquals("Ava", nameField.getText());
+        assertTrue(nameField.isEditable());
+        assertEquals("Saved", notesField.getText());
+        assertFalse(notesField.isEditable());
+    }
+
+    private static void startJavaFxToolkit() throws InterruptedException {
+        CountDownLatch started = new CountDownLatch(1);
+        if (JAVAFX_STARTED.compareAndSet(false, true)) {
+            try {
+                Platform.startup(() -> {
+                    Platform.setImplicitExit(false);
+                    started.countDown();
+                });
+            } catch (IllegalStateException exception) {
+                Platform.setImplicitExit(false);
+                started.countDown();
+            }
+        } else {
+            Platform.setImplicitExit(false);
+            started.countDown();
+        }
+        assertTrue(started.await(5, TimeUnit.SECONDS), "JavaFX toolkit did not start.");
+    }
+
+    private static <T extends Node> T findNode(Parent parent, String id, Class<T> type) {
+        for (Node child : parent.getChildrenUnmodifiable()) {
+            if (id.equals(child.getId())) {
+                return assertInstanceOf(type, child);
+            }
+            if (child instanceof Parent childParent) {
+                T match = findNode(childParent, id, type);
+                if (match != null) {
+                    return match;
+                }
+            }
+        }
+        return null;
     }
 
 }

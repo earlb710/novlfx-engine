@@ -4,9 +4,14 @@ import com.eb.javafx.scene.ConversationConditionSyntax;
 import com.eb.javafx.scene.ConversationConditionVariables;
 import com.eb.javafx.util.Validation;
 
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.file.InvalidPathException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -17,6 +22,17 @@ import java.util.Set;
  * block and item lists without constructing a complete model first.</p>
  */
 public final class ScreenDesignValidator {
+    private static final String BACKGROUND_IMAGE_KEY = "backgroundImage";
+    private static final String BACKGROUND_IMAGE_TRANSPARENCY_KEY = "backgroundImageTransparency";
+    private static final String BACKGROUND_IMAGE_PLACEMENT_KEY = "backgroundImagePlacement";
+    private static final String TRANSPARENCY_KEY = "transparency";
+    private static final String BORDER_STYLE_KEY = "borderStyle";
+    private static final String BORDER_CORNER_KEY = "borderCorner";
+    private static final Set<String> BORDER_STYLES = Set.of("solid", "dashed", "dotted", "none");
+    private static final Set<String> BORDER_CORNERS = Set.of("square", "rounded", "pill");
+    private static final Set<String> BACKGROUND_IMAGE_PLACEMENTS = Set.of(
+            "fixed top left", "fixed center", "fixed bottom right", "stretch to fit");
+
     private ScreenDesignValidator() {
     }
 
@@ -32,6 +48,7 @@ public final class ScreenDesignValidator {
         List<ScreenDesignValidationProblem> problems = new ArrayList<>(
                 validateStructureRaw(design.blocks(), design.items(), design.temporaryItems()));
         validateBlockConditions(design.blocks(), conditionVariables, problems);
+        validateMetadata(design, problems);
         return List.copyOf(problems);
     }
 
@@ -67,6 +84,7 @@ public final class ScreenDesignValidator {
             ConversationConditionVariables conditionVariables) {
         List<ScreenDesignValidationProblem> problems = new ArrayList<>(validateStructureRaw(blocks, items, temporaryItems));
         validateBlockConditions(blocks, conditionVariables, problems);
+        validateBlockAndItemMetadata(blocks, items, temporaryItems, problems);
         return List.copyOf(problems);
     }
 
@@ -169,6 +187,115 @@ public final class ScreenDesignValidator {
                     problems.add(error("blocks." + block.id() + ".conditions[" + index + "]", exception.getMessage()));
                 }
             }
+        }
+    }
+
+    private static void validateMetadata(ScreenDesignModel design, List<ScreenDesignValidationProblem> problems) {
+        validateScreenMetadata(design.metadata(), "metadata", problems);
+        validateBlockAndItemMetadata(design.blocks(), design.items(), design.temporaryItems(), problems);
+    }
+
+    private static void validateBlockAndItemMetadata(
+            List<ScreenDesignBlock> blocks,
+            List<ScreenDesignItem> items,
+            List<ScreenDesignItem> temporaryItems,
+            List<ScreenDesignValidationProblem> problems) {
+        for (ScreenDesignBlock block : blocks) {
+            validateBlockMetadata(block.metadata(), "blocks." + block.id() + ".metadata", problems);
+        }
+        for (ScreenDesignItem item : items) {
+            validateItemMetadata(item.metadata(), "items." + item.id() + ".metadata", problems);
+        }
+        for (ScreenDesignItem item : temporaryItems) {
+            validateItemMetadata(item.metadata(), "temporaryItems." + item.id() + ".metadata", problems);
+        }
+    }
+
+    private static void validateScreenMetadata(
+            Map<String, String> metadata,
+            String path,
+            List<ScreenDesignValidationProblem> problems) {
+        validateAllowedValue(metadata, BORDER_STYLE_KEY, path, BORDER_STYLES,
+                "Border style must be one of: solid, dashed, dotted, none.", problems);
+        validateAllowedValue(metadata, BORDER_CORNER_KEY, path, BORDER_CORNERS,
+                "Border corner must be one of: square, rounded, pill.", problems);
+    }
+
+    private static void validateBlockMetadata(
+            Map<String, String> metadata,
+            String path,
+            List<ScreenDesignValidationProblem> problems) {
+        validateTransparency(metadata, TRANSPARENCY_KEY, path, problems);
+        validateTransparency(metadata, BACKGROUND_IMAGE_TRANSPARENCY_KEY, path, problems);
+        validateAllowedValue(metadata, BORDER_STYLE_KEY, path, BORDER_STYLES,
+                "Border style must be one of: solid, dashed, dotted, none.", problems);
+        validateAllowedValue(metadata, BORDER_CORNER_KEY, path, BORDER_CORNERS,
+                "Border corner must be one of: square, rounded, pill.", problems);
+        validateAllowedValue(metadata, BACKGROUND_IMAGE_PLACEMENT_KEY, path, BACKGROUND_IMAGE_PLACEMENTS,
+                "Background image placement must be one of: fixed top left, fixed center, fixed bottom right, stretch to fit.",
+                problems);
+        validateImagePathSyntax(metadata, path, problems);
+    }
+
+    private static void validateItemMetadata(
+            Map<String, String> metadata,
+            String path,
+            List<ScreenDesignValidationProblem> problems) {
+        validateTransparency(metadata, TRANSPARENCY_KEY, path, problems);
+    }
+
+    private static void validateAllowedValue(
+            Map<String, String> metadata,
+            String key,
+            String path,
+            Set<String> allowedValues,
+            String message,
+            List<ScreenDesignValidationProblem> problems) {
+        String value = metadata.get(key);
+        if (value == null) {
+            return;
+        }
+        String normalizedValue = value.trim().toLowerCase(java.util.Locale.ROOT);
+        if (!normalizedValue.isBlank() && !allowedValues.contains(normalizedValue)) {
+            problems.add(error(path + "." + key, message));
+        }
+    }
+
+    private static void validateTransparency(
+            Map<String, String> metadata,
+            String key,
+            String path,
+            List<ScreenDesignValidationProblem> problems) {
+        String value = metadata.get(key);
+        if (value == null || value.isBlank()) {
+            return;
+        }
+        try {
+            double transparency = Double.parseDouble(value.trim());
+            if (transparency < 0.0 || transparency > 1.0) {
+                problems.add(error(path + "." + key, "Transparency must be a number from 0 to 1."));
+            }
+        } catch (NumberFormatException exception) {
+            problems.add(error(path + "." + key, "Transparency must be a number from 0 to 1."));
+        }
+    }
+
+    private static void validateImagePathSyntax(
+            Map<String, String> metadata,
+            String path,
+            List<ScreenDesignValidationProblem> problems) {
+        String value = metadata.get(BACKGROUND_IMAGE_KEY);
+        if (value == null || value.isBlank()) {
+            return;
+        }
+        try {
+            URI uri = new URI(value.trim());
+            if (uri.getScheme() == null) {
+                Path.of(value.trim());
+            }
+        } catch (InvalidPathException | URISyntaxException exception) {
+            problems.add(error(path + "." + BACKGROUND_IMAGE_KEY,
+                    "Background image must be a valid URI, classpath resource, or filesystem path."));
         }
     }
 

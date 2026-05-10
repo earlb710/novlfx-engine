@@ -21,9 +21,12 @@ import java.util.Map;
 import java.util.Set;
 
 import javax.swing.JButton;
+import javax.swing.JComboBox;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
+import javax.swing.JTextField;
+import javax.swing.Scrollable;
 import javax.swing.tree.DefaultMutableTreeNode;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -230,11 +233,13 @@ final class ScreenDesignerApplicationTest {
                 ScreenDesignerApplication.contextActionLabelsFor(
                         ScreenDesignerApplication.NavigationNode.screen("sample.screen"),
                         true));
-        assertEquals(List.of("Add Block", "Add Item", "Edit Block", "Remove Block"),
+        assertEquals(List.of("Add Block", "Add Item", "Edit Block", "Duplicate Block", "Move Block Up", "Move Block Down",
+                        "Copy Style/Metadata", "Paste Style/Metadata", "Remove Block"),
                 ScreenDesignerApplication.contextActionLabelsFor(
                         ScreenDesignerApplication.NavigationNode.block("main"),
                         true));
-        assertEquals(List.of("Add Block", "Add Item", "Edit Item", "Remove Item"),
+        assertEquals(List.of("Add Block", "Add Item", "Edit Item", "Duplicate Item", "Move Item Up", "Move Item Down",
+                        "Copy Style/Metadata", "Paste Style/Metadata", "Remove Item"),
                 ScreenDesignerApplication.contextActionLabelsFor(
                         ScreenDesignerApplication.NavigationNode.item("title.text", "main", false),
                         true));
@@ -256,27 +261,31 @@ final class ScreenDesignerApplicationTest {
                 ScreenDesignerApplication.NavigationNode.screen("sample.screen")));
         assertEquals(List.of("Screen id", "Title", "Layout type", "Font", "Font size", "Font style", "Color", "Background color",
                         "Border style", "Border corner", "Border thickness", "Border color",
-                        "Dialog", "Dismiss on click outside", "Dismiss on Escape", "Extra metadata"),
+                        "Dialog", "Dismiss on click outside", "Dismiss on Escape", "Advanced metadata"),
                 ScreenDesignerApplication.propertyLabelsFor(
                         ScreenDesignerApplication.NavigationNode.screen("sample.screen")));
         assertEquals("Block Properties", ScreenDesignerApplication.propertiesTitleFor(
                 ScreenDesignerApplication.NavigationNode.block("main")));
         assertEquals(List.of("Block id", "Title", "Layout type", "Parent block", "Style class", "Conditions",
                         "Font", "Font size", "Font style", "Color", "Background color",
-                        "Background image", "Background image transparency", "Transparency", "Border style",
-                        "Border corner", "Border thickness", "Border color", "Extra metadata"),
+                        "Background image", "Background image transparency", "Background image placement", "Transparency", "Border style",
+                        "Border corner", "Border thickness", "Border color", "Advanced metadata"),
                 ScreenDesignerApplication.propertyLabelsFor(
                         ScreenDesignerApplication.NavigationNode.block("main")));
         assertEquals("Item Properties", ScreenDesignerApplication.propertiesTitleFor(
                 ScreenDesignerApplication.NavigationNode.item("title.text", "main", false)));
         assertEquals(List.of("Target block", "Item id", "Style class", "Type", "Sequence", "Label",
                         "Text/default value", "Current value", "Editable", "Display role",
-                        "Font", "Font size", "Font style", "Color", "Background color", "Transparency", "Label font",
-                        "Label font size", "Label font style", "Label color", "Extra metadata"),
+                        "Font", "Font size", "Font style", "Color", "Background color",
+                        "Hover background color", "Pressed background color", "Transparency",
+                        "Action event name", "Action value", "Label font",
+                        "Label font size", "Label font style", "Label color", "Advanced metadata"),
                 ScreenDesignerApplication.propertyLabelsFor(
                         ScreenDesignerApplication.NavigationNode.item("title.text", "main", false)));
         assertEquals(List.of("Target block", "Item id", "Style class", "Type", "Sequence", "Text/default value", "Display role",
-                        "Font", "Font size", "Font style", "Color", "Background color", "Transparency", "Extra metadata"),
+                        "Font", "Font size", "Font style", "Color", "Background color",
+                        "Hover background color", "Pressed background color", "Transparency",
+                        "Action event name", "Action value", "Advanced metadata"),
                 ScreenDesignerApplication.itemPropertyLabelsFor(ScreenDesignItemType.TEXT));
         assertEquals("Item Properties", ScreenDesignerApplication.propertiesTitleFor(
                 ScreenDesignerApplication.NavigationNode.item("temp.field", "main", true)));
@@ -364,13 +373,13 @@ final class ScreenDesignerApplicationTest {
 
     @Test
     void fileMenuLabelsContainFileActionsMovedFromToolbar() {
-        assertEquals(List.of("New", "Load", "Save", "Save As"),
+        assertEquals(List.of("New", "New From Template", "Load", "Save", "Save As"),
                 ScreenDesignerApplication.fileMenuActionLabels());
     }
 
     @Test
     void actionToolbarLabelsIncludeDefaultValuesEditor() {
-        assertEquals(List.of("Edit Default Values", "Validate", "Open Preview", "Add Temporary Field", "Promote Temporary"),
+        assertEquals(List.of("Edit Default Values", "Validate", "Go To First Issue", "Open Preview", "Add Temporary Field", "Promote Temporary"),
                 ScreenDesignerApplication.actionToolbarLabels());
     }
 
@@ -466,6 +475,12 @@ final class ScreenDesignerApplicationTest {
     }
 
     @Test
+    void screenDesignerUsesLargerDefaultFrameSizeForRightDockedPreview() {
+        assertEquals(1560, ScreenDesignerApplication.DEFAULT_FRAME_WIDTH);
+        assertEquals(988, ScreenDesignerApplication.DEFAULT_FRAME_HEIGHT);
+    }
+
+    @Test
     void editorPinsPropertyButtonsBelowScrollablePropertiesPanel() throws Exception {
         ScreenDesignerApplication application = new ScreenDesignerApplication();
         invokePrivateMethod(application, "refreshAll");
@@ -489,6 +504,57 @@ final class ScreenDesignerApplicationTest {
                 java.util.Arrays.stream(actionPanel.getComponents())
                         .map(component -> ((JButton) component).getText())
                         .toList());
+    }
+
+    @Test
+    void propertyInputsUseTenCharacterMinimumWidthAndCanResize() throws Exception {
+        ScreenDesignerApplication application = new ScreenDesignerApplication();
+        invokePrivateMethod(application, "refreshAll");
+
+        JTextField screenIdField = (JTextField) fieldValue(application, "screenIdField");
+        @SuppressWarnings("unchecked")
+        JComboBox<String> screenFontFamilyBox = (JComboBox<String>) fieldValue(application, "screenFontFamilyBox");
+        JTextField editorField = (JTextField) screenFontFamilyBox.getEditor().getEditorComponent();
+
+        int expectedTextMinimum = screenIdField.getFontMetrics(screenIdField.getFont()).charWidth('m') * 10
+                + screenIdField.getInsets().left + screenIdField.getInsets().right;
+        int expectedComboMinimum = editorField.getFontMetrics(editorField.getFont()).charWidth('m') * 10
+                + editorField.getInsets().left + editorField.getInsets().right + 32;
+
+        assertTrue(screenIdField.getMinimumSize().width >= expectedTextMinimum);
+        assertTrue(screenFontFamilyBox.getMinimumSize().width >= expectedComboMinimum);
+        assertTrue(screenIdField.getMaximumSize().width > screenIdField.getMinimumSize().width);
+        assertTrue(screenFontFamilyBox.getMaximumSize().width > screenFontFamilyBox.getMinimumSize().width);
+    }
+
+    @Test
+    void propertiesPanelTracksViewportWidthUntilMinimumWidthIsReached() throws Exception {
+        ScreenDesignerApplication application = new ScreenDesignerApplication();
+        invokePrivateMethod(application, "refreshAll");
+        JPanel editor = (JPanel) invokePrivateMethod(application, "editor");
+        JSplitPane splitPane = (JSplitPane) ((BorderLayout) editor.getLayout()).getLayoutComponent(BorderLayout.CENTER);
+        JScrollPane propertiesScrollPane = (JScrollPane) splitPane.getTopComponent();
+        JPanel propertiesPanel = (JPanel) fieldValue(application, "propertiesPanel");
+        Scrollable scrollable = assertInstanceOf(Scrollable.class, propertiesPanel);
+        int minimumWidth = propertiesPanel.getMinimumSize().width;
+
+        propertiesScrollPane.getViewport().setSize(minimumWidth + 100, 340);
+        assertTrue(scrollable.getScrollableTracksViewportWidth());
+
+        propertiesScrollPane.getViewport().setSize(Math.max(1, minimumWidth - 1), 340);
+        assertFalse(scrollable.getScrollableTracksViewportWidth());
+    }
+
+    @Test
+    void workspacePlacesDockedPreviewInRightColumn() throws Exception {
+        JPanel editor = new JPanel();
+        JPanel preview = new JPanel();
+
+        JSplitPane editorAndPreview = ScreenDesignerApplication.workspaceSplit(editor, preview);
+
+        assertEquals(JSplitPane.HORIZONTAL_SPLIT, editorAndPreview.getOrientation());
+        assertEquals(editor, editorAndPreview.getLeftComponent());
+        assertEquals(preview, editorAndPreview.getRightComponent());
     }
 
     @Test
@@ -547,6 +613,127 @@ final class ScreenDesignerApplicationTest {
         assertEquals("temp.field", updatedSaved.temporaryItems().get(0).id());
         assertEquals("title.text", updatedTemporary.items().get(0).id());
         assertEquals("temp.edited", updatedTemporary.temporaryItems().get(0).id());
+    }
+
+    @Test
+    void duplicateAndMoveHelpersKeepStructurePredictable() {
+        ScreenDesignModel design = new ScreenDesignModel(
+                "sample.screen",
+                "Sample Screen",
+                com.eb.javafx.ui.ScreenLayoutType.FORM,
+                Map.of(),
+                List.of(
+                        new ScreenDesignBlock("main", "Main"),
+                        new ScreenDesignBlock("secondary", "Secondary")),
+                List.of(
+                        new ScreenDesignItem("first.text", "main", ScreenDesignItemType.TEXT,
+                                "First", "First", null, null, null, Map.of()),
+                        new ScreenDesignItem("second.text", "main", ScreenDesignItemType.TEXT,
+                                "Second", "Second", null, null, null, Map.of())),
+                List.of());
+
+        assertEquals("main.copy", ScreenDesignerApplication.uniqueId("main", Set.of("main", "secondary")));
+        assertEquals("main.copy2", ScreenDesignerApplication.uniqueId("main", Set.of("main", "main.copy")));
+        assertEquals("Main Copy", ScreenDesignerApplication.copyOfBlock(
+                design.blocks().get(0),
+                "main.copy").title());
+
+        ScreenDesignModel movedBlock = ScreenDesignerApplication.moveBlockInDesign(design, "secondary", -1);
+        ScreenDesignModel movedItem = ScreenDesignerApplication.moveItemInDesign(design, "second.text", false, -1);
+
+        assertEquals("secondary", movedBlock.blocks().get(0).id());
+        assertEquals("second.text", movedItem.items().get(0).id());
+    }
+
+    @Test
+    void validationTextCanBeScopedToSelectedNavigationNode() {
+        List<com.eb.javafx.ui.ScreenDesignValidationProblem> problems = List.of(
+                new com.eb.javafx.ui.ScreenDesignValidationProblem(
+                        com.eb.javafx.ui.ScreenDesignValidationSeverity.ERROR,
+                        "blocks.main.conditions[0]",
+                        "Bad condition"),
+                new com.eb.javafx.ui.ScreenDesignValidationProblem(
+                        com.eb.javafx.ui.ScreenDesignValidationSeverity.ERROR,
+                        "items.title.text",
+                        "Duplicate item"));
+
+        assertEquals("Bad condition",
+                ScreenDesignerApplication.validationTextForNode(
+                        problems,
+                        ScreenDesignerApplication.NavigationNode.block("main")));
+        assertEquals("Duplicate item",
+                ScreenDesignerApplication.validationTextForNode(
+                        problems,
+                        ScreenDesignerApplication.NavigationNode.item("title.text", "main", false)));
+    }
+
+    @Test
+    void validationTextCanBeScopedToInlinePropertyFields() {
+        List<com.eb.javafx.ui.ScreenDesignValidationProblem> problems = List.of(
+                new com.eb.javafx.ui.ScreenDesignValidationProblem(
+                        com.eb.javafx.ui.ScreenDesignValidationSeverity.ERROR,
+                        "blocks.main.metadata.transparency",
+                        "Transparency must be a number from 0 to 1."),
+                new com.eb.javafx.ui.ScreenDesignValidationProblem(
+                        com.eb.javafx.ui.ScreenDesignValidationSeverity.ERROR,
+                        "blocks.main.conditions[0]",
+                        "Bad condition"));
+
+        assertEquals("Transparency must be a number from 0 to 1.",
+                ScreenDesignerApplication.validationTextForField(problems, "blocks.main.metadata.transparency"));
+        assertEquals("Bad condition",
+                ScreenDesignerApplication.validationTextForField(problems, "blocks.main.conditions"));
+    }
+
+    @Test
+    void propertyHintsDescribeAllowedAuthoringValues() {
+        assertEquals("Allowed: solid, dashed, dotted, none.",
+                ScreenDesignerApplication.hintTextForProperty("Border style"));
+        assertEquals("Allowed: square, rounded, pill.",
+                ScreenDesignerApplication.hintTextForProperty("Border corner"));
+        assertEquals("Use a number from 0 to 1; 0 is opaque and 1 is fully transparent.",
+                ScreenDesignerApplication.hintTextForProperty("Transparency"));
+        assertTrue(ScreenDesignerApplication.hintTextForProperty("Background image").contains("classpath resource"));
+        assertTrue(ScreenDesignerApplication.hintTextForProperty("Hover background color").contains("hover"));
+        assertTrue(ScreenDesignerApplication.hintTextForProperty("Conditions").contains("One condition per line"));
+        assertTrue(ScreenDesignerApplication.hintTextForProperty("Advanced metadata").contains("key=value metadata"));
+    }
+
+    @Test
+    void screenDesignValidatorFlagsUnsupportedDesignerMetadataValues() {
+        ScreenDesignModel design = new ScreenDesignModel(
+                "sample.screen",
+                "Sample Screen",
+                com.eb.javafx.ui.ScreenLayoutType.FORM,
+                Map.of("borderStyle", "double"),
+                List.of(new ScreenDesignBlock("main", "Main", com.eb.javafx.ui.ScreenLayoutType.FORM, null, null, Map.of(
+                        "transparency", "1.5",
+                        "borderCorner", "circle",
+                        "backgroundImagePlacement", "tile"))),
+                List.of(new ScreenDesignItem("title.text", "main", ScreenDesignItemType.TEXT,
+                        "Title", "Saved", null, null, null, Map.of("transparency", "opaque"))),
+                List.of());
+
+        List<String> paths = ScreenDesignValidator.validate(design).stream()
+                .map(com.eb.javafx.ui.ScreenDesignValidationProblem::path)
+                .toList();
+
+        assertTrue(paths.contains("metadata.borderStyle"));
+        assertTrue(paths.contains("blocks.main.metadata.transparency"));
+        assertTrue(paths.contains("blocks.main.metadata.borderCorner"));
+        assertTrue(paths.contains("blocks.main.metadata.backgroundImagePlacement"));
+        assertTrue(paths.contains("items.title.text.metadata.transparency"));
+    }
+
+    @Test
+    void genericTemplatesProvideCommonStarterFlows() {
+        List<ScreenDesignerApplication.ScreenTemplate> templates = ScreenDesignerApplication.screenTemplates();
+
+        assertEquals(List.of("Form screen", "Menu/action list", "Preview grid"),
+                templates.stream().map(ScreenDesignerApplication.ScreenTemplate::label).toList());
+        assertTrue(templates.stream()
+                .flatMap(template -> template.design().items().stream())
+                .anyMatch(item -> "submit".equals(item.metadata().get("eventName"))));
     }
 
     @Test

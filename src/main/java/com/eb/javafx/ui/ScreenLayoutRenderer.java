@@ -13,7 +13,10 @@ import javafx.scene.Scene;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.control.Button;
+import javafx.scene.control.Control;
 import javafx.scene.control.Label;
+import javafx.scene.control.TextArea;
+import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.BorderPane;
@@ -270,6 +273,10 @@ public final class ScreenLayoutRenderer {
     }
 
     private static Node lineNode(String line, String id, Map<String, String> metadata, GameEventBus eventBus) {
+        Node fieldNode = fieldNode(id, metadata);
+        if (fieldNode != null) {
+            return fieldNode;
+        }
         String eventName = metadata.get(EVENT_NAME_KEY);
         if (eventName != null && !eventName.isBlank()) {
             Button button = new Button(line);
@@ -291,6 +298,58 @@ public final class ScreenLayoutRenderer {
         label.getStyleClass().add(ScreenShell.LAYOUT_SECTION_ROW_STYLE_CLASS);
         applyLineStyle(label, metadata);
         return label;
+    }
+
+    private static Node fieldNode(String id, Map<String, String> metadata) {
+        String itemType = metadata.get(ScreenDesignLayoutAdapter.SCREEN_DESIGN_ITEM_TYPE_KEY);
+        if (ScreenDesignItemType.FIELD.name().equals(itemType)) {
+            return fieldNode(id, metadata, false);
+        }
+        if (ScreenDesignItemType.MULTI_LINE_FIELD.name().equals(itemType)) {
+            return fieldNode(id, metadata, true);
+        }
+        return null;
+    }
+
+    private static Node fieldNode(String id, Map<String, String> metadata, boolean multiline) {
+        VBox fieldContainer = new VBox(4);
+        fieldContainer.setMaxWidth(Double.MAX_VALUE);
+        fieldContainer.getStyleClass().add(ScreenShell.LAYOUT_SECTION_ROW_STYLE_CLASS);
+
+        String labelText = metadata.get(ScreenDesignLayoutAdapter.SCREEN_DESIGN_LABEL_KEY);
+        if (labelText != null && !labelText.isBlank()) {
+            Label label = new Label(labelText);
+            if (id != null) {
+                label.setId(id + ".label");
+            }
+            label.getStyleClass().add(ScreenShell.LAYOUT_SECTION_ROW_STYLE_CLASS);
+            applyLabelStyle(label, metadata);
+            fieldContainer.getChildren().add(label);
+        }
+
+        Control input = multiline ? multilineField(metadata) : singleLineField(metadata);
+        if (id != null) {
+            input.setId(id);
+        }
+        input.getStyleClass().add(ScreenShell.LAYOUT_VALUE_STYLE_CLASS);
+        input.setMaxWidth(Double.MAX_VALUE);
+        applyLineStyle(input, metadata);
+        fieldContainer.getChildren().add(input);
+        return fieldContainer;
+    }
+
+    private static TextField singleLineField(Map<String, String> metadata) {
+        TextField textField = new TextField(metadata.getOrDefault(ScreenDesignLayoutAdapter.SCREEN_DESIGN_VALUE_KEY, ""));
+        textField.setEditable(Boolean.parseBoolean(metadata.getOrDefault(ScreenDesignLayoutAdapter.SCREEN_DESIGN_EDITABLE_KEY, "false")));
+        return textField;
+    }
+
+    private static TextArea multilineField(Map<String, String> metadata) {
+        TextArea textArea = new TextArea(metadata.getOrDefault(ScreenDesignLayoutAdapter.SCREEN_DESIGN_VALUE_KEY, ""));
+        textArea.setEditable(Boolean.parseBoolean(metadata.getOrDefault(ScreenDesignLayoutAdapter.SCREEN_DESIGN_EDITABLE_KEY, "false")));
+        textArea.setWrapText(true);
+        textArea.setPrefRowCount(3);
+        return textArea;
     }
 
     private static String lineId(ScreenLayoutSection section, int index) {
@@ -331,6 +390,15 @@ public final class ScreenLayoutRenderer {
         appendColor(style, metadata.get("color"));
         appendBackgroundColor(style, metadata.get("backgroundColor"));
         appendOpacity(style, metadata.get("transparency"));
+        return style.toString();
+    }
+
+    static String labelStyle(Map<String, String> metadata) {
+        StringBuilder style = new StringBuilder();
+        appendFontFamily(style, metadata.get(ScreenDesignLayoutAdapter.LABEL_FONT_FAMILY_KEY));
+        appendFontSize(style, metadata.get(ScreenDesignLayoutAdapter.LABEL_FONT_SIZE_KEY));
+        appendFontStyle(style, metadata.get(ScreenDesignLayoutAdapter.LABEL_FONT_STYLE_KEY));
+        appendColor(style, metadata.get(ScreenDesignLayoutAdapter.LABEL_COLOR_KEY));
         return style.toString();
     }
 
@@ -390,6 +458,13 @@ public final class ScreenLayoutRenderer {
         appendBorderRadius(style, metadata.get("borderCorner"));
         if (!style.isEmpty()) {
             region.setStyle(style.toString());
+        }
+    }
+
+    private static void applyLabelStyle(Label label, Map<String, String> metadata) {
+        String style = labelStyle(metadata);
+        if (!style.isEmpty()) {
+            label.setStyle(style);
         }
     }
 
