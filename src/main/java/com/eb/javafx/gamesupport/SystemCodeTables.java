@@ -1,5 +1,7 @@
 package com.eb.javafx.gamesupport;
 
+import com.eb.javafx.util.TextPlaceholders;
+
 import java.util.List;
 import java.util.Map;
 
@@ -51,12 +53,6 @@ public final class SystemCodeTables {
     }
 
     public static String defaultMessage(String messageId, Map<String, String> bindings) {
-        String resolved = defaultMessage(messageId);
-        for (Map.Entry<String, String> binding : bindings.entrySet()) {
-            String value = binding.getValue() == null ? "" : binding.getValue();
-            resolved = resolved.replace("${" + binding.getKey() + "}", value)
-                    .replace("$" + binding.getKey(), value);
-        }
-        return resolved;
+        return TextPlaceholders.resolve(defaultMessage(messageId), bindings);
     }
 }

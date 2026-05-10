@@ -27,14 +27,14 @@ public final class SceneFlowScreen {
     }
 
     public static Scene createDialogueScene(RouteContext context) {
-        return createScene(context, "ui.dialogue.title", EnginePlaceholderSceneModule.DEMO_DIALOGUE_SCENE);
+        return createScene(context, ScreenTextResources.DIALOGUE, EnginePlaceholderSceneModule.DEMO_DIALOGUE_SCENE);
     }
 
     public static Scene createChoiceScene(RouteContext context) {
-        return createScene(context, "ui.choice.title", EnginePlaceholderSceneModule.DEMO_CHOICE_SCENE);
+        return createScene(context, ScreenTextResources.CHOICE, EnginePlaceholderSceneModule.DEMO_CHOICE_SCENE);
     }
 
-    private static Scene createScene(RouteContext context, String titleDefinition, String sceneId) {
+    private static Scene createScene(RouteContext context, String screenId, String sceneId) {
         ActionContext actionContext = new ActionContext(
                 context.gameState(),
                 context.randomService(),
@@ -44,9 +44,12 @@ public final class SceneFlowScreen {
         session.start(sceneId);
         ScenePresenter presenter = new ScenePresenter();
         VBox content = new VBox(ScreenShell.BODY_SPACING);
-        Button mainMenu = ScreenNavigation.button(context, screenText(titleDefinition, "item.back.label"), SceneRouter.MAIN_MENU_ROUTE);
+        Button mainMenu = ScreenNavigation.button(
+                context,
+                ScreenTextResources.text(screenId, "item.back.label"),
+                SceneRouter.MAIN_MENU_ROUTE);
         renderCheckpointScene(actionContext, session, presenter, content, mainMenu);
-        return context.themedScene(ScreenShell.titled(title(titleDefinition), content));
+        return context.themedScene(ScreenShell.titled(ScreenTextResources.title(screenId), content));
     }
 
     private static void renderCheckpointScene(
@@ -74,17 +77,5 @@ public final class SceneFlowScreen {
             renderCheckpointScene(actionContext, session, presenter, content, mainMenu);
         });
         content.getChildren().setAll(sceneContent, mainMenu);
-    }
-
-    private static String title(String titleDefinition) {
-        return ScreenTextResources.title(screenId(titleDefinition));
-    }
-
-    private static String screenText(String titleDefinition, String key) {
-        return ScreenTextResources.text(screenId(titleDefinition), key);
-    }
-
-    private static String screenId(String titleDefinition) {
-        return "ui.choice.title".equals(titleDefinition) ? ScreenTextResources.CHOICE : ScreenTextResources.DIALOGUE;
     }
 }

@@ -1,6 +1,7 @@
 package com.eb.javafx.ui;
 
 import com.eb.javafx.util.JsonData;
+import com.eb.javafx.util.TextPlaceholders;
 import com.eb.javafx.util.Validation;
 
 import java.io.IOException;
@@ -43,13 +44,7 @@ public final class ScreenTextResources {
     }
 
     public static String resolvePlaceholders(String text, Map<String, String> bindings) {
-        String resolved = Validation.requireNonBlank(text, "Text is required.");
-        for (Map.Entry<String, String> binding : Validation.requireNonNull(bindings, "Text bindings are required.").entrySet()) {
-            String value = binding.getValue() == null ? "" : binding.getValue();
-            resolved = resolved.replace("${" + binding.getKey() + "}", value)
-                    .replace("$" + binding.getKey(), value);
-        }
-        return resolved;
+        return TextPlaceholders.resolve(text, bindings);
     }
 
     private static ScreenTextBundle bundle(String screenId) {
