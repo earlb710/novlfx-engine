@@ -63,5 +63,5 @@
 
 ## Onboarding notes and workarounds
 
-- During this onboarding pass, attempting to read `/README.md` failed because the repository does not have a root README. The workaround is to start from `docs/USER_MANUAL.md`, `examples/user-manual/README.md`, and the Gradle files.
-- The existing Copilot setup workflow already checks out the repository, configures Java 17, and warms Gradle dependencies, so no additional setup workflow change was needed for this instructions-only onboarding.
+- Start from `docs/USER_MANUAL.md`, `examples/user-manual/README.md`, and the Gradle files.
+  
