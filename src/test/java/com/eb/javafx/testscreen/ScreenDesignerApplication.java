@@ -1183,14 +1183,14 @@ public final class ScreenDesignerApplication {
             String itemId = matchingId(path.substring("items.".length()), design.items().stream().map(ScreenDesignItem::id).toList()).orElse("");
             Optional<ScreenDesignItem> item = design.items().stream().filter(candidate -> candidate.id().equals(itemId)).findFirst();
             if (item.isPresent()) {
-                return NavigationNode.item(itemId, item.orElseThrow().blockId(), false);
+                return NavigationNode.item(itemId, item.get().blockId(), false);
             }
         }
         if (path.startsWith("temporaryItems.")) {
             String itemId = matchingId(path.substring("temporaryItems.".length()), design.temporaryItems().stream().map(ScreenDesignItem::id).toList()).orElse("");
             Optional<ScreenDesignItem> item = design.temporaryItems().stream().filter(candidate -> candidate.id().equals(itemId)).findFirst();
             if (item.isPresent()) {
-                return NavigationNode.item(itemId, item.orElseThrow().blockId(), true);
+                return NavigationNode.item(itemId, item.get().blockId(), true);
             }
         }
         return NavigationNode.screen(design.id());
@@ -1212,6 +1212,8 @@ public final class ScreenDesignerApplication {
                 case '&' -> escaped.append("&amp;");
                 case '<' -> escaped.append("&lt;");
                 case '>' -> escaped.append("&gt;");
+                case '"' -> escaped.append("&quot;");
+                case '\'' -> escaped.append("&apos;");
                 default -> escaped.append(character);
             }
         }
