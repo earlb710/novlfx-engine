@@ -7,7 +7,7 @@
 - Main engine code lives under `src/main/java/com/eb/javafx/*`; automated tests and manual support apps live under `src/test/java/com/eb/javafx/*`.
 - Public reusable APIs are organized by feature package, including `bootstrap`, `routing`, `scene`, `ui`, `display`, `audio`, `save`, `prefs`, `gamesupport`, `text`, and `util`.
 - Keep this repository generic and reusable. Do not add game-specific story content, route names, assets, save schemas, or one-off migration helpers to engine code.
-- App-authored example JSON is grouped under `examples/resources/json` by type: `app-load`, `code-tables`, `config`, `conversations`, `display`, `location-text`, `map-text`, `scenes`, and `screens`. Screen text sidecars live next to their screen JSON files in `screens`.
+- App-authored example JSON is grouped under `examples/resources/json` by type: `code-tables`, `config`, `conversations`, `display`, `location`, `scenes`, and `screens`. Screen text sidecars(_text) live next to their screen JSON files in `screens`.
 
 ## First files to read
 
