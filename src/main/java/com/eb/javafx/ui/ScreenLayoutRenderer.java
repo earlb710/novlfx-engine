@@ -86,6 +86,18 @@ public final class ScreenLayoutRenderer {
         return createRoot(null, model, null, resourceRoot);
     }
 
+    /**
+     * Creates a preview root that also applies optional screen-level background metadata.
+     *
+     * <p>Unlike {@link #createRoot(ScreenLayoutModel, Path)}, this method wraps the rendered
+     * layout in a configured screen background when the model metadata declares a
+     * {@code screenBackgroundImage}. Relative background paths are resolved from
+     * {@code resourceRoot}.</p>
+     *
+     * @param model preview layout model
+     * @param resourceRoot directory used to resolve relative background image paths
+     * @return preview root, optionally wrapped in a configured background container
+     */
     public static Parent createPreviewRoot(ScreenLayoutModel model, Path resourceRoot) {
         BorderPane root = createRoot(model, resourceRoot);
         if (!hasScreenBackground(model.metadata())) {
@@ -122,6 +134,7 @@ public final class ScreenLayoutRenderer {
         return root;
     }
 
+    /** Returns true when screen-level metadata declares a background image for preview rendering. */
     private static boolean hasScreenBackground(Map<String, String> metadata) {
         String backgroundImage = metadata.get(SCREEN_BACKGROUND_IMAGE_KEY);
         return backgroundImage != null && !backgroundImage.isBlank();
