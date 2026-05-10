@@ -52,7 +52,7 @@ Launch the management app with:
 ./gradlew --no-daemon runManagementApp
 ```
 
-The management app is a button-only launcher for manual authoring and diagnostic screens, including default display values, the screen designer, the reloadable JSON screen, and the conversation editor.
+The management app is a button-only launcher for manual authoring and diagnostic screens, including default display values, the screen designer, the reloadable JSON screen, and the conversation editor. The **Default App Values** screen now also includes a **Locations** tab for reviewing and formatting bundled `map-text` and `location-text` JSON examples while comparing them with other startup defaults.
 
 Launch the manual conversation editor with:
 
@@ -219,7 +219,7 @@ Use the route-specific background getters when the application wants shared star
 
 The management UI includes a **Default App Values** screen for inspecting these startup defaults and related display resources. The **Application Values** tab presents editable application config fields with friendly labels, local **Save** and **Reset** actions, browse buttons for file/path-backed fields, and color pickers for color values.
 
-Next to that, the **Locations** tab embeds two JSON editors for the bundled `map-text.demo.json` and `location-text-town.demo.json` examples. Each editor supports local **Save**, **Format**, and **Reset** actions; **Save** and **Format** validate the JSON through `MapTextDefinition` or `LocationTextDefinition` and rewrite the editor with the engine formatter, while **Reset** restores the staged sample content for the current management-session tab.
+Next to that, the **Locations** tab embeds two JSON editors for the bundled `map-text.demo.json` and `location-text-town.demo.json` examples. Each editor supports local **Save**, **Format**, and **Reset** actions; **Save** and **Format** validate the JSON through `MapTextDefinition` or `LocationTextDefinition` and rewrite the editor with the engine formatter, while **Reset** restores the staged sample content for the current management-session tab. Use this tab to experiment with localized map labels, per-map location descriptions, and conditional location variants before moving the JSON into an application-owned content tree.
 
 Immediately after that, the **Lookup Variables** tab opens an editable text variable catalog for this management screen session. The catalog uses two fields per row: `name` and `value type`. The value type is limited to `string`, `number`, or `boolean`; use **Add Variable** to append a blank row and **Remove Variable** to delete selected rows, or the last row when nothing is selected. Use the tab-level **Save** and **Reset** buttons to apply or restore the staged catalog rows locally while reviewing startup defaults.
 
@@ -676,7 +676,7 @@ Use `TimeScheduler`, `TimeScheduledCommand`, `TimeAdvanceHook`, and `TimeAdvance
 
 Use `LocationRegistry`, `LocationDescriptor`, and `LocationOccupancy` for reusable location metadata and per-save character placement. Location descriptors store stable location IDs, display/localization titles, route IDs, optional parent locations, tags, and generic action IDs. `LocationRegistry.validateReferences(...)` checks parent-location and action references after static modules register definitions, while `LocationOccupancy` tracks where generic character IDs are currently placed without owning authored movement rules. Use `MovementValidator`, `MovementValidationResult`, and `LocationMovementService` to layer application-supplied movement checks over reusable occupancy changes.
 
-Use `MapTextDefinition` for localized map labels. The JSON root stores `language` and a `maps` array. Each map entry stores `mapId` and optional `description`; omitted descriptions default to `Main Map`.
+Use `MapTextDefinition` for localized map labels. Load authored files with `MapTextDefinition.load(path)` or `loadResource(...)`, inspect/update them in memory, and persist normalized output with `save(path)` or `toJson()`. The JSON root stores `language` and a `maps` array. Each map entry stores `mapId` and optional `description`; omitted descriptions default to `Main Map`.
 
 ```json
 {
@@ -688,7 +688,7 @@ Use `MapTextDefinition` for localized map labels. The JSON root stores `language
 }
 ```
 
-Use `LocationTextDefinition` for localized location descriptions within one map. The JSON root stores `language`, `mapId`, and a `locations` array. Each location stores `locId` and a `description` array of variants. Variants store `text` and optional string `conditions`, such as `time of day=night`; application code can resolve locations by `mapId.locId` references such as `town.square`.
+Use `LocationTextDefinition` for localized location descriptions within one map. Load authored files with `LocationTextDefinition.load(path)` or `loadResource(...)`, normalize them with `toJson()` / `save(path)`, and resolve locations either by `locId` or by `mapId.locId` references. The JSON root stores `language`, `mapId`, and a `locations` array. Each location stores `locId` and a `description` array of variants. Variants store `text` and optional string `conditions`, such as `time of day=night`; application code can resolve locations by `mapId.locId` references such as `town.square`.
 
 ```json
 {
@@ -789,6 +789,8 @@ Additional example/demo code:
 - [`examples/user-manual/09-game-support-state-save-prefs-random/GenericSupportModulesDemo.java`](../examples/user-manual/09-game-support-state-save-prefs-random/GenericSupportModulesDemo.java)
 - [`examples/user-manual/09-game-support-state-save-prefs-random/GenericStateSystemsDemo.java`](../examples/user-manual/09-game-support-state-save-prefs-random/GenericStateSystemsDemo.java)
 - [`examples/user-manual/09-game-support-state-save-prefs-random/category-code-tables.demo.json`](../examples/user-manual/09-game-support-state-save-prefs-random/category-code-tables.demo.json)
+- [`examples/user-manual/09-game-support-state-save-prefs-random/map-text.demo.json`](../examples/user-manual/09-game-support-state-save-prefs-random/map-text.demo.json)
+- [`examples/user-manual/09-game-support-state-save-prefs-random/location-text-town.demo.json`](../examples/user-manual/09-game-support-state-save-prefs-random/location-text-town.demo.json)
 
 ## 10. Text and utility helpers
 

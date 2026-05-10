@@ -14,3 +14,9 @@ Added Default App Values management support for editing the bundled map/location
 - Added focused UI/helper tests for the new tab labels, sample JSON loading, and editor actions.
 - Updated the user manual to describe the new Locations tab workflow.
 - Validated with `./gradlew --no-daemon compileJava test --tests com.eb.javafx.testscreen.DefaultDisplayValuesApplicationTest --tests com.eb.javafx.testscreen.ManagementApplicationTest`.
+
+Refreshed the user manual for the new map/location JSON editing flow:
+
+- Updated the management-app overview to call out the Default App Values **Locations** tab.
+- Expanded the `MapTextDefinition` and `LocationTextDefinition` sections with load/save/toJson usage guidance.
+- Added the bundled `map-text.demo.json` and `location-text-town.demo.json` files to the manual’s example list for section 9.
