@@ -153,7 +153,7 @@ public final class ScreenDesignerApplication {
             BORDER_COLOR_KEY, BACKGROUND_IMAGE_KEY, BACKGROUND_IMAGE_TRANSPARENCY_KEY, BACKGROUND_IMAGE_PLACEMENT_KEY);
     private static final Set<String> ITEM_EXPOSED_METADATA_KEYS = Set.of(
             DISPLAY_ROLE_KEY, FONT_FAMILY_KEY, ITEM_FONT_SIZE_KEY, ITEM_FONT_STYLE_KEY, ITEM_COLOR_KEY,
-            BACKGROUND_COLOR_KEY, TRANSPARENCY_KEY,
+            BACKGROUND_COLOR_KEY, HOVER_BACKGROUND_COLOR_KEY, PRESSED_BACKGROUND_COLOR_KEY, TRANSPARENCY_KEY,
             LABEL_FONT_FAMILY_KEY, LABEL_FONT_SIZE_KEY, LABEL_FONT_STYLE_KEY, LABEL_COLOR_KEY,
             EVENT_NAME_KEY, ACTION_EVENT_KEY, ACTION_VALUE_KEY);
     private static final AtomicBoolean JAVAFX_STARTED = new AtomicBoolean();
@@ -217,6 +217,8 @@ public final class ScreenDesignerApplication {
     private final JComboBox<String> itemFontStyleBox = fontStyleBox();
     private final JTextField itemColorField = new JTextField();
     private final JTextField itemBackgroundColorField = new JTextField();
+    private final JTextField itemHoverBackgroundColorField = new JTextField();
+    private final JTextField itemPressedBackgroundColorField = new JTextField();
     private final JComboBox<String> itemTransparencyBox = transparencyBox();
     private final JTextField itemEventNameField = new JTextField();
     private final JTextField itemActionValueField = new JTextField();
@@ -563,6 +565,8 @@ public final class ScreenDesignerApplication {
                 metadataValue(existing.metadata(), EVENT_NAME_KEY),
                 metadataValue(existing.metadata(), ACTION_EVENT_KEY)));
         JTextField actionValueField = new JTextField(existing == null ? "" : metadataValue(existing.metadata(), ACTION_VALUE_KEY));
+        JTextField hoverBackgroundColorField = new JTextField(existing == null ? "" : metadataValue(existing.metadata(), HOVER_BACKGROUND_COLOR_KEY));
+        JTextField pressedBackgroundColorField = new JTextField(existing == null ? "" : metadataValue(existing.metadata(), PRESSED_BACKGROUND_COLOR_KEY));
         JTextArea metadataArea = new JTextArea(existing == null
                 ? ""
                 : metadataText(existing.metadata(), ITEM_EXPOSED_METADATA_KEYS), 4, 20);
@@ -574,7 +578,7 @@ public final class ScreenDesignerApplication {
         typeBox.addActionListener(event -> refreshItemTypeState(typeBox, labelField, editableBox));
         refreshItemTypeState(typeBox, labelField, editableBox);
         boolean fieldType = isFieldType((ScreenDesignItemType) typeBox.getSelectedItem());
-        JPanel fields = new JPanel(new GridLayout(fieldType ? 15 : 12, 2, 6, 6));
+        JPanel fields = new JPanel(new GridLayout(fieldType ? 17 : 14, 2, 6, 6));
         fields.add(new JLabel("Target block"));
         fields.add(blockBox);
         fields.add(new JLabel("Item id"));
@@ -589,6 +593,10 @@ public final class ScreenDesignerApplication {
         fields.add(displayRoleBox);
         fields.add(new JLabel("Background color"));
         fields.add(colorSelector(backgroundColorField));
+        fields.add(new JLabel("Hover background color"));
+        fields.add(colorSelector(hoverBackgroundColorField));
+        fields.add(new JLabel("Pressed background color"));
+        fields.add(colorSelector(pressedBackgroundColorField));
         fields.add(new JLabel("Transparency"));
         fields.add(transparencyBox);
         fields.add(new JLabel("Action event name"));
@@ -607,7 +615,7 @@ public final class ScreenDesignerApplication {
             fields.add(new JLabel("Editable"));
             fields.add(editableBox);
         }
-        fields.add(new JLabel("Extra metadata"));
+        fields.add(new JLabel("Advanced metadata"));
         fields.add(new JScrollPane(metadataArea));
         int result = JOptionPane.showConfirmDialog(null, fields, title, JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
         String itemId = itemIdField.getText();
@@ -622,6 +630,8 @@ public final class ScreenDesignerApplication {
         Map<String, String> metadata = new LinkedHashMap<>(parseMetadataText(metadataArea.getText()));
         putOptionalMetadata(metadata, DISPLAY_ROLE_KEY, selectedComboValue(displayRoleBox));
         putOptionalMetadata(metadata, BACKGROUND_COLOR_KEY, backgroundColorField.getText());
+        putOptionalMetadata(metadata, HOVER_BACKGROUND_COLOR_KEY, hoverBackgroundColorField.getText());
+        putOptionalMetadata(metadata, PRESSED_BACKGROUND_COLOR_KEY, pressedBackgroundColorField.getText());
         putOptionalMetadata(metadata, TRANSPARENCY_KEY, selectedComboValue(transparencyBox));
         putActionMetadata(metadata, eventNameField.getText(), actionValueField.getText());
         return Optional.of(new ScreenDesignItem(
@@ -705,7 +715,7 @@ public final class ScreenDesignerApplication {
         fields.add(borderThicknessBox);
         fields.add(new JLabel("Border color"));
         fields.add(colorSelector(borderColorField));
-        fields.add(new JLabel("Extra metadata"));
+        fields.add(new JLabel("Advanced metadata"));
         fields.add(new JScrollPane(metadataArea));
         int result = JOptionPane.showConfirmDialog(null, fields, title, JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
         String blockId = blockIdField.getText();
@@ -1280,6 +1290,8 @@ public final class ScreenDesignerApplication {
         blockBackgroundImageTransparencyBox.setToolTipText(hintTextForProperty("Background image transparency"));
         itemTransparencyBox.setToolTipText(hintTextForProperty("Transparency"));
         blockBackgroundImageField.setToolTipText(hintTextForProperty("Background image"));
+        itemHoverBackgroundColorField.setToolTipText(hintTextForProperty("Hover background color"));
+        itemPressedBackgroundColorField.setToolTipText(hintTextForProperty("Pressed background color"));
         blockBackgroundImagePlacementBox.setToolTipText("Background image placement: fixed modes anchor the image at the named position; stretch to fit resizes it to the block. Options: "
                 + String.join(", ", Arrays.stream(BACKGROUND_IMAGE_PLACEMENT_OPTIONS)
                 .filter(option -> !DEFAULT_OPTION.equals(option))
@@ -1289,7 +1301,7 @@ public final class ScreenDesignerApplication {
         itemActionValueField.setToolTipText("Optional actionValue metadata sent with the item action event.");
         blockConditionsArea.setToolTipText(hintTextForProperty("Conditions"));
         itemSequenceField.setToolTipText("Optional whole-number ordering hint. Blank keeps authored order.");
-        itemMetadataArea.setToolTipText("Advanced key=value metadata for properties that do not have typed fields.");
+        itemMetadataArea.setToolTipText("Advanced key=value metadata for uncommon properties that do not have typed fields.");
         blockMetadataArea.setToolTipText("Advanced key=value metadata. Typed fields above override matching keys.");
         screenMetadataArea.setToolTipText("Advanced key=value metadata. Typed fields above override matching keys.");
     }
@@ -1882,7 +1894,7 @@ public final class ScreenDesignerApplication {
         addPropertyRow(fields, 12, "Dialog", screenDialogBox);
         addPropertyRow(fields, 13, "Dismiss on click outside", screenDismissOnClickOutsideBox);
         addPropertyRow(fields, 14, "Dismiss on Escape", screenDismissOnEscapeBox);
-        addPropertyRow(fields, 15, "Extra metadata", new JScrollPane(screenMetadataArea));
+        addPropertyRow(fields, 15, "Advanced metadata", advancedMetadataEditor(screenMetadataArea));
         return fields;
     }
 
@@ -1940,7 +1952,7 @@ public final class ScreenDesignerApplication {
                 validationTextForField(problems, metadataPath + BORDER_CORNER_KEY));
         addPropertyRow(fields, 17, "Border thickness", blockBorderThicknessBox);
         addPropertyRow(fields, 18, "Border color", colorSelector(blockBorderColorField));
-        addPropertyRow(fields, 19, "Extra metadata", new JScrollPane(blockMetadataArea));
+        addPropertyRow(fields, 19, "Advanced metadata", advancedMetadataEditor(blockMetadataArea));
         return fields;
     }
 
@@ -1965,6 +1977,8 @@ public final class ScreenDesignerApplication {
         setComboValue(itemFontStyleBox, metadataValue(item.metadata(), ITEM_FONT_STYLE_KEY));
         itemColorField.setText(metadataValue(item.metadata(), ITEM_COLOR_KEY));
         itemBackgroundColorField.setText(metadataValue(item.metadata(), BACKGROUND_COLOR_KEY));
+        itemHoverBackgroundColorField.setText(metadataValue(item.metadata(), HOVER_BACKGROUND_COLOR_KEY));
+        itemPressedBackgroundColorField.setText(metadataValue(item.metadata(), PRESSED_BACKGROUND_COLOR_KEY));
         setComboValue(itemTransparencyBox, metadataValue(item.metadata(), TRANSPARENCY_KEY));
         itemEventNameField.setText(firstNonBlank(
                 metadataValue(item.metadata(), EVENT_NAME_KEY),
@@ -1999,6 +2013,8 @@ public final class ScreenDesignerApplication {
         addPropertyRow(fields, row++, "Font style", itemFontStyleBox);
         addPropertyRow(fields, row++, "Color", colorSelector(itemColorField));
         addPropertyRow(fields, row++, "Background color", colorSelector(itemBackgroundColorField));
+        addPropertyRow(fields, row++, "Hover background color", colorSelector(itemHoverBackgroundColorField));
+        addPropertyRow(fields, row++, "Pressed background color", colorSelector(itemPressedBackgroundColorField));
         addPropertyRow(fields, row++, "Transparency", itemTransparencyBox,
                 validationTextForField(problems, metadataPath + TRANSPARENCY_KEY));
         addPropertyRow(fields, row++, "Action event name", itemEventNameField);
@@ -2009,7 +2025,7 @@ public final class ScreenDesignerApplication {
             addPropertyRow(fields, row++, "Label font style", itemLabelFontStyleBox);
             addPropertyRow(fields, row++, "Label color", colorSelector(itemLabelColorField));
         }
-        addPropertyRow(fields, row, "Extra metadata", new JScrollPane(itemMetadataArea));
+        addPropertyRow(fields, row, "Advanced metadata", advancedMetadataEditor(itemMetadataArea));
         return fields;
     }
 
@@ -2083,9 +2099,12 @@ public final class ScreenDesignerApplication {
             case "Transparency", "Background image transparency" ->
                     "Use a number from 0 to 1; 0 is opaque and 1 is fully transparent.";
             case "Background image" -> "Use a filesystem path, file URI, or classpath resource. SVG images are supported.";
+            case "Hover background color" -> "Optional button hover/background state color metadata.";
+            case "Pressed background color" -> "Optional button pressed/background state color metadata.";
             case "Background image placement" ->
                     "Allowed: fixed top left, fixed center, fixed bottom right, stretch to fit.";
             case "Conditions" -> "One condition per line. Leave blank when the block should always be shown.";
+            case "Advanced metadata" -> "Optional key=value metadata for uncommon properties. Typed controls override matching keys.";
             default -> "";
         };
     }
@@ -2119,6 +2138,16 @@ public final class ScreenDesignerApplication {
         choose.addActionListener(event -> chooseAction.run());
         panel.add(textField, BorderLayout.CENTER);
         panel.add(choose, BorderLayout.EAST);
+        return panel;
+    }
+
+    private static Component advancedMetadataEditor(JTextArea metadataArea) {
+        JPanel panel = new JPanel(new BorderLayout(4, 4));
+        panel.setBorder(BorderFactory.createTitledBorder("Advanced"));
+        JLabel help = new JLabel("<html>Optional key=value metadata for uncommon properties. Typed controls above override matching keys.</html>");
+        help.setForeground(INLINE_HINT_COLOR);
+        panel.add(help, BorderLayout.NORTH);
+        panel.add(new JScrollPane(metadataArea), BorderLayout.CENTER);
         return panel;
     }
 
@@ -2216,6 +2245,8 @@ public final class ScreenDesignerApplication {
                 itemFontFamilyBox, itemFontSizeBox, itemFontStyleBox, itemColorField);
         putOptionalMetadata(metadata, DISPLAY_ROLE_KEY, selectedComboValue(itemDisplayRoleBox));
         putOptionalMetadata(metadata, BACKGROUND_COLOR_KEY, itemBackgroundColorField.getText());
+        putOptionalMetadata(metadata, HOVER_BACKGROUND_COLOR_KEY, itemHoverBackgroundColorField.getText());
+        putOptionalMetadata(metadata, PRESSED_BACKGROUND_COLOR_KEY, itemPressedBackgroundColorField.getText());
         putOptionalMetadata(metadata, TRANSPARENCY_KEY, selectedComboValue(itemTransparencyBox));
         putActionMetadata(metadata, itemEventNameField.getText(), itemActionValueField.getText());
         if (isFieldType(type)) {
@@ -2530,10 +2561,10 @@ public final class ScreenDesignerApplication {
         return switch (navigationNode.type()) {
             case SCREEN -> List.of("Screen id", "Title", "Layout type", "Font", "Font size", "Font style", "Color", "Background color",
                     "Border style", "Border corner", "Border thickness", "Border color",
-                    "Dialog", "Dismiss on click outside", "Dismiss on Escape", "Extra metadata");
+                    "Dialog", "Dismiss on click outside", "Dismiss on Escape", "Advanced metadata");
             case BLOCK -> List.of("Block id", "Title", "Layout type", "Parent block", "Style class", "Conditions", "Font", "Font size", "Font style", "Color", "Background color",
                     "Background image", "Background image transparency", "Background image placement", "Transparency", "Border style", "Border corner", "Border thickness", "Border color",
-                    "Extra metadata");
+                    "Advanced metadata");
             case ITEM, TEMPORARY_ITEM -> itemPropertyLabelsFor(ScreenDesignItemType.FIELD);
         };
     }
@@ -2548,12 +2579,13 @@ public final class ScreenDesignerApplication {
             labels.add("Current value");
             labels.add("Editable");
         }
-        labels.addAll(List.of("Display role", "Font", "Font size", "Font style", "Color", "Background color", "Transparency",
+        labels.addAll(List.of("Display role", "Font", "Font size", "Font style", "Color", "Background color",
+                "Hover background color", "Pressed background color", "Transparency",
                 "Action event name", "Action value"));
         if (isFieldType(type)) {
             labels.addAll(List.of("Label font", "Label font size", "Label font style", "Label color"));
         }
-        labels.add("Extra metadata");
+        labels.add("Advanced metadata");
         return labels;
     }
 

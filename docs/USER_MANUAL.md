@@ -577,10 +577,10 @@ The management launcher also includes **Reloadable JSON Screen**, which opens `e
 
 The property editor adapts to the selected item type:
 
-- screen nodes expose screen id, title, layout type, font family, font size/style, text color, background color, border attributes, dialog/dismiss preview hints, and an extra metadata editor for non-exposed keys
-- block nodes expose block id, title, layout type, parent block, style class, conditions, font family, font size/style, text color, background color, optional background image plus image transparency/placement, transparency, border attributes, and an extra metadata editor for non-exposed keys
-- field-style items expose block target, item id, style class, type, sequence, label, current value, editable, display role, item font family/size/style/color/background/transparency, action event name/value metadata, label font family/size/style/color, and an extra metadata editor for non-exposed keys
-- non-field items hide label/editable controls and only expose the applicable content plus style class, sequence, display role, item font family/size/style/color/background/transparency, action event name/value metadata, and extra metadata
+- screen nodes expose screen id, title, layout type, font family, font size/style, text color, background color, border attributes, dialog/dismiss preview hints, and an advanced metadata section for uncommon key/value pairs
+- block nodes expose block id, title, layout type, parent block, style class, conditions, font family, font size/style, text color, background color, optional background image plus image transparency/placement, transparency, border attributes, and an advanced metadata section for uncommon key/value pairs
+- field-style items expose block target, item id, style class, type, sequence, label, current value, editable, display role, item font family/size/style/color/background/hover-background/pressed-background/transparency, action event name/value metadata, label font family/size/style/color, and an advanced metadata section for uncommon key/value pairs
+- non-field items hide label/editable controls and only expose the applicable content plus style class, sequence, display role, item font family/size/style/color/background/hover-background/pressed-background/transparency, action event name/value metadata, and advanced metadata
 - `TEXT_AREA` and `MULTI_LINE_FIELD` use a multiline content editor
 
 Temporary items are preview/test helpers. They render in the preview window and can be moved between blocks like saved items, but normal JSON save output omits them. This is useful for prototyping form rows or validation cases without committing them to the authored document.

@@ -237,7 +237,7 @@ final class ScreenDesignerApplicationTest {
                 ScreenDesignerApplication.NavigationNode.screen("sample.screen")));
         assertEquals(List.of("Screen id", "Title", "Layout type", "Font", "Font size", "Font style", "Color", "Background color",
                         "Border style", "Border corner", "Border thickness", "Border color",
-                        "Dialog", "Dismiss on click outside", "Dismiss on Escape", "Extra metadata"),
+                        "Dialog", "Dismiss on click outside", "Dismiss on Escape", "Advanced metadata"),
                 ScreenDesignerApplication.propertyLabelsFor(
                         ScreenDesignerApplication.NavigationNode.screen("sample.screen")));
         assertEquals("Block Properties", ScreenDesignerApplication.propertiesTitleFor(
@@ -245,21 +245,23 @@ final class ScreenDesignerApplicationTest {
         assertEquals(List.of("Block id", "Title", "Layout type", "Parent block", "Style class", "Conditions",
                         "Font", "Font size", "Font style", "Color", "Background color",
                         "Background image", "Background image transparency", "Background image placement", "Transparency", "Border style",
-                        "Border corner", "Border thickness", "Border color", "Extra metadata"),
+                        "Border corner", "Border thickness", "Border color", "Advanced metadata"),
                 ScreenDesignerApplication.propertyLabelsFor(
                         ScreenDesignerApplication.NavigationNode.block("main")));
         assertEquals("Item Properties", ScreenDesignerApplication.propertiesTitleFor(
                 ScreenDesignerApplication.NavigationNode.item("title.text", "main", false)));
         assertEquals(List.of("Target block", "Item id", "Style class", "Type", "Sequence", "Label",
                         "Text/default value", "Current value", "Editable", "Display role",
-                        "Font", "Font size", "Font style", "Color", "Background color", "Transparency",
+                        "Font", "Font size", "Font style", "Color", "Background color",
+                        "Hover background color", "Pressed background color", "Transparency",
                         "Action event name", "Action value", "Label font",
-                        "Label font size", "Label font style", "Label color", "Extra metadata"),
+                        "Label font size", "Label font style", "Label color", "Advanced metadata"),
                 ScreenDesignerApplication.propertyLabelsFor(
                         ScreenDesignerApplication.NavigationNode.item("title.text", "main", false)));
         assertEquals(List.of("Target block", "Item id", "Style class", "Type", "Sequence", "Text/default value", "Display role",
-                        "Font", "Font size", "Font style", "Color", "Background color", "Transparency",
-                        "Action event name", "Action value", "Extra metadata"),
+                        "Font", "Font size", "Font style", "Color", "Background color",
+                        "Hover background color", "Pressed background color", "Transparency",
+                        "Action event name", "Action value", "Advanced metadata"),
                 ScreenDesignerApplication.itemPropertyLabelsFor(ScreenDesignItemType.TEXT));
         assertEquals("Item Properties", ScreenDesignerApplication.propertiesTitleFor(
                 ScreenDesignerApplication.NavigationNode.item("temp.field", "main", true)));
@@ -629,7 +631,9 @@ final class ScreenDesignerApplicationTest {
         assertEquals("Use a number from 0 to 1; 0 is opaque and 1 is fully transparent.",
                 ScreenDesignerApplication.hintTextForProperty("Transparency"));
         assertTrue(ScreenDesignerApplication.hintTextForProperty("Background image").contains("classpath resource"));
+        assertTrue(ScreenDesignerApplication.hintTextForProperty("Hover background color").contains("hover"));
         assertTrue(ScreenDesignerApplication.hintTextForProperty("Conditions").contains("One condition per line"));
+        assertTrue(ScreenDesignerApplication.hintTextForProperty("Advanced metadata").contains("key=value metadata"));
     }
 
     @Test
