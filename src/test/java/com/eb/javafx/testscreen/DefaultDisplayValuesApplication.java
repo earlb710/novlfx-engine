@@ -480,7 +480,8 @@ public final class DefaultDisplayValuesApplication {
     }
 
     static String locationsIntroText() {
-        return "<html>Edit localized <code>map-text</code> and <code>location-text</code> JSON examples.</html>";
+        return "<html>Edit localized <code>location/map-text.demo.json</code> and "
+                + "<code>location/location-text-town.demo.json</code> examples.</html>";
     }
 
     static String displayValuesIntroText() {
