@@ -6,3 +6,4 @@
 - Updated focused screen designer tests and user manual documentation for the new workflow.
 
 - Moved the docked screen designer preview into a dedicated right-side third column instead of a bottom split.
+- Increased the default screen designer window to 1560x988 so the right-docked preview has more working space.

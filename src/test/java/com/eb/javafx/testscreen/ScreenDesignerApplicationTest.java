@@ -449,6 +449,12 @@ final class ScreenDesignerApplicationTest {
     }
 
     @Test
+    void screenDesignerUsesLargerDefaultFrameSizeForRightDockedPreview() {
+        assertEquals(1560, ScreenDesignerApplication.DEFAULT_FRAME_WIDTH);
+        assertEquals(988, ScreenDesignerApplication.DEFAULT_FRAME_HEIGHT);
+    }
+
+    @Test
     void editorPinsPropertyButtonsBelowScrollablePropertiesPanel() throws Exception {
         ScreenDesignerApplication application = new ScreenDesignerApplication();
         invokePrivateMethod(application, "refreshAll");

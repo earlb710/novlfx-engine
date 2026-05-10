@@ -91,6 +91,8 @@ import javax.swing.tree.TreeSelectionModel;
 
 /** Manual Swing screen designer for editing JSON-backed reusable screen designs. */
 public final class ScreenDesignerApplication {
+    static final int DEFAULT_FRAME_WIDTH = 1560;
+    static final int DEFAULT_FRAME_HEIGHT = 988;
     private static final String SCREEN_PARENT_OPTION = "<screen>";
     private static final String DEFAULT_OPTION = "<default>";
     private static final String CSS_INHERITANCE_HINT = "<inherit from CSS>";
@@ -263,7 +265,7 @@ public final class ScreenDesignerApplication {
         });
         frame.setJMenuBar(menuBar());
         frame.setContentPane(content());
-        frame.setSize(TestUiScreenSize.capWidth(1200), TestUiScreenSize.capHeight(760));
+        frame.setSize(DEFAULT_FRAME_WIDTH, DEFAULT_FRAME_HEIGHT);
         frame.setLocationByPlatform(true);
         refreshAll();
         frame.setVisible(true);
