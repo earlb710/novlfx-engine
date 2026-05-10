@@ -603,6 +603,62 @@ final class ScreenDesignerApplicationTest {
     }
 
     @Test
+    void validationTextCanBeScopedToInlinePropertyFields() {
+        List<com.eb.javafx.ui.ScreenDesignValidationProblem> problems = List.of(
+                new com.eb.javafx.ui.ScreenDesignValidationProblem(
+                        com.eb.javafx.ui.ScreenDesignValidationSeverity.ERROR,
+                        "blocks.main.metadata.transparency",
+                        "Transparency must be a number from 0 to 1."),
+                new com.eb.javafx.ui.ScreenDesignValidationProblem(
+                        com.eb.javafx.ui.ScreenDesignValidationSeverity.ERROR,
+                        "blocks.main.conditions[0]",
+                        "Bad condition"));
+
+        assertEquals("Transparency must be a number from 0 to 1.",
+                ScreenDesignerApplication.validationTextForField(problems, "blocks.main.metadata.transparency"));
+        assertEquals("Bad condition",
+                ScreenDesignerApplication.validationTextForField(problems, "blocks.main.conditions"));
+    }
+
+    @Test
+    void propertyHintsDescribeAllowedAuthoringValues() {
+        assertEquals("Allowed: solid, dashed, dotted, none.",
+                ScreenDesignerApplication.hintTextForProperty("Border style"));
+        assertEquals("Allowed: square, rounded, pill.",
+                ScreenDesignerApplication.hintTextForProperty("Border corner"));
+        assertEquals("Use a number from 0 to 1; 0 is opaque and 1 is fully transparent.",
+                ScreenDesignerApplication.hintTextForProperty("Transparency"));
+        assertTrue(ScreenDesignerApplication.hintTextForProperty("Background image").contains("classpath resource"));
+        assertTrue(ScreenDesignerApplication.hintTextForProperty("Conditions").contains("One condition per line"));
+    }
+
+    @Test
+    void screenDesignValidatorFlagsUnsupportedDesignerMetadataValues() {
+        ScreenDesignModel design = new ScreenDesignModel(
+                "sample.screen",
+                "Sample Screen",
+                com.eb.javafx.ui.ScreenLayoutType.FORM,
+                Map.of("borderStyle", "double"),
+                List.of(new ScreenDesignBlock("main", "Main", com.eb.javafx.ui.ScreenLayoutType.FORM, null, null, Map.of(
+                        "transparency", "1.5",
+                        "borderCorner", "circle",
+                        "backgroundImagePlacement", "tile"))),
+                List.of(new ScreenDesignItem("title.text", "main", ScreenDesignItemType.TEXT,
+                        "Title", "Saved", null, null, null, Map.of("transparency", "opaque"))),
+                List.of());
+
+        List<String> paths = ScreenDesignValidator.validate(design).stream()
+                .map(com.eb.javafx.ui.ScreenDesignValidationProblem::path)
+                .toList();
+
+        assertTrue(paths.contains("metadata.borderStyle"));
+        assertTrue(paths.contains("blocks.main.metadata.transparency"));
+        assertTrue(paths.contains("blocks.main.metadata.borderCorner"));
+        assertTrue(paths.contains("blocks.main.metadata.backgroundImagePlacement"));
+        assertTrue(paths.contains("items.title.text.metadata.transparency"));
+    }
+
+    @Test
     void genericTemplatesProvideCommonStarterFlows() {
         List<ScreenDesignerApplication.ScreenTemplate> templates = ScreenDesignerApplication.screenTemplates();
 

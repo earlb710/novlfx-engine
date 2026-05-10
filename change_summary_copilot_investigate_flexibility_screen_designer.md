@@ -7,3 +7,4 @@
 
 - Moved the docked screen designer preview into a dedicated right-side third column instead of a bottom split.
 - Increased the default screen designer window to 1560x988 so the right-docked preview has more working space.
+- Added inline screen designer validation for invalid visual metadata, field-level hints, and tree node issue counts/tooltips.

@@ -26,6 +26,7 @@ import javafx.stage.Stage;
 
 import javax.swing.JButton;
 import javax.swing.AbstractCellEditor;
+import javax.swing.BorderFactory;
 import javax.swing.DefaultCellEditor;
 import javax.swing.JCheckBox;
 import javax.swing.JColorChooser;
@@ -33,6 +34,7 @@ import javax.swing.JComboBox;
 import javax.swing.JDialog;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
+import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JMenu;
@@ -93,6 +95,8 @@ import javax.swing.tree.TreeSelectionModel;
 public final class ScreenDesignerApplication {
     static final int DEFAULT_FRAME_WIDTH = 1560;
     static final int DEFAULT_FRAME_HEIGHT = 988;
+    private static final Color INLINE_ERROR_COLOR = new Color(0x9b1c1c);
+    private static final Color INLINE_HINT_COLOR = new Color(0x5f6368);
     private static final String SCREEN_PARENT_OPTION = "<screen>";
     private static final String DEFAULT_OPTION = "<default>";
     private static final String CSS_INHERITANCE_HINT = "<inherit from CSS>";
@@ -1266,6 +1270,14 @@ public final class ScreenDesignerApplication {
     }
 
     private void configureFieldGuidance() {
+        screenBorderStyleBox.setToolTipText(hintTextForProperty("Border style"));
+        screenBorderCornerBox.setToolTipText(hintTextForProperty("Border corner"));
+        blockBorderStyleBox.setToolTipText(hintTextForProperty("Border style"));
+        blockBorderCornerBox.setToolTipText(hintTextForProperty("Border corner"));
+        blockTransparencyBox.setToolTipText(hintTextForProperty("Transparency"));
+        blockBackgroundImageTransparencyBox.setToolTipText(hintTextForProperty("Background image transparency"));
+        itemTransparencyBox.setToolTipText(hintTextForProperty("Transparency"));
+        blockBackgroundImageField.setToolTipText(hintTextForProperty("Background image"));
         blockBackgroundImagePlacementBox.setToolTipText("Background image placement: fixed modes anchor the image at the named position; stretch to fit resizes it to the block. Options: "
                 + String.join(", ", Arrays.stream(BACKGROUND_IMAGE_PLACEMENT_OPTIONS)
                 .filter(option -> !DEFAULT_OPTION.equals(option))
@@ -1273,7 +1285,7 @@ public final class ScreenDesignerApplication {
                 + ".");
         itemEventNameField.setToolTipText("Optional eventName metadata. Items with an event name render as clickable buttons in preview/runtime.");
         itemActionValueField.setToolTipText("Optional actionValue metadata sent with the item action event.");
-        blockConditionsArea.setToolTipText("One condition per line. Blank means this block is always shown.");
+        blockConditionsArea.setToolTipText(hintTextForProperty("Conditions"));
         itemSequenceField.setToolTipText("Optional whole-number ordering hint. Blank keeps authored order.");
         itemMetadataArea.setToolTipText("Advanced key=value metadata for properties that do not have typed fields.");
         blockMetadataArea.setToolTipText("Advanced key=value metadata. Typed fields above override matching keys.");
@@ -1849,6 +1861,7 @@ public final class ScreenDesignerApplication {
         screenDismissOnClickOutsideBox.setSelected(booleanMetadataValue(design.metadata(), DISMISS_ON_CLICK_OUTSIDE_KEY));
         screenDismissOnEscapeBox.setSelected(booleanMetadataValue(design.metadata(), DISMISS_ON_ESCAPE_KEY));
         configureMetadataArea(screenMetadataArea, metadataText(design.metadata(), SCREEN_EXPOSED_METADATA_KEYS));
+        List<ScreenDesignValidationProblem> problems = ScreenDesignValidator.validate(design);
         JPanel fields = propertyGrid(propertyLabelsFor(NavigationNode.screen(design.id())).size());
         addPropertyRow(fields, 0, "Screen id", screenIdField);
         addPropertyRow(fields, 1, "Title", titleField);
@@ -1858,8 +1871,10 @@ public final class ScreenDesignerApplication {
         addPropertyRow(fields, 5, "Font style", screenFontStyleBox);
         addPropertyRow(fields, 6, "Color", colorSelector(screenColorField));
         addPropertyRow(fields, 7, "Background color", colorSelector(screenBackgroundColorField));
-        addPropertyRow(fields, 8, "Border style", screenBorderStyleBox);
-        addPropertyRow(fields, 9, "Border corner", screenBorderCornerBox);
+        addPropertyRow(fields, 8, "Border style", screenBorderStyleBox,
+                validationTextForField(problems, "metadata." + BORDER_STYLE_KEY));
+        addPropertyRow(fields, 9, "Border corner", screenBorderCornerBox,
+                validationTextForField(problems, "metadata." + BORDER_CORNER_KEY));
         addPropertyRow(fields, 10, "Border thickness", screenBorderThicknessBox);
         addPropertyRow(fields, 11, "Border color", colorSelector(screenBorderColorField));
         addPropertyRow(fields, 12, "Dialog", screenDialogBox);
@@ -1894,24 +1909,33 @@ public final class ScreenDesignerApplication {
         blockConditionsArea.setLineWrap(true);
         blockConditionsArea.setWrapStyleWord(true);
         configureMetadataArea(blockMetadataArea, metadataText(block.metadata(), BLOCK_EXPOSED_METADATA_KEYS));
+        List<ScreenDesignValidationProblem> problems = ScreenDesignValidator.validate(design);
+        String metadataPath = "blocks." + blockId + ".metadata.";
         JPanel fields = propertyGrid(propertyLabelsFor(NavigationNode.block(blockId)).size());
         addPropertyRow(fields, 0, "Block id", blockIdField);
         addPropertyRow(fields, 1, "Title", blockTitleField);
         addPropertyRow(fields, 2, "Layout type", blockLayoutTypeBox);
         addPropertyRow(fields, 3, "Parent block", parentBlockBox);
         addPropertyRow(fields, 4, "Style class", blockStyleClassField);
-        addPropertyRow(fields, 5, "Conditions", new JScrollPane(blockConditionsArea));
+        addPropertyRow(fields, 5, "Conditions", new JScrollPane(blockConditionsArea),
+                validationTextForField(problems, "blocks." + blockId + ".conditions"));
         addPropertyRow(fields, 6, "Font", blockFontFamilyBox);
         addPropertyRow(fields, 7, "Font size", blockFontSizeBox);
         addPropertyRow(fields, 8, "Font style", blockFontStyleBox);
         addPropertyRow(fields, 9, "Color", colorSelector(blockColorField));
         addPropertyRow(fields, 10, "Background color", colorSelector(blockBackgroundColorField));
-        addPropertyRow(fields, 11, "Background image", fileSelector(blockBackgroundImageField, "Choose...", () -> chooseImagePath(blockBackgroundImageField)));
-        addPropertyRow(fields, 12, "Background image transparency", blockBackgroundImageTransparencyBox);
-        addPropertyRow(fields, 13, "Background image placement", blockBackgroundImagePlacementBox);
-        addPropertyRow(fields, 14, "Transparency", blockTransparencyBox);
-        addPropertyRow(fields, 15, "Border style", blockBorderStyleBox);
-        addPropertyRow(fields, 16, "Border corner", blockBorderCornerBox);
+        addPropertyRow(fields, 11, "Background image", fileSelector(blockBackgroundImageField, "Choose...", () -> chooseImagePath(blockBackgroundImageField)),
+                validationTextForField(problems, metadataPath + BACKGROUND_IMAGE_KEY));
+        addPropertyRow(fields, 12, "Background image transparency", blockBackgroundImageTransparencyBox,
+                validationTextForField(problems, metadataPath + BACKGROUND_IMAGE_TRANSPARENCY_KEY));
+        addPropertyRow(fields, 13, "Background image placement", blockBackgroundImagePlacementBox,
+                validationTextForField(problems, metadataPath + BACKGROUND_IMAGE_PLACEMENT_KEY));
+        addPropertyRow(fields, 14, "Transparency", blockTransparencyBox,
+                validationTextForField(problems, metadataPath + TRANSPARENCY_KEY));
+        addPropertyRow(fields, 15, "Border style", blockBorderStyleBox,
+                validationTextForField(problems, metadataPath + BORDER_STYLE_KEY));
+        addPropertyRow(fields, 16, "Border corner", blockBorderCornerBox,
+                validationTextForField(problems, metadataPath + BORDER_CORNER_KEY));
         addPropertyRow(fields, 17, "Border thickness", blockBorderThicknessBox);
         addPropertyRow(fields, 18, "Border color", colorSelector(blockBorderColorField));
         addPropertyRow(fields, 19, "Extra metadata", new JScrollPane(blockMetadataArea));
@@ -1950,6 +1974,8 @@ public final class ScreenDesignerApplication {
         itemLabelColorField.setText(metadataValue(item.metadata(), LABEL_COLOR_KEY));
         configureMetadataArea(itemMetadataArea, metadataText(item.metadata(), ITEM_EXPOSED_METADATA_KEYS));
         refreshItemTypeState();
+        List<ScreenDesignValidationProblem> problems = ScreenDesignValidator.validate(design);
+        String metadataPath = (temporary ? "temporaryItems." : "items.") + itemId + ".metadata.";
         JPanel fields = propertyGrid(itemPropertyLabelsFor(item.type()).size());
         int row = 0;
         addPropertyRow(fields, row++, "Target block", itemBlockBox);
@@ -1971,7 +1997,8 @@ public final class ScreenDesignerApplication {
         addPropertyRow(fields, row++, "Font style", itemFontStyleBox);
         addPropertyRow(fields, row++, "Color", colorSelector(itemColorField));
         addPropertyRow(fields, row++, "Background color", colorSelector(itemBackgroundColorField));
-        addPropertyRow(fields, row++, "Transparency", itemTransparencyBox);
+        addPropertyRow(fields, row++, "Transparency", itemTransparencyBox,
+                validationTextForField(problems, metadataPath + TRANSPARENCY_KEY));
         addPropertyRow(fields, row++, "Action event name", itemEventNameField);
         addPropertyRow(fields, row++, "Action value", itemActionValueField);
         if (isFieldType(item.type())) {
@@ -1997,8 +2024,76 @@ public final class ScreenDesignerApplication {
     }
 
     private static void addPropertyRow(JPanel panel, int row, String label, Component component) {
-        panel.add(new JLabel(label), propertyConstraints(row, 0, 0.0));
-        panel.add(component, propertyConstraints(row, 1, 1.0));
+        addPropertyRow(panel, row, label, component, "", hintTextForProperty(label));
+    }
+
+    private static void addPropertyRow(
+            JPanel panel,
+            int row,
+            String label,
+            Component component,
+            String validationText) {
+        addPropertyRow(panel, row, label, component, validationText, hintTextForProperty(label));
+    }
+
+    private static void addPropertyRow(
+            JPanel panel,
+            int row,
+            String label,
+            Component component,
+            String validationText,
+            String hintText) {
+        boolean invalid = validationText != null && !validationText.isBlank();
+        JLabel labelComponent = new JLabel(invalid ? label + " ⚠" : label);
+        if (invalid) {
+            labelComponent.setForeground(INLINE_ERROR_COLOR);
+        }
+        panel.add(labelComponent, propertyConstraints(row, 0, 0.0));
+        panel.add(inlineGuidancePanel(component, validationText, hintText), propertyConstraints(row, 1, 1.0));
+    }
+
+    private static JPanel inlineGuidancePanel(Component component, String validationText, String hintText) {
+        JPanel panel = new JPanel(new BorderLayout(2, 2));
+        panel.add(component, BorderLayout.CENTER);
+        String guidance = validationText != null && !validationText.isBlank() ? validationText : hintText;
+        if (guidance != null && !guidance.isBlank()) {
+            JLabel guidanceLabel = new JLabel("<html>" + escapeBasicHtmlContent(guidance).replace("\n", "<br>") + "</html>");
+            guidanceLabel.setForeground(validationText != null && !validationText.isBlank() ? INLINE_ERROR_COLOR : INLINE_HINT_COLOR);
+            panel.add(guidanceLabel, BorderLayout.SOUTH);
+            panel.setToolTipText(guidance);
+            if (component instanceof JComponent jComponent) {
+                jComponent.setToolTipText(guidance);
+            }
+        }
+        if (validationText != null && !validationText.isBlank()) {
+            panel.setBorder(BorderFactory.createLineBorder(INLINE_ERROR_COLOR, 1));
+        } else {
+            panel.setBorder(BorderFactory.createEmptyBorder(1, 1, 1, 1));
+        }
+        return panel;
+    }
+
+    static String hintTextForProperty(String label) {
+        return switch (label) {
+            case "Border style" -> "Allowed: solid, dashed, dotted, none.";
+            case "Border corner" -> "Allowed: square, rounded, pill.";
+            case "Transparency", "Background image transparency" ->
+                    "Use a number from 0 to 1; 0 is opaque and 1 is fully transparent.";
+            case "Background image" -> "Use a filesystem path, file URI, or classpath resource. SVG images are supported.";
+            case "Background image placement" ->
+                    "Allowed: fixed top left, fixed center, fixed bottom right, stretch to fit.";
+            case "Conditions" -> "One condition per line. Leave blank when the block should always be shown.";
+            default -> "";
+        };
+    }
+
+    static String validationTextForField(List<ScreenDesignValidationProblem> problems, String fieldPath) {
+        return problems.stream()
+                .filter(problem -> problem.path().equals(fieldPath)
+                        || problem.path().startsWith(fieldPath + ".")
+                        || problem.path().startsWith(fieldPath + "["))
+                .map(ScreenDesignValidationProblem::message)
+                .reduce("", (left, right) -> left.isEmpty() ? right : left + "\n" + right);
     }
 
     private static Component colorSelector(JTextField colorField) {
@@ -2778,9 +2873,14 @@ public final class ScreenDesignerApplication {
             navigationNodeFor(value).ifPresent(node -> {
                 String validationText = validationTextForNode(ScreenDesignValidator.validate(design), node);
                 if (!validationText.isBlank()) {
-                    setText(node + " ⚠");
-                    setToolTipText(validationText);
+                    int issueCount = (int) validationText.lines().count();
+                    setText(node + " ⚠ " + issueCount);
+                    setToolTipText("<html>" + escapeBasicHtmlContent(validationText).replace("\n", "<br>") + "</html>");
+                    if (!selected) {
+                        setForeground(INLINE_ERROR_COLOR);
+                    }
                 } else {
+                    setText(node.toString());
                     setToolTipText(null);
                 }
             });
