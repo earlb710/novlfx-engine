@@ -1738,7 +1738,7 @@ public final class ScreenDesignerApplication {
     }
 
     private void installTreeDragAndDrop() {
-        objectTree.setDropMode(DropMode.ON_OR_INSERT);
+        objectTree.setDropMode(DropMode.ON);
         objectTree.setTransferHandler(new NavigationTreeTransferHandler());
         if (!GraphicsEnvironment.isHeadless()) {
             objectTree.setDragEnabled(true);
@@ -1856,12 +1856,12 @@ public final class ScreenDesignerApplication {
         if (targetNode == null || sourceNode.equals(targetNode)) {
             return Optional.empty();
         }
-        int childIndex = dropLocation.getChildIndex();
+        DropPosition dropPosition = dropPositionFor(objectTree.getPathBounds(dropLocation.getPath()), dropLocation.getDropPoint().y);
         if (sourceNode.type() == NodeType.BLOCK) {
-            return blockDropTarget(sourceNode.id(), targetTreeNode, targetNode, childIndex);
+            return blockDropTarget(sourceNode.id(), targetTreeNode, targetNode, dropPosition);
         }
         if (sourceNode.type() == NodeType.ITEM || sourceNode.type() == NodeType.TEMPORARY_ITEM) {
-            return itemDropTarget(targetTreeNode, targetNode, childIndex, sourceNode.type() == NodeType.TEMPORARY_ITEM);
+            return itemDropTarget(targetTreeNode, targetNode, dropPosition, sourceNode.type() == NodeType.TEMPORARY_ITEM);
         }
         return Optional.empty();
     }
@@ -1870,21 +1870,21 @@ public final class ScreenDesignerApplication {
             String sourceBlockId,
             DefaultMutableTreeNode targetTreeNode,
             NavigationNode targetNode,
-            int childIndex) {
+            DropPosition dropPosition) {
         String parentBlockId;
         int siblingIndex;
-        if (childIndex >= 0) {
-            if (targetNode.type() != NodeType.SCREEN && targetNode.type() != NodeType.BLOCK) {
-                return Optional.empty();
-            }
-            parentBlockId = targetNode.type() == NodeType.SCREEN ? null : targetNode.id();
-            siblingIndex = blockSiblingIndex(targetTreeNode, childIndex);
-        } else if (targetNode.type() == NodeType.SCREEN) {
+        if (targetNode.type() == NodeType.SCREEN) {
             parentBlockId = null;
             siblingIndex = -1;
-        } else if (targetNode.type() == NodeType.BLOCK) {
+        } else if (targetNode.type() == NodeType.BLOCK && dropPosition == DropPosition.ON) {
             parentBlockId = targetNode.id();
             siblingIndex = -1;
+        } else if (targetNode.type() == NodeType.BLOCK) {
+            DefaultMutableTreeNode parentNode = (DefaultMutableTreeNode) targetTreeNode.getParent();
+            NavigationNode parentNavigationNode = navigationNodeFor(parentNode).orElseThrow();
+            parentBlockId = parentNavigationNode.type() == NodeType.SCREEN ? null : parentNavigationNode.id();
+            int targetIndex = parentNode.getIndex(targetTreeNode);
+            siblingIndex = blockSiblingIndex(parentNode, targetIndex + (dropPosition == DropPosition.AFTER ? 1 : 0));
         } else {
             return Optional.empty();
         }
@@ -1897,23 +1897,32 @@ public final class ScreenDesignerApplication {
     private Optional<NavigationDropTarget> itemDropTarget(
             DefaultMutableTreeNode targetTreeNode,
             NavigationNode targetNode,
-            int childIndex,
+            DropPosition dropPosition,
             boolean temporary) {
-        if (childIndex >= 0) {
-            if (targetNode.type() != NodeType.BLOCK) {
-                return Optional.empty();
-            }
-            return Optional.of(new NavigationDropTarget(targetNode.id(), itemSiblingIndex(targetTreeNode, childIndex, temporary)));
-        }
         if (targetNode.type() == NodeType.BLOCK) {
             return Optional.of(new NavigationDropTarget(targetNode.id(), -1));
         }
         if (targetNode.type() == NodeType.ITEM || targetNode.type() == NodeType.TEMPORARY_ITEM) {
             DefaultMutableTreeNode parent = (DefaultMutableTreeNode) targetTreeNode.getParent();
             int targetIndex = parent.getIndex(targetTreeNode);
-            return Optional.of(new NavigationDropTarget(targetNode.blockId(), itemSiblingIndex(parent, targetIndex + 1, temporary)));
+            int insertionIndex = targetIndex + (dropPosition == DropPosition.BEFORE ? 0 : 1);
+            return Optional.of(new NavigationDropTarget(targetNode.blockId(), itemSiblingIndex(parent, insertionIndex, temporary)));
         }
         return Optional.empty();
+    }
+
+    static DropPosition dropPositionFor(Rectangle bounds, int pointerY) {
+        if (bounds == null || bounds.height <= 0) {
+            return DropPosition.ON;
+        }
+        int edgeBand = Math.max(4, bounds.height / 4);
+        if (pointerY < bounds.y + edgeBand) {
+            return DropPosition.BEFORE;
+        }
+        if (pointerY >= bounds.y + bounds.height - edgeBand) {
+            return DropPosition.AFTER;
+        }
+        return DropPosition.ON;
     }
 
     private static int blockSiblingIndex(DefaultMutableTreeNode parentNode, int childIndex) {
@@ -3149,6 +3158,12 @@ public final class ScreenDesignerApplication {
         BLOCK,
         ITEM,
         TEMPORARY_ITEM
+    }
+
+    enum DropPosition {
+        BEFORE,
+        ON,
+        AFTER
     }
 
     enum DefaultValueCategory {

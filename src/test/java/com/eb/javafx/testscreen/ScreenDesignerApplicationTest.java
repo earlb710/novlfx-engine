@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.awt.BorderLayout;
 import java.awt.Component;
+import java.awt.Rectangle;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.nio.file.Files;
@@ -677,6 +678,20 @@ final class ScreenDesignerApplicationTest {
 
         assertEquals(List.of("second.text", "first.text", "third.text"),
                 updated.items().stream().filter(item -> "secondary".equals(item.blockId())).map(ScreenDesignItem::id).toList());
+    }
+
+    @Test
+    void dropPositionUsesTopMiddleAndBottomBandsWithoutSwingInsertMode() {
+        Rectangle bounds = new Rectangle(0, 100, 200, 24);
+
+        assertEquals(ScreenDesignerApplication.DropPosition.BEFORE,
+                ScreenDesignerApplication.dropPositionFor(bounds, 103));
+        assertEquals(ScreenDesignerApplication.DropPosition.ON,
+                ScreenDesignerApplication.dropPositionFor(bounds, 112));
+        assertEquals(ScreenDesignerApplication.DropPosition.AFTER,
+                ScreenDesignerApplication.dropPositionFor(bounds, 123));
+        assertEquals(ScreenDesignerApplication.DropPosition.ON,
+                ScreenDesignerApplication.dropPositionFor(null, 0));
     }
 
     @Test

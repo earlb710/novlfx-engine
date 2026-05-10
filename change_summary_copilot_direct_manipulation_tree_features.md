@@ -1,1 +1,3 @@
 Added screen designer direct manipulation support for the navigation tree, including drag/drop reparenting and reordering of blocks and saved or temporary items. Added right-click quick-add actions that seed generic form, menu/action-list, and preview-grid blocks with reusable starter items and metadata. Updated focused tests and the user manual to document the new authoring workflow.
+
+Fixed the screen designer tree drag/drop crash by avoiding Swing insert drop-line mode and inferring before/on/after drop intent from pointer position within the hovered tree row. Added a focused test for the drop-position bands used by the new logic.
