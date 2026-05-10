@@ -41,18 +41,6 @@
 - For public or user-facing features, update `docs/USER_MANUAL.md` and matching entries/examples under `examples/user-manual` when applicable.
 - Reuse existing utility classes and patterns in `com.eb.javafx.util` before adding new helpers.
 
-## Copilot setup and secrets
-
-- `.github/workflows/copilot-setup-steps.yml` prepares Java 17 and warms Gradle dependencies with `compileJava testClasses`.
-- The setup workflow uses the `copilot` environment and minimal `contents: read` permissions.
-- The setup workflow expects an `ALTLIFE_TOKEN` environment secret for the related private AltLife source/application repository, which is referenced during setup.
-- AltLife is a related private application repository used for setup-time access/context, while this repository should keep reusable engine code generic and free of application-specific content.
-- Use the least privilege needed for that secret: read-only Contents access to the private repository for fine-grained tokens, or the minimum private-repository read scope available for the token type.
-- Do not hard-code `ALTLIFE_TOKEN` or any other token.
-- If setup fails because `ALTLIFE_TOKEN` is missing, configure it as a masked GitHub environment secret under Settings > Environments > `copilot`, then re-run the setup workflow.
-- Keep GitHub MCP tools enabled for repository context, releases, issues, pull requests, workflow runs, and CI log investigation.
-- Never commit MCP tokens, Copilot tokens, GitHub tokens, or other credentials to source, workflow files, docs examples, logs, or change summaries.
-
 ## Change summary
 
 - After completing any set of code changes, write a summary of those changes to `change_summary.md` in the repository root.
