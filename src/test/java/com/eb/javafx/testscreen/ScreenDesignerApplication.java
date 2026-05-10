@@ -947,7 +947,7 @@ public final class ScreenDesignerApplication {
         Path search = current;
         while (search != null) {
             if (Files.isRegularFile(search.resolve("build.gradle"))) {
-                return search.resolve("examples").resolve("screen-designs").normalize();
+                return search.resolve(Path.of("examples", "resources", "json", "screens")).normalize();
             }
             search = search.getParent();
         }

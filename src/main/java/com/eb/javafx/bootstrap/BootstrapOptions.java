@@ -1,12 +1,17 @@
 package com.eb.javafx.bootstrap;
 
 import com.eb.javafx.content.StaticContentModule;
+import com.eb.javafx.content.JsonDisplayContentModule;
 import com.eb.javafx.routing.RouteModule;
+import com.eb.javafx.scene.JsonConversationContentModule;
+import com.eb.javafx.scene.JsonSceneModule;
 import com.eb.javafx.scene.SceneModule;
 import com.eb.javafx.util.Validation;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -59,7 +64,14 @@ public final class BootstrapOptions {
                 .normalize();
         Path parent = normalizedConfigPath.getParent();
         Path applicationRoot = parent == null ? Paths.get("").toAbsolutePath().normalize() : parent;
-        return of(applicationRoot, ApplicationResourceConfig.load(normalizedConfigPath));
+        ApplicationResourceConfig resourceConfig = ApplicationResourceConfig.load(normalizedConfigPath);
+        BootstrapOptions options = of(applicationRoot, resourceConfig);
+        Path jsonResourceRoot = resourceConfig.resolveJsonResourceRoot(applicationRoot);
+        Path appLoadPath = ApplicationJsonLoadDefinition.defaultPath(jsonResourceRoot);
+        if (Files.isRegularFile(appLoadPath)) {
+            return options.withApplicationJsonLoads(ApplicationJsonLoadDefinition.load(appLoadPath).loads());
+        }
+        return options;
     }
 
     public Path applicationRoot() {
@@ -100,5 +112,26 @@ public final class BootstrapOptions {
 
     public BootstrapOptions withRouteModules(List<RouteModule> routeModules) {
         return new BootstrapOptions(applicationRoot, resourceConfig, staticContentModules, sceneModules, routeModules);
+    }
+
+    public BootstrapOptions withApplicationJsonLoads(List<ApplicationJsonLoad> loads) {
+        Validation.requireNonNull(loads, "Application JSON loads are required.");
+        ArrayList<StaticContentModule> updatedStaticModules = new ArrayList<>(staticContentModules);
+        ArrayList<SceneModule> updatedSceneModules = new ArrayList<>(sceneModules);
+        Path jsonResourceRoot = resourceConfig.resolveJsonResourceRoot(applicationRoot);
+        for (ApplicationJsonLoad load : loads) {
+            for (Path jsonPath : load.resolvePaths(jsonResourceRoot)) {
+                switch (load.type()) {
+                    case DISPLAY -> updatedStaticModules.add(new JsonDisplayContentModule(jsonPath));
+                    case SCENE -> updatedSceneModules.add(new JsonSceneModule(jsonPath));
+                    case CONVERSATION -> {
+                        JsonConversationContentModule module = new JsonConversationContentModule(jsonPath);
+                        updatedStaticModules.add(module);
+                        updatedSceneModules.add(module);
+                    }
+                }
+            }
+        }
+        return new BootstrapOptions(applicationRoot, resourceConfig, updatedStaticModules, updatedSceneModules, routeModules);
     }
 }

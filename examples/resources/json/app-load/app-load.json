@@ -1,0 +1,7 @@
+{
+  "loads": [
+    {"type": "display", "path": "display"},
+    {"type": "scene", "path": "scenes"},
+    {"type": "conversation", "path": "conversations"}
+  ]
+}

@@ -175,7 +175,7 @@ Use `BootstrapCompletenessPolicy` when an application has additional reusable st
 
 Do not use guarded services before initialization. Several services use initialization guards and will fail fast if called before bootstrap or explicit initialization.
 
-Applications can also keep an external `config.json` and load it with `ApplicationResourceConfig.load(Path)` when authored resources need to live outside the engine defaults. The config stores a category code-table JSON path, an image asset root, optional default background values for the app, preferences, and save/load screens, and a generic `resources` map for other overrideable files such as themes or image groups:
+Applications can also keep an external `config.json` and load it with `ApplicationResourceConfig.load(Path)` when authored resources need to live outside the engine defaults. The config stores a category code-table JSON path, an image asset root, optional default background values for the app, preferences, and save/load screens, and a generic `resources` map for other overrideable files such as themes, image groups, or the root JSON resource directory:
 
 ```json
 {
@@ -191,6 +191,7 @@ Applications can also keep an external `config.json` and load it with `Applicati
   "defaultSaveLoadScreenBackgroundImage": "/com/eb/javafx/images/svg/background-gradient-rectangle.svg",
   "defaultSaveLoadScreenBackgroundImageTransparency": "0.25",
   "resources": {
+    "jsonResourceRoot": "resources/json",
     "sceneDefinitions": "content/scene-definitions.json",
     "displayDefinitions": "content/display-definitions.json",
     "uiTheme": "src/main/resources/com/eb/javafx/ui/default.css",
@@ -203,7 +204,34 @@ Resolve those paths relative to an application-chosen base directory:
 
 - `resolveCategoryCodeTables(baseDir)` returns the authored category JSON file to pass into `CategoryCodeTableDefinition.load(...)`.
 - `resolveImageAssetRoot(baseDir)` returns the image root used by options-based bootstrap or to pass into `new ImageDisplayRegistry(repoRoot, imageAssetRoot)`.
+- `resolveJsonResourceRoot(baseDir)` returns the root directory for app-authored JSON organized by type.
 - `resolveResource(baseDir, "sceneDefinitions")`, `resolveResource(baseDir, "displayDefinitions")`, or other named resource IDs resolve override points that the application owns.
+
+The recommended app-authored JSON layout groups resources by type beneath that root so translation files can be selected by folder:
+
+```text
+resources/json/
+  app-load/app-load.json
+  code-tables/
+  conversations/
+  display/
+  location-text/
+  map-text/
+  scenes/
+  screens/
+```
+
+`app-load/app-load.json` declares which startup-safe JSON directories should be loaded automatically by `BootstrapOptions.fromConfig(...)`. Supported load types are `display`, `scene`, and `conversation`; omit `fileName` to load every `.json` file in the directory in filename order, or set `fileName` to load one file:
+
+```json
+{
+  "loads": [
+    {"type": "display", "path": "display"},
+    {"type": "scene", "path": "scenes"},
+    {"type": "conversation", "path": "conversations", "fileName": "sample-conversation.json"}
+  ]
+}
+```
 
 ```java
 BootstrapOptions options = BootstrapOptions.fromConfig(appRoot.resolve("config.json"))
@@ -225,7 +253,7 @@ Immediately after that, the **Lookup Variables** tab opens an editable text vari
 
 Beneath those fields, the **Application Variables** block provides a multiline table for app-owned variable notes or future app-specific persistence with four fields: `name`, `type`, `value`, and `description`. The type field is limited to `string`, `number`, or `bool`; use **Add Variable** to append a blank row and **Remove Variable** to delete selected rows, or the last row when nothing is selected.
 
-Below that, the **Load Files** block provides a second table for tracking authored startup loads with three fields: `type`, `path`, and `file name`. The type field is limited to `code table` or `conversation`; use **Add Load** to append a blank row and **Remove Load** to delete selected rows, or the last row when nothing is selected. Leave `file name` empty when the intent is to load every file in the specified directory.
+Below that, the **Load Files** block provides a second table for tracking authored startup loads with three fields: `type`, `path`, and `file name`. The type field is limited to `display`, `scene`, or `conversation`; use **Add Load** to append a blank row and **Remove Load** to delete selected rows, or the last row when nothing is selected. Leave `file name` empty when the intent is to load every `.json` file in the specified directory.
 
 ```json
 {
@@ -233,6 +261,7 @@ Below that, the **Load Files** block provides a second table for tracking author
   "categoryCodeTablesPath": "config/category-code-tables.en.json",
   "imageAssetRoot": "game",
   "resources": {
+    "jsonResourceRoot": "resources/json",
     "sceneDefinitions": "content/scene-definitions.json",
     "displayDefinitions": "content/display-definitions.json",
     "uiTheme": "src/main/resources/com/eb/javafx/ui/default.css"
@@ -266,7 +295,7 @@ Example/demo code: [`examples/user-manual/04-startup-and-service-wiring/Bootstra
 
 Additional example/demo code:
 - [`examples/user-manual/04-startup-and-service-wiring/ApplicationResourceConfigDemo.java`](../examples/user-manual/04-startup-and-service-wiring/ApplicationResourceConfigDemo.java)
-- [`examples/user-manual/04-startup-and-service-wiring/config.demo.json`](../examples/user-manual/04-startup-and-service-wiring/config.demo.json)
+- [`examples/resources/json/config/config.demo.json`](../examples/resources/json/config/config.demo.json)
 
 ## 5. Content, routing, and scenes
 
@@ -275,7 +304,7 @@ Example/demo code: [`examples/user-manual/05-content-routing-and-scenes/SceneFlo
 Additional example/demo code:
 - [`examples/user-manual/05-content-routing-and-scenes/SceneExecutionAndJsonDemo.java`](../examples/user-manual/05-content-routing-and-scenes/SceneExecutionAndJsonDemo.java)
 - [`examples/user-manual/05-content-routing-and-scenes/SceneValidationAndSaveDemo.java`](../examples/user-manual/05-content-routing-and-scenes/SceneValidationAndSaveDemo.java)
-- [`examples/user-manual/05-content-routing-and-scenes/scene-definitions.demo.json`](../examples/user-manual/05-content-routing-and-scenes/scene-definitions.demo.json)
+- [`examples/resources/json/scenes/scene-definitions.demo.json`](../examples/resources/json/scenes/scene-definitions.demo.json)
 
 ### Static content
 
@@ -414,7 +443,7 @@ Blocks and items are stable editable records:
 
 ### Editing a screen manually in JSON
 
-Manual JSON editing is the lowest-level authoring path. It is useful when a design is generated by tools, stored in source control, or adjusted outside the Swing designer. Start from one of the sample files in `examples/screen-designs/`:
+Manual JSON editing is the lowest-level authoring path. It is useful when a design is generated by tools, stored in source control, or adjusted outside the Swing designer. Start from one of the sample files in `examples/resources/json/screens/`:
 
 - `sample-screen-design.json`
 - `reloadable-test-screen.json`
@@ -555,7 +584,7 @@ Launch the designer with:
 ./gradlew --no-daemon runScreenDesigner
 ```
 
-The designer opens a Swing editor backed by `ScreenDesignModel` and starts in `examples/screen-designs`. Its main areas are:
+The designer opens a Swing editor backed by `ScreenDesignModel` and starts in `examples/resources/json/screens`. Its main areas are:
 
 - a navigation tree showing the screen root, blocks, saved items, and temporary items
 - a properties panel for the currently selected screen, block, or item
@@ -579,7 +608,7 @@ Typical designer workflow:
 8. Use **Open Preview** to render the current design through `ScreenLayoutRenderer` with the engine theme and the currently edited default display values.
 9. Use **Promote Temporary** to convert a temporary field into a saved item when it should be persisted.
 
-The management launcher also includes **Reloadable JSON Screen**, which opens `examples/screen-designs/reloadable-test-screen.json` as a live `ScreenLayoutRenderer` view. Edit that JSON file in an external editor or the screen designer, then press **Reload JSON** in the test window to load the latest saved definition and immediately compare the rendered change.
+The management launcher also includes **Reloadable JSON Screen**, which opens `examples/resources/json/screens/reloadable-test-screen.json` as a live `ScreenLayoutRenderer` view. Edit that JSON file in an external editor or the screen designer, then press **Reload JSON** in the test window to load the latest saved definition and immediately compare the rendered change.
 
 The property editor adapts to the selected item type:
 
@@ -599,10 +628,10 @@ Example/demo code: [`examples/user-manual/06-ui-screens-and-themes/UiScreenDemo.
 
 Additional example/demo code:
 - [`examples/user-manual/06-ui-screens-and-themes/UiScreenCatalogDemo.java`](../examples/user-manual/06-ui-screens-and-themes/UiScreenCatalogDemo.java)
-- [`examples/screen-designs/sample-screen-design.json`](../examples/screen-designs/sample-screen-design.json)
-- [`examples/screen-designs/main-menu-screen-design.json`](../examples/screen-designs/main-menu-screen-design.json)
-- [`examples/screen-designs/quest-log-screen-design.json`](../examples/screen-designs/quest-log-screen-design.json)
-- [`examples/screen-designs/gallery-preview-screen-design.json`](../examples/screen-designs/gallery-preview-screen-design.json)
+- [`examples/resources/json/screens/sample-screen-design.json`](../examples/resources/json/screens/sample-screen-design.json)
+- [`examples/resources/json/screens/main-menu-screen-design.json`](../examples/resources/json/screens/main-menu-screen-design.json)
+- [`examples/resources/json/screens/quest-log-screen-design.json`](../examples/resources/json/screens/quest-log-screen-design.json)
+- [`examples/resources/json/screens/gallery-preview-screen-design.json`](../examples/resources/json/screens/gallery-preview-screen-design.json)
 
 ## 7. Display support
 
@@ -639,7 +668,7 @@ The registry can resolve image paths from a checked-out game tree through `GameA
 
 Use `DisplayDefinitionJsonLoader` to load app-owned display JSON into an `ImageDisplayRegistry`, or wrap that loading in `JsonDisplayContentModule` for bootstrap registration. The supported root fields are `transforms`, `images`, `layeredCharacters`, `animations`, and `animationScripts`; authored image files and IDs remain outside the engine. Applications can store this JSON path under a named `ApplicationResourceConfig` resource such as `displayDefinitions`.
 
-Example/demo code: [`examples/user-manual/07-display-support/display-definitions.demo.json`](../examples/user-manual/07-display-support/display-definitions.demo.json)
+Example/demo code: [`examples/resources/json/display/display-definitions.demo.json`](../examples/resources/json/display/display-definitions.demo.json)
 
 Additional example/demo code:
 - [`examples/user-manual/07-display-support/DisplaySupportDemo.java`](../examples/user-manual/07-display-support/DisplaySupportDemo.java)
@@ -793,9 +822,9 @@ Additional example/demo code:
 - [`examples/user-manual/09-game-support-state-save-prefs-random/CategoryCodeTableDefinitionDemo.java`](../examples/user-manual/09-game-support-state-save-prefs-random/CategoryCodeTableDefinitionDemo.java)
 - [`examples/user-manual/09-game-support-state-save-prefs-random/GenericSupportModulesDemo.java`](../examples/user-manual/09-game-support-state-save-prefs-random/GenericSupportModulesDemo.java)
 - [`examples/user-manual/09-game-support-state-save-prefs-random/GenericStateSystemsDemo.java`](../examples/user-manual/09-game-support-state-save-prefs-random/GenericStateSystemsDemo.java)
-- [`examples/user-manual/09-game-support-state-save-prefs-random/category-code-tables.demo.json`](../examples/user-manual/09-game-support-state-save-prefs-random/category-code-tables.demo.json)
-- [`examples/user-manual/09-game-support-state-save-prefs-random/map-text.demo.json`](../examples/user-manual/09-game-support-state-save-prefs-random/map-text.demo.json)
-- [`examples/user-manual/09-game-support-state-save-prefs-random/location-text-town.demo.json`](../examples/user-manual/09-game-support-state-save-prefs-random/location-text-town.demo.json)
+- [`examples/resources/json/code-tables/category-code-tables.demo.json`](../examples/resources/json/code-tables/category-code-tables.demo.json)
+- [`examples/resources/json/map-text/map-text.demo.json`](../examples/resources/json/map-text/map-text.demo.json)
+- [`examples/resources/json/location-text/location-text-town.demo.json`](../examples/resources/json/location-text/location-text-town.demo.json)
 
 ## 10. Text and utility helpers
 

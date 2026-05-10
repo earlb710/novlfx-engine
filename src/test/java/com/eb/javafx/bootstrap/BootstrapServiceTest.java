@@ -180,4 +180,87 @@ final class BootstrapServiceTest {
                 context.imageDisplayRegistry().resolveAssetPath("hero.neutral").orElseThrow());
     }
 
+    @Test
+    void fromConfigLoadsApplicationJsonDirectoriesAtStartup() throws Exception {
+        Path imageRoot = tempDir.resolve("assets/images");
+        Path jsonRoot = tempDir.resolve("resources/json");
+        Files.createDirectories(imageRoot.resolve("characters"));
+        Files.createDirectories(jsonRoot.resolve("app-load"));
+        Files.createDirectories(jsonRoot.resolve("display"));
+        Files.createDirectories(jsonRoot.resolve("scenes"));
+        Files.createDirectories(jsonRoot.resolve("conversations"));
+        Files.writeString(imageRoot.resolve("characters/hero.png"), "not-a-real-image");
+        Files.writeString(jsonRoot.resolve("display/display.json"), """
+                {
+                  "transforms": [
+                    {"id": "portrait", "fitWidth": 320, "fitHeight": 480}
+                  ],
+                  "images": [
+                    {"id": "hero.neutral", "sourcePath": "characters/hero.png", "transformId": "portrait"}
+                  ]
+                }
+                """);
+        Files.writeString(jsonRoot.resolve("scenes/scenes.json"), """
+                {
+                  "scenes": [
+                    {
+                      "id": "json-scene",
+                      "steps": [
+                        {
+                          "id": "intro",
+                          "type": "NARRATION",
+                          "textDefinition": "scene.intro",
+                          "transition": {"type": "COMPLETE"}
+                        }
+                      ]
+                    }
+                  ]
+                }
+                """);
+        Files.writeString(jsonRoot.resolve("conversations/conversation.json"), """
+                {
+                  "name": "Startup Conversation",
+                  "language": "en",
+                  "conversations": [
+                    {
+                      "id": "conversation-scene",
+                      "description": "Conversation loaded by app-load.",
+                      "lines": [
+                        {
+                          "speaker": "narrator",
+                          "type": "say",
+                          "variants": [{"text": "Loaded text.", "weight": 1.0}]
+                        }
+                      ]
+                    }
+                  ]
+                }
+                """);
+        Files.writeString(jsonRoot.resolve("app-load/app-load.json"), """
+                {
+                  "loads": [
+                    {"type": "display", "path": "display"},
+                    {"type": "scene", "path": "scenes"},
+                    {"type": "conversation", "path": "conversations"}
+                  ]
+                }
+                """);
+        Path configPath = tempDir.resolve("config.json");
+        Files.writeString(configPath, """
+                {
+                  "imageAssetRoot": "assets/images",
+                  "resources": {
+                    "jsonResourceRoot": "resources/json"
+                  }
+                }
+                """);
+
+        BootContext context = new BootstrapService(BootstrapOptions.fromConfig(configPath)).boot(null);
+
+        assertEquals(320, context.imageDisplayRegistry().transform("portrait").fitWidth());
+        assertTrue(context.sceneRegistry().scene("json-scene").isPresent());
+        assertTrue(context.sceneRegistry().scene("conversation-scene").isPresent());
+        assertEquals("Loaded text.", context.contentRegistry().definition("conversation-scene.line.0001"));
+    }
+
 }

@@ -27,7 +27,7 @@ public final class BootstrapDemo {
 
     public static BootContext bootDemo(Stage primaryStage) {
         Path configPath = PathUtils.currentDirectory(
-                "examples/user-manual/04-startup-and-service-wiring/config.demo.json");
+                "examples/resources/json/config/config.demo.json");
         Path appRoot = PathUtils.currentDirectory();
         ApplicationResourceConfig resourceConfig = ApplicationResourceConfig.load(configPath);
         Path displayDefinitions = resourceConfig.resolveResource(appRoot, "displayDefinitions").orElseThrow();

@@ -22,7 +22,9 @@ import java.util.Optional;
  * resolve them relative to an application-chosen base directory.</p>
  */
 public final class ApplicationResourceConfig {
+    public static final String JSON_RESOURCE_ROOT_ID = "jsonResourceRoot";
     private static final boolean DEFAULT_DEBUG = true;
+    private static final String DEFAULT_JSON_RESOURCE_ROOT = "resources/json";
     private static final String DEFAULT_CATEGORY_CODE_TABLES_PATH = "config/category-code-tables.en.json";
     private static final String DEFAULT_IMAGE_ASSET_ROOT = "game";
     private static final String DEFAULT_APP_BACKGROUND_COLOR = "";
@@ -299,6 +301,18 @@ public final class ApplicationResourceConfig {
 
     public Optional<Path> resolveResource(Path baseDirectory, String resourceId) {
         return resourcePath(resourceId).map(path -> PathUtils.resolveChild(baseDirectory, path));
+    }
+
+    public String jsonResourceRoot() {
+        return resourcePath(JSON_RESOURCE_ROOT_ID).orElse(DEFAULT_JSON_RESOURCE_ROOT);
+    }
+
+    public Path resolveJsonResourceRoot(Path baseDirectory) {
+        return PathUtils.resolveChild(baseDirectory, jsonResourceRoot());
+    }
+
+    public ApplicationResourceConfig withJsonResourceRoot(String jsonResourceRoot) {
+        return putResource(JSON_RESOURCE_ROOT_ID, jsonResourceRoot);
     }
 
     public ApplicationResourceConfig withDebug(boolean debug) {

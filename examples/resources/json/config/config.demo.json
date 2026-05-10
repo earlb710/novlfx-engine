@@ -1,6 +1,7 @@
 {
   "_comment": "Paths in this demo config are resolved relative to the repository root.",
-  "categoryCodeTablesPath": "examples/user-manual/09-game-support-state-save-prefs-random/category-code-tables.demo.json",
+  "debug": true,
+  "categoryCodeTablesPath": "examples/resources/json/code-tables/category-code-tables.demo.json",
   "imageAssetRoot": "examples/user-manual/07-display-support/assets",
   "defaultAppBackgroundColor": "#101820",
   "defaultAppBackgroundImage": "/com/eb/javafx/images/svg/background-gradient-rectangle.svg",
@@ -12,8 +13,9 @@
   "defaultSaveLoadScreenBackgroundImage": "/com/eb/javafx/images/svg/background-gradient-rectangle.svg",
   "defaultSaveLoadScreenBackgroundImageTransparency": "0.25",
   "resources": {
-    "displayDefinitions": "examples/user-manual/07-display-support/display-definitions.demo.json",
-    "sceneDefinitions": "examples/user-manual/05-content-routing-and-scenes/scene-definitions.demo.json",
+    "displayDefinitions": "examples/resources/json/display/display-definitions.demo.json",
+    "sceneDefinitions": "examples/resources/json/scenes/scene-definitions.demo.json",
+    "jsonResourceRoot": "examples/resources/json",
     "uiTheme": "src/main/resources/com/eb/javafx/ui/default.css"
   }
 }

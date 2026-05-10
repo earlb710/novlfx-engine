@@ -23,7 +23,7 @@ final class ConversationEditorApplicationTest {
         Path examplesDirectory = ConversationEditorApplication.conversationExamplesDirectory();
 
         assertTrue(Files.isDirectory(examplesDirectory));
-        assertTrue(examplesDirectory.endsWith(Path.of("examples", "conversations")));
+        assertTrue(examplesDirectory.endsWith(Path.of("examples", "resources", "json", "conversations")));
     }
 
     @Test

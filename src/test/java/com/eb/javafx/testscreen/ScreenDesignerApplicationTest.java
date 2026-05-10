@@ -38,7 +38,7 @@ final class ScreenDesignerApplicationTest {
         Path examplesDirectory = ScreenDesignerApplication.screenDesignExamplesDirectory();
 
         assertTrue(Files.isDirectory(examplesDirectory));
-        assertTrue(examplesDirectory.endsWith(Path.of("examples", "screen-designs")));
+        assertTrue(examplesDirectory.endsWith(Path.of("examples", "resources", "json", "screens")));
     }
 
     @Test
