@@ -646,8 +646,26 @@ final class ScreenDesignerApplicationTest {
         assertEquals("sidebar", nested.blocks().get(1).id());
         assertEquals("main", nested.blocks().get(1).parentBlockId());
         assertEquals("details", nested.blocks().get(2).id());
-        assertThrows(IllegalArgumentException.class,
+        IllegalArgumentException descendantException = assertThrows(IllegalArgumentException.class,
                 () -> ScreenDesignerApplication.moveBlockToParentInDesign(nested, "main", "details", -1));
+        assertEquals("Cannot move a block into itself or one of its child blocks.", descendantException.getMessage());
+    }
+
+    @Test
+    void descendantCheckRejectsCyclicParentChains() {
+        List<ScreenDesignBlock> cyclicBlocks = List.of(
+                new ScreenDesignBlock("main", "Main", com.eb.javafx.ui.ScreenLayoutType.FORM, "details", null, Map.of()),
+                new ScreenDesignBlock("details", "Details", com.eb.javafx.ui.ScreenLayoutType.FORM, "main", null, Map.of()),
+                new ScreenDesignBlock("sidebar", "Sidebar"));
+
+        IllegalArgumentException cycleException = assertThrows(IllegalArgumentException.class,
+                () -> ScreenDesignerApplication.moveBlockToParentInDesign(
+                        new ScreenDesignModel("sample.screen", "Sample Screen", com.eb.javafx.ui.ScreenLayoutType.FORM,
+                                Map.of(), cyclicBlocks, List.of(), List.of()),
+                        "sidebar",
+                        "main",
+                        -1));
+        assertTrue(cycleException.getMessage().contains("parent cycle"));
     }
 
     @Test

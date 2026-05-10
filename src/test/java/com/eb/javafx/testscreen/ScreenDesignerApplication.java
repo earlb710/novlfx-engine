@@ -1915,11 +1915,11 @@ public final class ScreenDesignerApplication {
         if (bounds == null || bounds.height <= 0) {
             return DropPosition.ON;
         }
-        int edgeBand = Math.max(4, bounds.height / 4);
-        if (pointerY < bounds.y + edgeBand) {
+        int dropZoneHeight = Math.max(4, bounds.height / 4);
+        if (pointerY < bounds.y + dropZoneHeight) {
             return DropPosition.BEFORE;
         }
-        if (pointerY >= bounds.y + bounds.height - edgeBand) {
+        if (pointerY >= bounds.y + bounds.height - dropZoneHeight) {
             return DropPosition.AFTER;
         }
         return DropPosition.ON;
@@ -2133,7 +2133,11 @@ public final class ScreenDesignerApplication {
 
     private static boolean isDescendantBlock(List<ScreenDesignBlock> blocks, String candidateBlockId, String ancestorBlockId) {
         String current = candidateBlockId;
+        LinkedHashSet<String> visitedBlockIds = new LinkedHashSet<>();
         while (current != null) {
+            if (!visitedBlockIds.add(current)) {
+                throw new IllegalArgumentException("Screen design blocks contain a parent cycle involving '" + current + "'.");
+            }
             if (ancestorBlockId.equals(current)) {
                 return true;
             }
