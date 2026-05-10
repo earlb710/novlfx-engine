@@ -19,6 +19,7 @@ import com.eb.javafx.ui.UiTheme;
 import com.eb.javafx.util.FontResources;
 import com.eb.javafx.util.HierarchyTraversal;
 import javafx.application.Platform;
+import javafx.scene.Parent;
 import javafx.embed.swing.JFXPanel;
 import javafx.scene.Scene;
 import javafx.scene.layout.StackPane;
@@ -1623,8 +1624,9 @@ public final class ScreenDesignerApplication {
         uiTheme.initialize(preferencesService);
 
         ScreenLayoutModel previewModel = ScreenDesignLayoutAdapter.toLayoutModel(designSnapshot, true, defaultsSnapshot);
+        Parent previewRoot = ScreenLayoutRenderer.createPreviewRoot(previewModel, workingDirectory);
         Scene scene = new Scene(
-                ScreenLayoutRenderer.createRoot(previewModel, workingDirectory),
+                previewRoot,
                 TestUiScreenSize.sceneWidth(preferencesService),
                 TestUiScreenSize.sceneHeight(preferencesService));
         scene.getStylesheets().add(uiTheme.stylesheet());

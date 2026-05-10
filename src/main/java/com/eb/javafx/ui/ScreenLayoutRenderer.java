@@ -9,6 +9,7 @@ import com.eb.javafx.util.Validation;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
+import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
@@ -62,6 +63,8 @@ public final class ScreenLayoutRenderer {
     static final String BACKGROUND_IMAGE_KEY = "backgroundImage";
     static final String BACKGROUND_IMAGE_TRANSPARENCY_KEY = "backgroundImageTransparency";
     static final String BACKGROUND_IMAGE_PLACEMENT_KEY = "backgroundImagePlacement";
+    static final String SCREEN_BACKGROUND_IMAGE_KEY = "screenBackgroundImage";
+    static final String SCREEN_BACKGROUND_IMAGE_TRANSPARENCY_KEY = "screenBackgroundImageTransparency";
     static final String DIALOG_KEY = "dialog";
     static final String DISMISS_ON_CLICK_OUTSIDE_KEY = "dismissOnClickOutside";
     static final String DISMISS_ON_ESCAPE_KEY = "dismissOnEscape";
@@ -81,6 +84,20 @@ public final class ScreenLayoutRenderer {
 
     public static BorderPane createRoot(ScreenLayoutModel model, Path resourceRoot) {
         return createRoot(null, model, null, resourceRoot);
+    }
+
+    public static Parent createPreviewRoot(ScreenLayoutModel model, Path resourceRoot) {
+        BorderPane root = createRoot(model, resourceRoot);
+        if (!hasScreenBackground(model.metadata())) {
+            return root;
+        }
+        root.setStyle(containerStyle(model.metadata(), true));
+        return ScreenShell.withConfiguredBackground(
+                root,
+                resourceRoot,
+                model.metadata().get("backgroundColor"),
+                model.metadata().get(SCREEN_BACKGROUND_IMAGE_KEY),
+                model.metadata().get(SCREEN_BACKGROUND_IMAGE_TRANSPARENCY_KEY));
     }
 
     public static BorderPane createRoot(RouteContext context, ScreenLayoutModel model) {
@@ -103,6 +120,11 @@ public final class ScreenLayoutRenderer {
         BorderPane root = ScreenShell.titled(model.title(), content);
         applyContainerStyle(root, model.metadata());
         return root;
+    }
+
+    private static boolean hasScreenBackground(Map<String, String> metadata) {
+        String backgroundImage = metadata.get(SCREEN_BACKGROUND_IMAGE_KEY);
+        return backgroundImage != null && !backgroundImage.isBlank();
     }
 
     public static void configureDialogStage(Stage stage, Scene scene, ScreenLayoutModel model, Window owner) {

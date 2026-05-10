@@ -9,6 +9,7 @@ import com.eb.javafx.ui.UiTheme;
 import com.eb.javafx.util.Validation;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
+import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
@@ -153,7 +154,8 @@ public final class JsonScreenDesignTestScreen {
 
     private static void render(Path designPath, BorderPane shell, Label status, Path workingDirectory) {
         ScreenLayoutModel model = loadLayoutModel(designPath);
-        shell.setCenter(ScreenLayoutRenderer.createRoot(model, defaultWorkingDirectory(workingDirectory, designPath)));
+        Parent previewRoot = ScreenLayoutRenderer.createPreviewRoot(model, defaultWorkingDirectory(workingDirectory, designPath));
+        shell.setCenter(previewRoot);
         status.setText("Loaded " + designPath + " as \"" + model.title() + "\".");
     }
 

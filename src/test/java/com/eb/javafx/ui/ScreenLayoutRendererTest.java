@@ -5,6 +5,10 @@ import javafx.application.Platform;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.control.Label;
+import javafx.scene.image.ImageView;
+import javafx.scene.layout.Background;
+import javafx.scene.layout.Region;
+import javafx.scene.layout.StackPane;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import org.junit.jupiter.api.Test;
@@ -153,6 +157,41 @@ final class ScreenLayoutRendererTest {
                 """);
 
         assertTrue(ScreenLayoutRenderer.loadBackgroundImage("background.svg", tempDir).getWidth() > 0);
+    }
+
+    @Test
+    void previewRootUsesScreenBackgroundImageFromProvidedWorkingDirectory() throws Exception {
+        assumeFalse(GraphicsEnvironment.isHeadless(), "Preview root inspection requires a display.");
+        startJavaFxToolkit();
+        Path imagePath = tempDir.resolve("background.svg");
+        Files.writeString(imagePath, """
+                <svg xmlns="http://www.w3.org/2000/svg" width="8" height="8">
+                  <rect width="8" height="8" fill="#336699"/>
+                </svg>
+                """);
+        ScreenLayoutModel model = new ScreenLayoutModel(
+                ScreenLayoutType.FORM,
+                "Title",
+                null,
+                List.of(new ScreenLayoutSection("body", "Body", List.of("Ready"))),
+                List.of(),
+                List.of(),
+                List.of(),
+                null,
+                Map.of(
+                        "backgroundColor", "#010203",
+                        "screenBackgroundImage", "background.svg",
+                        "screenBackgroundImageTransparency", "0.25"));
+
+        Parent previewRoot = ScreenLayoutRenderer.createPreviewRoot(model, tempDir);
+
+        StackPane layeredRoot = assertInstanceOf(StackPane.class, previewRoot);
+        Region backgroundLayer = assertInstanceOf(Region.class, layeredRoot.getChildren().get(0));
+        ImageView imageView = assertInstanceOf(ImageView.class, backgroundLayer.getChildrenUnmodifiable().get(0));
+
+        assertEquals(2, layeredRoot.getChildren().size());
+        assertEquals(0.75, imageView.getOpacity(), 0.0001);
+        assertEquals(Background.EMPTY, ScreenShell.shellRoot(layeredRoot).getBackground());
     }
 
     @Test
