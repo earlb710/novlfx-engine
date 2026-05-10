@@ -252,7 +252,10 @@ public final class ScreenDesignValidator {
             String message,
             List<ScreenDesignValidationProblem> problems) {
         String value = metadata.get(key);
-        String normalizedValue = value == null ? "" : value.trim().toLowerCase(java.util.Locale.ROOT);
+        if (value == null) {
+            return;
+        }
+        String normalizedValue = value.trim().toLowerCase(java.util.Locale.ROOT);
         if (!normalizedValue.isBlank() && !allowedValues.contains(normalizedValue)) {
             problems.add(error(path + "." + key, message));
         }

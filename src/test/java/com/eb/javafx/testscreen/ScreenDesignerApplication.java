@@ -2057,17 +2057,18 @@ public final class ScreenDesignerApplication {
     private static JPanel inlineGuidancePanel(Component component, String validationText, String hintText) {
         JPanel panel = new JPanel(new BorderLayout(2, 2));
         panel.add(component, BorderLayout.CENTER);
-        String guidance = validationText != null && !validationText.isBlank() ? validationText : hintText;
+        boolean invalid = validationText != null && !validationText.isBlank();
+        String guidance = invalid ? validationText : hintText;
         if (guidance != null && !guidance.isBlank()) {
             JLabel guidanceLabel = new JLabel("<html>" + escapeBasicHtmlContent(guidance).replace("\n", "<br>") + "</html>");
-            guidanceLabel.setForeground(validationText != null && !validationText.isBlank() ? INLINE_ERROR_COLOR : INLINE_HINT_COLOR);
+            guidanceLabel.setForeground(invalid ? INLINE_ERROR_COLOR : INLINE_HINT_COLOR);
             panel.add(guidanceLabel, BorderLayout.SOUTH);
             panel.setToolTipText(guidance);
             if (component instanceof JComponent jComponent) {
                 jComponent.setToolTipText(guidance);
             }
         }
-        if (validationText != null && !validationText.isBlank()) {
+        if (invalid) {
             panel.setBorder(BorderFactory.createLineBorder(INLINE_ERROR_COLOR, 1));
         } else {
             panel.setBorder(BorderFactory.createEmptyBorder(1, 1, 1, 1));
