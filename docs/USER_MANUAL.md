@@ -559,7 +559,7 @@ The designer opens a Swing editor backed by `ScreenDesignModel` and starts in `e
 - a properties panel for the currently selected screen, block, or item
 - a live JSON view showing the current saved document
 - toolbar actions for editing default display values, validation, jumping to the first validation issue, JavaFX preview, temporary-field creation, and temporary-item promotion
-- an always-visible docked JavaFX live preview that refreshes after property applies, create/load/save actions, and preview-default edits
+- an always-visible docked JavaFX live preview in a right-side third column that refreshes after property applies, create/load/save actions, and preview-default edits
 
 Typical designer workflow:
 

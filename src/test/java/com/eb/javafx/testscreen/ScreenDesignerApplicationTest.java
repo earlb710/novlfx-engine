@@ -475,6 +475,18 @@ final class ScreenDesignerApplicationTest {
     }
 
     @Test
+    void workspacePlacesDockedPreviewInRightColumn() throws Exception {
+        JPanel editor = new JPanel();
+        JPanel preview = new JPanel();
+
+        JSplitPane editorAndPreview = ScreenDesignerApplication.workspaceSplit(editor, preview);
+
+        assertEquals(JSplitPane.HORIZONTAL_SPLIT, editorAndPreview.getOrientation());
+        assertEquals(editor, editorAndPreview.getLeftComponent());
+        assertEquals(preview, editorAndPreview.getRightComponent());
+    }
+
+    @Test
     void replaceBlockRenamesBlockAndMovesItsItems() {
         ScreenDesignModel design = new ScreenDesignModel(
                 "sample.screen",

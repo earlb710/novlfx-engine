@@ -4,3 +4,5 @@
 - Exposed block background image placement and item action event/value metadata as typed editor fields while preserving advanced metadata editing.
 - Added generic starter templates, field guidance, duplicate/move/copy/paste context actions, scoped validation display, and a toolbar action to jump to the first validation issue.
 - Updated focused screen designer tests and user manual documentation for the new workflow.
+
+- Moved the docked screen designer preview into a dedicated right-side third column instead of a bottom split.

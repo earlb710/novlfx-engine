@@ -275,6 +275,7 @@ public final class ScreenDesignerApplication {
         root.add(actionToolbar(), BorderLayout.NORTH);
         JSplitPane split = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, navigation(), workspace());
         split.setDividerLocation(300);
+        split.setResizeWeight(0.18);
         root.add(split, BorderLayout.CENTER);
         root.add(statusLabel, BorderLayout.SOUTH);
         return root;
@@ -282,19 +283,24 @@ public final class ScreenDesignerApplication {
 
     private JPanel workspace() {
         JPanel preview = dockedPreview();
-        JSplitPane split = new JSplitPane(JSplitPane.VERTICAL_SPLIT, editor(), preview);
-        split.setResizeWeight(0.62);
-        split.setDividerLocation(470);
+        JSplitPane split = workspaceSplit(editor(), preview);
         JPanel panel = new JPanel(new BorderLayout(8, 8));
         panel.add(split, BorderLayout.CENTER);
         return panel;
     }
 
+    static JSplitPane workspaceSplit(Component editor, Component preview) {
+        JSplitPane split = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, editor, preview);
+        split.setResizeWeight(0.68);
+        split.setDividerLocation(640);
+        return split;
+    }
+
     private JPanel dockedPreview() {
         dockedPreviewPanel = new JFXPanel();
-        dockedPreviewPanel.setPreferredSize(new Dimension(0, 260));
+        dockedPreviewPanel.setPreferredSize(new Dimension(320, 0));
         JPanel panel = new JPanel(new BorderLayout(6, 6));
-        panel.add(new JLabel("Live Preview (auto-refreshes after Apply, create, load, and default-value edits)"), BorderLayout.NORTH);
+        panel.add(new JLabel("Live Preview (right column; auto-refreshes after Apply, create, load, and default-value edits)"), BorderLayout.NORTH);
         panel.add(dockedPreviewPanel, BorderLayout.CENTER);
         return panel;
     }
