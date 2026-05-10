@@ -2110,6 +2110,7 @@ public final class ScreenDesignerApplication {
                 Component editorComponent = comboBox.getEditor().getEditorComponent();
                 applyPropertyComponentSizing(editorComponent);
             }
+            return;
         }
         if (component instanceof JScrollPane scrollPane) {
             Component view = scrollPane.getViewport().getView();
@@ -2128,14 +2129,9 @@ public final class ScreenDesignerApplication {
         }
     }
 
-    private static Dimension minimumTextComponentSize(JTextField field) {
-        Dimension preferred = field.getPreferredSize();
-        return new Dimension(textWidth(field, PROPERTY_FIELD_MIN_COLUMNS), preferred.height);
-    }
-
-    private static Dimension minimumTextComponentSize(JTextArea area) {
-        Dimension preferred = area.getPreferredSize();
-        return new Dimension(textWidth(area, PROPERTY_FIELD_MIN_COLUMNS), preferred.height);
+    private static Dimension minimumTextComponentSize(JComponent component) {
+        Dimension preferred = component.getPreferredSize();
+        return new Dimension(textWidth(component, PROPERTY_FIELD_MIN_COLUMNS), preferred.height);
     }
 
     private static Dimension minimumComboBoxSize(JComboBox<?> comboBox) {
