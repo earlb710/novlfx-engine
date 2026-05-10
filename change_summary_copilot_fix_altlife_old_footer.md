@@ -1,0 +1,3 @@
+- Fixed ScreenShell footer SVG icon loading to resolve resources through module-safe URL lookup before opening the stream.
+- Expanded ScreenShell resource resolution to try an absolute class resource path first, then fall back to existing lookups.
+- Added a regression test covering footer icon loading from an absolute resource path.
