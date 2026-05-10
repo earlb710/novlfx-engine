@@ -796,7 +796,7 @@ public final class ScreenShell {
         String checkedPath = Validation.requireNonBlank(resourcePath, "Screen SVG background resource is required.");
         String absolutePath = checkedPath.startsWith("/") ? checkedPath : "/" + checkedPath;
         URL resource = ScreenShell.class.getResource(absolutePath);
-        if (resource == null) {
+        if (resource == null && !absolutePath.equals(checkedPath)) {
             resource = ScreenShell.class.getResource(checkedPath);
         }
         if (resource == null) {
