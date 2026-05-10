@@ -23,6 +23,10 @@ public record LocationTextEntry(String locId, List<LocationDescriptionVariant> d
         return Validation.requireNonBlank(mapId, "Location text mapId must not be blank.") + "." + locId;
     }
 
+    /**
+     * Returns the first conditional variant whose conditions all match, otherwise the first unconditional variant,
+     * otherwise the first authored description as a final fallback.
+     */
     public LocationDescriptionVariant descriptionForConditions(Collection<String> activeConditions) {
         LocationDescriptionVariant fallback = null;
         for (LocationDescriptionVariant variant : descriptions) {

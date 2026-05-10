@@ -58,6 +58,8 @@ public final class DefaultDisplayValuesApplication {
     private static final List<DisplayResource> DISPLAY_RESOURCES = List.of(
             new DisplayResource("Default CSS", "/com/eb/javafx/ui/default.css", true),
             new DisplayResource("Layouts", "/com/eb/javafx/ui/layout-contract.json", false));
+    private static final Path LOCATION_EXAMPLES_RELATIVE_PATH =
+            Path.of("examples", "user-manual", "09-game-support-state-save-prefs-random");
     private static final String MAP_TEXT_EXAMPLE_FILE = "map-text.demo.json";
     private static final String LOCATION_TEXT_EXAMPLE_FILE = "location-text-town.demo.json";
     private static final List<String> LOOKUP_VARIABLE_TYPE_OPTIONS = Arrays.stream(TextVariableType.values())
@@ -281,7 +283,15 @@ public final class DefaultDisplayValuesApplication {
     static JPanel locationsPanel(String mapTextJson, String locationTextJson) {
         return locationsPanel(mapTextJson, ignored -> {
         }, locationTextJson, ignored -> {
-        }, null);
+        });
+    }
+
+    private static JPanel locationsPanel(
+            String mapTextJson,
+            Consumer<String> mapSaveAction,
+            String locationTextJson,
+            Consumer<String> locationSaveAction) {
+        return locationsPanel(mapTextJson, mapSaveAction, locationTextJson, locationSaveAction, null);
     }
 
     private static JPanel locationsPanel(
@@ -807,14 +817,14 @@ public final class DefaultDisplayValuesApplication {
         Path cwd = Path.of("").toAbsolutePath().normalize();
         List<Path> candidates = List.of(
                 cwd,
-                cwd.resolve("examples/user-manual/09-game-support-state-save-prefs-random"),
+                cwd.resolve(LOCATION_EXAMPLES_RELATIVE_PATH),
                 cwd.getParent() == null
-                        ? cwd.resolve("examples/user-manual/09-game-support-state-save-prefs-random")
-                        : cwd.getParent().resolve("examples/user-manual/09-game-support-state-save-prefs-random"));
+                        ? cwd.resolve(LOCATION_EXAMPLES_RELATIVE_PATH)
+                        : cwd.getParent().resolve(LOCATION_EXAMPLES_RELATIVE_PATH));
         return candidates.stream()
                 .filter(DefaultDisplayValuesApplication::isLocationExamplesDirectory)
                 .findFirst()
-                .orElse(cwd.resolve("examples/user-manual/09-game-support-state-save-prefs-random"));
+                .orElse(cwd.resolve(LOCATION_EXAMPLES_RELATIVE_PATH));
     }
 
     static String sampleMapTextJson() {
