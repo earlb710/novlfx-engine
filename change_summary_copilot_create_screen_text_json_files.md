@@ -6,3 +6,5 @@
 - Added a configurable `jsonResourceRoot` resource path and `JsonSceneModule` for data-only scene JSON startup registration.
 - Moved authored example JSON files under `examples/resources/json` with type subdirectories and added `app-load/app-load.json`.
 - Updated manual apps, docs, examples, tests, and Copilot instructions to use the new JSON resource directory structure.
+- Updated the user manual and example docs to describe `app-load/app-load.json`, the `examples/resources/json` directory layout, and the new startup-loading workflow.
+- Refreshed startup and application example snippets so they demonstrate `BootstrapOptions.fromConfig(...)` with directory-based JSON auto-loading instead of manually wiring display JSON in those examples.

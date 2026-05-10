@@ -242,7 +242,7 @@ BootContext context = new BootstrapService(options).boot(primaryStage);
 ```
 
 Use `context.resourceConfig().resolveCategoryCodeTables(context.applicationRoot())` when app-owned content modules need to load generic category JSON during startup.
-Use `context.resourceConfig().resolveResource(context.applicationRoot(), "displayDefinitions")` with `JsonDisplayContentModule` when app-owned display definitions should be loaded during the static content phase, and use named resources such as `sceneDefinitions` to load JSON-authored scene modules from the application side.
+Use `app-load/app-load.json` plus `BootstrapOptions.fromConfig(...)` when app-owned display, scene, or conversation JSON should be loaded automatically during bootstrap. Use `resolveResource(...)` and explicit modules such as `JsonDisplayContentModule` when the application wants named one-off files or custom loading behavior instead of directory-driven startup loading.
 Use the route-specific background getters when the application wants shared startup defaults for app-owned shell, preferences, or save/load screen backgrounds.
 
 The management UI includes a **Default App Values** screen for inspecting these startup defaults and related display resources. The **Application Values** tab presents editable application config fields with friendly labels, local **Save** and **Reset** actions, browse buttons for file/path-backed fields, and color pickers for color values.
@@ -296,6 +296,7 @@ Example/demo code: [`examples/user-manual/04-startup-and-service-wiring/Bootstra
 Additional example/demo code:
 - [`examples/user-manual/04-startup-and-service-wiring/ApplicationResourceConfigDemo.java`](../examples/user-manual/04-startup-and-service-wiring/ApplicationResourceConfigDemo.java)
 - [`examples/resources/json/config/config.demo.json`](../examples/resources/json/config/config.demo.json)
+- [`examples/resources/json/app-load/app-load.json`](../examples/resources/json/app-load/app-load.json)
 
 ## 5. Content, routing, and scenes
 

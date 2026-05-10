@@ -13,7 +13,8 @@ import java.util.List;
 /**
  * Demonstrates loading application resource paths from the sample startup configuration JSON.
  *
- * <p>Expected output prints resolved category table, image asset root, JSON definition, and exported config paths.</p>
+ * <p>Expected output prints resolved category table, image asset root, JSON resource root, app-load count,
+ * JSON definition paths, and exported config paths.</p>
  */
 public final class ApplicationResourceConfigDemo {
     private ApplicationResourceConfigDemo() {

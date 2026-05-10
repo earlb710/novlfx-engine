@@ -1,11 +1,9 @@
-import com.eb.javafx.bootstrap.ApplicationResourceConfig;
 import com.eb.javafx.bootstrap.BootContext;
 import com.eb.javafx.bootstrap.BootstrapOptions;
 import com.eb.javafx.bootstrap.BootstrapReport;
 import com.eb.javafx.bootstrap.BootstrapService;
 import com.eb.javafx.audio.AudioService;
 import com.eb.javafx.content.ContentRegistry;
-import com.eb.javafx.content.JsonDisplayContentModule;
 import com.eb.javafx.content.StaticContentModule;
 import com.eb.javafx.display.ImageDisplayRegistry;
 import com.eb.javafx.routing.RouteModule;
@@ -28,14 +26,8 @@ public final class BootstrapDemo {
     public static BootContext bootDemo(Stage primaryStage) {
         Path configPath = PathUtils.currentDirectory(
                 "examples/resources/json/config/config.demo.json");
-        Path appRoot = PathUtils.currentDirectory();
-        ApplicationResourceConfig resourceConfig = ApplicationResourceConfig.load(configPath);
-        Path displayDefinitions = resourceConfig.resolveResource(appRoot, "displayDefinitions").orElseThrow();
-
-        BootstrapOptions options = BootstrapOptions.of(appRoot, resourceConfig)
-                .withStaticContentModules(List.of(
-                        new DemoStaticContentModule(),
-                        new JsonDisplayContentModule(displayDefinitions)))
+        BootstrapOptions options = BootstrapOptions.fromConfig(configPath)
+                .withStaticContentModules(List.of(new DemoStaticContentModule()))
                 .withSceneModules(List.<SceneModule>of(sceneRegistry -> {
                 }))
                 .withRouteModules(List.<RouteModule>of(router -> {
@@ -47,6 +39,8 @@ public final class BootstrapDemo {
         System.out.println("Completed phases: " + report.completedPhases());
         System.out.println("Elapsed startup time: " + report.elapsedTime());
         System.out.println("Booted route IDs: " + context.sceneRouter().routeDescriptors().keySet());
+        System.out.println("JSON resource root: " + context.resourceConfig()
+                .resolveJsonResourceRoot(context.applicationRoot()));
         System.out.println("Display definitions path: " + context.resourceConfig()
                 .resolveResource(context.applicationRoot(), "displayDefinitions")
                 .orElseThrow());
