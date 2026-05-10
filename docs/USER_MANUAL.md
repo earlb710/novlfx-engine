@@ -600,6 +600,12 @@ Typical designer workflow:
    item labels, text areas, field defaults, and buttons; the `_text.json` file stores the actual fixed text under
    a `language` field and a `texts` map. Text values may include runtime lookup variables such as `$name` or
    `${player.name}`.
+   Engine-owned runtime screens follow the same split using bundled files under
+   `src/main/resources/com/eb/javafx/ui/screens`: every runtime screen has a screen JSON document and a sibling
+   `_text.json` sidecar. Keep fixed player-facing screen text in those sidecars, keep fixed selectable value
+   vocabularies such as footer display modes, theme choices, and slider position descriptions in code tables, and
+   keep reusable dialog/status/error strings in the bundled `sys_message` code table. Manual management and
+   authoring applications under `src/test/java/com/eb/javafx/testscreen` are diagnostics and may remain English.
 2. Use **Edit Default Values** to adjust the preview-time display defaults loaded from `display-defaults.json`; this is useful for testing inherited screen/block/item styling without changing every document node. The docked live preview refreshes after those defaults are saved.
 3. Use **Add Block** to create root or nested blocks, or right-click a screen/block/item and choose a quick-add block action for common form, menu/action-list, or preview-grid sections.
 4. Select a block, then use **Add Item** for a saved item or **Add Temporary Field** for a preview-only field.
@@ -708,7 +714,7 @@ Additional example/demo code:
 
 Use `GameSupportService` and `ActionRegistry` to register reusable `GameAction` objects. Actions can use `ActionRequirement` checks, `ActionEffect` outcomes, `ActionContext`, `RequirementResult`, and `ActionResult` to keep generic game-rule plumbing separate from authored domain rules.
 
-Use `DefinitionRegistry` and the `IdentifiedDefinition` contract when an application needs a deterministic reusable registry with duplicate-ID checks. Use `GenericDescriptor` and `GenericDescriptorRegistry` for content-neutral descriptors that only need an id, kind, title, tags, and metadata before a dedicated domain type exists. Use `CodeTableDefinition` and `CodeDefinition` to define project-supplied code lists such as time slots, roles, goals, postures, positions, duties, or listener types. `GameClock` and `GameDateTime` use a time-slot code table so reusable time progression does not embed a specific game calendar or schedule.
+Use `DefinitionRegistry` and the `IdentifiedDefinition` contract when an application needs a deterministic reusable registry with duplicate-ID checks. Use `GenericDescriptor` and `GenericDescriptorRegistry` for content-neutral descriptors that only need an id, kind, title, tags, and metadata before a dedicated domain type exists. Use `CodeTableDefinition` and `CodeDefinition` to define project-supplied code lists such as time slots, roles, goals, postures, positions, duties, listener types, fixed poplist choices, and slider positions with stable descriptions. `GameClock` and `GameDateTime` use a time-slot code table so reusable time progression does not embed a specific game calendar or schedule. Bundled `SystemCodeTables` also include UI support tables for `sys_message`, footer shortcut display modes, theme families, theme variants, and default volume levels; prefer `sys_message` for reusable dialog, status, and error messages that are not owned by one screen JSON sidecar.
 
 Use `TimeScheduler`, `TimeScheduledCommand`, `TimeAdvanceHook`, and `TimeAdvanceService` when game time needs reusable advancement hooks and scheduled data-only commands. `TimeSaveSnapshots` serializes `GameDateTime` as a versioned `SaveSnapshotSection` named `gameTime`, leaving the outer save-file schema application-owned.
 
