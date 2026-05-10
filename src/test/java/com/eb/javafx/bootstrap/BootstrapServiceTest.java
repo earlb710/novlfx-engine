@@ -185,7 +185,7 @@ final class BootstrapServiceTest {
         Path imageRoot = tempDir.resolve("assets/images");
         Path jsonRoot = tempDir.resolve("resources/json");
         Files.createDirectories(imageRoot.resolve("characters"));
-        Files.createDirectories(jsonRoot.resolve("app-load"));
+        Files.createDirectories(jsonRoot.resolve("config"));
         Files.createDirectories(jsonRoot.resolve("display"));
         Files.createDirectories(jsonRoot.resolve("scenes"));
         Files.createDirectories(jsonRoot.resolve("conversations"));
@@ -236,7 +236,7 @@ final class BootstrapServiceTest {
                   ]
                 }
                 """);
-        Files.writeString(jsonRoot.resolve("app-load/app-load.json"), """
+        Files.writeString(jsonRoot.resolve("config/app-load.json"), """
                 {
                   "loads": [
                     {"type": "display", "path": "display"},

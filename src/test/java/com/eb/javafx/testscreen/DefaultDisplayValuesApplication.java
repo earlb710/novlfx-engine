@@ -60,8 +60,8 @@ public final class DefaultDisplayValuesApplication {
             new DisplayResource("Layouts", "/com/eb/javafx/ui/layout-contract.json", false));
     private static final Path LOCATION_EXAMPLES_RELATIVE_PATH =
             Path.of("examples", "resources", "json");
-    private static final String MAP_TEXT_EXAMPLE_FILE = "map-text/map-text.demo.json";
-    private static final String LOCATION_TEXT_EXAMPLE_FILE = "location-text/location-text-town.demo.json";
+    private static final String MAP_TEXT_EXAMPLE_FILE = "location/map-text.demo.json";
+    private static final String LOCATION_TEXT_EXAMPLE_FILE = "location/location-text-town.demo.json";
     private static final List<String> LOOKUP_VARIABLE_TYPE_OPTIONS = Arrays.stream(TextVariableType.values())
             .map(type -> type.name().toLowerCase(Locale.ROOT))
             .toList();
