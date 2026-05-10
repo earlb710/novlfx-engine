@@ -1857,13 +1857,13 @@ public final class ScreenDesignerApplication {
             case "Move Item Down" -> moveItem(navigationNode.id(), navigationNode.type() == NodeType.TEMPORARY_ITEM, 1);
             case "Copy Style/Metadata" -> copyStyleAndMetadata(navigationNode);
             case "Paste Style/Metadata" -> pasteStyleAndMetadata(navigationNode);
-            case "Promote Temporary" -> design = ScreenDesignService.promoteTemporaryItem(design, navigationNode.id());
+            case "Promote Temporary" -> {
+                design = ScreenDesignService.promoteTemporaryItem(design, navigationNode.id());
+                refreshAll();
+                selectNavigationNode(NavigationNode.item(navigationNode.id(), navigationNode.blockId(), false));
+            }
             case "Remove Item" -> removeItem(navigationNode.id(), navigationNode.type() == NodeType.TEMPORARY_ITEM);
             default -> throw new IllegalArgumentException("Unknown context action: " + label);
-        }
-        if ("Promote Temporary".equals(label)) {
-            refreshAll();
-            selectNavigationNode(NavigationNode.item(navigationNode.id(), navigationNode.blockId(), false));
         }
     }
 

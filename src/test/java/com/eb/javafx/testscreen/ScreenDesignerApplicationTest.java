@@ -73,11 +73,12 @@ final class ScreenDesignerApplicationTest {
         ScreenDesignerApplication application = new ScreenDesignerApplication(tempDir, false);
 
         JPanel panel = invokeWorkingDirectoryPanel(application);
+        BorderLayout layout = (BorderLayout) panel.getLayout();
+        javax.swing.JLabel label = (javax.swing.JLabel) layout.getLayoutComponent(BorderLayout.NORTH);
 
         assertEquals(tempDir.toAbsolutePath().normalize().toString(), workingDirectoryField(application).getText());
         assertEquals(tempDir.toAbsolutePath().normalize(), currentFolder(application));
-        assertEquals("Working Directory", ((javax.swing.JLabel) ((BorderLayout) panel.getLayout())
-                .getLayoutComponent(BorderLayout.NORTH)).getText());
+        assertEquals("Working Directory", label.getText());
     }
 
     @Test
