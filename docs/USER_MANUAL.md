@@ -558,18 +558,19 @@ The designer opens a Swing editor backed by `ScreenDesignModel` and starts in `e
 - a navigation tree showing the screen root, blocks, saved items, and temporary items
 - a properties panel for the currently selected screen, block, or item
 - a live JSON view showing the current saved document
-- toolbar actions for editing default display values, validation, JavaFX preview, temporary-field creation, and temporary-item promotion
+- toolbar actions for editing default display values, validation, jumping to the first validation issue, JavaFX preview, temporary-field creation, and temporary-item promotion
+- an always-visible docked JavaFX live preview that refreshes after property applies, create/load/save actions, and preview-default edits
 
 Typical designer workflow:
 
 1. Use **File > New**, **Load**, **Save**, or **Save As** to manage the JSON document.
-2. Use **Edit Default Values** to adjust the preview-time display defaults loaded from `display-defaults.json`; this is useful for testing inherited screen/block/item styling without changing every document node.
+2. Use **Edit Default Values** to adjust the preview-time display defaults loaded from `display-defaults.json`; this is useful for testing inherited screen/block/item styling without changing every document node. The docked live preview refreshes after those defaults are saved.
 3. Use **Add Block** to create root or nested blocks.
 4. Select a block, then use **Add Item** for a saved item or **Add Temporary Field** for a preview-only field.
 5. Select a tree node and edit its properties on the right.
-6. Press **Apply Properties** to keep the selection on the current node while applying any renamed ids or moved items/blocks.
-7. Use **Validate** to run the screen design validator.
-8. Use **Open Preview** to render the current design through `ScreenLayoutRenderer` with the engine theme and the currently edited default display values.
+6. Press **Apply Properties** to keep the selection on the current node while applying any renamed ids or moved items/blocks; the docked preview refreshes automatically.
+7. Use **Validate** to run the screen design validator, or **Go To First Issue** to select the first affected screen, block, item, or temporary item. Validation messages also appear near the selected property panel and warning markers appear in the tree.
+8. Use **Open Preview** when you want a separate preview stage in addition to the docked live preview.
 9. Use **Promote Temporary** to convert a temporary field into a saved item when it should be persisted.
 
 The management launcher also includes **Reloadable JSON Screen**, which opens `examples/screen-designs/reloadable-test-screen.json` as a live `ScreenLayoutRenderer` view. Edit that JSON file in an external editor or the screen designer, then press **Reload JSON** in the test window to load the latest saved definition and immediately compare the rendered change.
@@ -578,13 +579,15 @@ The property editor adapts to the selected item type:
 
 - screen nodes expose screen id, title, layout type, font family, font size/style, text color, background color, border attributes, dialog/dismiss preview hints, and an extra metadata editor for non-exposed keys
 - block nodes expose block id, title, layout type, parent block, style class, conditions, font family, font size/style, text color, background color, optional background image plus image transparency/placement, transparency, border attributes, and an extra metadata editor for non-exposed keys
-- field-style items expose block target, item id, style class, type, sequence, label, current value, editable, display role, item font family/size/style/color/background/transparency, label font family/size/style/color, and an extra metadata editor for non-exposed keys
-- non-field items hide label/editable controls and only expose the applicable content plus style class, sequence, display role, item font family/size/style/color/background/transparency, and extra metadata
+- field-style items expose block target, item id, style class, type, sequence, label, current value, editable, display role, item font family/size/style/color/background/transparency, action event name/value metadata, label font family/size/style/color, and an extra metadata editor for non-exposed keys
+- non-field items hide label/editable controls and only expose the applicable content plus style class, sequence, display role, item font family/size/style/color/background/transparency, action event name/value metadata, and extra metadata
 - `TEXT_AREA` and `MULTI_LINE_FIELD` use a multiline content editor
 
 Temporary items are preview/test helpers. They render in the preview window and can be moved between blocks like saved items, but normal JSON save output omits them. This is useful for prototyping form rows or validation cases without committing them to the authored document.
 
-The navigation tree also supports context actions such as adding blocks/items, editing blocks/items, and removing nodes. Removal is structural: deleting a block also removes nested child blocks and their items.
+Use **File > New From Template** to start from generic form, menu/action-list, or preview-grid structures seeded with reusable engine metadata and no game-specific content.
+
+The navigation tree also supports context actions such as adding blocks/items, editing blocks/items, duplicating nodes, moving blocks/items up or down, copying/pasting style metadata, and removing nodes. Removal is structural: deleting a block also removes nested child blocks and their items.
 
 Reusable layout styling is split from layout intent. Engine renderers attach stable semantic style classes such as `layout-content`, `layout-sidebar`, `layout-main-content`, `layout-action-row`, `layout-primary-action`, `layout-secondary-action`, `layout-card`, `layout-form`, `layout-section-title`, and `layout-section-row`; `src/main/resources/com/eb/javafx/ui/default.css` provides the default colors, spacing, borders, and hover behavior. The layout contract can also be read as JSON from `src/main/resources/com/eb/javafx/ui/layout-contract.json` when tools or applications need a data-driven list of supported layout types and stable style hooks. Applications can use these screens directly for prototypes, add an application stylesheet after the engine stylesheet to override those hooks, or replace route factories with application-specific screens while keeping the same routing and bootstrap contracts. App-specific JavaFX controls, authored art, and game-specific visual rules should live in application route modules; reusable engine screens should consume view models or generic display contracts.
 

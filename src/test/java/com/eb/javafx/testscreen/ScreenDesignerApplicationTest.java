@@ -353,7 +353,7 @@ final class ScreenDesignerApplicationTest {
 
     @Test
     void actionToolbarLabelsIncludeDefaultValuesEditor() {
-        assertEquals(List.of("Edit Default Values", "Validate", "Open Preview", "Add Temporary Field", "Promote Temporary"),
+        assertEquals(List.of("Edit Default Values", "Validate", "Go To First Issue", "Open Preview", "Add Temporary Field", "Promote Temporary"),
                 ScreenDesignerApplication.actionToolbarLabels());
     }
 

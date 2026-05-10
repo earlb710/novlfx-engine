@@ -330,16 +330,19 @@ public final class ScreenDesignerApplication {
     private JPanel actionToolbar() {
         JPanel panel = new JPanel();
         JButton validate = new JButton("Validate");
+        JButton firstIssue = new JButton("Go To First Issue");
         JButton preview = new JButton("Open Preview");
         JButton addTemp = new JButton("Add Temporary Field");
         JButton promote = new JButton("Promote Temporary");
         editDefaultValuesButton.addActionListener(event -> runSafely("Edit Default Values", this::editDefaultValues));
         validate.addActionListener(event -> runSafely("Validate", this::showValidation));
+        firstIssue.addActionListener(event -> runSafely("Go To First Issue", this::goToFirstValidationIssue));
         preview.addActionListener(event -> runSafely("Open Preview", this::openPreview));
         addTemp.addActionListener(event -> runSafely("Add Temporary Field", () -> addItem(true)));
         promote.addActionListener(event -> runSafely("Promote Temporary", this::promoteTemporary));
         panel.add(editDefaultValuesButton);
         panel.add(validate);
+        panel.add(firstIssue);
         panel.add(preview);
         panel.add(addTemp);
         panel.add(promote);
@@ -893,6 +896,15 @@ public final class ScreenDesignerApplication {
         JOptionPane.showMessageDialog(null, validationSummary(problems));
     }
 
+    private void goToFirstValidationIssue() {
+        List<ScreenDesignValidationProblem> problems = ScreenDesignValidator.validate(design);
+        if (problems.isEmpty()) {
+            statusLabel.setText("Screen design is valid.");
+            return;
+        }
+        selectNavigationNode(navigationNodeForValidationPath(problems.get(0).path()));
+    }
+
     private void editDefaultValues() {
         JDialog dialog = new JDialog((Frame) null, "Edit Default Values", true);
         dialog.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
@@ -1101,7 +1113,7 @@ public final class ScreenDesignerApplication {
     }
 
     static List<String> actionToolbarLabels() {
-        return List.of("Edit Default Values", "Validate", "Open Preview", "Add Temporary Field", "Promote Temporary");
+        return List.of("Edit Default Values", "Validate", "Go To First Issue", "Open Preview", "Add Temporary Field", "Promote Temporary");
     }
 
     static Path screenDesignExamplesDirectory() {
@@ -1145,6 +1157,36 @@ public final class ScreenDesignerApplication {
             case ITEM -> "items." + navigationNode.id();
             case TEMPORARY_ITEM -> "temporaryItems." + navigationNode.id();
         };
+    }
+
+    private NavigationNode navigationNodeForValidationPath(String path) {
+        if (path.startsWith("blocks.")) {
+            Optional<String> blockId = matchingId(path.substring("blocks.".length()), design.blocks().stream().map(ScreenDesignBlock::id).toList());
+            return blockId.map(NavigationNode::block).orElseGet(() -> NavigationNode.screen(design.id()));
+        }
+        if (path.startsWith("items.")) {
+            String itemId = matchingId(path.substring("items.".length()), design.items().stream().map(ScreenDesignItem::id).toList()).orElse("");
+            Optional<ScreenDesignItem> item = design.items().stream().filter(candidate -> candidate.id().equals(itemId)).findFirst();
+            if (item.isPresent()) {
+                return NavigationNode.item(itemId, item.orElseThrow().blockId(), false);
+            }
+        }
+        if (path.startsWith("temporaryItems.")) {
+            String itemId = matchingId(path.substring("temporaryItems.".length()), design.temporaryItems().stream().map(ScreenDesignItem::id).toList()).orElse("");
+            Optional<ScreenDesignItem> item = design.temporaryItems().stream().filter(candidate -> candidate.id().equals(itemId)).findFirst();
+            if (item.isPresent()) {
+                return NavigationNode.item(itemId, item.orElseThrow().blockId(), true);
+            }
+        }
+        return NavigationNode.screen(design.id());
+    }
+
+    private static Optional<String> matchingId(String pathRemainder, List<String> ids) {
+        return ids.stream()
+                .filter(id -> pathRemainder.equals(id)
+                        || pathRemainder.startsWith(id + ".")
+                        || pathRemainder.startsWith(id + "["))
+                .max(Comparator.comparingInt(String::length));
     }
 
     private static String escapeHtml(String value) {
