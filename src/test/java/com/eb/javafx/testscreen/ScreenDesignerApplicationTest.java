@@ -425,7 +425,7 @@ final class ScreenDesignerApplicationTest {
     }
 
     @Test
-    void editMenuLabelsContainFormerToolbarActions() {
+    void editMenuLabelsContainEditActions() {
         assertEquals(List.of("Edit Default Values", "Validate", "Go To First Issue", "Open Preview"),
                 ScreenDesignerApplication.editMenuActionLabels());
     }
@@ -537,6 +537,19 @@ final class ScreenDesignerApplicationTest {
                 java.util.stream.IntStream.range(0, menuBar.getMenuCount())
                         .mapToObj(menuBar::getMenu)
                         .map(JMenu::getText)
+                        .toList());
+    }
+
+    @Test
+    void editMenuUsesExpectedActionLabels() throws Exception {
+        ScreenDesignerApplication application = new ScreenDesignerApplication();
+
+        JMenu editMenu = (JMenu) invokePrivateMethod(application, "editMenu");
+
+        assertEquals(ScreenDesignerApplication.editMenuActionLabels(),
+                java.util.stream.IntStream.range(0, editMenu.getItemCount())
+                        .mapToObj(editMenu::getItem)
+                        .map(item -> item == null ? null : item.getText())
                         .toList());
     }
 
