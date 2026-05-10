@@ -209,11 +209,13 @@ final class ScreenDesignerApplicationTest {
                 ScreenDesignerApplication.contextActionLabelsFor(
                         ScreenDesignerApplication.NavigationNode.screen("sample.screen"),
                         true));
-        assertEquals(List.of("Add Block", "Add Item", "Edit Block", "Remove Block"),
+        assertEquals(List.of("Add Block", "Add Item", "Edit Block", "Duplicate Block", "Move Block Up", "Move Block Down",
+                        "Copy Style/Metadata", "Paste Style/Metadata", "Remove Block"),
                 ScreenDesignerApplication.contextActionLabelsFor(
                         ScreenDesignerApplication.NavigationNode.block("main"),
                         true));
-        assertEquals(List.of("Add Block", "Add Item", "Edit Item", "Remove Item"),
+        assertEquals(List.of("Add Block", "Add Item", "Edit Item", "Duplicate Item", "Move Item Up", "Move Item Down",
+                        "Copy Style/Metadata", "Paste Style/Metadata", "Remove Item"),
                 ScreenDesignerApplication.contextActionLabelsFor(
                         ScreenDesignerApplication.NavigationNode.item("title.text", "main", false),
                         true));
@@ -242,7 +244,7 @@ final class ScreenDesignerApplicationTest {
                 ScreenDesignerApplication.NavigationNode.block("main")));
         assertEquals(List.of("Block id", "Title", "Layout type", "Parent block", "Style class", "Conditions",
                         "Font", "Font size", "Font style", "Color", "Background color",
-                        "Background image", "Background image transparency", "Transparency", "Border style",
+                        "Background image", "Background image transparency", "Background image placement", "Transparency", "Border style",
                         "Border corner", "Border thickness", "Border color", "Extra metadata"),
                 ScreenDesignerApplication.propertyLabelsFor(
                         ScreenDesignerApplication.NavigationNode.block("main")));
@@ -250,12 +252,14 @@ final class ScreenDesignerApplicationTest {
                 ScreenDesignerApplication.NavigationNode.item("title.text", "main", false)));
         assertEquals(List.of("Target block", "Item id", "Style class", "Type", "Sequence", "Label",
                         "Text/default value", "Current value", "Editable", "Display role",
-                        "Font", "Font size", "Font style", "Color", "Background color", "Transparency", "Label font",
+                        "Font", "Font size", "Font style", "Color", "Background color", "Transparency",
+                        "Action event name", "Action value", "Label font",
                         "Label font size", "Label font style", "Label color", "Extra metadata"),
                 ScreenDesignerApplication.propertyLabelsFor(
                         ScreenDesignerApplication.NavigationNode.item("title.text", "main", false)));
         assertEquals(List.of("Target block", "Item id", "Style class", "Type", "Sequence", "Text/default value", "Display role",
-                        "Font", "Font size", "Font style", "Color", "Background color", "Transparency", "Extra metadata"),
+                        "Font", "Font size", "Font style", "Color", "Background color", "Transparency",
+                        "Action event name", "Action value", "Extra metadata"),
                 ScreenDesignerApplication.itemPropertyLabelsFor(ScreenDesignItemType.TEXT));
         assertEquals("Item Properties", ScreenDesignerApplication.propertiesTitleFor(
                 ScreenDesignerApplication.NavigationNode.item("temp.field", "main", true)));
@@ -343,7 +347,7 @@ final class ScreenDesignerApplicationTest {
 
     @Test
     void fileMenuLabelsContainFileActionsMovedFromToolbar() {
-        assertEquals(List.of("New", "Load", "Save", "Save As"),
+        assertEquals(List.of("New", "New From Template", "Load", "Save", "Save As"),
                 ScreenDesignerApplication.fileMenuActionLabels());
     }
 
@@ -526,6 +530,69 @@ final class ScreenDesignerApplicationTest {
         assertEquals("temp.field", updatedSaved.temporaryItems().get(0).id());
         assertEquals("title.text", updatedTemporary.items().get(0).id());
         assertEquals("temp.edited", updatedTemporary.temporaryItems().get(0).id());
+    }
+
+    @Test
+    void duplicateAndMoveHelpersKeepStructurePredictable() {
+        ScreenDesignModel design = new ScreenDesignModel(
+                "sample.screen",
+                "Sample Screen",
+                com.eb.javafx.ui.ScreenLayoutType.FORM,
+                Map.of(),
+                List.of(
+                        new ScreenDesignBlock("main", "Main"),
+                        new ScreenDesignBlock("secondary", "Secondary")),
+                List.of(
+                        new ScreenDesignItem("first.text", "main", ScreenDesignItemType.TEXT,
+                                "First", "First", null, null, null, Map.of()),
+                        new ScreenDesignItem("second.text", "main", ScreenDesignItemType.TEXT,
+                                "Second", "Second", null, null, null, Map.of())),
+                List.of());
+
+        assertEquals("main.copy", ScreenDesignerApplication.uniqueId("main", Set.of("main", "secondary")));
+        assertEquals("main.copy2", ScreenDesignerApplication.uniqueId("main", Set.of("main", "main.copy")));
+        assertEquals("Main Copy", ScreenDesignerApplication.copyOfBlock(
+                design.blocks().get(0),
+                "main.copy").title());
+
+        ScreenDesignModel movedBlock = ScreenDesignerApplication.moveBlockInDesign(design, "secondary", -1);
+        ScreenDesignModel movedItem = ScreenDesignerApplication.moveItemInDesign(design, "second.text", false, -1);
+
+        assertEquals("secondary", movedBlock.blocks().get(0).id());
+        assertEquals("second.text", movedItem.items().get(0).id());
+    }
+
+    @Test
+    void validationTextCanBeScopedToSelectedNavigationNode() {
+        List<com.eb.javafx.ui.ScreenDesignValidationProblem> problems = List.of(
+                new com.eb.javafx.ui.ScreenDesignValidationProblem(
+                        com.eb.javafx.ui.ScreenDesignValidationSeverity.ERROR,
+                        "blocks.main.conditions[0]",
+                        "Bad condition"),
+                new com.eb.javafx.ui.ScreenDesignValidationProblem(
+                        com.eb.javafx.ui.ScreenDesignValidationSeverity.ERROR,
+                        "items.title.text",
+                        "Duplicate item"));
+
+        assertEquals("Bad condition",
+                ScreenDesignerApplication.validationTextForNode(
+                        problems,
+                        ScreenDesignerApplication.NavigationNode.block("main")));
+        assertEquals("Duplicate item",
+                ScreenDesignerApplication.validationTextForNode(
+                        problems,
+                        ScreenDesignerApplication.NavigationNode.item("title.text", "main", false)));
+    }
+
+    @Test
+    void genericTemplatesProvideCommonStarterFlows() {
+        List<ScreenDesignerApplication.ScreenTemplate> templates = ScreenDesignerApplication.screenTemplates();
+
+        assertEquals(List.of("Form screen", "Menu/action list", "Preview grid"),
+                templates.stream().map(ScreenDesignerApplication.ScreenTemplate::label).toList());
+        assertTrue(templates.stream()
+                .flatMap(template -> template.design().items().stream())
+                .anyMatch(item -> "submit".equals(item.metadata().get("eventName"))));
     }
 
     @Test
