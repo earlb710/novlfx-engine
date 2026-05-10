@@ -26,6 +26,7 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
 import javax.swing.JTextField;
+import javax.swing.Scrollable;
 import javax.swing.tree.DefaultMutableTreeNode;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -503,6 +504,24 @@ final class ScreenDesignerApplicationTest {
         assertTrue(screenFontFamilyBox.getMinimumSize().width >= expectedComboMinimum);
         assertTrue(screenIdField.getMaximumSize().width > screenIdField.getMinimumSize().width);
         assertTrue(screenFontFamilyBox.getMaximumSize().width > screenFontFamilyBox.getMinimumSize().width);
+    }
+
+    @Test
+    void propertiesPanelTracksViewportWidthUntilMinimumWidthIsReached() throws Exception {
+        ScreenDesignerApplication application = new ScreenDesignerApplication();
+        invokePrivateMethod(application, "refreshAll");
+        JPanel editor = (JPanel) invokePrivateMethod(application, "editor");
+        JSplitPane splitPane = (JSplitPane) ((BorderLayout) editor.getLayout()).getLayoutComponent(BorderLayout.CENTER);
+        JScrollPane propertiesScrollPane = (JScrollPane) splitPane.getTopComponent();
+        JPanel propertiesPanel = (JPanel) fieldValue(application, "propertiesPanel");
+        Scrollable scrollable = assertInstanceOf(Scrollable.class, propertiesPanel);
+        int minimumWidth = propertiesPanel.getMinimumSize().width;
+
+        propertiesScrollPane.getViewport().setSize(minimumWidth + 100, 340);
+        assertTrue(scrollable.getScrollableTracksViewportWidth());
+
+        propertiesScrollPane.getViewport().setSize(Math.max(1, minimumWidth - 1), 340);
+        assertFalse(scrollable.getScrollableTracksViewportWidth());
     }
 
     @Test

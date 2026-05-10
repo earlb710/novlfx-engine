@@ -48,6 +48,7 @@ import javax.swing.JSplitPane;
 import javax.swing.JTable;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
+import javax.swing.Scrollable;
 import javax.swing.ListSelectionModel;
 import javax.swing.SwingUtilities;
 import javax.swing.WindowConstants;
@@ -67,6 +68,7 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.GridLayout;
 import java.awt.Insets;
+import java.awt.Rectangle;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
@@ -163,7 +165,7 @@ public final class ScreenDesignerApplication {
     private final DefaultTreeModel objectTreeModel = new DefaultTreeModel(new DefaultMutableTreeNode());
     private final JTree objectTree = new JTree(objectTreeModel);
     private final JButton addItemButton = new JButton("Add Item");
-    private final JPanel propertiesPanel = new JPanel(new BorderLayout(8, 8));
+    private final JPanel propertiesPanel = new ViewportWidthTrackingPanel(new BorderLayout(8, 8));
     private final JButton editDefaultValuesButton = new JButton("Edit Default Values");
     private final JButton applyPropertiesButton = new JButton("Apply Properties");
     private final JButton resetPropertiesButton = new JButton("Reset Properties");
@@ -406,6 +408,40 @@ public final class ScreenDesignerApplication {
         panel.add(split, BorderLayout.CENTER);
         panel.add(propertyActionPanel(), BorderLayout.SOUTH);
         return panel;
+    }
+
+    private static final class ViewportWidthTrackingPanel extends JPanel implements Scrollable {
+        private ViewportWidthTrackingPanel(BorderLayout layout) {
+            super(layout);
+        }
+
+        @Override
+        public Dimension getPreferredScrollableViewportSize() {
+            return getPreferredSize();
+        }
+
+        @Override
+        public int getScrollableUnitIncrement(Rectangle visibleRect, int orientation, int direction) {
+            return 16;
+        }
+
+        @Override
+        public int getScrollableBlockIncrement(Rectangle visibleRect, int orientation, int direction) {
+            return orientation == javax.swing.SwingConstants.VERTICAL ? visibleRect.height : visibleRect.width;
+        }
+
+        @Override
+        public boolean getScrollableTracksViewportWidth() {
+            if (getParent() instanceof javax.swing.JViewport viewport) {
+                return viewport.getWidth() >= getMinimumSize().width;
+            }
+            return false;
+        }
+
+        @Override
+        public boolean getScrollableTracksViewportHeight() {
+            return false;
+        }
     }
 
     private void applySelectedProperties() {
