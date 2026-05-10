@@ -606,6 +606,12 @@ Typical designer workflow:
    vocabularies such as footer display modes, theme choices, and slider position descriptions in code tables, and
    keep reusable dialog/status/error strings in the bundled `sys_message` code table. Manual management and
    authoring applications under `src/test/java/com/eb/javafx/testscreen` are diagnostics and may remain English.
+   To avoid hardcoded runtime text, do not place player-facing English strings directly in reusable Java route or UI
+   classes. Put screen-owned text such as titles, block labels, item labels, item body text, and field defaults in
+   the screen JSON plus sibling `_text.json`; put fixed selectable vocabularies such as poplist values, theme names,
+   and slider-position descriptions in code tables; and put reusable shared labels, empty states, status text, dialog
+   support text, and generic errors in `sys_message`. Java should provide bindings, current values, event handling,
+   and navigation only.
 2. Use **Edit Default Values** to adjust the preview-time display defaults loaded from `display-defaults.json`; this is useful for testing inherited screen/block/item styling without changing every document node. The docked live preview refreshes after those defaults are saved.
 3. Use **Add Block** to create root or nested blocks, or right-click a screen/block/item and choose a quick-add block action for common form, menu/action-list, or preview-grid sections.
 4. Select a block, then use **Add Item** for a saved item or **Add Temporary Field** for a preview-only field.

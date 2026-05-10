@@ -5,3 +5,8 @@ Runtime UI localization update
 - Added `sys_message`, footer shortcut display, theme family, theme variant, and volume level system code tables.
 - Updated runtime UI screens and footer helpers to read player-facing labels/messages from screen text resources or system code tables.
 - Documented the screen-text/code-table/sys-message localization split and added focused tests for screen text and system code table behavior.
+
+User manual follow-up
+
+- Expanded `docs/USER_MANUAL.md` with explicit guidance for avoiding hardcoded runtime text in reusable UI Java code.
+- Clarified which text belongs in screen `_text.json` sidecars, fixed-value code tables, and the shared `sys_message` table.
