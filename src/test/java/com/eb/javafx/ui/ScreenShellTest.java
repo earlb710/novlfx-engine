@@ -386,6 +386,25 @@ final class ScreenShellTest {
     }
 
     @Test
+    void footerOptionsLoadSvgIconsFromAbsoluteResourcePaths() {
+        ScreenShell.FooterOption back = new ScreenShell.FooterOption(
+                "back",
+                "‹",
+                "Back",
+                "Backspace",
+                "Return to the previous screen.",
+                true,
+                "/com/eb/javafx/images/icons/footer-back.svg");
+
+        ImageView graphic = ScreenShell.footerGraphic(back);
+
+        assertNotNull(graphic);
+        assertEquals(14.0, graphic.getFitWidth());
+        assertEquals(14.0, graphic.getFitHeight());
+        assertTrue(graphic.isPreserveRatio());
+    }
+
+    @Test
     void footerTextOmitsFallbackGlyphWhenSvgGraphicIsUsed() {
         ScreenShell.FooterOption back = ScreenShell.defaultFooterOptions().get(0);
 
