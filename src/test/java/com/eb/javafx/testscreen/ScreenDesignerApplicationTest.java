@@ -21,9 +21,11 @@ import java.util.Map;
 import java.util.Set;
 
 import javax.swing.JButton;
+import javax.swing.JComboBox;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
+import javax.swing.JTextField;
 import javax.swing.tree.DefaultMutableTreeNode;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -480,6 +482,27 @@ final class ScreenDesignerApplicationTest {
                 java.util.Arrays.stream(actionPanel.getComponents())
                         .map(component -> ((JButton) component).getText())
                         .toList());
+    }
+
+    @Test
+    void propertyInputsUseTenCharacterMinimumWidthAndCanResize() throws Exception {
+        ScreenDesignerApplication application = new ScreenDesignerApplication();
+        invokePrivateMethod(application, "refreshAll");
+
+        JTextField screenIdField = (JTextField) fieldValue(application, "screenIdField");
+        @SuppressWarnings("unchecked")
+        JComboBox<String> screenFontFamilyBox = (JComboBox<String>) fieldValue(application, "screenFontFamilyBox");
+        JTextField editorField = (JTextField) screenFontFamilyBox.getEditor().getEditorComponent();
+
+        int expectedTextMinimum = screenIdField.getFontMetrics(screenIdField.getFont()).charWidth('m') * 10
+                + screenIdField.getInsets().left + screenIdField.getInsets().right;
+        int expectedComboMinimum = editorField.getFontMetrics(editorField.getFont()).charWidth('m') * 10
+                + editorField.getInsets().left + editorField.getInsets().right + 32;
+
+        assertTrue(screenIdField.getMinimumSize().width >= expectedTextMinimum);
+        assertTrue(screenFontFamilyBox.getMinimumSize().width >= expectedComboMinimum);
+        assertTrue(screenIdField.getMaximumSize().width > screenIdField.getMinimumSize().width);
+        assertTrue(screenFontFamilyBox.getMaximumSize().width > screenFontFamilyBox.getMinimumSize().width);
     }
 
     @Test

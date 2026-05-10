@@ -9,3 +9,4 @@
 - Increased the default screen designer window to 1560x988 so the right-docked preview has more working space.
 - Added inline screen designer validation for invalid visual metadata, field-level hints, and tree node issue counts/tooltips.
 - Promoted item hover/pressed background metadata into typed screen designer controls and renamed raw metadata rows to Advanced metadata with guidance.
+- Let screen designer property inputs shrink and grow with available width by applying a 10-character minimum size to text-based inputs and editable combo boxes.

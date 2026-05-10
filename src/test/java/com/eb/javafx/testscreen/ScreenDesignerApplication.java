@@ -59,6 +59,7 @@ import javax.swing.tree.DefaultTreeCellRenderer;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.Frame;
 import java.awt.GraphicsEnvironment;
@@ -95,6 +96,7 @@ import javax.swing.tree.TreeSelectionModel;
 public final class ScreenDesignerApplication {
     static final int DEFAULT_FRAME_WIDTH = 1560;
     static final int DEFAULT_FRAME_HEIGHT = 988;
+    private static final int PROPERTY_FIELD_MIN_COLUMNS = 10;
     private static final Color INLINE_ERROR_COLOR = new Color(0x9b1c1c);
     private static final Color INLINE_HINT_COLOR = new Color(0x5f6368);
     private static final String SCREEN_PARENT_OPTION = "<screen>";
@@ -2061,6 +2063,7 @@ public final class ScreenDesignerApplication {
             Component component,
             String validationText,
             String hintText) {
+        applyPropertyComponentSizing(component);
         boolean invalid = validationText != null && !validationText.isBlank();
         JLabel labelComponent = new JLabel(invalid ? label + " ⚠" : label);
         if (invalid) {
@@ -2090,6 +2093,63 @@ public final class ScreenDesignerApplication {
             panel.setBorder(BorderFactory.createEmptyBorder(1, 1, 1, 1));
         }
         return panel;
+    }
+
+    private static void applyPropertyComponentSizing(Component component) {
+        if (component instanceof JTextField field) {
+            field.setMinimumSize(minimumTextComponentSize(field));
+            return;
+        }
+        if (component instanceof JTextArea area) {
+            area.setMinimumSize(minimumTextComponentSize(area));
+            return;
+        }
+        if (component instanceof JComboBox<?> comboBox) {
+            comboBox.setMinimumSize(minimumComboBoxSize(comboBox));
+            if (comboBox.isEditable()) {
+                Component editorComponent = comboBox.getEditor().getEditorComponent();
+                applyPropertyComponentSizing(editorComponent);
+            }
+        }
+        if (component instanceof JScrollPane scrollPane) {
+            Component view = scrollPane.getViewport().getView();
+            if (view != null) {
+                applyPropertyComponentSizing(view);
+                scrollPane.setMinimumSize(new Dimension(
+                        view.getMinimumSize().width,
+                        scrollPane.getPreferredSize().height));
+            }
+            return;
+        }
+        if (component instanceof Container container) {
+            for (Component child : container.getComponents()) {
+                applyPropertyComponentSizing(child);
+            }
+        }
+    }
+
+    private static Dimension minimumTextComponentSize(JTextField field) {
+        Dimension preferred = field.getPreferredSize();
+        return new Dimension(textWidth(field, PROPERTY_FIELD_MIN_COLUMNS), preferred.height);
+    }
+
+    private static Dimension minimumTextComponentSize(JTextArea area) {
+        Dimension preferred = area.getPreferredSize();
+        return new Dimension(textWidth(area, PROPERTY_FIELD_MIN_COLUMNS), preferred.height);
+    }
+
+    private static Dimension minimumComboBoxSize(JComboBox<?> comboBox) {
+        Dimension preferred = comboBox.getPreferredSize();
+        int editorWidth = comboBox.isEditable() && comboBox.getEditor().getEditorComponent() instanceof JComponent editor
+                ? textWidth(editor, PROPERTY_FIELD_MIN_COLUMNS)
+                : textWidth(comboBox, PROPERTY_FIELD_MIN_COLUMNS);
+        return new Dimension(editorWidth + 32, preferred.height);
+    }
+
+    private static int textWidth(JComponent component, int columns) {
+        int charWidth = component.getFontMetrics(component.getFont()).charWidth('m');
+        Insets insets = component.getInsets();
+        return charWidth * columns + insets.left + insets.right;
     }
 
     static String hintTextForProperty(String label) {
