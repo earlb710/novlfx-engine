@@ -1161,7 +1161,7 @@ public final class ScreenDesignerApplication {
         String prefix = validationPathPrefix(navigationNode);
         return problems.stream()
                 .filter(problem -> prefix.isEmpty() || problem.path().equals(prefix) || problem.path().startsWith(prefix + "."))
-                .map(problem -> problem.message())
+                .map(ScreenDesignValidationProblem::message)
                 .reduce("", (left, right) -> left.isEmpty() ? right : left + "\n" + right);
     }
 
