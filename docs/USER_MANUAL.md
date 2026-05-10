@@ -674,6 +674,37 @@ Use `TimeScheduler`, `TimeScheduledCommand`, `TimeAdvanceHook`, and `TimeAdvance
 
 Use `LocationRegistry`, `LocationDescriptor`, and `LocationOccupancy` for reusable location metadata and per-save character placement. Location descriptors store stable location IDs, display/localization titles, route IDs, optional parent locations, tags, and generic action IDs. `LocationRegistry.validateReferences(...)` checks parent-location and action references after static modules register definitions, while `LocationOccupancy` tracks where generic character IDs are currently placed without owning authored movement rules. Use `MovementValidator`, `MovementValidationResult`, and `LocationMovementService` to layer application-supplied movement checks over reusable occupancy changes.
 
+Use `MapTextDefinition` for localized map labels. The JSON root stores `language` and a `maps` array. Each map entry stores `mapId` and optional `description`; omitted descriptions default to `Main Map`.
+
+```json
+{
+  "language": "en",
+  "maps": [
+    {"mapId": "town", "description": "Town Map"},
+    {"mapId": "main"}
+  ]
+}
+```
+
+Use `LocationTextDefinition` for localized location descriptions within one map. The JSON root stores `language`, `mapId`, and a `locations` array. Each location stores `locId` and a `description` array of variants. Variants store `text` and optional string `conditions`, such as `time of day=night`; application code can resolve locations by `mapId.locId` references such as `town.square`.
+
+```json
+{
+  "language": "en",
+  "mapId": "town",
+  "locations": [
+    {
+      "locId": "square",
+      "description": [
+        {"text": "The market square is busy.", "conditions": ["time of day=day"]},
+        {"text": "The market square is quiet after dark.", "conditions": ["time of day=night"]},
+        {"text": "The market square is open."}
+      ]
+    }
+  ]
+}
+```
+
 Use `CategoryCodeTableDefinition.load(Path)` when category data should come from authored JSON, typically with the path returned by `ApplicationResourceConfig.resolveCategoryCodeTables(applicationRoot)`. The root object contains a `language` field and a `tables` array; titles in that file are interpreted as text for that language so applications can provide parallel files for later translation:
 
 ```json

@@ -1,0 +1,20 @@
+{
+  "language": "en",
+  "mapId": "town",
+  "locations": [
+    {
+      "locId": "square",
+      "description": [
+        {"text": "The market square is busy.", "conditions": ["time of day=day"]},
+        {"text": "The market square is quiet after dark.", "conditions": ["time of day=night"]},
+        {"text": "The market square is open."}
+      ]
+    },
+    {
+      "locId": "gate",
+      "description": [
+        {"text": "A guarded gate marks the edge of town.", "conditions": []}
+      ]
+    }
+  ]
+}
