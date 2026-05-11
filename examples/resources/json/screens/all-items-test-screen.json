@@ -8,7 +8,8 @@
     "borderStyle": "solid",
     "borderCorner": "rounded",
     "borderThickness": "2",
-    "borderColor": "#4f86c6"
+    "borderColor": "#4f86c6",
+    "titleColor": "#00e5ff"
   },
   "blocks": [
     {
@@ -24,7 +25,8 @@
         "borderStyle": "solid",
         "borderCorner": "rounded",
         "borderThickness": "1",
-        "borderColor": "#82addd"
+        "borderColor": "#82addd",
+        "titleColor": "#00e5ff"
       }
     },
     {
@@ -40,7 +42,8 @@
         "borderStyle": "solid",
         "borderCorner": "rounded",
         "borderThickness": "1",
-        "borderColor": "#82addd"
+        "borderColor": "#82addd",
+        "titleColor": "#00e5ff"
       }
     },
     {
@@ -56,7 +59,8 @@
         "borderStyle": "solid",
         "borderCorner": "rounded",
         "borderThickness": "1",
-        "borderColor": "#82addd"
+        "borderColor": "#82addd",
+        "titleColor": "#00e5ff"
       }
     },
     {
@@ -72,7 +76,8 @@
         "borderStyle": "solid",
         "borderCorner": "rounded",
         "borderThickness": "1",
-        "borderColor": "#82addd"
+        "borderColor": "#82addd",
+        "titleColor": "#00e5ff"
       }
     },
     {
@@ -88,7 +93,8 @@
         "borderStyle": "solid",
         "borderCorner": "rounded",
         "borderThickness": "1",
-        "borderColor": "#82addd"
+        "borderColor": "#82addd",
+        "titleColor": "#00e5ff"
       }
     }
   ],
@@ -214,14 +220,16 @@
       "id": "actions.button",
       "blockId": "actions",
       "type": "BUTTON",
-      "label": null,
-      "text": "item.actions.button.text",
+      "label": "item.actions.button.label",
+      "text": null,
       "value": null,
       "defaultValue": null,
       "sequence": 10,
       "editable": false,
       "styleClass": null,
-      "metadata": {}
+      "metadata": {
+        "eventName": "test.all-items.button.click"
+      }
     }
   ]
 }
