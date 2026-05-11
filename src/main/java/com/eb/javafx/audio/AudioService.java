@@ -46,7 +46,7 @@ public final class AudioService {
         channelVolumes.clear();
         lastPlaybackCommands.clear();
         masterVolume = preferencesService.masterVolume();
-        muted = false;
+        muted = preferencesService.muteAll();
         registerChannel(new AudioChannelDefinition(MUSIC_CHANNEL, "Looping background music.", true, 1, 1.0));
         registerChannel(new AudioChannelDefinition(SOUND_CHANNEL, "Short one-shot UI and gameplay sounds.", false, 8, 1.0));
         registerChannel(new AudioChannelDefinition(EFFECTS_CHANNEL, "Reusable environmental and scene effects.", true, 4, 1.0));

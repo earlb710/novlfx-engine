@@ -63,3 +63,42 @@ An "All Items Test Screen" button was added to `ManagementApplication` and a `sh
 - `src/main/java/com/eb/javafx/ui/test/JsonScreenDesignTestScreen.java`
 - `src/test/java/com/eb/javafx/testscreen/ManagementApplication.java`
 - `src/test/java/com/eb/javafx/ui/test/JsonScreenDesignTestScreenTest.java` — added `@ManualTest runAllItemsTestScreenFromTestApp` so the screen is also accessible from the `runTestScreen` Gradle task
+
+---
+
+## Add fullscreen, mute-all, and language controls to preferences screen
+
+Extended `PreferencesService` with three new persisted preferences and added matching controls to `PreferencesSummaryScreen`.
+
+**PreferencesService additions:**
+- `fullscreen` (boolean, default `false`) with `saveFullscreen(boolean)`; persisted under `window.fullscreen`.
+- `muteAll` (boolean, default `false`) with `saveMuteAll(boolean)`; persisted under `audio.muteAll`. `AudioService.initialize` now reads this value so playback respects the saved mute state at startup instead of hard-coding `muted = false`.
+- `language` (new `Language` enum, default `ENGLISH`) with `saveLanguage(Language)` and validating `saveLanguage(String)`; persisted under `ui.language`. The enum exposes `enabled()` so disabled placeholder locales (Spanish, French, Japanese) can be rendered but blocked from selection.
+
+**PreferencesSummaryScreen additions:**
+- Audio block now includes a "Mute all" checkbox. Toggling it persists the preference and calls `audioService.setMuted(...)` when the audio service is initialized.
+- Visual block now includes a "Fullscreen" checkbox. Toggling it persists the preference and calls `primaryStage.setFullScreen(...)`.
+- A new "Language" block contains a `ToggleGroup` of radio buttons — one per `Language` value. Only English is enabled; the other entries are visible but disabled. Selection persists via `saveLanguage`.
+
+Screen text keys added to `preferences_text.json`: `block.language.title`, `item.mute-all.label`, `item.fullscreen.label`.
+
+**Files changed:**
+- `src/main/java/com/eb/javafx/prefs/PreferencesService.java`
+- `src/main/java/com/eb/javafx/audio/AudioService.java`
+- `src/main/java/com/eb/javafx/ui/PreferencesSummaryScreen.java`
+- `src/main/resources/com/eb/javafx/ui/screens/preferences_text.json`
+- `src/test/java/com/eb/javafx/prefs/PreferencesServiceTest.java`
+- `src/test/java/com/eb/javafx/ui/PreferencesSummaryScreenTest.java`
+
+---
+
+## Fix PreferencesSummaryScreenTest test helpers
+
+Two test reliability fixes in `PreferencesSummaryScreenTest`:
+
+**`themeChangesPreserveCurrentPreferencesSceneSize`** — replaced `stage.show()` + `stage.setWidth(910)` with a direct call to the package-private `PreferencesSummaryScreen.createScene(context, 910.0, 650.0)`. The old approach relied on `scene.getWidth()` updating synchronously after a stage resize, which does not happen within the same JavaFX pulse on Windows; the new approach creates a scene with exact dimensions so both the captured `currentSceneWidth` and `applyTheme`'s internal read are reliably 910. Extracted `createTestContext` helper (returns `RouteContext`) and refactored `createManualRouter` to delegate to it.
+
+**`findLabel`** — split into `findLabel` (throws if absent) + `findLabelRecursive` (returns `null`). The original single-method form threw on every recursive miss, aborting the search as soon as the first child pane did not contain the target label. Now mirrors the existing `findCheckBox`/`findCheckBoxRecursive` pattern.
+
+**Files changed:**
+- `src/test/java/com/eb/javafx/ui/PreferencesSummaryScreenTest.java`

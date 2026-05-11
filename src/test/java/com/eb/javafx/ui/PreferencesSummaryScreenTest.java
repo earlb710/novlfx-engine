@@ -4,14 +4,17 @@ import com.eb.javafx.content.ContentRegistry;
 import com.eb.javafx.content.EnginePlaceholderContentModule;
 import com.eb.javafx.display.ImageDisplayRegistry;
 import com.eb.javafx.prefs.PreferencesService;
+import com.eb.javafx.routing.RouteContext;
 import com.eb.javafx.routing.SceneRouter;
 import com.eb.javafx.save.SaveLoadService;
 import javafx.application.Platform;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.scene.Scene;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.RadioButton;
 import javafx.scene.input.KeyCode;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
@@ -133,17 +136,15 @@ final class PreferencesSummaryScreenTest {
             uiTheme.initialize(preferencesService);
 
             Stage stage = new Stage();
-            SceneRouter router = createManualRouter(stage, preferencesService, uiTheme);
-            stage.setScene(router.open(SceneRouter.PREFERENCES_ROUTE));
-            stage.show();
-            stage.setWidth(910);
-            stage.setHeight(650);
+            RouteContext context = createTestContext(stage, preferencesService, uiTheme);
+            Scene initialScene = PreferencesSummaryScreen.createScene(context, 910.0, 650.0);
+            stage.setScene(initialScene);
 
-            String currentStylesheet = stage.getScene().getStylesheets().get(0);
-            double currentSceneWidth = stage.getScene().getWidth();
-            double currentSceneHeight = stage.getScene().getHeight();
+            String currentStylesheet = initialScene.getStylesheets().get(0);
+            double currentSceneWidth = initialScene.getWidth();
+            double currentSceneHeight = initialScene.getHeight();
 
-            ComboBox<?> themeComboBox = findThemeComboBox(ScreenShell.shellRoot(stage.getScene().getRoot()));
+            ComboBox<?> themeComboBox = findThemeComboBox(ScreenShell.shellRoot(initialScene.getRoot()));
             themeComboBox.getSelectionModel().select(1);
             themeComboBox.getOnAction().handle(new ActionEvent());
 
@@ -183,7 +184,83 @@ final class PreferencesSummaryScreenTest {
         });
     }
 
-    private static SceneRouter createManualRouter(Stage stage, PreferencesService preferencesService, UiTheme uiTheme) {
+    @Test
+    void preferencesScreenIncludesFullscreenMuteAndLanguageControls() throws Exception {
+        assumeTrue(!GraphicsEnvironment.isHeadless(), "JavaFX control test requires a display.");
+        runOnJavaFxThread(() -> {
+            PreferencesService preferencesService = new PreferencesService();
+            preferencesService.load();
+
+            UiTheme uiTheme = new UiTheme();
+            uiTheme.initialize(preferencesService);
+
+            Stage stage = new Stage();
+            SceneRouter router = createManualRouter(stage, preferencesService, uiTheme);
+            Scene scene = router.open(SceneRouter.PREFERENCES_ROUTE);
+            stage.setScene(scene);
+
+            BorderPane root = ScreenShell.shellRoot(scene.getRoot());
+            CheckBox muteAll = findCheckBox(root, "Mute all");
+            CheckBox fullscreen = findCheckBox(root, "Fullscreen");
+            assertFalse(muteAll.isSelected());
+            assertFalse(fullscreen.isSelected());
+
+            muteAll.setSelected(true);
+            fullscreen.setSelected(true);
+            assertTrue(preferencesService.muteAll());
+            assertTrue(preferencesService.fullscreen());
+
+            java.util.List<RadioButton> languageButtons = findRadioButtons(root);
+            assertEquals(PreferencesService.Language.values().length, languageButtons.size());
+            for (RadioButton button : languageButtons) {
+                PreferencesService.Language language = (PreferencesService.Language) button.getUserData();
+                assertEquals(!language.enabled(), button.isDisable(),
+                        language + " radio button disabled state should match enabled flag.");
+            }
+
+            preferencesService.saveMuteAll(false);
+            preferencesService.saveFullscreen(false);
+            preferencesService.saveLanguage(PreferencesService.Language.ENGLISH);
+            stage.close();
+        });
+    }
+
+    private static CheckBox findCheckBox(Pane pane, String labelText) {
+        CheckBox found = findCheckBoxRecursive(pane, labelText);
+        if (found == null) {
+            throw new AssertionError("Missing checkbox: " + labelText);
+        }
+        return found;
+    }
+
+    private static CheckBox findCheckBoxRecursive(Pane pane, String labelText) {
+        for (Node child : pane.getChildren()) {
+            if (child instanceof CheckBox checkBox && labelText.equals(checkBox.getText())) {
+                return checkBox;
+            }
+            if (child instanceof Pane childPane) {
+                CheckBox found = findCheckBoxRecursive(childPane, labelText);
+                if (found != null) {
+                    return found;
+                }
+            }
+        }
+        return null;
+    }
+
+    private static java.util.List<RadioButton> findRadioButtons(Pane pane) {
+        java.util.List<RadioButton> buttons = new java.util.ArrayList<>();
+        for (Node child : pane.getChildren()) {
+            if (child instanceof RadioButton button) {
+                buttons.add(button);
+            } else if (child instanceof Pane childPane) {
+                buttons.addAll(findRadioButtons(childPane));
+            }
+        }
+        return buttons;
+    }
+
+    private static RouteContext createTestContext(Stage stage, PreferencesService preferencesService, UiTheme uiTheme) {
         ContentRegistry contentRegistry = new ContentRegistry();
         contentRegistry.registerBaseContent();
         new EnginePlaceholderContentModule().register(contentRegistry, null);
@@ -196,7 +273,11 @@ final class PreferencesSummaryScreenTest {
 
         SceneRouter router = new SceneRouter();
         router.registerDefaultRoutes(stage, preferencesService, contentRegistry, imageDisplayRegistry, saveLoadService, uiTheme);
-        return router;
+        return new RouteContext(stage, preferencesService, contentRegistry, imageDisplayRegistry, saveLoadService, uiTheme, router);
+    }
+
+    private static SceneRouter createManualRouter(Stage stage, PreferencesService preferencesService, UiTheme uiTheme) {
+        return createTestContext(stage, preferencesService, uiTheme).sceneRouter();
     }
 
     private static ComboBox<?> findThemeComboBox(BorderPane root) {
@@ -219,18 +300,26 @@ final class PreferencesSummaryScreenTest {
     }
 
     private static Label findLabel(Pane pane, String text) {
+        Label found = findLabelRecursive(pane, text);
+        if (found == null) {
+            throw new AssertionError("Missing label: " + text);
+        }
+        return found;
+    }
+
+    private static Label findLabelRecursive(Pane pane, String text) {
         for (Node child : pane.getChildren()) {
             if (child instanceof Label label && text.equals(label.getText())) {
                 return label;
             }
             if (child instanceof Pane childPane) {
-                Label found = findLabel(childPane, text);
+                Label found = findLabelRecursive(childPane, text);
                 if (found != null) {
                     return found;
                 }
             }
         }
-        throw new AssertionError("Missing label: " + text);
+        return null;
     }
 
     private static void runOnJavaFxThread(Runnable action) throws Exception {

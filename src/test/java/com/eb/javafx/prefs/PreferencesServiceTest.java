@@ -75,6 +75,50 @@ final class PreferencesServiceTest {
     }
 
     @Test
+    void loadAndSaveOptionalToggleAndLanguagePreferences() {
+        PreferencesService service = new PreferencesService();
+        service.load();
+
+        assertFalse(service.muteAll());
+        assertFalse(service.fullscreen());
+        assertEquals(PreferencesService.Language.ENGLISH, service.language());
+
+        service.saveMuteAll(true);
+        service.saveFullscreen(true);
+        service.saveLanguage(PreferencesService.Language.SPANISH);
+
+        assertTrue(service.muteAll());
+        assertTrue(service.fullscreen());
+        assertEquals(PreferencesService.Language.SPANISH, service.language());
+
+        PreferencesService reloaded = new PreferencesService();
+        reloaded.load();
+        assertTrue(reloaded.muteAll());
+        assertTrue(reloaded.fullscreen());
+        assertEquals(PreferencesService.Language.SPANISH, reloaded.language());
+    }
+
+    @Test
+    void saveLanguageFallsBackToEnglishForUnknownValues() {
+        PreferencesService service = new PreferencesService();
+        service.load();
+
+        service.saveLanguage("xx");
+
+        assertEquals(PreferencesService.Language.ENGLISH, service.language());
+    }
+
+    @Test
+    void onlyEnglishLanguageIsEnabled() {
+        assertTrue(PreferencesService.Language.ENGLISH.enabled());
+        for (PreferencesService.Language language : PreferencesService.Language.values()) {
+            if (language != PreferencesService.Language.ENGLISH) {
+                assertFalse(language.enabled(), language + " should remain disabled.");
+            }
+        }
+    }
+
+    @Test
     void loadDefaultsFooterShortcutsToTooltipOnly() {
         PreferencesService service = new PreferencesService();
         service.load();
