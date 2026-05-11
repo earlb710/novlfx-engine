@@ -95,6 +95,34 @@ final class JsonScreenDesignTestScreenTest {
         });
     }
 
+    @Test
+    @ManualTest
+    void runAllItemsTestScreenFromTestApp() throws Exception {
+        assumeTrue(Boolean.getBoolean(TestScreenApplication.TEST_SCREEN_ACTIVE_PROPERTY),
+                "Manual JavaFX screen test runs only from TestScreenApplication.");
+
+        Path designPath = JsonScreenDesignTestScreen.findRepositoryRootFrom(JsonScreenDesignTestScreen.defaultDesignPath())
+                .orElseThrow(() -> new IllegalStateException("Repository root not found."))
+                .resolve(Path.of("examples", "resources", "json", "screens", "all-items-test-screen.json"));
+
+        runOnJavaFxThread(() -> {
+            PreferencesService preferencesService = new PreferencesService();
+            preferencesService.load();
+
+            UiTheme uiTheme = new UiTheme();
+            uiTheme.initialize(preferencesService);
+
+            Stage stage = new Stage();
+            stage.setTitle("All items test screen manual test");
+            stage.setScene(JsonScreenDesignTestScreen.createScene(
+                    designPath,
+                    preferencesService,
+                    uiTheme));
+            stage.show();
+            assertTrue(stage.isShowing() && stage.getScene() != null, "All items test screen was not shown.");
+        });
+    }
+
     private static String designJson(String title) {
         return """
                 {

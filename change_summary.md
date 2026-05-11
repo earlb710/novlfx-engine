@@ -62,3 +62,4 @@ An "All Items Test Screen" button was added to `ManagementApplication` and a `sh
 - `examples/resources/json/screens/all-items-test-screen_text.json` (new)
 - `src/main/java/com/eb/javafx/ui/test/JsonScreenDesignTestScreen.java`
 - `src/test/java/com/eb/javafx/testscreen/ManagementApplication.java`
+- `src/test/java/com/eb/javafx/ui/test/JsonScreenDesignTestScreenTest.java` — added `@ManualTest runAllItemsTestScreenFromTestApp` so the screen is also accessible from the `runTestScreen` Gradle task
