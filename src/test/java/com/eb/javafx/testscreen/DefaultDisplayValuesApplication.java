@@ -72,9 +72,24 @@ public final class DefaultDisplayValuesApplication {
     private String editedLocationTextJson = sampleLocationTextJson();
     private List<LookupVariable> editedLookupVariables = lookupVariables();
     private final JLabel statusLabel = new JLabel("Editing default app values.");
+    private final Path workingDirectory;
+
+    public DefaultDisplayValuesApplication() {
+        this(locationExamplesDirectory());
+    }
+
+    DefaultDisplayValuesApplication(Path workingDirectory) {
+        this.workingDirectory = ManagementWorkingDirectorySupport.initialDirectory(
+                workingDirectory,
+                locationExamplesDirectory());
+    }
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> new DefaultDisplayValuesApplication().show());
+    }
+
+    static void showFromManagement(Path workingDirectory) {
+        SwingUtilities.invokeLater(() -> new DefaultDisplayValuesApplication(workingDirectory).show());
     }
 
     private void show() {
@@ -95,7 +110,8 @@ public final class DefaultDisplayValuesApplication {
                     editedApplicationConfigFields = updatedFields;
                     statusLabel.setText("Updated application values for this management screen.");
                 },
-                frame));
+                frame,
+                workingDirectory));
         tabs.addTab("Locations", locationsPanel(
                 editedMapTextJson,
                 updatedJson -> {
@@ -134,13 +150,21 @@ public final class DefaultDisplayValuesApplication {
 
     static JPanel applicationValuesPanel(List<ApplicationConfigField> fields) {
         return applicationValuesPanel(fields, ignored -> {
-        }, null);
+        }, null, locationExamplesDirectory());
     }
 
     private static JPanel applicationValuesPanel(
             List<ApplicationConfigField> fields,
             Consumer<List<ApplicationConfigField>> saveAction,
             Component messageParent) {
+        return applicationValuesPanel(fields, saveAction, messageParent, locationExamplesDirectory());
+    }
+
+    private static JPanel applicationValuesPanel(
+            List<ApplicationConfigField> fields,
+            Consumer<List<ApplicationConfigField>> saveAction,
+            Component messageParent,
+            Path workingDirectory) {
         JPanel panel = new JPanel(new BorderLayout(8, 8));
         panel.add(new JLabel(applicationValuesIntroText()), BorderLayout.NORTH);
         JPanel fieldPanel = new JPanel(new GridBagLayout());
@@ -148,7 +172,7 @@ public final class DefaultDisplayValuesApplication {
         for (int row = 0; row < fields.size(); row++) {
             ApplicationConfigField field = fields.get(row);
             fieldPanel.add(new JLabel(field.label()), fieldConstraints(row, 0, 0.0));
-            Component editor = editableField(field, messageParent);
+            Component editor = editableField(field, messageParent, workingDirectory);
             editors.put(field, editor);
             fieldPanel.add(editor, fieldConstraints(row, 1, 1.0));
         }
@@ -491,10 +515,14 @@ public final class DefaultDisplayValuesApplication {
     }
 
     static Component editableField(ApplicationConfigField field) {
-        return editableField(field, null);
+        return editableField(field, null, locationExamplesDirectory());
     }
 
     private static Component editableField(ApplicationConfigField field, Component messageParent) {
+        return editableField(field, messageParent, locationExamplesDirectory());
+    }
+
+    private static Component editableField(ApplicationConfigField field, Component messageParent, Path workingDirectory) {
         return switch (field.editorType()) {
             case BOOLEAN -> booleanField(field.value());
             case TEXT -> new JTextField(field.value());
@@ -504,11 +532,11 @@ public final class DefaultDisplayValuesApplication {
             }
             case FILE -> {
                 JTextField textField = new JTextField(field.value());
-                yield fileSelector(textField, "Browse...", () -> choosePath(textField, JFileChooser.FILES_ONLY, messageParent));
+                yield fileSelector(textField, "Browse...", () -> choosePath(textField, JFileChooser.FILES_ONLY, messageParent, workingDirectory));
             }
             case DIRECTORY -> {
                 JTextField textField = new JTextField(field.value());
-                yield fileSelector(textField, "Browse...", () -> choosePath(textField, JFileChooser.DIRECTORIES_ONLY, messageParent));
+                yield fileSelector(textField, "Browse...", () -> choosePath(textField, JFileChooser.DIRECTORIES_ONLY, messageParent, workingDirectory));
             }
         };
     }
@@ -617,7 +645,11 @@ public final class DefaultDisplayValuesApplication {
     }
 
     private static void choosePath(JTextField targetField, int selectionMode, Component messageParent) {
-        JFileChooser chooser = new JFileChooser(initialChooserPath(targetField.getText()).toFile());
+        choosePath(targetField, selectionMode, messageParent, locationExamplesDirectory());
+    }
+
+    private static void choosePath(JTextField targetField, int selectionMode, Component messageParent, Path workingDirectory) {
+        JFileChooser chooser = new JFileChooser(initialChooserPath(targetField.getText(), workingDirectory).toFile());
         chooser.setFileSelectionMode(selectionMode);
         int result = chooser.showOpenDialog(messageParent);
         if (result == JFileChooser.APPROVE_OPTION && chooser.getSelectedFile() != null) {
@@ -626,27 +658,11 @@ public final class DefaultDisplayValuesApplication {
     }
 
     private static Path initialChooserPath(String currentValue) {
-        if (currentValue != null && !currentValue.isBlank()) {
-            try {
-                Path path = Path.of(currentValue);
-                Path normalized = path.toAbsolutePath().normalize();
-                Path chooserPath = chooserStartDirectory(normalized);
-                if (chooserPath.toFile().exists()) {
-                    return chooserPath;
-                }
-            } catch (RuntimeException ignored) {
-                // Fall through to current directory.
-            }
-        }
-        return Path.of("").toAbsolutePath().normalize();
+        return initialChooserPath(currentValue, locationExamplesDirectory());
     }
 
-    private static Path chooserStartDirectory(Path path) {
-        if (path.toFile().isDirectory()) {
-            return path;
-        }
-        Path parent = path.getParent();
-        return parent == null ? path : parent;
+    private static Path initialChooserPath(String currentValue, Path workingDirectory) {
+        return ManagementWorkingDirectorySupport.chooserStartDirectory(currentValue, workingDirectory);
     }
 
     private static Color initialColor(String value) {

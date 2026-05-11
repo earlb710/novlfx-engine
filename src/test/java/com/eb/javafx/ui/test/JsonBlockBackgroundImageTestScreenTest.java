@@ -32,7 +32,6 @@ import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
-import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
 import org.junit.jupiter.api.Test;
@@ -178,16 +177,7 @@ final class JsonBlockBackgroundImageTestScreenTest {
 
     private static StackPane createRoot() {
         ScreenLayoutModel model = loadLayoutModel();
-        StackPane root = new StackPane();
-        Region background = createBackgroundLayer(root, model);
-        BorderPane content = ScreenLayoutRenderer.createRoot(model);
-        content.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
-        content.setStyle(TRANSPARENT_BACKGROUND_STYLE);
-        if (content.getCenter() instanceof Region contentPanel) {
-            contentPanel.setStyle(TRANSPARENT_BACKGROUND_STYLE);
-        }
-        root.getChildren().addAll(background, content);
-        return root;
+        return assertInstanceOf(StackPane.class, ScreenLayoutRenderer.createPreviewRoot(model, null));
     }
 
     private static ScreenLayoutModel loadLayoutModel() {
@@ -201,20 +191,6 @@ final class JsonBlockBackgroundImageTestScreenTest {
         } catch (IOException exception) {
             throw new IllegalStateException("Unable to read " + DESIGN_RESOURCE, exception);
         }
-    }
-
-    private static Region createBackgroundLayer(StackPane root, ScreenLayoutModel model) {
-        String backgroundResource = model.metadata().get(SCREEN_BACKGROUND_RESOURCE_KEY);
-        double opacity = Double.parseDouble(model.metadata().getOrDefault(SCREEN_BACKGROUND_TRANSPARENCY_KEY, "1.0"));
-        Region background = ScreenShell.backgroundSvg(
-                backgroundResource,
-                opacity,
-                Color.web(model.metadata().getOrDefault("backgroundColor", SCREEN_BACKGROUND_COLOR)));
-        background.setUserData(backgroundResource);
-        background.prefWidthProperty().bind(root.widthProperty());
-        background.prefHeightProperty().bind(root.heightProperty());
-        background.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
-        return background;
     }
 
     private static <T extends Node> void collectNodes(Node node, Class<T> type, List<T> nodes) {

@@ -7,6 +7,7 @@ import com.eb.javafx.ui.ScreenDesignJson;
 import com.eb.javafx.ui.ScreenDesignModel;
 import com.eb.javafx.ui.ScreenDesignValidator;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import java.io.IOException;
 import java.awt.BorderLayout;
@@ -23,6 +24,9 @@ import java.util.Set;
 
 import javax.swing.JButton;
 import javax.swing.JComboBox;
+import javax.swing.JFileChooser;
+import javax.swing.JMenu;
+import javax.swing.JMenuBar;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
@@ -37,6 +41,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 final class ScreenDesignerApplicationTest {
+    @TempDir
+    Path tempDir;
+
     @Test
     void resolvesScreenDesignExamplesDirectoryFromRepository() {
         Path examplesDirectory = ScreenDesignerApplication.screenDesignExamplesDirectory();
@@ -59,6 +66,19 @@ final class ScreenDesignerApplicationTest {
                 assertFalse(ScreenDesignValidator.validate(design).size() > 0, () -> "Invalid example: " + jsonFile);
             }
         }
+    }
+
+    @Test
+    void workingDirectoryPanelShowsProvidedDirectory() throws Exception {
+        ScreenDesignerApplication application = new ScreenDesignerApplication(tempDir, false);
+
+        JPanel panel = invokeWorkingDirectoryPanel(application);
+        BorderLayout layout = (BorderLayout) panel.getLayout();
+        javax.swing.JLabel label = (javax.swing.JLabel) layout.getLayoutComponent(BorderLayout.NORTH);
+
+        assertEquals(tempDir.toAbsolutePath().normalize().toString(), workingDirectoryField(application).getText());
+        assertEquals(tempDir.toAbsolutePath().normalize(), currentFolder(application));
+        assertEquals("Working Directory", label.getText());
     }
 
     @Test
@@ -194,6 +214,24 @@ final class ScreenDesignerApplicationTest {
         assertEquals("main", ScreenDesignerApplication.blockIdForNode(itemNode).orElseThrow());
     }
 
+    private static JPanel invokeWorkingDirectoryPanel(ScreenDesignerApplication application) throws Exception {
+        Method method = ScreenDesignerApplication.class.getDeclaredMethod("workingDirectoryPanel");
+        method.setAccessible(true);
+        return (JPanel) method.invoke(application);
+    }
+
+    private static JTextField workingDirectoryField(ScreenDesignerApplication application) throws Exception {
+        Field field = ScreenDesignerApplication.class.getDeclaredField("workingDirectoryField");
+        field.setAccessible(true);
+        return (JTextField) field.get(application);
+    }
+
+    private static Path currentFolder(ScreenDesignerApplication application) throws Exception {
+        Field field = ScreenDesignerApplication.class.getDeclaredField("currentFolder");
+        field.setAccessible(true);
+        return (Path) field.get(application);
+    }
+
     @Test
     void navigationNodeForReportsNodeKindsAndIds() {
         ScreenDesignModel design = new ScreenDesignModel(
@@ -235,16 +273,22 @@ final class ScreenDesignerApplicationTest {
                         ScreenDesignerApplication.NavigationNode.screen("sample.screen"),
                         true));
         assertEquals(List.of("Add Block", "Quick Add Form Block", "Quick Add Menu Action List Block", "Quick Add Preview Grid Block",
-                        "Add Item", "Edit Block", "Duplicate Block", "Move Block Up", "Move Block Down",
+                        "Add Item", "Add Temporary Field", "Edit Block", "Duplicate Block", "Move Block Up", "Move Block Down",
                         "Copy Style/Metadata", "Paste Style/Metadata", "Remove Block"),
                 ScreenDesignerApplication.contextActionLabelsFor(
                         ScreenDesignerApplication.NavigationNode.block("main"),
                         true));
         assertEquals(List.of("Add Block", "Quick Add Form Block", "Quick Add Menu Action List Block", "Quick Add Preview Grid Block",
-                        "Add Item", "Edit Item", "Duplicate Item", "Move Item Up", "Move Item Down",
+                        "Add Item", "Add Temporary Field", "Edit Item", "Duplicate Item", "Move Item Up", "Move Item Down",
                         "Copy Style/Metadata", "Paste Style/Metadata", "Remove Item"),
                 ScreenDesignerApplication.contextActionLabelsFor(
                         ScreenDesignerApplication.NavigationNode.item("title.text", "main", false),
+                        true));
+        assertEquals(List.of("Add Block", "Quick Add Form Block", "Quick Add Menu Action List Block", "Quick Add Preview Grid Block",
+                        "Add Item", "Add Temporary Field", "Edit Item", "Duplicate Item", "Move Item Up", "Move Item Down",
+                        "Copy Style/Metadata", "Paste Style/Metadata", "Promote Temporary", "Remove Item"),
+                ScreenDesignerApplication.contextActionLabelsFor(
+                        ScreenDesignerApplication.NavigationNode.item("temp.field", "main", true),
                         true));
     }
 
@@ -375,15 +419,15 @@ final class ScreenDesignerApplicationTest {
     }
 
     @Test
-    void fileMenuLabelsContainFileActionsMovedFromToolbar() {
+    void fileMenuLabelsContainFileActions() {
         assertEquals(List.of("New", "New From Template", "Load", "Save", "Save As"),
                 ScreenDesignerApplication.fileMenuActionLabels());
     }
 
     @Test
-    void actionToolbarLabelsIncludeDefaultValuesEditor() {
-        assertEquals(List.of("Edit Default Values", "Validate", "Go To First Issue", "Open Preview", "Add Temporary Field", "Promote Temporary"),
-                ScreenDesignerApplication.actionToolbarLabels());
+    void editMenuLabelsContainEditActions() {
+        assertEquals(List.of("Edit Default Values", "Validate", "Go To First Issue", "Open Preview"),
+                ScreenDesignerApplication.editMenuActionLabels());
     }
 
     @Test
@@ -481,6 +525,49 @@ final class ScreenDesignerApplicationTest {
     void screenDesignerUsesLargerDefaultFrameSizeForRightDockedPreview() {
         assertEquals(1560, ScreenDesignerApplication.DEFAULT_FRAME_WIDTH);
         assertEquals(988, ScreenDesignerApplication.DEFAULT_FRAME_HEIGHT);
+    }
+
+    @Test
+    void screenDesignerMenuBarIncludesFileAndEditMenus() throws Exception {
+        ScreenDesignerApplication application = new ScreenDesignerApplication();
+
+        JMenuBar menuBar = (JMenuBar) invokePrivateMethod(application, "menuBar");
+
+        assertEquals(List.of("File", "Edit"),
+                java.util.stream.IntStream.range(0, menuBar.getMenuCount())
+                        .mapToObj(menuBar::getMenu)
+                        .map(JMenu::getText)
+                        .toList());
+    }
+
+    @Test
+    void editMenuUsesExpectedActionLabels() throws Exception {
+        ScreenDesignerApplication application = new ScreenDesignerApplication();
+
+        JMenu editMenu = (JMenu) invokePrivateMethod(application, "editMenu");
+
+        assertEquals(ScreenDesignerApplication.editMenuActionLabels(),
+                java.util.stream.IntStream.range(0, editMenu.getItemCount())
+                        .mapToObj(editMenu::getItem)
+                        .map(item -> item == null ? null : item.getText())
+                        .toList());
+    }
+
+    @Test
+    void jsonChooserKeepsWorkingDirectoryWhenCurrentPathIsElsewhere() throws Exception {
+        ScreenDesignerApplication application = new ScreenDesignerApplication(tempDir, false);
+        Path otherDirectory = Files.createDirectories(tempDir.resolveSibling("outside"));
+        Path otherFile = otherDirectory.resolve("other.json");
+        Field currentPathField = ScreenDesignerApplication.class.getDeclaredField("currentPath");
+        currentPathField.setAccessible(true);
+        currentPathField.set(application, otherFile);
+        invokeWorkingDirectoryPanel(application);
+
+        JFileChooser chooser = (JFileChooser) invokePrivateMethod(application, "jsonChooser");
+
+        assertEquals(otherFile.toFile(), chooser.getSelectedFile());
+        assertEquals(tempDir.toAbsolutePath().normalize(), currentFolder(application));
+        assertEquals(tempDir.toAbsolutePath().normalize().toString(), workingDirectoryField(application).getText());
     }
 
     @Test

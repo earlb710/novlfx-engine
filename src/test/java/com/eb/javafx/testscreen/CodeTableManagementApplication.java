@@ -54,11 +54,25 @@ public final class CodeTableManagementApplication {
     private final JLabel tableIdLabel = new JLabel();
     private final JLabel tableTitleLabel = new JLabel();
     private final JLabel statusLabel = new JLabel();
-    private Path currentFolder = codeTableExamplesDirectory();
+    private Path currentFolder;
     private Path currentPath;
+
+    public CodeTableManagementApplication() {
+        this(codeTableExamplesDirectory());
+    }
+
+    CodeTableManagementApplication(Path currentFolder) {
+        this.currentFolder = ManagementWorkingDirectorySupport.initialDirectory(
+                currentFolder,
+                codeTableExamplesDirectory());
+    }
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> new CodeTableManagementApplication().show());
+    }
+
+    static void showFromManagement(Path workingDirectory) {
+        SwingUtilities.invokeLater(() -> new CodeTableManagementApplication(workingDirectory).show());
     }
 
     private void show() {

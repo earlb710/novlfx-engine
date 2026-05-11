@@ -63,6 +63,15 @@ final class JsonScreenDesignTestScreenTest {
     }
 
     @Test
+    void managementWorkingDirectoryCanOverrideDefaultDesignPath() throws Exception {
+        Path workingDirectory = Files.createDirectories(tempDir.resolve("screens"));
+        Path designPath = workingDirectory.resolve("reloadable-test-screen.json");
+        Files.writeString(designPath, designJson("Managed title"));
+
+        assertEquals(designPath, JsonScreenDesignTestScreen.defaultDesignPath(workingDirectory));
+    }
+
+    @Test
     @ManualTest
     void runReloadableJsonScreenFromTestApp() throws Exception {
         assumeTrue(Boolean.getBoolean(TestScreenApplication.TEST_SCREEN_ACTIVE_PROPERTY),

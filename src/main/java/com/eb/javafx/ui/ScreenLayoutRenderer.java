@@ -9,6 +9,7 @@ import com.eb.javafx.util.Validation;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
+import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
@@ -62,6 +63,8 @@ public final class ScreenLayoutRenderer {
     static final String BACKGROUND_IMAGE_KEY = "backgroundImage";
     static final String BACKGROUND_IMAGE_TRANSPARENCY_KEY = "backgroundImageTransparency";
     static final String BACKGROUND_IMAGE_PLACEMENT_KEY = "backgroundImagePlacement";
+    static final String SCREEN_BACKGROUND_IMAGE_KEY = "screenBackgroundImage";
+    static final String SCREEN_BACKGROUND_IMAGE_TRANSPARENCY_KEY = "screenBackgroundImageTransparency";
     static final String DIALOG_KEY = "dialog";
     static final String DISMISS_ON_CLICK_OUTSIDE_KEY = "dismissOnClickOutside";
     static final String DISMISS_ON_ESCAPE_KEY = "dismissOnEscape";
@@ -76,25 +79,65 @@ public final class ScreenLayoutRenderer {
     }
 
     public static BorderPane createRoot(ScreenLayoutModel model) {
-        return createRoot(null, model);
+        return createRoot(model, null);
+    }
+
+    public static BorderPane createRoot(ScreenLayoutModel model, Path resourceRoot) {
+        return createRoot(null, model, null, resourceRoot);
+    }
+
+    /**
+     * Creates a preview root that also applies optional screen-level background metadata.
+     *
+     * <p>Unlike {@link #createRoot(ScreenLayoutModel, Path)}, this method wraps the rendered
+     * layout in a configured screen background when the model metadata declares a
+     * {@code screenBackgroundImage}. Relative background paths are resolved from
+     * {@code resourceRoot}.</p>
+     *
+     * @param model preview layout model
+     * @param resourceRoot directory used to resolve relative background image paths
+     * @return preview root, optionally wrapped in a configured background container
+     */
+    public static Parent createPreviewRoot(ScreenLayoutModel model, Path resourceRoot) {
+        BorderPane root = createRoot(model, resourceRoot);
+        if (!hasScreenBackground(model.metadata())) {
+            return root;
+        }
+        root.setStyle(containerStyle(model.metadata(), true));
+        return ScreenShell.withConfiguredBackground(
+                root,
+                resourceRoot,
+                model.metadata().get("backgroundColor"),
+                model.metadata().get(SCREEN_BACKGROUND_IMAGE_KEY),
+                model.metadata().get(SCREEN_BACKGROUND_IMAGE_TRANSPARENCY_KEY));
     }
 
     public static BorderPane createRoot(RouteContext context, ScreenLayoutModel model) {
-        return createRoot(context, model, null);
+        return createRoot(context, model, null, null);
     }
 
     public static BorderPane createRoot(RouteContext context, ScreenLayoutModel model, GameEventBus eventBus) {
+        return createRoot(context, model, eventBus, null);
+    }
+
+    private static BorderPane createRoot(RouteContext context, ScreenLayoutModel model, GameEventBus eventBus, Path resourceRoot) {
         Validation.requireNonNull(model, "Screen layout model is required.");
         VBox content = new VBox(REGION_SPACING);
         content.getStyleClass().add(ScreenShell.LAYOUT_CONTENT_STYLE_CLASS);
         addOptionalText(content, model.subtitle(), ScreenShell.LAYOUT_SUBTITLE_STYLE_CLASS);
-        content.getChildren().add(layoutContent(context, model, eventBus));
+        content.getChildren().add(layoutContent(context, model, eventBus, resourceRoot));
         addActions(content, context, model.primaryActions(), ScreenShell.LAYOUT_PRIMARY_ACTION_STYLE_CLASS);
         addActions(content, context, model.secondaryActions(), ScreenShell.LAYOUT_SECONDARY_ACTION_STYLE_CLASS);
         addOptionalText(content, model.footer(), ScreenShell.LAYOUT_FOOTER_STYLE_CLASS);
         BorderPane root = ScreenShell.titled(model.title(), content);
         applyContainerStyle(root, model.metadata());
         return root;
+    }
+
+    /** Returns true when screen-level metadata declares a background image for preview rendering. */
+    private static boolean hasScreenBackground(Map<String, String> metadata) {
+        String backgroundImage = metadata.get(SCREEN_BACKGROUND_IMAGE_KEY);
+        return backgroundImage != null && !backgroundImage.isBlank();
     }
 
     public static void configureDialogStage(Stage stage, Scene scene, ScreenLayoutModel model, Window owner) {
@@ -147,35 +190,35 @@ public final class ScreenLayoutRenderer {
         };
     }
 
-    private static Node layoutContent(RouteContext context, ScreenLayoutModel model, GameEventBus eventBus) {
+    private static Node layoutContent(RouteContext context, ScreenLayoutModel model, GameEventBus eventBus, Path resourceRoot) {
         return switch (model.type()) {
-            case TITLED_PANEL -> titledPanel(model, eventBus);
-            case TWO_COLUMN -> twoColumn(model, eventBus);
-            case SIDEBAR_CONTENT -> sidebarContent(context, model, eventBus);
-            case HUD_STATUS_OVERLAY -> sectionList(model, ScreenShell.LAYOUT_HUD_OVERLAY_STYLE_CLASS, eventBus);
-            case DIALOGUE -> sectionList(model, ScreenShell.LAYOUT_DIALOGUE_STYLE_CLASS, eventBus);
-            case MENU_ACTION_LIST -> sectionList(model, ScreenShell.LAYOUT_MENU_STYLE_CLASS, eventBus);
-            case FORM -> sectionList(model, ScreenShell.LAYOUT_FORM_STYLE_CLASS, eventBus);
-            case PREVIEW_GRID -> previewGrid(model, eventBus);
+            case TITLED_PANEL -> titledPanel(model, eventBus, resourceRoot);
+            case TWO_COLUMN -> twoColumn(model, eventBus, resourceRoot);
+            case SIDEBAR_CONTENT -> sidebarContent(context, model, eventBus, resourceRoot);
+            case HUD_STATUS_OVERLAY -> sectionList(model, ScreenShell.LAYOUT_HUD_OVERLAY_STYLE_CLASS, eventBus, resourceRoot);
+            case DIALOGUE -> sectionList(model, ScreenShell.LAYOUT_DIALOGUE_STYLE_CLASS, eventBus, resourceRoot);
+            case MENU_ACTION_LIST -> sectionList(model, ScreenShell.LAYOUT_MENU_STYLE_CLASS, eventBus, resourceRoot);
+            case FORM -> sectionList(model, ScreenShell.LAYOUT_FORM_STYLE_CLASS, eventBus, resourceRoot);
+            case PREVIEW_GRID -> previewGrid(model, eventBus, resourceRoot);
         };
     }
 
-    private static Node titledPanel(ScreenLayoutModel model, GameEventBus eventBus) {
-        return sectionList(model, ScreenShell.LAYOUT_TITLED_PANEL_STYLE_CLASS, eventBus);
+    private static Node titledPanel(ScreenLayoutModel model, GameEventBus eventBus, Path resourceRoot) {
+        return sectionList(model, ScreenShell.LAYOUT_TITLED_PANEL_STYLE_CLASS, eventBus, resourceRoot);
     }
 
-    private static Node twoColumn(ScreenLayoutModel model, GameEventBus eventBus) {
+    private static Node twoColumn(ScreenLayoutModel model, GameEventBus eventBus, Path resourceRoot) {
         HBox columns = new HBox(REGION_SPACING);
         columns.getStyleClass().add(ScreenShell.LAYOUT_TWO_COLUMN_STYLE_CLASS);
         for (ScreenLayoutSection section : model.contentSections()) {
-            Region column = sectionNode(section, ScreenShell.LAYOUT_COLUMN_STYLE_CLASS, eventBus);
+            Region column = sectionNode(section, ScreenShell.LAYOUT_COLUMN_STYLE_CLASS, eventBus, resourceRoot);
             HBox.setHgrow(column, Priority.ALWAYS);
             columns.getChildren().add(column);
         }
         return columns;
     }
 
-    private static Node sidebarContent(RouteContext context, ScreenLayoutModel model, GameEventBus eventBus) {
+    private static Node sidebarContent(RouteContext context, ScreenLayoutModel model, GameEventBus eventBus, Path resourceRoot) {
         HBox layout = new HBox(REGION_SPACING);
         layout.getStyleClass().add(ScreenShell.LAYOUT_SIDEBAR_CONTENT_STYLE_CLASS);
 
@@ -185,31 +228,31 @@ public final class ScreenLayoutRenderer {
             sidebar.getChildren().add(actionButton(context, entry, ScreenShell.LAYOUT_SIDEBAR_ENTRY_STYLE_CLASS));
         }
 
-        VBox content = sectionList(model, ScreenShell.LAYOUT_MAIN_CONTENT_STYLE_CLASS, eventBus);
+        VBox content = sectionList(model, ScreenShell.LAYOUT_MAIN_CONTENT_STYLE_CLASS, eventBus, resourceRoot);
         HBox.setHgrow(content, Priority.ALWAYS);
         layout.getChildren().addAll(sidebar, content);
         return layout;
     }
 
-    private static VBox sectionList(ScreenLayoutModel model, String styleClass, GameEventBus eventBus) {
+    private static VBox sectionList(ScreenLayoutModel model, String styleClass, GameEventBus eventBus, Path resourceRoot) {
         VBox sections = new VBox(SECTION_SPACING);
         sections.getStyleClass().add(styleClass);
         for (ScreenLayoutSection section : model.contentSections()) {
-            sections.getChildren().add(sectionNode(section, null, eventBus));
+            sections.getChildren().add(sectionNode(section, null, eventBus, resourceRoot));
         }
         return sections;
     }
 
-    private static FlowPane previewGrid(ScreenLayoutModel model, GameEventBus eventBus) {
+    private static FlowPane previewGrid(ScreenLayoutModel model, GameEventBus eventBus, Path resourceRoot) {
         FlowPane grid = new FlowPane(REGION_SPACING, REGION_SPACING);
         grid.getStyleClass().add(ScreenShell.LAYOUT_PREVIEW_GRID_STYLE_CLASS);
         for (ScreenLayoutSection section : model.contentSections()) {
-            grid.getChildren().add(sectionNode(section, ScreenShell.LAYOUT_CARD_STYLE_CLASS, eventBus));
+            grid.getChildren().add(sectionNode(section, ScreenShell.LAYOUT_CARD_STYLE_CLASS, eventBus, resourceRoot));
         }
         return grid;
     }
 
-    private static Region sectionNode(ScreenLayoutSection section, String styleClass, GameEventBus eventBus) {
+    private static Region sectionNode(ScreenLayoutSection section, String styleClass, GameEventBus eventBus, Path resourceRoot) {
         VBox content = new VBox(SECTION_SPACING);
         content.setMaxWidth(Double.MAX_VALUE);
         addOptionalText(content, section.title(), ScreenShell.LAYOUT_SECTION_TITLE_STYLE_CLASS);
@@ -220,9 +263,9 @@ public final class ScreenLayoutRenderer {
             content.getChildren().add(lineNode);
         }
         if (!section.childSections().isEmpty()) {
-            content.getChildren().add(childSectionContainer(section, eventBus));
+            content.getChildren().add(childSectionContainer(section, eventBus, resourceRoot));
         }
-        Region backgroundLayer = backgroundImageLayer(section.metadata());
+        Region backgroundLayer = backgroundImageLayer(section.metadata(), resourceRoot);
         if (backgroundLayer == null) {
             configureSectionRegion(content, section, styleClass);
             return content;
@@ -245,13 +288,13 @@ public final class ScreenLayoutRenderer {
                 && !section.childSections().isEmpty();
     }
 
-    private static Node childSectionContainer(ScreenLayoutSection section, GameEventBus eventBus) {
+    private static Node childSectionContainer(ScreenLayoutSection section, GameEventBus eventBus, Path resourceRoot) {
         ScreenLayoutType layoutType = section.layoutType() == null ? ScreenLayoutType.FORM : section.layoutType();
         if (layoutType == ScreenLayoutType.TWO_COLUMN || layoutType == ScreenLayoutType.SIDEBAR_CONTENT) {
             HBox children = new HBox(REGION_SPACING);
             children.getStyleClass().add(ScreenShell.LAYOUT_TWO_COLUMN_STYLE_CLASS);
             for (ScreenLayoutSection child : section.childSections()) {
-                Region childNode = sectionNode(child, ScreenShell.LAYOUT_COLUMN_STYLE_CLASS, eventBus);
+                Region childNode = sectionNode(child, ScreenShell.LAYOUT_COLUMN_STYLE_CLASS, eventBus, resourceRoot);
                 HBox.setHgrow(childNode, Priority.ALWAYS);
                 children.getChildren().add(childNode);
             }
@@ -261,13 +304,13 @@ public final class ScreenLayoutRenderer {
             FlowPane children = new FlowPane(REGION_SPACING, REGION_SPACING);
             children.getStyleClass().add(ScreenShell.LAYOUT_PREVIEW_GRID_STYLE_CLASS);
             for (ScreenLayoutSection child : section.childSections()) {
-                children.getChildren().add(sectionNode(child, ScreenShell.LAYOUT_CARD_STYLE_CLASS, eventBus));
+                children.getChildren().add(sectionNode(child, ScreenShell.LAYOUT_CARD_STYLE_CLASS, eventBus, resourceRoot));
             }
             return children;
         }
         VBox children = new VBox(SECTION_SPACING);
         for (ScreenLayoutSection child : section.childSections()) {
-            children.getChildren().add(sectionNode(child, null, eventBus));
+            children.getChildren().add(sectionNode(child, null, eventBus, resourceRoot));
         }
         return children;
     }
@@ -420,11 +463,19 @@ public final class ScreenLayoutRenderer {
     }
 
     static Image loadBackgroundImage(String source) {
-        return loadBackgroundImage(source, BackgroundImagePlacement.STRETCH_TO_FIT);
+        return loadBackgroundImage(source, BackgroundImagePlacement.STRETCH_TO_FIT, null);
+    }
+
+    static Image loadBackgroundImage(String source, Path resourceRoot) {
+        return loadBackgroundImage(source, BackgroundImagePlacement.STRETCH_TO_FIT, resourceRoot);
     }
 
     private static Image loadBackgroundImage(String source, BackgroundImagePlacement placement) {
-        URL url = resolveBackgroundImageUrl(source);
+        return loadBackgroundImage(source, placement, null);
+    }
+
+    private static Image loadBackgroundImage(String source, BackgroundImagePlacement placement, Path resourceRoot) {
+        URL url = resolveBackgroundImageUrl(source, resourceRoot);
         if (isSvgSource(source, url)) {
             return loadSvgBackgroundImage(source, url, placement);
         }
@@ -468,14 +519,14 @@ public final class ScreenLayoutRenderer {
         }
     }
 
-    private static Region backgroundImageLayer(Map<String, String> metadata) {
+    private static Region backgroundImageLayer(Map<String, String> metadata, Path resourceRoot) {
         String source = metadata.get(BACKGROUND_IMAGE_KEY);
         if (source == null || source.isBlank()) {
             return null;
         }
         BackgroundImagePlacement placement = backgroundImagePlacement(metadata.get(BACKGROUND_IMAGE_PLACEMENT_KEY));
         return new BackgroundImageLayer(
-                loadBackgroundImage(source, placement),
+                loadBackgroundImage(source, placement, resourceRoot),
                 backgroundImageOpacity(metadata.get(BACKGROUND_IMAGE_TRANSPARENCY_KEY)),
                 placement);
     }
@@ -539,7 +590,7 @@ public final class ScreenLayoutRenderer {
         };
     }
 
-    private static URL resolveBackgroundImageUrl(String source) {
+    private static URL resolveBackgroundImageUrl(String source, Path resourceRoot) {
         String checkedSource = Validation.requireNonBlank(source, "Screen layout background image is required.");
         try {
             URI uri = new URI(checkedSource);
@@ -550,6 +601,14 @@ public final class ScreenLayoutRenderer {
             // Fall through to file/classpath lookup.
         } catch (IOException exception) {
             throw new IllegalArgumentException("Failed to resolve background image URL: " + checkedSource, exception);
+        }
+        Path relativeFilePath = resolveRelativeFilePath(checkedSource, resourceRoot);
+        if (relativeFilePath != null) {
+            try {
+                return relativeFilePath.toUri().toURL();
+            } catch (IOException exception) {
+                throw new IllegalArgumentException("Failed to resolve background image URL: " + checkedSource, exception);
+            }
         }
         try {
             Path filePath = Path.of(checkedSource);
@@ -568,6 +627,22 @@ public final class ScreenLayoutRenderer {
             return resource;
         }
         throw new IllegalArgumentException("Screen layout background image is missing: " + checkedSource);
+    }
+
+    private static Path resolveRelativeFilePath(String source, Path resourceRoot) {
+        if (resourceRoot == null) {
+            return null;
+        }
+        try {
+            Path candidate = Path.of(source);
+            if (candidate.isAbsolute()) {
+                return null;
+            }
+            Path resolved = resourceRoot.resolve(candidate).normalize();
+            return Files.exists(resolved) ? resolved : null;
+        } catch (InvalidPathException ignored) {
+            return null;
+        }
     }
 
     private static boolean isSvgSource(String source, URL url) {

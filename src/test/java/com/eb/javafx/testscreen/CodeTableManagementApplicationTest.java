@@ -3,8 +3,10 @@ package com.eb.javafx.testscreen;
 import com.eb.javafx.gamesupport.CategoryCodeTableDefinition;
 import com.eb.javafx.gamesupport.CodeTableDefinition;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -13,6 +15,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 final class CodeTableManagementApplicationTest {
+    @TempDir
+    Path tempDir;
+
     @Test
     void resolvesCodeTableExamplesDirectoryFromRepository() {
         Path examplesDirectory = CodeTableManagementApplication.codeTableExamplesDirectory();
@@ -30,6 +35,13 @@ final class CodeTableManagementApplicationTest {
             assertTrue(codeTables.tables().stream().allMatch(table -> !table.codes().isEmpty()),
                     () -> "Invalid code table example: " + jsonFile);
         }
+    }
+
+    @Test
+    void constructorUsesProvidedWorkingDirectory() throws Exception {
+        CodeTableManagementApplication application = new CodeTableManagementApplication(tempDir);
+
+        assertEquals(tempDir.toAbsolutePath().normalize(), currentFolder(application));
     }
 
     @Test
@@ -79,5 +91,11 @@ final class CodeTableManagementApplicationTest {
     @Test
     void fileMenuLabelsContainLoadAction() {
         assertEquals(List.of("Load"), CodeTableManagementApplication.fileMenuActionLabels());
+    }
+
+    private static Path currentFolder(CodeTableManagementApplication application) throws Exception {
+        Field field = CodeTableManagementApplication.class.getDeclaredField("currentFolder");
+        field.setAccessible(true);
+        return (Path) field.get(application);
     }
 }

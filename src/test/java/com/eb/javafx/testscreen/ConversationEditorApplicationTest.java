@@ -5,8 +5,10 @@ import com.eb.javafx.scene.ConversationDefinition.ConversationBlock;
 import com.eb.javafx.scene.ConversationDefinition.LineType;
 import com.eb.javafx.scene.ConversationDefinitionJson;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import javax.swing.tree.DefaultMutableTreeNode;
+import java.lang.reflect.Field;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -18,6 +20,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 final class ConversationEditorApplicationTest {
+    @TempDir
+    Path tempDir;
+
     @Test
     void resolvesConversationExamplesDirectoryFromRepository() {
         Path examplesDirectory = ConversationEditorApplication.conversationExamplesDirectory();
@@ -42,6 +47,13 @@ final class ConversationEditorApplicationTest {
                                 + ConversationEditorApplication.validationProblems(conversation));
             }
         }
+    }
+
+    @Test
+    void constructorUsesProvidedWorkingDirectory() throws Exception {
+        ConversationEditorApplication application = new ConversationEditorApplication(tempDir);
+
+        assertEquals(tempDir.toAbsolutePath().normalize(), currentFolder(application));
     }
 
     @Test
@@ -260,5 +272,11 @@ final class ConversationEditorApplicationTest {
         ConversationDefinition oneLine = ConversationEditorApplication.removeLine(ConversationEditorApplication.sampleConversation(), 0, 0);
 
         assertThrows(IllegalArgumentException.class, () -> ConversationEditorApplication.removeLine(oneLine, 0, 0));
+    }
+
+    private static Path currentFolder(ConversationEditorApplication application) throws Exception {
+        Field field = ConversationEditorApplication.class.getDeclaredField("currentFolder");
+        field.setAccessible(true);
+        return (Path) field.get(application);
     }
 }

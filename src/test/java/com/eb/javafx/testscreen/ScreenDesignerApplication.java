@@ -19,6 +19,7 @@ import com.eb.javafx.ui.UiTheme;
 import com.eb.javafx.util.FontResources;
 import com.eb.javafx.util.HierarchyTraversal;
 import javafx.application.Platform;
+import javafx.scene.Parent;
 import javafx.embed.swing.JFXPanel;
 import javafx.scene.Scene;
 import javafx.scene.layout.StackPane;
@@ -175,7 +176,6 @@ public final class ScreenDesignerApplication {
     private final JTree objectTree = new JTree(objectTreeModel);
     private final JButton addItemButton = new JButton("Add Item");
     private final JPanel propertiesPanel = new ViewportWidthTrackingPanel(new BorderLayout(8, 8));
-    private final JButton editDefaultValuesButton = new JButton("Edit Default Values");
     private final JButton applyPropertiesButton = new JButton("Apply Properties");
     private final JButton resetPropertiesButton = new JButton("Reset Properties");
     private final JTextField screenIdField = new JTextField();
@@ -243,9 +243,11 @@ public final class ScreenDesignerApplication {
     private final JTextArea jsonArea = new JTextArea();
     private final JTextArea validationArea = new JTextArea(3, 20);
     private final JLabel statusLabel = new JLabel();
+    private final JTextField workingDirectoryField = new JTextField();
     private JFXPanel dockedPreviewPanel;
     private Map<String, String> copiedMetadata = Map.of();
     private String copiedStyleClass;
+    private Path currentFolder;
     private Path currentPath;
     private String savedJsonSnapshot = ScreenDesignJson.toJson(design);
     private DisplayDefaults displayDefaults = DisplayDefaults.defaults();
@@ -254,10 +256,17 @@ public final class ScreenDesignerApplication {
     private final boolean exitOnClose;
 
     public ScreenDesignerApplication() {
-        this(true);
+        this(screenDesignExamplesDirectory(), true);
     }
 
     public ScreenDesignerApplication(boolean exitOnClose) {
+        this(screenDesignExamplesDirectory(), exitOnClose);
+    }
+
+    ScreenDesignerApplication(Path workingDirectory, boolean exitOnClose) {
+        this.currentFolder = ManagementWorkingDirectorySupport.initialDirectory(
+                workingDirectory,
+                screenDesignExamplesDirectory());
         this.exitOnClose = exitOnClose;
     }
 
@@ -266,7 +275,11 @@ public final class ScreenDesignerApplication {
     }
 
     static void showFromManagement() {
-        new ScreenDesignerApplication(false).show();
+        showFromManagement(screenDesignExamplesDirectory());
+    }
+
+    static void showFromManagement(Path workingDirectory) {
+        new ScreenDesignerApplication(workingDirectory, false).show();
     }
 
     boolean exitsOnClose() {
@@ -293,7 +306,6 @@ public final class ScreenDesignerApplication {
     private JPanel content() {
         JPanel root = new JPanel(new BorderLayout(8, 8));
         configureFieldGuidance();
-        root.add(actionToolbar(), BorderLayout.NORTH);
         JSplitPane split = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, navigation(), workspace());
         split.setDividerLocation(300);
         split.setResizeWeight(0.18);
@@ -329,6 +341,7 @@ public final class ScreenDesignerApplication {
     private JMenuBar menuBar() {
         JMenuBar menuBar = new JMenuBar();
         menuBar.add(fileMenu());
+        menuBar.add(editMenu());
         return menuBar;
     }
 
@@ -354,26 +367,25 @@ public final class ScreenDesignerApplication {
         return item;
     }
 
-    private JPanel actionToolbar() {
-        JPanel panel = new JPanel();
-        JButton validate = new JButton("Validate");
-        JButton firstIssue = new JButton("Go To First Issue");
-        JButton preview = new JButton("Open Preview");
-        JButton addTemp = new JButton("Add Temporary Field");
-        JButton promote = new JButton("Promote Temporary");
-        editDefaultValuesButton.addActionListener(event -> runSafely("Edit Default Values", this::editDefaultValues));
-        validate.addActionListener(event -> runSafely("Validate", this::showValidation));
-        firstIssue.addActionListener(event -> runSafely("Go To First Issue", this::goToFirstValidationIssue));
-        preview.addActionListener(event -> runSafely("Open Preview", this::openPreview));
-        addTemp.addActionListener(event -> runSafely("Add Temporary Field", () -> addItem(true)));
-        promote.addActionListener(event -> runSafely("Promote Temporary", this::promoteTemporary));
-        panel.add(editDefaultValuesButton);
-        panel.add(validate);
-        panel.add(firstIssue);
-        panel.add(preview);
-        panel.add(addTemp);
-        panel.add(promote);
-        return panel;
+    private JMenu editMenu() {
+        JMenu edit = new JMenu("Edit");
+        for (String label : editMenuActionLabels()) {
+            edit.add(editMenuItem(label));
+        }
+        return edit;
+    }
+
+    private JMenuItem editMenuItem(String label) {
+        Runnable action = switch (label) {
+            case "Edit Default Values" -> this::editDefaultValues;
+            case "Validate" -> this::showValidation;
+            case "Go To First Issue" -> this::goToFirstValidationIssue;
+            case "Open Preview" -> this::openPreview;
+            default -> throw new IllegalArgumentException("Unknown edit menu item: " + label);
+        };
+        JMenuItem item = new JMenuItem(label);
+        item.addActionListener(event -> runSafely(label, action));
+        return item;
     }
 
     private JPanel navigation() {
@@ -384,8 +396,18 @@ public final class ScreenDesignerApplication {
         installTreeContextMenu();
         installTreeDragAndDrop();
         JPanel panel = new JPanel(new BorderLayout(8, 8));
+        panel.add(workingDirectoryPanel(), BorderLayout.NORTH);
         panel.add(new JScrollPane(objectTree), BorderLayout.CENTER);
         panel.add(navigationActions(), BorderLayout.SOUTH);
+        return panel;
+    }
+
+    private JPanel workingDirectoryPanel() {
+        JPanel panel = new JPanel(new BorderLayout(6, 6));
+        workingDirectoryField.setEditable(false);
+        updateCurrentFolder(currentFolder);
+        panel.add(new JLabel("Working Directory"), BorderLayout.NORTH);
+        panel.add(workingDirectoryField, BorderLayout.CENTER);
         return panel;
     }
 
@@ -985,6 +1007,11 @@ public final class ScreenDesignerApplication {
         return false;
     }
 
+    private void updateCurrentFolder(Path folder) {
+        currentFolder = folder.toAbsolutePath().normalize();
+        workingDirectoryField.setText(currentFolder.toString());
+    }
+
     private void showValidation() {
         List<ScreenDesignValidationProblem> problems = ScreenDesignValidator.validate(design);
         JOptionPane.showMessageDialog(null, validationSummary(problems));
@@ -1092,7 +1119,8 @@ public final class ScreenDesignerApplication {
         ensureJavaFxStarted();
         ScreenDesignModel designSnapshot = design;
         DisplayDefaults defaultsSnapshot = displayDefaults;
-        Platform.runLater(() -> showPreviewStage(designSnapshot, defaultsSnapshot));
+        Path workingDirectorySnapshot = currentFolder;
+        Platform.runLater(() -> showPreviewStage(designSnapshot, defaultsSnapshot, workingDirectorySnapshot));
     }
 
     private void refreshAll() {
@@ -1183,6 +1211,7 @@ public final class ScreenDesignerApplication {
                 labels.add("Add Block");
                 labels.addAll(quickAddBlockActionLabels());
                 labels.add("Add Item");
+                labels.add("Add Temporary Field");
                 labels.add("Edit Block");
                 labels.add("Duplicate Block");
                 labels.add("Move Block Up");
@@ -1195,12 +1224,16 @@ public final class ScreenDesignerApplication {
                 labels.add("Add Block");
                 labels.addAll(quickAddBlockActionLabels());
                 labels.add("Add Item");
+                labels.add("Add Temporary Field");
                 labels.add("Edit Item");
                 labels.add("Duplicate Item");
                 labels.add("Move Item Up");
                 labels.add("Move Item Down");
                 labels.add("Copy Style/Metadata");
                 labels.add("Paste Style/Metadata");
+                if (navigationNode.type() == NodeType.TEMPORARY_ITEM) {
+                    labels.add("Promote Temporary");
+                }
                 labels.add("Remove Item");
             }
         }
@@ -1215,8 +1248,8 @@ public final class ScreenDesignerApplication {
         return List.of("New", "New From Template", "Load", "Save", "Save As");
     }
 
-    static List<String> actionToolbarLabels() {
-        return List.of("Edit Default Values", "Validate", "Go To First Issue", "Open Preview", "Add Temporary Field", "Promote Temporary");
+    static List<String> editMenuActionLabels() {
+        return List.of("Edit Default Values", "Validate", "Go To First Issue", "Open Preview");
     }
 
     static Path screenDesignExamplesDirectory() {
@@ -1481,12 +1514,9 @@ public final class ScreenDesignerApplication {
     }
 
     private JFileChooser jsonChooser() {
-        Path initialDirectory = currentPath != null && currentPath.getParent() != null
-                ? currentPath.getParent()
-                : screenDesignExamplesDirectory();
-        JFileChooser chooser = new JFileChooser(initialDirectory.toFile());
+        JFileChooser chooser = new JFileChooser(currentFolder.toFile());
         chooser.setFileFilter(new FileNameExtensionFilter("Screen design JSON (*.json)", "json"));
-        chooser.setCurrentDirectory(initialDirectory.toFile());
+        chooser.setCurrentDirectory(currentFolder.toFile());
         if (currentPath != null) {
             chooser.setSelectedFile(currentPath.toFile());
         }
@@ -1526,13 +1556,14 @@ public final class ScreenDesignerApplication {
         ensureJavaFxStarted();
         ScreenDesignModel designSnapshot = design;
         DisplayDefaults defaultsSnapshot = displayDefaults;
+        Path workingDirectorySnapshot = currentFolder;
         List<ScreenDesignValidationProblem> problems = ScreenDesignValidator.validate(designSnapshot);
         Platform.runLater(() -> {
             if (dockedPreviewPanel != null) {
-                showDockedPreview(designSnapshot, defaultsSnapshot, problems);
+                showDockedPreview(designSnapshot, defaultsSnapshot, workingDirectorySnapshot, problems);
             }
             if (previewStage != null && problems.isEmpty()) {
-                showPreviewStage(designSnapshot, defaultsSnapshot);
+                showPreviewStage(designSnapshot, defaultsSnapshot, workingDirectorySnapshot);
             }
         });
     }
@@ -1540,21 +1571,22 @@ public final class ScreenDesignerApplication {
     private void showDockedPreview(
             ScreenDesignModel designSnapshot,
             DisplayDefaults defaultsSnapshot,
+            Path workingDirectory,
             List<ScreenDesignValidationProblem> problems) {
         try {
             if (!problems.isEmpty()) {
                 dockedPreviewPanel.setScene(messageScene("Preview paused until validation issues are fixed.\n\n" + validationProblemLines(problems)));
                 return;
             }
-            dockedPreviewPanel.setScene(createPreviewScene(designSnapshot, defaultsSnapshot));
+            dockedPreviewPanel.setScene(createPreviewScene(designSnapshot, defaultsSnapshot, workingDirectory));
         } catch (RuntimeException exception) {
             dockedPreviewPanel.setScene(messageScene("Preview error:\n" + exception.getMessage()));
         }
     }
 
-    private void showPreviewStage(ScreenDesignModel designSnapshot, DisplayDefaults defaultsSnapshot) {
+    private void showPreviewStage(ScreenDesignModel designSnapshot, DisplayDefaults defaultsSnapshot, Path workingDirectory) {
         try {
-            Scene scene = createPreviewScene(designSnapshot, defaultsSnapshot);
+            Scene scene = createPreviewScene(designSnapshot, defaultsSnapshot, workingDirectory);
             ScreenLayoutModel previewModel = ScreenDesignLayoutAdapter.toLayoutModel(designSnapshot, true, defaultsSnapshot);
 
             if (previewStage != null) {
@@ -1584,7 +1616,7 @@ public final class ScreenDesignerApplication {
         }
     }
 
-    private static Scene createPreviewScene(ScreenDesignModel designSnapshot, DisplayDefaults defaultsSnapshot) {
+    private static Scene createPreviewScene(ScreenDesignModel designSnapshot, DisplayDefaults defaultsSnapshot, Path workingDirectory) {
         PreferencesService preferencesService = new PreferencesService();
         preferencesService.load();
 
@@ -1592,8 +1624,9 @@ public final class ScreenDesignerApplication {
         uiTheme.initialize(preferencesService);
 
         ScreenLayoutModel previewModel = ScreenDesignLayoutAdapter.toLayoutModel(designSnapshot, true, defaultsSnapshot);
+        Parent previewRoot = ScreenLayoutRenderer.createPreviewRoot(previewModel, workingDirectory);
         Scene scene = new Scene(
-                ScreenLayoutRenderer.createRoot(previewModel),
+                previewRoot,
                 TestUiScreenSize.sceneWidth(preferencesService),
                 TestUiScreenSize.sceneHeight(preferencesService));
         scene.getStylesheets().add(uiTheme.stylesheet());
@@ -1814,6 +1847,7 @@ public final class ScreenDesignerApplication {
             case "Quick Add Preview Grid Block" -> quickAddBlock(ScreenLayoutType.PREVIEW_GRID,
                     navigationNode.type() == NodeType.SCREEN ? null : navigationNode.blockId());
             case "Add Item" -> addItem(false);
+            case "Add Temporary Field" -> addItem(true);
             case "Edit Block" -> editBlock(navigationNode.id());
             case "Duplicate Block" -> duplicateBlock(navigationNode.id());
             case "Move Block Up" -> moveBlock(navigationNode.id(), -1);
@@ -1825,6 +1859,11 @@ public final class ScreenDesignerApplication {
             case "Move Item Down" -> moveItem(navigationNode.id(), navigationNode.type() == NodeType.TEMPORARY_ITEM, 1);
             case "Copy Style/Metadata" -> copyStyleAndMetadata(navigationNode);
             case "Paste Style/Metadata" -> pasteStyleAndMetadata(navigationNode);
+            case "Promote Temporary" -> {
+                design = ScreenDesignService.promoteTemporaryItem(design, navigationNode.id());
+                refreshAll();
+                selectNavigationNode(NavigationNode.item(navigationNode.id(), navigationNode.blockId(), false));
+            }
             case "Remove Item" -> removeItem(navigationNode.id(), navigationNode.type() == NodeType.TEMPORARY_ITEM);
             default -> throw new IllegalArgumentException("Unknown context action: " + label);
         }
