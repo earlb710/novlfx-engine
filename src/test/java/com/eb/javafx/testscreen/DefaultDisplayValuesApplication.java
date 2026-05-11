@@ -817,6 +817,12 @@ public final class DefaultDisplayValuesApplication {
         Map<String, Object> root = JsonData.rootObject(resourceContents(APPLICATION_CONFIG_RESOURCE), APPLICATION_CONFIG_RESOURCE);
         LinkedHashMap<String, ApplicationConfigField> fields = new LinkedHashMap<>();
         root.forEach((key, value) -> {
+            // resourceRoots holds per-category lists of root specs and is rendered separately by the registry
+            // panel instead of the flat key/value editor below. Comment keys (`_comment`) are documentation
+            // hints in config.json and have no field representation.
+            if ("resourceRoots".equals(key) || key.startsWith("_") || value instanceof List<?>) {
+                return;
+            }
             if (value instanceof Map<?, ?>) {
                 JsonData.requireObject(value, "application config " + key)
                         .forEach((nestedKey, nestedValue) -> {
@@ -893,8 +899,6 @@ public final class DefaultDisplayValuesApplication {
     static String applicationConfigFieldLabel(String key) {
         return switch (key) {
             case "debug" -> "Debug mode";
-            case "categoryCodeTablesPath" -> "Category code tables file";
-            case "imageAssetRoot" -> "Image asset root folder";
             case "defaultAppBackgroundColor" -> "Default app background color";
             case "defaultAppBackgroundImage" -> "Default app background image";
             case "defaultAppBackgroundImageTransparency" -> "Default app background image transparency [0-1]";
@@ -904,7 +908,6 @@ public final class DefaultDisplayValuesApplication {
             case "defaultSaveLoadScreenBackgroundColor" -> "Default save/load screen background color";
             case "defaultSaveLoadScreenBackgroundImage" -> "Default save/load screen background image";
             case "defaultSaveLoadScreenBackgroundImageTransparency" -> "Default save/load screen background image transparency [0-1]";
-            case "resources.jsonResourceRoot" -> "JSON resource root folder";
             case "resources.uiTheme" -> "UI theme file";
             default -> humanizeConfigKey(key);
         };
@@ -923,12 +926,6 @@ public final class DefaultDisplayValuesApplication {
         }
         if (key.endsWith("Color")) {
             return ApplicationConfigFieldEditorType.COLOR;
-        }
-        if ("imageAssetRoot".equals(key)) {
-            return ApplicationConfigFieldEditorType.DIRECTORY;
-        }
-        if ("resources.jsonResourceRoot".equals(key)) {
-            return ApplicationConfigFieldEditorType.DIRECTORY;
         }
         if (key.endsWith("Path") || key.endsWith("Image") || key.startsWith("resources.")) {
             return ApplicationConfigFieldEditorType.FILE;

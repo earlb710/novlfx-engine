@@ -59,8 +59,6 @@ final class DefaultDisplayValuesApplicationTest {
     void applicationValuesExposeApplicationConfigFields() {
         assertEquals(List.of(
                         "Debug mode",
-                        "Category code tables file",
-                        "Image asset root folder",
                         "Default app background color",
                         "Default app background image",
                         "Default app background image transparency [0-1]",
@@ -70,15 +68,11 @@ final class DefaultDisplayValuesApplicationTest {
                         "Default save/load screen background color",
                         "Default save/load screen background image",
                         "Default save/load screen background image transparency [0-1]",
-                        "JSON resource root folder",
                         "UI theme file"),
                 DefaultDisplayValuesApplication.applicationConfigFields().stream()
                         .map(DefaultDisplayValuesApplication.ApplicationConfigField::label)
                         .toList());
         assertEquals("true", DefaultDisplayValuesApplication.applicationConfigFields().get(0).value());
-        assertTrue(DefaultDisplayValuesApplication.applicationConfigFields().stream()
-                .anyMatch(field -> field.key().equals("resources.jsonResourceRoot")
-                        && field.value().equals("examples/resources/json")));
         assertTrue(DefaultDisplayValuesApplication.applicationConfigFields().stream()
                 .anyMatch(field -> field.key().equals("resources.uiTheme")
                         && field.value().equals("src/main/resources/com/eb/javafx/ui/default.css")));
@@ -450,7 +444,7 @@ final class DefaultDisplayValuesApplicationTest {
 
     @Test
     void applicationValuesTabIntroDoesNotMentionManagementScreenOnly() {
-        assertEquals("<html>Application config values from <code>/com/eb/javafx/bootstrap/config.json</code>.</html>",
+        assertEquals("<html>Application config values from <code>/config.json</code>.</html>",
                 DefaultDisplayValuesApplication.applicationValuesIntroText());
         assertEquals("<html>Edit localized <code>location/map-text.demo.json</code> and "
                         + "<code>location/location-text-town.demo.json</code> examples.</html>",
@@ -474,13 +468,7 @@ final class DefaultDisplayValuesApplicationTest {
                 DefaultDisplayValuesApplication.applicationConfigFieldLabel("resources.uiTheme"));
         assertEquals(DefaultDisplayValuesApplication.ApplicationConfigFieldEditorType.FILE,
                 DefaultDisplayValuesApplication.applicationConfigFields().stream()
-                        .filter(field -> field.key().equals("categoryCodeTablesPath"))
-                        .findFirst()
-                        .orElseThrow()
-                        .editorType());
-        assertEquals(DefaultDisplayValuesApplication.ApplicationConfigFieldEditorType.DIRECTORY,
-                DefaultDisplayValuesApplication.applicationConfigFields().stream()
-                        .filter(field -> field.key().equals("imageAssetRoot"))
+                        .filter(field -> field.key().equals("resources.uiTheme"))
                         .findFirst()
                         .orElseThrow()
                         .editorType());
