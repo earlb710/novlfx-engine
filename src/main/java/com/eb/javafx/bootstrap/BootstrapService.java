@@ -8,6 +8,7 @@ import com.eb.javafx.display.ImageDisplayRegistry;
 import com.eb.javafx.gamesupport.GameSupportService;
 import com.eb.javafx.prefs.PreferencesService;
 import com.eb.javafx.random.GameRandomService;
+import com.eb.javafx.resources.ResourceRegistry;
 import com.eb.javafx.globalApi.GlobalApiAdapter;
 import com.eb.javafx.routing.DefaultRouteModule;
 import com.eb.javafx.routing.RouteContext;
@@ -43,6 +44,7 @@ import java.util.Map;
 public final class BootstrapService {
     private final Path applicationRoot;
     private final ApplicationResourceConfig resourceConfig;
+    private final ResourceRegistry resourceRegistry;
     private final PreferencesService preferencesService;
     private final ContentRegistry contentRegistry;
     private final ImageDisplayRegistry imageDisplayRegistry;
@@ -63,6 +65,7 @@ public final class BootstrapService {
         this(
                 options.applicationRoot(),
                 options.resourceConfig(),
+                options.resourceRegistry(),
                 new PreferencesService(),
                 new ContentRegistry(),
                 new ImageDisplayRegistry(
@@ -174,8 +177,34 @@ public final class BootstrapService {
             List<StaticContentModule> staticContentModules,
             List<SceneModule> sceneModules,
             List<RouteModule> routeModules) {
+        this(applicationRoot, resourceConfig, ResourceRegistry.builder().build(), preferencesService, contentRegistry,
+                imageDisplayRegistry, gameStateFactory, saveLoadService, randomService, audioService, gameSupportService,
+                sceneRegistry, sceneRouter, uiTheme, staticContentModules, sceneModules, routeModules);
+    }
+
+    public BootstrapService(
+            Path applicationRoot,
+            ApplicationResourceConfig resourceConfig,
+            ResourceRegistry resourceRegistry,
+            PreferencesService preferencesService,
+            ContentRegistry contentRegistry,
+            ImageDisplayRegistry imageDisplayRegistry,
+            GameStateFactory gameStateFactory,
+            SaveLoadService saveLoadService,
+            GameRandomService randomService,
+            AudioService audioService,
+            GameSupportService gameSupportService,
+            SceneRegistry sceneRegistry,
+            SceneRouter sceneRouter,
+            UiTheme uiTheme,
+            List<StaticContentModule> staticContentModules,
+            List<SceneModule> sceneModules,
+            List<RouteModule> routeModules) {
         this.applicationRoot = applicationRoot.toAbsolutePath().normalize();
         this.resourceConfig = resourceConfig;
+        this.resourceRegistry = resourceRegistry == null
+                ? ResourceRegistry.builder().build()
+                : resourceRegistry;
         this.preferencesService = preferencesService;
         this.contentRegistry = contentRegistry;
         this.imageDisplayRegistry = imageDisplayRegistry;
@@ -288,6 +317,7 @@ public final class BootstrapService {
                 newGameState,
                 applicationRoot,
                 resourceConfig,
+                resourceRegistry,
                 bootstrapReport);
     }
 

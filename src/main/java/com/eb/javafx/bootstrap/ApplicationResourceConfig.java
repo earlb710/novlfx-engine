@@ -1,5 +1,6 @@
 package com.eb.javafx.bootstrap;
 
+import com.eb.javafx.resources.ResourceCategory;
 import com.eb.javafx.util.JsonStrings;
 import com.eb.javafx.util.PathUtils;
 import com.eb.javafx.util.SimpleJson;
@@ -9,7 +10,11 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.EnumMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -50,6 +55,7 @@ public final class ApplicationResourceConfig {
     private final String defaultSaveLoadScreenBackgroundImage;
     private final String defaultSaveLoadScreenBackgroundImageTransparency;
     private final Map<String, String> resources;
+    private final Map<ResourceCategory, List<String>> resourceRoots;
 
     private ApplicationResourceConfig(
             boolean debug,
@@ -64,7 +70,8 @@ public final class ApplicationResourceConfig {
             String defaultSaveLoadScreenBackgroundColor,
             String defaultSaveLoadScreenBackgroundImage,
             String defaultSaveLoadScreenBackgroundImageTransparency,
-            Map<String, String> resources) {
+            Map<String, String> resources,
+            Map<ResourceCategory, List<String>> resourceRoots) {
         this.debug = debug;
         this.categoryCodeTablesPath = Validation.requireNonBlank(
                 categoryCodeTablesPath,
@@ -105,6 +112,31 @@ public final class ApplicationResourceConfig {
                         Validation.requireNonBlank(key, "Application resource config resource ID is required."),
                         Validation.requireNonBlank(value, "Application resource config resource path is required.")));
         this.resources = Map.copyOf(validatedResources);
+        this.resourceRoots = copyResourceRoots(Validation.requireNonNull(
+                resourceRoots, "Application resource config resourceRoots map is required."));
+    }
+
+    private ApplicationResourceConfig(
+            boolean debug,
+            String categoryCodeTablesPath,
+            String imageAssetRoot,
+            String defaultAppBackgroundColor,
+            String defaultAppBackgroundImage,
+            String defaultAppBackgroundImageTransparency,
+            String defaultPreferencesScreenBackgroundColor,
+            String defaultPreferencesScreenBackgroundImage,
+            String defaultPreferencesScreenBackgroundImageTransparency,
+            String defaultSaveLoadScreenBackgroundColor,
+            String defaultSaveLoadScreenBackgroundImage,
+            String defaultSaveLoadScreenBackgroundImageTransparency,
+            Map<String, String> resources) {
+        this(debug, categoryCodeTablesPath, imageAssetRoot,
+                defaultAppBackgroundColor, defaultAppBackgroundImage, defaultAppBackgroundImageTransparency,
+                defaultPreferencesScreenBackgroundColor, defaultPreferencesScreenBackgroundImage,
+                defaultPreferencesScreenBackgroundImageTransparency,
+                defaultSaveLoadScreenBackgroundColor, defaultSaveLoadScreenBackgroundImage,
+                defaultSaveLoadScreenBackgroundImageTransparency,
+                resources, Map.of());
     }
 
     public static ApplicationResourceConfig defaults() {
@@ -231,6 +263,9 @@ public final class ApplicationResourceConfig {
                         .orElse(defaults.defaultSaveLoadScreenBackgroundImageTransparency()),
                 optionalObject(root, "resources", "root.resources")
                         .map(ApplicationResourceConfig::toStringMap)
+                        .orElse(Map.of()),
+                optionalObject(root, "resourceRoots", "root.resourceRoots")
+                        .map(ApplicationResourceConfig::toResourceRootsMap)
                         .orElse(Map.of()));
     }
 
@@ -286,6 +321,26 @@ public final class ApplicationResourceConfig {
         return resources;
     }
 
+    /**
+     * Returns the configured per-category resource roots in declaration order.
+     *
+     * <p>Keys are {@link ResourceCategory} values; values are ordered lists of root specs (filesystem paths or
+     * {@code classpath:} URLs) that the bootstrap layer feeds into a {@code ResourceRegistry} during startup.</p>
+     *
+     * <p><b>Note:</b> the {@code with*()} mutators on this class do not preserve the resource roots map. Callers
+     * that need both a {@code with*()} change and a non-empty resource roots map should chain
+     * {@link #withResourceRoots(Map)} last.</p>
+     */
+    public Map<ResourceCategory, List<String>> resourceRoots() {
+        return resourceRoots;
+    }
+
+    /** Returns the configured root specs for one category, or an empty list when none are configured. */
+    public List<String> resourceRoots(ResourceCategory category) {
+        Validation.requireNonNull(category, "Resource category is required.");
+        return resourceRoots.getOrDefault(category, List.of());
+    }
+
     public Optional<String> resourcePath(String resourceId) {
         Validation.requireNonBlank(resourceId, "Application resource config resource ID is required.");
         return Optional.ofNullable(resources.get(resourceId));
@@ -313,6 +368,39 @@ public final class ApplicationResourceConfig {
 
     public ApplicationResourceConfig withJsonResourceRoot(String jsonResourceRoot) {
         return putResource(JSON_RESOURCE_ROOT_ID, jsonResourceRoot);
+    }
+
+    /** Returns a copy with the given per-category resource roots, replacing any previously configured roots. */
+    public ApplicationResourceConfig withResourceRoots(Map<ResourceCategory, List<String>> resourceRoots) {
+        return new ApplicationResourceConfig(
+                debug,
+                categoryCodeTablesPath,
+                imageAssetRoot,
+                defaultAppBackgroundColor,
+                defaultAppBackgroundImage,
+                defaultAppBackgroundImageTransparency,
+                defaultPreferencesScreenBackgroundColor,
+                defaultPreferencesScreenBackgroundImage,
+                defaultPreferencesScreenBackgroundImageTransparency,
+                defaultSaveLoadScreenBackgroundColor,
+                defaultSaveLoadScreenBackgroundImage,
+                defaultSaveLoadScreenBackgroundImageTransparency,
+                resources,
+                resourceRoots);
+    }
+
+    /** Returns a copy with one additional root spec appended to the given category's existing list. */
+    public ApplicationResourceConfig withAdditionalResourceRoot(ResourceCategory category, String rootSpec) {
+        Validation.requireNonNull(category, "Resource category is required.");
+        Validation.requireNonBlank(rootSpec, "Resource root spec is required.");
+        EnumMap<ResourceCategory, List<String>> updated = new EnumMap<>(ResourceCategory.class);
+        updated.putAll(resourceRoots);
+        List<String> existing = updated.getOrDefault(category, List.of());
+        List<String> combined = new ArrayList<>(existing.size() + 1);
+        combined.addAll(existing);
+        combined.add(rootSpec);
+        updated.put(category, List.copyOf(combined));
+        return withResourceRoots(updated);
     }
 
     public ApplicationResourceConfig withDebug(boolean debug) {
@@ -598,8 +686,30 @@ public final class ApplicationResourceConfig {
             json.append('\n');
             index++;
         }
-        json.append("  }\n")
-                .append("}\n");
+        json.append("  },\n");
+        json.append("  \"resourceRoots\": {\n");
+        int rootIndex = 0;
+        int rootCount = resourceRoots.size();
+        for (Map.Entry<ResourceCategory, List<String>> entry : resourceRoots.entrySet()) {
+            json.append("    ")
+                    .append(JsonStrings.quote(entry.getKey().configKey()))
+                    .append(": [");
+            List<String> values = entry.getValue();
+            for (int valueIndex = 0; valueIndex < values.size(); valueIndex++) {
+                json.append(JsonStrings.quote(values.get(valueIndex)));
+                if (valueIndex + 1 < values.size()) {
+                    json.append(", ");
+                }
+            }
+            json.append(']');
+            if (rootIndex + 1 < rootCount) {
+                json.append(',');
+            }
+            json.append('\n');
+            rootIndex++;
+        }
+        json.append("  }\n");
+        json.append("}\n");
         return json.toString();
     }
 
@@ -675,5 +785,46 @@ public final class ApplicationResourceConfig {
             result.put(key, Validation.requireNonBlank(stringValue, "root.resources." + key + " must not be blank."));
         });
         return result;
+    }
+
+    private static Map<ResourceCategory, List<String>> toResourceRootsMap(Map<String, Object> value) {
+        EnumMap<ResourceCategory, List<String>> result = new EnumMap<>(ResourceCategory.class);
+        value.forEach((key, entryValue) -> {
+            ResourceCategory category = ResourceCategory.fromConfigKey(key);
+            if (!(entryValue instanceof List<?> list)) {
+                throw new IllegalArgumentException(
+                        "Expected JSON array for root.resourceRoots." + key + ".");
+            }
+            List<String> entries = new ArrayList<>();
+            int index = 0;
+            for (Object element : list) {
+                if (!(element instanceof String stringValue) || stringValue.isBlank()) {
+                    throw new IllegalArgumentException(
+                            "Expected non-blank JSON string for root.resourceRoots." + key + "[" + index + "].");
+                }
+                entries.add(stringValue);
+                index++;
+            }
+            result.put(category, List.copyOf(entries));
+        });
+        return result;
+    }
+
+    private static Map<ResourceCategory, List<String>> copyResourceRoots(
+            Map<ResourceCategory, List<String>> source) {
+        EnumMap<ResourceCategory, List<String>> copy = new EnumMap<>(ResourceCategory.class);
+        source.forEach((category, paths) -> {
+            Validation.requireNonNull(category, "Resource category is required.");
+            Validation.requireNonNull(paths, "Resource roots list is required for " + category.configKey() + ".");
+            List<String> validated = new ArrayList<>(paths.size());
+            int index = 0;
+            for (String path : paths) {
+                validated.add(Validation.requireNonBlank(path,
+                        "Resource root spec must not be blank in " + category.configKey() + "[" + index + "]."));
+                index++;
+            }
+            copy.put(category, List.copyOf(validated));
+        });
+        return Collections.unmodifiableMap(copy);
     }
 }
