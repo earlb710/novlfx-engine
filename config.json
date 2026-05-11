@@ -1,0 +1,23 @@
+{
+  "_comment": "novlfx-engine library resource manifest. Identifies the bundled directories that the library loads at startup. Consuming applications can drop their own config.json at their app root with the same schema; the application's resourceRoots are layered before these library roots so app files override library files of the same relative name.",
+  "debug": true,
+  "resourceRoots": {
+    "bootstrap": ["classpath:/com/eb/javafx/bootstrap"],
+    "fonts":     ["classpath:/com/eb/javafx/fonts"],
+    "images":    ["classpath:/com/eb/javafx/images"],
+    "support":   ["classpath:/com/eb/javafx/gamesupport", "classpath:/com/eb/javafx/conversations"],
+    "ui":        ["classpath:/com/eb/javafx/ui"]
+  },
+  "defaultAppBackgroundColor": "",
+  "defaultAppBackgroundImage": "",
+  "defaultAppBackgroundImageTransparency": "",
+  "defaultPreferencesScreenBackgroundColor": "",
+  "defaultPreferencesScreenBackgroundImage": "",
+  "defaultPreferencesScreenBackgroundImageTransparency": "",
+  "defaultSaveLoadScreenBackgroundColor": "",
+  "defaultSaveLoadScreenBackgroundImage": "",
+  "defaultSaveLoadScreenBackgroundImageTransparency": "",
+  "resources": {
+    "uiTheme": "src/main/resources/com/eb/javafx/ui/default.css"
+  }
+}

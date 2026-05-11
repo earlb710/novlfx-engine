@@ -36,6 +36,12 @@ tasks.named('compileJava') {
     }
 }
 
+tasks.named('processResources', Copy) {
+    from(projectDir) {
+        include 'config.json'
+    }
+}
+
 tasks.withType(Test).configureEach {
     useJUnitPlatform()
 }

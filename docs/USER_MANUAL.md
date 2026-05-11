@@ -175,6 +175,30 @@ Use `BootstrapCompletenessPolicy` when an application has additional reusable st
 
 Do not use guarded services before initialization. Several services use initialization guards and will fail fast if called before bootstrap or explicit initialization.
 
+### Library resource manifest and `ResourceRegistry`
+
+The engine ships a `config.json` at the repository root (also bundled into the JAR at `/config.json`). It declares the library's bundled resource directories under a `resourceRoots` map, keyed by `ResourceCategory`:
+
+```json
+{
+  "resourceRoots": {
+    "bootstrap": ["classpath:/com/eb/javafx/bootstrap"],
+    "fonts":     ["classpath:/com/eb/javafx/fonts"],
+    "images":    ["classpath:/com/eb/javafx/images"],
+    "support":   ["classpath:/com/eb/javafx/gamesupport", "classpath:/com/eb/javafx/conversations"],
+    "ui":        ["classpath:/com/eb/javafx/ui"]
+  }
+}
+```
+
+`BootstrapOptions.fromConfig(...)` and `BootstrapOptions.defaults()` build a `ResourceRegistry` before any bootstrap phase runs. The library's bundled `config.json` supplies the library roots; the application's `config.json` (passed to `fromConfig(...)`) supplies the application roots. Application roots are walked first, so an application file at the same relative name wins over the library file.
+
+Each root spec can be either a filesystem path (resolved against the application root) or a classpath path prefixed with `classpath:`. Filesystem and classpath roots work the same when the library ships as a JAR — the registry uses `FileSystems.newFileSystem` for `jar:` URLs so bundled fonts and screen JSON remain discoverable.
+
+Lookups are strictly **category-isolated**: a missing image is not found by falling through to `ui` or any other category. Recursive walks cover all subdirectories so nested files like `ui/screens/main-menu.json` are indexed under their relative name.
+
+Access the registry from `BootContext.resourceRegistry()` and look up files with `registry.find(ResourceCategory.UI, "screens/main-menu.json")` or enumerate all files in a category with `registry.list(ResourceCategory.FONTS)`.
+
 Applications can also keep an external `config.json` and load it with `ApplicationResourceConfig.load(Path)` when authored resources need to live outside the engine defaults. The config stores a category code-table JSON path, an image asset root, optional default background values for the app, preferences, and save/load screens, and a generic `resources` map for other overrideable files such as themes, image groups, or the root JSON resource directory:
 
 ```json

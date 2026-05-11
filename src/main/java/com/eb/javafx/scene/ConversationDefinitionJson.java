@@ -4,11 +4,13 @@ import com.eb.javafx.scene.ConversationDefinition.ConversationBlock;
 import com.eb.javafx.scene.ConversationDefinition.ConversationLine;
 import com.eb.javafx.scene.ConversationDefinition.ConversationVariant;
 import com.eb.javafx.scene.ConversationDefinition.LineType;
+import com.eb.javafx.resources.ResourceIo;
 import com.eb.javafx.util.JsonData;
 import com.eb.javafx.util.JsonStrings;
 import com.eb.javafx.util.Validation;
 
 import java.io.IOException;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -27,11 +29,17 @@ public final class ConversationDefinitionJson {
     public static ConversationDefinition load(Path jsonPath, ConversationConditionVariables conditionVariables) {
         Validation.requireNonNull(jsonPath, "Conversation JSON path is required.");
         Validation.requireNonNull(conditionVariables, "Conversation condition variables are required.");
-        try {
-            return fromJson(Files.readString(jsonPath, StandardCharsets.UTF_8), jsonPath.toString(), conditionVariables);
-        } catch (IOException exception) {
-            throw new IllegalArgumentException("Unable to read conversation JSON: " + jsonPath, exception);
-        }
+        return load(ResourceIo.toUrl(jsonPath), conditionVariables);
+    }
+
+    public static ConversationDefinition load(URL jsonUrl) {
+        return load(jsonUrl, ConversationConditionVariables.fixed());
+    }
+
+    public static ConversationDefinition load(URL jsonUrl, ConversationConditionVariables conditionVariables) {
+        Validation.requireNonNull(jsonUrl, "Conversation JSON URL is required.");
+        Validation.requireNonNull(conditionVariables, "Conversation condition variables are required.");
+        return fromJson(ResourceIo.readString(jsonUrl), jsonUrl.toString(), conditionVariables);
     }
 
     public static void save(Path jsonPath, ConversationDefinition conversation) {

@@ -1,5 +1,8 @@
 package com.eb.javafx.display;
 
+import com.eb.javafx.resources.ResourceCategory;
+import com.eb.javafx.resources.ResourceIo;
+import com.eb.javafx.resources.ResourceRegistry;
 import javafx.animation.Animation;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
@@ -7,6 +10,7 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.StackPane;
 
+import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
@@ -14,20 +18,21 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 
 /**
  * Static image, transform, and layer registry for the JavaFX display pipeline.
  *
- * <p>Scripted image declarations and transforms are often created as script
- * load side effects. This registry gives JavaFX ports explicit IDs for the
- * aliases, transform bindings, and display layers that migrated screens can
- * validate before constructing image nodes.</p>
+ * <p>Asset lookup is delegated to either a {@link ResourceRegistry} (new path) or a legacy
+ * {@link GameAssetLocator} (older filesystem-only path). Registry-backed instances resolve image
+ * source paths through {@link ResourceCategory#IMAGES}, which works both for files on disk and for
+ * resources packaged inside a JAR.</p>
  */
 public final class ImageDisplayRegistry {
     public static final String DISPLAY_PREVIEW_PULSE_ANIMATION = "display.preview.pulse";
 
     private final Path repoRoot;
-    private final GameAssetLocator assetLocator;
+    private final Function<String, Optional<URL>> assetResolver;
     private final Map<String, DisplayTransform> transforms = new LinkedHashMap<>();
     private final Map<String, ImageAssetDefinition> images = new LinkedHashMap<>();
     private final Map<String, DisplayAnimation> animations = new LinkedHashMap<>();
@@ -40,7 +45,8 @@ public final class ImageDisplayRegistry {
 
     public ImageDisplayRegistry(Path repoRoot) {
         this.repoRoot = repoRoot;
-        this.assetLocator = new GameAssetLocator(repoRoot);
+        GameAssetLocator locator = new GameAssetLocator(repoRoot);
+        this.assetResolver = sourcePath -> locator.resolve(sourcePath).map(ResourceIo::toUrl);
     }
 
     /**
@@ -51,7 +57,19 @@ public final class ImageDisplayRegistry {
      */
     public ImageDisplayRegistry(Path repoRoot, Path imageAssetRoot) {
         this.repoRoot = repoRoot;
-        this.assetLocator = new GameAssetLocator(repoRoot, imageAssetRoot);
+        GameAssetLocator locator = new GameAssetLocator(repoRoot, imageAssetRoot);
+        this.assetResolver = sourcePath -> locator.resolve(sourcePath).map(ResourceIo::toUrl);
+    }
+
+    /**
+     * Creates a registry that resolves authored image source paths through a
+     * {@link ResourceRegistry}. The supplied registry's {@link ResourceCategory#IMAGES} entries
+     * are consulted; relative names use {@code /} separators and are matched against the recursive
+     * index built when the registry was constructed.
+     */
+    public ImageDisplayRegistry(ResourceRegistry resources) {
+        this.repoRoot = Paths.get("").toAbsolutePath().normalize();
+        this.assetResolver = sourcePath -> resources.find(ResourceCategory.IMAGES, sourcePath);
     }
 
     /**
@@ -73,12 +91,6 @@ public final class ImageDisplayRegistry {
                 true));
     }
 
-    /**
-     * Validates registry invariants required before screens build display nodes.
-     *
-     * <p>The base preview animation must exist and every image transform reference
-     * must resolve to a registered transform.</p>
-     */
     public void validateDisplayContent() {
         requireAnimation(DISPLAY_PREVIEW_PULSE_ANIMATION);
         images.values().stream()
@@ -86,22 +98,18 @@ public final class ImageDisplayRegistry {
                 .forEach(image -> requireTransform(image.transformId()));
     }
 
-    /** Returns immutable registered transforms keyed by transform ID. */
     public Map<String, DisplayTransform> transforms() {
         return Collections.unmodifiableMap(transforms);
     }
 
-    /** Returns immutable registered image aliases keyed by image ID. */
     public Map<String, ImageAssetDefinition> images() {
         return Collections.unmodifiableMap(images);
     }
 
-    /** Returns immutable registered animation profiles keyed by animation ID. */
     public Map<String, DisplayAnimation> animations() {
         return Collections.unmodifiableMap(animations);
     }
 
-    /** Returns immutable layered character definitions keyed by composite ID. */
     public Map<String, LayeredCharacterDefinition> layeredCharacters() {
         return Collections.unmodifiableMap(layeredCharacters);
     }
@@ -126,9 +134,17 @@ public final class ImageDisplayRegistry {
         return layeredCharacters.get(id);
     }
 
-    /** Resolves a registered image asset path from the checked-out game tree. */
+    /** Resolves a registered image asset's URL through the configured resolver. */
+    public Optional<URL> resolveAssetUrl(String imageId) {
+        return assetResolver.apply(image(imageId).sourcePath());
+    }
+
+    /**
+     * Resolves a registered image asset's filesystem path. Returns empty when the resolved URL is
+     * not on the local filesystem (e.g. it lives inside a JAR).
+     */
     public Optional<Path> resolveAssetPath(String imageId) {
-        return assetLocator.resolve(image(imageId).sourcePath());
+        return resolveAssetUrl(imageId).flatMap(ResourceIo::toFilesystemPath);
     }
 
     public Path repoRoot() {
@@ -143,12 +159,12 @@ public final class ImageDisplayRegistry {
      */
     public Optional<ImageView> createImageView(String imageId) {
         ImageAssetDefinition definition = image(imageId);
-        Optional<Path> assetPath = assetLocator.resolve(definition.sourcePath());
-        if (assetPath.isEmpty()) {
+        Optional<URL> assetUrl = assetResolver.apply(definition.sourcePath());
+        if (assetUrl.isEmpty()) {
             return Optional.empty();
         }
 
-        ImageView view = new ImageView(new Image(assetPath.get().toUri().toString()));
+        ImageView view = new ImageView(new Image(assetUrl.get().toExternalForm()));
         view.setPreserveRatio(true);
         if (definition.hasTransform()) {
             DisplayTransform transform = transform(definition.transformId());
@@ -161,9 +177,6 @@ public final class ImageDisplayRegistry {
 
     /**
      * Creates a display node for previews, using a missing-asset label fallback.
-     *
-     * @param imageId registered image ID to resolve
-     * @return image preview node or diagnostic label naming the missing asset
      */
     public Node createDisplayNode(String imageId) {
         return createImageView(imageId)
@@ -176,17 +189,14 @@ public final class ImageDisplayRegistry {
                 .orElseGet(() -> new Label("Missing asset: " + imageId + " -> " + image(imageId).sourcePath()));
     }
 
-    /** Registers or replaces a transform by ID. */
     public void registerTransform(DisplayTransform transform) {
         transforms.put(transform.id(), transform);
     }
 
-    /** Registers or replaces an image alias by ID. */
     public void registerImage(ImageAssetDefinition definition) {
         images.put(definition.id(), definition);
     }
 
-    /** Registers an animation profile by ID. */
     public void registerAnimation(DisplayAnimation animation) {
         if (animations.containsKey(animation.id())) {
             throw new IllegalArgumentException("Duplicate display animation id: " + animation.id());
@@ -194,7 +204,6 @@ public final class ImageDisplayRegistry {
         animations.put(animation.id(), animation);
     }
 
-    /** Registers or replaces a layered character/composite definition by ID. */
     public void registerLayeredCharacter(LayeredCharacterDefinition definition) {
         layeredCharacters.put(definition.id(), definition);
     }

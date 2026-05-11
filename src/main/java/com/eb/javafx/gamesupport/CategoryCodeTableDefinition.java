@@ -1,11 +1,13 @@
 package com.eb.javafx.gamesupport;
 
+import com.eb.javafx.resources.ResourceIo;
 import com.eb.javafx.util.JsonData;
 import com.eb.javafx.util.Validation;
 import com.eb.javafx.util.JsonStrings;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -42,11 +44,13 @@ public final class CategoryCodeTableDefinition {
      */
     public static CategoryCodeTableDefinition load(Path jsonPath) {
         Validation.requireNonNull(jsonPath, "Category code table JSON path is required.");
-        try {
-            return fromJson(Files.readString(jsonPath, StandardCharsets.UTF_8), jsonPath.toString());
-        } catch (IOException exception) {
-            throw new IllegalArgumentException("Unable to read category code table JSON: " + jsonPath, exception);
-        }
+        return load(ResourceIo.toUrl(jsonPath));
+    }
+
+    /** Loads category code tables from a URL (filesystem or classpath). */
+    public static CategoryCodeTableDefinition load(URL jsonUrl) {
+        Validation.requireNonNull(jsonUrl, "Category code table JSON URL is required.");
+        return fromJson(ResourceIo.readString(jsonUrl), jsonUrl.toString());
     }
 
     /** Loads category code tables from a UTF-8 classpath resource. */

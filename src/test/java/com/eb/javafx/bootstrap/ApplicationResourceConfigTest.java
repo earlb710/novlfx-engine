@@ -1,10 +1,12 @@
 package com.eb.javafx.bootstrap;
 
+import com.eb.javafx.resources.ResourceCategory;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -20,8 +22,6 @@ final class ApplicationResourceConfigTest {
     void configRoundTripsThroughJsonAndResolvesNamedResources() throws Exception {
         ApplicationResourceConfig original = ApplicationResourceConfig.defaults()
                 .withDebug(false)
-                .withCategoryCodeTablesPath("data/categories/en.json")
-                .withImageAssetRoot("assets/images")
                 .withDefaultAppBackgroundColor("#101820")
                 .withDefaultAppBackgroundImage("backgrounds/app.png")
                 .withDefaultAppBackgroundImageTransparency("0.2")
@@ -31,7 +31,6 @@ final class ApplicationResourceConfigTest {
                 .withDefaultSaveLoadScreenBackgroundColor("#304050")
                 .withDefaultSaveLoadScreenBackgroundImage("backgrounds/save-load.png")
                 .withDefaultSaveLoadScreenBackgroundImageTransparency("0.5")
-                .withJsonResourceRoot("resources/json")
                 .putResource("backgrounds", "assets/backgrounds")
                 .putResource("portraits", "assets/portraits");
         Path output = tempDir.resolve("config.json");
@@ -40,8 +39,6 @@ final class ApplicationResourceConfigTest {
         ApplicationResourceConfig reloaded = ApplicationResourceConfig.load(output);
 
         assertFalse(reloaded.debug());
-        assertEquals("data/categories/en.json", reloaded.categoryCodeTablesPath());
-        assertEquals("assets/images", reloaded.imageAssetRoot());
         assertEquals("#101820", reloaded.defaultAppBackgroundColor());
         assertEquals("backgrounds/app.png", reloaded.defaultAppBackgroundImage());
         assertEquals("0.2", reloaded.defaultAppBackgroundImageTransparency());
@@ -52,19 +49,10 @@ final class ApplicationResourceConfigTest {
         assertEquals("backgrounds/save-load.png", reloaded.defaultSaveLoadScreenBackgroundImage());
         assertEquals("0.5", reloaded.defaultSaveLoadScreenBackgroundImageTransparency());
         assertEquals(
-                tempDir.resolve("data/categories/en.json").normalize(),
-                reloaded.resolveCategoryCodeTables(tempDir));
-        assertEquals(
-                tempDir.resolve("assets/images").normalize(),
-                reloaded.resolveImageAssetRoot(tempDir));
-        assertEquals(
-                tempDir.resolve("resources/json").normalize(),
-                reloaded.resolveJsonResourceRoot(tempDir));
-        assertEquals(
                 tempDir.resolve("assets/backgrounds").normalize(),
                 reloaded.resolveResource(tempDir, "backgrounds").orElseThrow());
         assertTrue(Files.readString(output).contains("\"debug\": false"));
-        assertTrue(Files.readString(output).contains("\"imageAssetRoot\": \"assets/images\""));
+        assertTrue(Files.readString(output).contains("\"defaultAppBackgroundColor\": \"#101820\""));
     }
 
     @Test
@@ -77,13 +65,10 @@ final class ApplicationResourceConfigTest {
                 }
                 """, "inline");
 
-        assertEquals("config/category-code-tables.en.json", config.categoryCodeTablesPath());
-        assertEquals("game", config.imageAssetRoot());
         assertTrue(config.debug());
         assertEquals("", config.defaultAppBackgroundColor());
         assertEquals("", config.defaultPreferencesScreenBackgroundImage());
         assertEquals("", config.defaultSaveLoadScreenBackgroundImageTransparency());
-        assertEquals("resources/json", config.jsonResourceRoot());
         assertTrue(config.resourcePath("backgrounds").isPresent());
         assertFalse(config.removeResource("backgrounds").resourcePath("backgrounds").isPresent());
         assertThrows(IllegalArgumentException.class, () -> config.removeResource("missing"));
@@ -148,17 +133,78 @@ final class ApplicationResourceConfigTest {
 
     @Test
     void factoryRejectsBlankValues() {
-        assertThrows(IllegalArgumentException.class, () -> ApplicationResourceConfig.of(" ", "game", Map.of()));
-        assertThrows(IllegalArgumentException.class, () -> ApplicationResourceConfig.of("config.json", " ", Map.of()));
-        assertThrows(IllegalArgumentException.class, () -> ApplicationResourceConfig.of(
-                "config.json",
-                "game",
-                Map.of("images", " ")));
+        assertThrows(IllegalArgumentException.class, () -> ApplicationResourceConfig.of(Map.of("images", " ")));
         assertThrows(IllegalArgumentException.class, () -> ApplicationResourceConfig.fromJson(
                 "{\"debug\":\"true\"}",
                 "inline"));
         assertThrows(IllegalArgumentException.class, () -> ApplicationResourceConfig.fromJson(
                 "{\"defaultAppBackgroundColor\":false}",
                 "inline"));
+    }
+
+    @Test
+    void resourceRootsParsePerCategoryAndPreserveOrder() {
+        ApplicationResourceConfig config = ApplicationResourceConfig.fromJson("""
+                {
+                  "resourceRoots": {
+                    "ui": ["classpath:/com/eb/javafx/ui", "app/ui"],
+                    "fonts": ["classpath:/com/eb/javafx/fonts"]
+                  }
+                }
+                """, "inline");
+
+        assertEquals(List.of("classpath:/com/eb/javafx/ui", "app/ui"),
+                config.resourceRoots(ResourceCategory.UI));
+        assertEquals(List.of("classpath:/com/eb/javafx/fonts"),
+                config.resourceRoots(ResourceCategory.FONTS));
+        assertTrue(config.resourceRoots(ResourceCategory.IMAGES).isEmpty());
+    }
+
+    @Test
+    void resourceRootsRejectUnknownCategory() {
+        assertThrows(IllegalArgumentException.class, () -> ApplicationResourceConfig.fromJson("""
+                {
+                  "resourceRoots": {
+                    "unknown": ["something"]
+                  }
+                }
+                """, "inline"));
+    }
+
+    @Test
+    void resourceRootsRejectBlankEntries() {
+        assertThrows(IllegalArgumentException.class, () -> ApplicationResourceConfig.fromJson("""
+                {
+                  "resourceRoots": {
+                    "ui": [" "]
+                  }
+                }
+                """, "inline"));
+    }
+
+    @Test
+    void resourceRootsRoundTripThroughJson() throws Exception {
+        ApplicationResourceConfig original = ApplicationResourceConfig.defaults()
+                .withResourceRoots(Map.of(
+                        ResourceCategory.UI, List.of("classpath:/com/eb/javafx/ui", "app/ui"),
+                        ResourceCategory.IMAGES, List.of("app/images")));
+        Path output = tempDir.resolve("config-with-roots.json");
+        original.save(output);
+
+        ApplicationResourceConfig reloaded = ApplicationResourceConfig.load(output);
+        assertEquals(List.of("classpath:/com/eb/javafx/ui", "app/ui"),
+                reloaded.resourceRoots(ResourceCategory.UI));
+        assertEquals(List.of("app/images"), reloaded.resourceRoots(ResourceCategory.IMAGES));
+        String body = Files.readString(output);
+        assertTrue(body.contains("\"resourceRoots\""));
+    }
+
+    @Test
+    void withAdditionalResourceRootAppendsInOrder() {
+        ApplicationResourceConfig config = ApplicationResourceConfig.defaults()
+                .withResourceRoots(Map.of(ResourceCategory.SUPPORT, List.of("first")))
+                .withAdditionalResourceRoot(ResourceCategory.SUPPORT, "second");
+
+        assertEquals(List.of("first", "second"), config.resourceRoots(ResourceCategory.SUPPORT));
     }
 }

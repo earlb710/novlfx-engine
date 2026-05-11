@@ -181,20 +181,10 @@ final class SceneRouterTest {
         preferencesService.load();
         UiTheme uiTheme = new UiTheme();
         uiTheme.initialize(preferencesService);
-        ApplicationResourceConfig resourceConfig = ApplicationResourceConfig.of(
-                true,
-                "config/category-code-tables.en.json",
-                "game",
-                "#112233",
-                "",
-                "",
-                "#223344",
-                "",
-                "",
-                "#334455",
-                "",
-                "",
-                java.util.Map.of());
+        ApplicationResourceConfig resourceConfig = ApplicationResourceConfig.defaults()
+                .withDefaultAppBackgroundColor("#112233")
+                .withDefaultPreferencesScreenBackgroundColor("#223344")
+                .withDefaultSaveLoadScreenBackgroundColor("#334455");
         RouteContext context = new RouteContext(
                 null,
                 preferencesService,

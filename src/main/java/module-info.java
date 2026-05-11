@@ -29,6 +29,7 @@ module com.novlfx.engine {
     exports com.eb.javafx.prefs;
     exports com.eb.javafx.progress;
     exports com.eb.javafx.random;
+    exports com.eb.javafx.resources;
     exports com.eb.javafx.globalApi;
     exports com.eb.javafx.routing;
     exports com.eb.javafx.save;

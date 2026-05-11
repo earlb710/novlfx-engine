@@ -8,6 +8,7 @@ import com.eb.javafx.display.ImageAssetDefinition;
 import com.eb.javafx.display.ImageDisplayRegistry;
 import com.eb.javafx.prefs.PreferencesService;
 import com.eb.javafx.random.GameRandomService;
+import com.eb.javafx.resources.ResourceCategory;
 import com.eb.javafx.routing.RouteCategory;
 import com.eb.javafx.routing.RouteDescriptor;
 import com.eb.javafx.routing.SceneRouter;
@@ -74,7 +75,6 @@ final class BootstrapServiceTest {
                 context.sceneExecutor().start(EnginePlaceholderSceneModule.DEMO_DIALOGUE_SCENE).activeSceneId());
         assertTrue(context.globalApiAdapter().lastRouteRequest().isEmpty());
         assertEquals("main-menu", context.gameState().startupRoute());
-        assertEquals(ApplicationResourceConfig.defaults().imageAssetRoot(), context.resourceConfig().imageAssetRoot());
         assertTrue(context.resourceConfig().debug());
     }
 
@@ -83,10 +83,8 @@ final class BootstrapServiceTest {
         Path customImageRoot = tempDir.resolve("assets/images");
         Files.createDirectories(customImageRoot);
         Files.writeString(customImageRoot.resolve("demo.png"), "not-a-real-image");
-        ApplicationResourceConfig resourceConfig = ApplicationResourceConfig.of(
-                "data/categories.en.json",
-                "assets/images",
-                Map.of("theme", "themes/app.css"));
+        ApplicationResourceConfig resourceConfig = ApplicationResourceConfig.of(Map.of("theme", "themes/app.css"))
+                .withAdditionalResourceRoot(ResourceCategory.IMAGES, "assets/images");
         StaticContentModule imageModule = new StaticContentModule() {
             @Override
             public void register(ContentRegistry contentRegistry, ImageDisplayRegistry imageDisplayRegistry) {
@@ -151,8 +149,9 @@ final class BootstrapServiceTest {
         Files.writeString(configPath, """
                 {
                   "debug": false,
-                  "categoryCodeTablesPath": "config/category-code-tables.en.json",
-                  "imageAssetRoot": "assets/images",
+                  "resourceRoots": {
+                    "images": ["assets/images"]
+                  },
                   "resources": {
                     "displayDefinitions": "content/display-definitions.json"
                   }
@@ -248,9 +247,9 @@ final class BootstrapServiceTest {
         Path configPath = tempDir.resolve("config.json");
         Files.writeString(configPath, """
                 {
-                  "imageAssetRoot": "assets/images",
-                  "resources": {
-                    "jsonResourceRoot": "resources/json"
+                  "resourceRoots": {
+                    "images": ["assets/images"],
+                    "support": ["resources/json"]
                   }
                 }
                 """);

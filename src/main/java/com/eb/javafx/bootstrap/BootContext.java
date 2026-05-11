@@ -6,6 +6,7 @@ import com.eb.javafx.display.ImageDisplayRegistry;
 import com.eb.javafx.gamesupport.GameSupportService;
 import com.eb.javafx.prefs.PreferencesService;
 import com.eb.javafx.random.GameRandomService;
+import com.eb.javafx.resources.ResourceRegistry;
 import com.eb.javafx.globalApi.GlobalApiAdapter;
 import com.eb.javafx.routing.SceneRouter;
 import com.eb.javafx.save.SaveLoadService;
@@ -42,6 +43,7 @@ public final class BootContext {
     private final GameState gameState;
     private final Path applicationRoot;
     private final ApplicationResourceConfig resourceConfig;
+    private final ResourceRegistry resourceRegistry;
     private final BootstrapReport bootstrapReport;
 
     /**
@@ -79,11 +81,15 @@ public final class BootContext {
             BootstrapReport bootstrapReport) {
         this(preferencesService, contentRegistry, imageDisplayRegistry, saveLoadService, randomService, audioService,
                 gameSupportService, sceneRegistry, sceneExecutor, globalApiAdapter, sceneRouter, uiTheme, gameState,
-                Paths.get("").toAbsolutePath().normalize(), ApplicationResourceConfig.defaults(), bootstrapReport);
+                Paths.get("").toAbsolutePath().normalize(), ApplicationResourceConfig.defaults(),
+                ResourceRegistry.builder().build(), bootstrapReport);
     }
 
     /**
      * Creates a completed startup handoff with initialized services, state, and application resource paths.
+     *
+     * <p>Delegates to the registry-aware constructor with an empty {@link ResourceRegistry} for backwards
+     * compatibility with callers that have not yet adopted the resource registry.</p>
      */
     public BootContext(
             PreferencesService preferencesService,
@@ -102,6 +108,33 @@ public final class BootContext {
             Path applicationRoot,
             ApplicationResourceConfig resourceConfig,
             BootstrapReport bootstrapReport) {
+        this(preferencesService, contentRegistry, imageDisplayRegistry, saveLoadService, randomService, audioService,
+                gameSupportService, sceneRegistry, sceneExecutor, globalApiAdapter, sceneRouter, uiTheme, gameState,
+                applicationRoot, resourceConfig, ResourceRegistry.builder().build(), bootstrapReport);
+    }
+
+    /**
+     * Creates a completed startup handoff with initialized services, state, application resource paths, and the
+     * preloaded {@link ResourceRegistry} that bootstrap built before any phase ran.
+     */
+    public BootContext(
+            PreferencesService preferencesService,
+            ContentRegistry contentRegistry,
+            ImageDisplayRegistry imageDisplayRegistry,
+            SaveLoadService saveLoadService,
+            GameRandomService randomService,
+            AudioService audioService,
+            GameSupportService gameSupportService,
+            SceneRegistry sceneRegistry,
+            SceneExecutor sceneExecutor,
+            GlobalApiAdapter globalApiAdapter,
+            SceneRouter sceneRouter,
+            UiTheme uiTheme,
+            GameState gameState,
+            Path applicationRoot,
+            ApplicationResourceConfig resourceConfig,
+            ResourceRegistry resourceRegistry,
+            BootstrapReport bootstrapReport) {
         this.preferencesService = preferencesService;
         this.contentRegistry = contentRegistry;
         this.imageDisplayRegistry = imageDisplayRegistry;
@@ -117,6 +150,7 @@ public final class BootContext {
         this.gameState = gameState;
         this.applicationRoot = applicationRoot.toAbsolutePath().normalize();
         this.resourceConfig = resourceConfig;
+        this.resourceRegistry = resourceRegistry;
         this.bootstrapReport = bootstrapReport;
     }
 
@@ -193,6 +227,15 @@ public final class BootContext {
     /** Returns resource locations supplied to bootstrap, or engine defaults when none were supplied. */
     public ApplicationResourceConfig resourceConfig() {
         return resourceConfig;
+    }
+
+    /**
+     * Returns the catalog of files discovered under each {@link com.eb.javafx.resources.ResourceCategory}, layered
+     * with application roots taking precedence over the library's bundled roots. Empty when bootstrap was created
+     * through a constructor that did not supply a registry.
+     */
+    public ResourceRegistry resourceRegistry() {
+        return resourceRegistry;
     }
 
     /** Returns phase-by-phase startup diagnostics for progress UI and tests. */
