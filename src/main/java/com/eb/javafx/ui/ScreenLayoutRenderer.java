@@ -14,10 +14,14 @@ import javafx.scene.Scene;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.control.Button;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.Control;
 import javafx.scene.control.Label;
+import javafx.scene.control.RadioButton;
+import javafx.scene.control.Slider;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import javafx.scene.control.ToggleGroup;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.BorderPane;
@@ -351,7 +355,152 @@ public final class ScreenLayoutRenderer {
         if (ScreenDesignItemType.MULTI_LINE_FIELD.name().equals(itemType)) {
             return fieldNode(id, metadata, true);
         }
+        if (ScreenDesignItemType.POPLIST.name().equals(itemType)) {
+            return comboBoxNode(id, metadata, false);
+        }
+        if (ScreenDesignItemType.COMBO_BOX.name().equals(itemType)) {
+            return comboBoxNode(id, metadata, true);
+        }
+        if (ScreenDesignItemType.SLIDER.name().equals(itemType)) {
+            return sliderNode(id, metadata);
+        }
+        if (ScreenDesignItemType.RADIO_GROUP.name().equals(itemType)) {
+            return radioGroupNode(id, metadata);
+        }
         return null;
+    }
+
+    private static Node comboBoxNode(String id, Map<String, String> metadata, boolean allowUserInput) {
+        VBox container = new VBox(4);
+        container.setMaxWidth(Double.MAX_VALUE);
+        container.getStyleClass().add(ScreenShell.LAYOUT_SECTION_ROW_STYLE_CLASS);
+        String labelText = metadata.get(ScreenDesignLayoutAdapter.SCREEN_DESIGN_LABEL_KEY);
+        if (labelText != null && !labelText.isBlank()) {
+            Label label = new Label(labelText);
+            if (id != null) {
+                label.setId(id + ".label");
+            }
+            label.getStyleClass().add(ScreenShell.LAYOUT_SECTION_ROW_STYLE_CLASS);
+            applyLabelStyle(label, metadata);
+            container.getChildren().add(label);
+        }
+        ComboBox<String> comboBox = new ComboBox<>();
+        comboBox.setEditable(allowUserInput
+                && Boolean.parseBoolean(metadata.getOrDefault(ScreenDesignLayoutAdapter.SCREEN_DESIGN_EDITABLE_KEY, "false")));
+        comboBox.setMaxWidth(Double.MAX_VALUE);
+        if (id != null) {
+            comboBox.setId(id);
+        }
+        comboBox.getStyleClass().add(ScreenShell.LAYOUT_VALUE_STYLE_CLASS);
+        String options = metadata.get("options");
+        if (options != null && !options.isBlank()) {
+            for (String option : options.split(",")) {
+                String trimmed = option.trim();
+                if (!trimmed.isEmpty()) {
+                    comboBox.getItems().add(trimmed);
+                }
+            }
+        }
+        String value = metadata.get(ScreenDesignLayoutAdapter.SCREEN_DESIGN_VALUE_KEY);
+        if (value != null && !value.isBlank()) {
+            comboBox.setValue(value);
+        }
+        applyLineStyle(comboBox, metadata);
+        container.getChildren().add(comboBox);
+        return container;
+    }
+
+    private static Node sliderNode(String id, Map<String, String> metadata) {
+        VBox container = new VBox(4);
+        container.setMaxWidth(Double.MAX_VALUE);
+        container.getStyleClass().add(ScreenShell.LAYOUT_SECTION_ROW_STYLE_CLASS);
+        String labelText = metadata.get(ScreenDesignLayoutAdapter.SCREEN_DESIGN_LABEL_KEY);
+        if (labelText != null && !labelText.isBlank()) {
+            Label label = new Label(labelText);
+            if (id != null) {
+                label.setId(id + ".label");
+            }
+            label.getStyleClass().add(ScreenShell.LAYOUT_SECTION_ROW_STYLE_CLASS);
+            applyLabelStyle(label, metadata);
+            container.getChildren().add(label);
+        }
+        double min = parseSliderBound(metadata.get("min"), 0.0);
+        double max = parseSliderBound(metadata.get("max"), 100.0);
+        if (max <= min) {
+            max = min + 100.0;
+        }
+        double step = parseSliderBound(metadata.get("step"), 1.0);
+        if (step <= 0.0) {
+            step = 1.0;
+        }
+        String rawValue = metadata.get(ScreenDesignLayoutAdapter.SCREEN_DESIGN_VALUE_KEY);
+        double sliderValue = parseSliderBound(rawValue, min + (max - min) / 2.0);
+        sliderValue = Math.max(min, Math.min(max, sliderValue));
+        Slider slider = new Slider(min, max, sliderValue);
+        slider.setMajorTickUnit(step);
+        slider.setBlockIncrement(step);
+        slider.setShowTickLabels(metadataBoolean(metadata, "showLabels"));
+        slider.setShowTickMarks(metadataBoolean(metadata, "showTicks"));
+        slider.setDisable(!Boolean.parseBoolean(metadata.getOrDefault(ScreenDesignLayoutAdapter.SCREEN_DESIGN_EDITABLE_KEY, "false")));
+        slider.setMaxWidth(Double.MAX_VALUE);
+        if (id != null) {
+            slider.setId(id);
+        }
+        slider.getStyleClass().add(ScreenShell.LAYOUT_VALUE_STYLE_CLASS);
+        container.getChildren().add(slider);
+        return container;
+    }
+
+    private static Node radioGroupNode(String id, Map<String, String> metadata) {
+        VBox container = new VBox(4);
+        container.setMaxWidth(Double.MAX_VALUE);
+        container.getStyleClass().add(ScreenShell.LAYOUT_SECTION_ROW_STYLE_CLASS);
+        String labelText = metadata.get(ScreenDesignLayoutAdapter.SCREEN_DESIGN_LABEL_KEY);
+        if (labelText != null && !labelText.isBlank()) {
+            Label label = new Label(labelText);
+            if (id != null) {
+                label.setId(id + ".label");
+            }
+            label.getStyleClass().add(ScreenShell.LAYOUT_SECTION_ROW_STYLE_CLASS);
+            applyLabelStyle(label, metadata);
+            container.getChildren().add(label);
+        }
+        String currentValue = metadata.getOrDefault(ScreenDesignLayoutAdapter.SCREEN_DESIGN_VALUE_KEY, "");
+        boolean editable = Boolean.parseBoolean(metadata.getOrDefault(ScreenDesignLayoutAdapter.SCREEN_DESIGN_EDITABLE_KEY, "false"));
+        ToggleGroup toggleGroup = new ToggleGroup();
+        boolean horizontal = "horizontal".equalsIgnoreCase(metadata.get("orientation"));
+        javafx.scene.layout.Pane buttonRow = horizontal ? new HBox(8) : new VBox(4);
+        String options = metadata.get("options");
+        if (options != null && !options.isBlank()) {
+            for (String option : options.split(",")) {
+                String trimmed = option.trim();
+                if (trimmed.isEmpty()) {
+                    continue;
+                }
+                RadioButton rb = new RadioButton(trimmed);
+                rb.setToggleGroup(toggleGroup);
+                rb.setDisable(!editable);
+                rb.setSelected(trimmed.equals(currentValue));
+                if (id != null) {
+                    rb.setId(id + "." + trimmed);
+                }
+                rb.getStyleClass().add(ScreenShell.LAYOUT_VALUE_STYLE_CLASS);
+                buttonRow.getChildren().add(rb);
+            }
+        }
+        container.getChildren().add(buttonRow);
+        return container;
+    }
+
+    private static double parseSliderBound(String value, double defaultValue) {
+        if (value == null || value.isBlank()) {
+            return defaultValue;
+        }
+        try {
+            return Double.parseDouble(value.trim());
+        } catch (NumberFormatException exception) {
+            return defaultValue;
+        }
     }
 
     private static Node fieldNode(String id, Map<String, String> metadata, boolean multiline) {

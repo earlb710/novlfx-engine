@@ -32,6 +32,7 @@ public final class ScreenDesignValidator {
     private static final Set<String> BORDER_CORNERS = Set.of("square", "rounded", "pill");
     private static final Set<String> BACKGROUND_IMAGE_PLACEMENTS = Set.of(
             "fixed top left", "fixed center", "fixed bottom right", "stretch to fit");
+    private static final Set<String> BOOLEAN_VALUES = Set.of("true", "false", "1", "0", "yes", "no", "y", "n", "on", "off");
 
     private ScreenDesignValidator() {
     }
@@ -204,10 +205,79 @@ public final class ScreenDesignValidator {
             validateBlockMetadata(block.metadata(), "blocks." + block.id() + ".metadata", problems);
         }
         for (ScreenDesignItem item : items) {
-            validateItemMetadata(item.metadata(), "items." + item.id() + ".metadata", problems);
+            String path = "items." + item.id() + ".metadata";
+            validateItemMetadata(item.metadata(), path, problems);
+            validateItemTypeMetadata(item, path, problems);
         }
         for (ScreenDesignItem item : temporaryItems) {
-            validateItemMetadata(item.metadata(), "temporaryItems." + item.id() + ".metadata", problems);
+            String path = "temporaryItems." + item.id() + ".metadata";
+            validateItemMetadata(item.metadata(), path, problems);
+            validateItemTypeMetadata(item, path, problems);
+        }
+    }
+
+    private static void validateItemTypeMetadata(
+            ScreenDesignItem item,
+            String path,
+            List<ScreenDesignValidationProblem> problems) {
+        switch (item.type()) {
+            case SLIDER -> validateSliderMetadata(item.metadata(), path, problems);
+            case POPLIST, COMBO_BOX, RADIO_GROUP -> validateOptionsMetadata(item.metadata(), path, problems);
+            default -> {
+            }
+        }
+    }
+
+    private static void validateSliderMetadata(
+            Map<String, String> metadata,
+            String path,
+            List<ScreenDesignValidationProblem> problems) {
+        Double min = validateNumericValue(metadata, "min", path, problems);
+        Double max = validateNumericValue(metadata, "max", path, problems);
+        Double step = validateNumericValue(metadata, "step", path, problems);
+        if (min != null && max != null && max <= min) {
+            problems.add(error(path + ".max", "Slider max must be greater than min."));
+        }
+        if (step != null && step <= 0.0) {
+            problems.add(error(path + ".step", "Slider step must be a positive number."));
+        }
+        validateBooleanValue(metadata, "showTicks", path, problems);
+        validateBooleanValue(metadata, "showLabels", path, problems);
+    }
+
+    private static void validateOptionsMetadata(
+            Map<String, String> metadata,
+            String path,
+            List<ScreenDesignValidationProblem> problems) {
+        String options = metadata.get("options");
+        if (options != null && !options.isBlank()) {
+            boolean anyNonEmpty = false;
+            for (String option : options.split(",")) {
+                if (!option.trim().isEmpty()) {
+                    anyNonEmpty = true;
+                    break;
+                }
+            }
+            if (!anyNonEmpty) {
+                problems.add(error(path + ".options", "options must contain at least one non-empty entry."));
+            }
+        }
+    }
+
+    private static Double validateNumericValue(
+            Map<String, String> metadata,
+            String key,
+            String path,
+            List<ScreenDesignValidationProblem> problems) {
+        String value = metadata.get(key);
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        try {
+            return Double.parseDouble(value.trim());
+        } catch (NumberFormatException exception) {
+            problems.add(error(path + "." + key, key + " must be a number."));
+            return null;
         }
     }
 
@@ -219,6 +289,9 @@ public final class ScreenDesignValidator {
                 "Border style must be one of: solid, dashed, dotted, none.", problems);
         validateAllowedValue(metadata, BORDER_CORNER_KEY, path, BORDER_CORNERS,
                 "Border corner must be one of: square, rounded, pill.", problems);
+        validateBooleanValue(metadata, "dialog", path, problems);
+        validateBooleanValue(metadata, "dismissOnClickOutside", path, problems);
+        validateBooleanValue(metadata, "dismissOnEscape", path, problems);
     }
 
     private static void validateBlockMetadata(
@@ -277,6 +350,20 @@ public final class ScreenDesignValidator {
             }
         } catch (NumberFormatException exception) {
             problems.add(error(path + "." + key, "Transparency must be a number from 0 to 1."));
+        }
+    }
+
+    private static void validateBooleanValue(
+            Map<String, String> metadata,
+            String key,
+            String path,
+            List<ScreenDesignValidationProblem> problems) {
+        String value = metadata.get(key);
+        if (value == null || value.isBlank()) {
+            return;
+        }
+        if (!BOOLEAN_VALUES.contains(value.trim().toLowerCase(java.util.Locale.ROOT))) {
+            problems.add(error(path + "." + key, key + " must be a boolean value: true, false, yes, no, 1, 0."));
         }
     }
 

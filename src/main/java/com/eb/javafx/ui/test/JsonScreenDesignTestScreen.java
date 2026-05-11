@@ -30,6 +30,8 @@ public final class JsonScreenDesignTestScreen {
     private static final AtomicBoolean JAVAFX_STARTED = new AtomicBoolean();
     private static final Path DEFAULT_DESIGN_RELATIVE_PATH =
             Path.of("examples", "resources", "json", "screens", "reloadable-test-screen.json");
+    private static final Path ALL_ITEMS_DESIGN_RELATIVE_PATH =
+            Path.of("examples", "resources", "json", "screens", "all-items-test-screen.json");
 
     private JsonScreenDesignTestScreen() {
     }
@@ -46,6 +48,11 @@ public final class JsonScreenDesignTestScreen {
 
     public static void showFromManagement(Path workingDirectory) {
         show(defaultDesignPath(workingDirectory), workingDirectory, false);
+    }
+
+    public static void showAllItemsFromManagement(Path workingDirectory) {
+        Path designPath = repositoryRoot().resolve(ALL_ITEMS_DESIGN_RELATIVE_PATH).normalize();
+        show(designPath, designPath.getParent(), false);
     }
 
     public static Scene createScene(Path designPath, PreferencesService preferencesService, UiTheme uiTheme) {

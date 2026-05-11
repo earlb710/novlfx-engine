@@ -1,0 +1,24 @@
+{
+  "language": "en",
+  "texts": {
+    "screen.title": "All Items Test Screen",
+    "block.display.title": "Display Items (TEXT, TEXT_AREA)",
+    "block.text-inputs.title": "Text Inputs (FIELD, MULTI_LINE_FIELD)",
+    "block.selection-inputs.title": "Selection Inputs (POPLIST, COMBO_BOX, RADIO_GROUP)",
+    "block.range-inputs.title": "Range Inputs (SLIDER)",
+    "block.actions.title": "Actions (BUTTON)",
+    "item.display.text.label": "Text Label",
+    "item.display.text.text": "This is a TEXT item. Labels and body text are both displayed.",
+    "item.display.text-area.label": "Text Area Label",
+    "item.display.text-area.text": "This is a TEXT_AREA item. It supports multi-line display content and also carries a label.",
+    "item.text-inputs.field.label": "Single-line field",
+    "item.text-inputs.field.defaultValue": "Editable single-line value",
+    "item.text-inputs.multi-line-field.label": "Multi-line field",
+    "item.text-inputs.multi-line-field.defaultValue": "Editable multi-line value\nSupports line breaks.",
+    "item.selection-inputs.poplist.label": "Poplist (non-editable)",
+    "item.selection-inputs.combo-box.label": "Combo box (editable)",
+    "item.selection-inputs.radio-group.label": "Radio group (horizontal)",
+    "item.range-inputs.slider.label": "Slider (0–100, step 5)",
+    "item.actions.button.text": "Sample Button"
+  }
+}

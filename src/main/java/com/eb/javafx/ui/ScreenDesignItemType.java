@@ -6,5 +6,9 @@ public enum ScreenDesignItemType {
     FIELD,
     MULTI_LINE_FIELD,
     TEXT_AREA,
-    BUTTON
+    BUTTON,
+    POPLIST,
+    COMBO_BOX,
+    SLIDER,
+    RADIO_GROUP
 }
