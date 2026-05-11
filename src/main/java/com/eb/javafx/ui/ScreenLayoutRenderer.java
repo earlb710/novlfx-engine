@@ -103,11 +103,26 @@ public final class ScreenLayoutRenderer {
      * @param resourceRoot directory used to resolve relative background image paths
      * @return preview root, optionally wrapped in a configured background container
      */
-    public static ScrollPane createScrollablePreviewRoot(ScreenLayoutModel model, Path resourceRoot) {
-        ScrollPane scrollPane = new ScrollPane(createPreviewRoot(model, resourceRoot));
-        scrollPane.setFitToWidth(true);
-        scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
-        return scrollPane;
+    public static Parent createScrollablePreviewRoot(ScreenLayoutModel model, Path resourceRoot) {
+        BorderPane root = createRoot(model, resourceRoot);
+        // Wrap only the center panel so the title and footer bar stay fixed outside the scroll area.
+        javafx.scene.Node center = root.getCenter();
+        if (center != null) {
+            ScrollPane scrollPane = new ScrollPane(center);
+            scrollPane.setFitToWidth(true);
+            scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+            root.setCenter(scrollPane);
+        }
+        if (!hasScreenBackground(model.metadata())) {
+            return root;
+        }
+        root.setStyle(containerStyle(model.metadata(), true));
+        return ScreenShell.withConfiguredBackground(
+                root,
+                resourceRoot,
+                model.metadata().get("backgroundColor"),
+                model.metadata().get(SCREEN_BACKGROUND_IMAGE_KEY),
+                model.metadata().get(SCREEN_BACKGROUND_IMAGE_TRANSPARENCY_KEY));
     }
 
     public static Parent createPreviewRoot(ScreenLayoutModel model, Path resourceRoot) {
@@ -143,6 +158,11 @@ public final class ScreenLayoutRenderer {
         addOptionalText(content, model.footer(), ScreenShell.LAYOUT_FOOTER_STYLE_CLASS);
         BorderPane root = ScreenShell.titled(model.title(), content);
         applyContainerStyle(root, model.metadata());
+        String titleColor = model.metadata().get("titleColor");
+        if (titleColor != null && !titleColor.isBlank() && COLOR_PATTERN.matcher(titleColor).matches()
+                && root.getTop() instanceof Label titleLabel) {
+            titleLabel.setStyle("-fx-text-fill: " + titleColor + "; ");
+        }
         return root;
     }
 
@@ -575,7 +595,10 @@ public final class ScreenLayoutRenderer {
 
     private static void applyLineStyle(javafx.scene.control.Control control, Map<String, String> metadata) {
         String style = lineStyle(metadata);
-        if (!style.isEmpty()) {
+        if (control instanceof javafx.scene.control.TextInputControl) {
+            String base = "-fx-text-fill: #1a1a1a; -fx-control-inner-background: #ffffff; ";
+            control.setStyle(base + style);
+        } else if (!style.isEmpty()) {
             control.setStyle(style);
         }
     }

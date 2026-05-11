@@ -7,8 +7,8 @@ import com.eb.javafx.ui.ScreenLayoutModel;
 import com.eb.javafx.ui.ScreenLayoutRenderer;
 import com.eb.javafx.ui.UiTheme;
 import javafx.application.Platform;
+import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.control.ScrollPane;
 import javafx.stage.Stage;
 import org.junit.jupiter.api.Test;
 
@@ -56,9 +56,9 @@ final class AllItemsTestScreenTest {
             uiTheme.initialize(preferencesService);
 
             ScreenLayoutModel model = JsonScreenDesignTestScreen.loadLayoutModel(ALL_ITEMS_DESIGN_PATH);
-            ScrollPane scrollPane = ScreenLayoutRenderer.createScrollablePreviewRoot(model, ALL_ITEMS_DESIGN_PATH.getParent());
+            Parent previewRoot = ScreenLayoutRenderer.createScrollablePreviewRoot(model, ALL_ITEMS_DESIGN_PATH.getParent());
 
-            Scene scene = new Scene(scrollPane,
+            Scene scene = new Scene(previewRoot,
                     TestUiScreenSize.sceneWidth(preferencesService),
                     TestUiScreenSize.sceneHeight(preferencesService));
             scene.getStylesheets().add(uiTheme.stylesheet());

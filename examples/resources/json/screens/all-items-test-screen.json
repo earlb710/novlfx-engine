@@ -8,7 +8,8 @@
     "borderStyle": "solid",
     "borderCorner": "rounded",
     "borderThickness": "2",
-    "borderColor": "#4f86c6"
+    "borderColor": "#4f86c6",
+    "titleColor": "#00e5ff"
   },
   "blocks": [
     {
@@ -219,14 +220,16 @@
       "id": "actions.button",
       "blockId": "actions",
       "type": "BUTTON",
-      "label": null,
-      "text": "item.actions.button.text",
+      "label": "item.actions.button.label",
+      "text": null,
       "value": null,
       "defaultValue": null,
       "sequence": 10,
       "editable": false,
       "styleClass": null,
-      "metadata": {}
+      "metadata": {
+        "eventName": "test.all-items.button.click"
+      }
     }
   ]
 }
