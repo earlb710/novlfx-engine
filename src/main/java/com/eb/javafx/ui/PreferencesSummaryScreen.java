@@ -3,6 +3,7 @@ package com.eb.javafx.ui;
 import com.eb.javafx.audio.AudioService;
 import com.eb.javafx.prefs.PreferencesService.FooterShortcutDisplay;
 import com.eb.javafx.prefs.PreferencesService;
+import com.eb.javafx.prefs.PreferencesService.Language;
 import com.eb.javafx.prefs.PreferencesService.ThemeFamily;
 import com.eb.javafx.prefs.PreferencesService.ThemeVariant;
 import com.eb.javafx.routing.RouteContext;
@@ -12,9 +13,13 @@ import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
+import javafx.scene.control.RadioButton;
 import javafx.scene.control.Slider;
+import javafx.scene.control.Toggle;
+import javafx.scene.control.ToggleGroup;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
@@ -51,11 +56,16 @@ public final class PreferencesSummaryScreen {
                 volumeRow(context, screenText("item.music-volume.label"), context.preferencesService().musicVolume(),
                         PreferencesSummaryScreen::saveMusicVolume),
                 volumeRow(context, screenText("item.sound-volume.label"), context.preferencesService().soundVolume(),
-                        PreferencesSummaryScreen::saveSoundVolume)));
+                        PreferencesSummaryScreen::saveSoundVolume),
+                muteAllRow(context)));
         content.getChildren().add(settingsBlock(
                 screenText("block.visual.title"),
                 themeSelectionRow(context),
-                footerDisplayRow(context)));
+                footerDisplayRow(context),
+                fullscreenRow(context)));
+        content.getChildren().add(settingsBlock(
+                screenText("block.language.title"),
+                languageRow(context)));
 
         Button closeButton = ScreenNavigation.button(context, screenText("item.close.label"), SceneRouter.MAIN_MENU_ROUTE);
         content.getChildren().add(closeButton);
@@ -232,6 +242,69 @@ public final class PreferencesSummaryScreen {
         });
         HBox row = new HBox(8, label, comboBox);
         row.getStyleClass().add(ScreenShell.LAYOUT_SECTION_ROW_STYLE_CLASS);
+        return row;
+    }
+
+    private static HBox muteAllRow(RouteContext context) {
+        CheckBox checkBox = new CheckBox(screenText("item.mute-all.label"));
+        checkBox.getStyleClass().add(ScreenShell.SCREEN_TEXT_STYLE_CLASS);
+        checkBox.setSelected(context.preferencesService().muteAll());
+        checkBox.selectedProperty().addListener((observable, previous, current) -> {
+            context.preferencesService().saveMuteAll(current);
+            AudioService audioService = context.audioService();
+            if (audioService != null && audioService.isInitialized()) {
+                audioService.setMuted(current);
+            }
+        });
+        HBox row = new HBox(8, checkBox);
+        row.getStyleClass().add(ScreenShell.LAYOUT_SECTION_ROW_STYLE_CLASS);
+        return row;
+    }
+
+    private static HBox fullscreenRow(RouteContext context) {
+        CheckBox checkBox = new CheckBox(screenText("item.fullscreen.label"));
+        checkBox.getStyleClass().add(ScreenShell.SCREEN_TEXT_STYLE_CLASS);
+        checkBox.setSelected(context.preferencesService().fullscreen());
+        checkBox.selectedProperty().addListener((observable, previous, current) -> {
+            context.preferencesService().saveFullscreen(current);
+            if (context.primaryStage() != null) {
+                context.primaryStage().setFullScreen(current);
+            }
+        });
+        HBox row = new HBox(8, checkBox);
+        row.getStyleClass().add(ScreenShell.LAYOUT_SECTION_ROW_STYLE_CLASS);
+        return row;
+    }
+
+    private static HBox languageRow(RouteContext context) {
+        ToggleGroup group = new ToggleGroup();
+        HBox row = new HBox(8);
+        row.getStyleClass().add(ScreenShell.LAYOUT_SECTION_ROW_STYLE_CLASS);
+        Language current = context.preferencesService().language();
+        for (Language language : Language.values()) {
+            RadioButton button = new RadioButton(language.label());
+            button.getStyleClass().add(ScreenShell.SCREEN_TEXT_STYLE_CLASS);
+            button.setToggleGroup(group);
+            button.setUserData(language);
+            button.setDisable(!language.enabled());
+            if (language == current && language.enabled()) {
+                button.setSelected(true);
+            }
+            row.getChildren().add(button);
+        }
+        if (group.getSelectedToggle() == null) {
+            for (Toggle toggle : group.getToggles()) {
+                if (toggle instanceof RadioButton button && !button.isDisable()) {
+                    button.setSelected(true);
+                    break;
+                }
+            }
+        }
+        group.selectedToggleProperty().addListener((observable, previous, selected) -> {
+            if (selected instanceof RadioButton button && button.getUserData() instanceof Language language) {
+                context.preferencesService().saveLanguage(language);
+            }
+        });
         return row;
     }
 

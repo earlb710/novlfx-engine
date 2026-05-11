@@ -32,6 +32,9 @@ public final class PreferencesService {
     private static final String MASTER_VOLUME_KEY = "audio.masterVolume";
     private static final String MUSIC_VOLUME_KEY = "audio.musicVolume";
     private static final String SOUND_VOLUME_KEY = "audio.soundVolume";
+    private static final String MUTE_ALL_KEY = "audio.muteAll";
+    private static final String FULLSCREEN_KEY = "window.fullscreen";
+    private static final String LANGUAGE_KEY = "ui.language";
 
     private final Preferences preferences = Preferences.userNodeForPackage(PreferencesService.class);
     private int windowWidth;
@@ -52,6 +55,9 @@ public final class PreferencesService {
     private double masterVolume;
     private double musicVolume;
     private double soundVolume;
+    private boolean muteAll;
+    private boolean fullscreen;
+    private Language language;
 
     /**
      * Loads startup preferences with conservative defaults for the first shell.
@@ -78,6 +84,9 @@ public final class PreferencesService {
         masterVolume = clamp(preferences.getDouble(MASTER_VOLUME_KEY, 1.0), 0.0, 1.0);
         musicVolume = clamp(preferences.getDouble(MUSIC_VOLUME_KEY, 1.0), 0.0, 1.0);
         soundVolume = clamp(preferences.getDouble(SOUND_VOLUME_KEY, 1.0), 0.0, 1.0);
+        muteAll = preferences.getBoolean(MUTE_ALL_KEY, false);
+        fullscreen = preferences.getBoolean(FULLSCREEN_KEY, false);
+        language = validatedLanguage(preferences.get(LANGUAGE_KEY, Language.ENGLISH.preferenceValue()));
     }
 
     /** Returns the configured starting width for JavaFX scenes. */
@@ -178,6 +187,21 @@ public final class PreferencesService {
     /** Returns the persisted sound channel volume multiplier. */
     public double soundVolume() {
         return soundVolume;
+    }
+
+    /** Returns whether all audio channels should be muted. */
+    public boolean muteAll() {
+        return muteAll;
+    }
+
+    /** Returns whether the primary window should be displayed in fullscreen mode. */
+    public boolean fullscreen() {
+        return fullscreen;
+    }
+
+    /** Returns the preferred UI language. */
+    public Language language() {
+        return language;
     }
 
     /** Persists a clamped window size separately from save-game state. */
@@ -294,6 +318,29 @@ public final class PreferencesService {
         preferences.putDouble(SOUND_VOLUME_KEY, this.soundVolume);
     }
 
+    /** Persists the mute-all preference and updates the loaded value. */
+    public void saveMuteAll(boolean muteAll) {
+        this.muteAll = muteAll;
+        preferences.putBoolean(MUTE_ALL_KEY, muteAll);
+    }
+
+    /** Persists the fullscreen preference and updates the loaded value. */
+    public void saveFullscreen(boolean fullscreen) {
+        this.fullscreen = fullscreen;
+        preferences.putBoolean(FULLSCREEN_KEY, fullscreen);
+    }
+
+    /** Persists the selected UI language. */
+    public void saveLanguage(Language language) {
+        this.language = language == null ? Language.ENGLISH : language;
+        preferences.put(LANGUAGE_KEY, this.language.preferenceValue());
+    }
+
+    /** Persists a validated language identifier, falling back to English for unknown values. */
+    public void saveLanguage(String language) {
+        saveLanguage(validatedLanguage(language));
+    }
+
     private int clamp(int value, int minimum, int maximum) {
         return Math.max(minimum, Math.min(maximum, value));
     }
@@ -339,6 +386,15 @@ public final class PreferencesService {
                     : FooterShortcutDisplay.HIDE.preferenceValue();
         }
         return FooterShortcutDisplay.TOOLTIP_ONLY.preferenceValue();
+    }
+
+    private Language validatedLanguage(String value) {
+        for (Language candidate : Language.values()) {
+            if (candidate.preferenceValue().equals(value)) {
+                return candidate;
+            }
+        }
+        return Language.ENGLISH;
     }
 
     private FooterShortcutDisplay validatedFooterShortcutDisplay(String value) {
@@ -390,6 +446,36 @@ public final class PreferencesService {
 
         public String label() {
             return SystemCodeTables.defaultCodeTitle(SystemCodeTables.THEME_FAMILY_TABLE_ID, preferenceValue);
+        }
+    }
+
+    /** Supported UI languages persisted as user preference values. Only English is fully supported today. */
+    public enum Language {
+        ENGLISH("en", "English", true),
+        SPANISH("es", "Español", false),
+        FRENCH("fr", "Français", false),
+        JAPANESE("ja", "日本語", false);
+
+        private final String preferenceValue;
+        private final String label;
+        private final boolean enabled;
+
+        Language(String preferenceValue, String label, boolean enabled) {
+            this.preferenceValue = preferenceValue;
+            this.label = label;
+            this.enabled = enabled;
+        }
+
+        public String preferenceValue() {
+            return preferenceValue;
+        }
+
+        public String label() {
+            return label;
+        }
+
+        public boolean enabled() {
+            return enabled;
         }
     }
 
