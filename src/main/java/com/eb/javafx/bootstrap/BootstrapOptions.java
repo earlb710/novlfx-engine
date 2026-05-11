@@ -15,12 +15,12 @@ import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 /** Application-supplied startup options for reusable bootstrap service creation. */
 public final class BootstrapOptions {
@@ -103,10 +103,9 @@ public final class BootstrapOptions {
                 Collections.emptyList(),
                 Collections.emptyList(),
                 Collections.emptyList());
-        Path jsonResourceRoot = resourceConfig.resolveJsonResourceRoot(applicationRoot);
-        Path appLoadPath = ApplicationJsonLoadDefinition.defaultPath(jsonResourceRoot);
-        if (Files.isRegularFile(appLoadPath)) {
-            return options.withApplicationJsonLoads(ApplicationJsonLoadDefinition.load(appLoadPath).loads());
+        Optional<URL> appLoadUrl = ApplicationJsonLoadDefinition.defaultUrl(registry);
+        if (appLoadUrl.isPresent()) {
+            return options.withApplicationJsonLoads(ApplicationJsonLoadDefinition.load(appLoadUrl.get()).loads());
         }
         return options;
     }
@@ -171,14 +170,13 @@ public final class BootstrapOptions {
         Validation.requireNonNull(loads, "Application JSON loads are required.");
         ArrayList<StaticContentModule> updatedStaticModules = new ArrayList<>(staticContentModules);
         ArrayList<SceneModule> updatedSceneModules = new ArrayList<>(sceneModules);
-        Path jsonResourceRoot = resourceConfig.resolveJsonResourceRoot(applicationRoot);
         for (ApplicationJsonLoad load : loads) {
-            for (Path jsonPath : load.resolvePaths(jsonResourceRoot)) {
+            for (URL jsonUrl : load.resolveUrls(resourceRegistry)) {
                 switch (load.type()) {
-                    case DISPLAY -> updatedStaticModules.add(new JsonDisplayContentModule(jsonPath));
-                    case SCENE -> updatedSceneModules.add(new JsonSceneModule(jsonPath));
+                    case DISPLAY -> updatedStaticModules.add(new JsonDisplayContentModule(jsonUrl));
+                    case SCENE -> updatedSceneModules.add(new JsonSceneModule(jsonUrl));
                     case CONVERSATION -> {
-                        JsonConversationContentModule module = new JsonConversationContentModule(jsonPath);
+                        JsonConversationContentModule module = new JsonConversationContentModule(jsonUrl);
                         updatedStaticModules.add(module);
                         updatedSceneModules.add(module);
                     }

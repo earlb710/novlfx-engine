@@ -1,14 +1,15 @@
 package com.eb.javafx.bootstrap;
 
+import com.eb.javafx.resources.ResourceCategory;
+import com.eb.javafx.resources.ResourceRegistry;
 import com.eb.javafx.util.Validation;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.net.URL;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
-/** One app-load entry that points at a JSON file or a directory of JSON files below the JSON resource root. */
+/** One app-load entry that points at a JSON file or directory of JSON files under the {@code support} category. */
 public record ApplicationJsonLoad(ApplicationJsonLoadType type, String path, String fileName) {
     public ApplicationJsonLoad {
         type = Validation.requireNonNull(type, "Application JSON load type is required.");
@@ -16,29 +17,37 @@ public record ApplicationJsonLoad(ApplicationJsonLoadType type, String path, Str
         fileName = fileName == null ? "" : fileName;
     }
 
-    public List<Path> resolvePaths(Path jsonResourceRoot) {
-        Path directory = Validation.requireNonNull(jsonResourceRoot, "JSON resource root is required.")
-                .resolve(path)
-                .normalize();
+    /**
+     * Resolves this load entry against a {@link ResourceRegistry} and returns the matching JSON URLs in
+     * lexicographic order of their relative name within the {@link ResourceCategory#SUPPORT} index.
+     *
+     * <p>When {@code fileName} is blank, every {@code .json} file directly under {@code path/} matches
+     * (non-recursive). When {@code fileName} is set, only the exact {@code path/fileName} key matches and is
+     * required to exist.</p>
+     */
+    public List<URL> resolveUrls(ResourceRegistry registry) {
+        Validation.requireNonNull(registry, "Resource registry is required.");
+        String prefix = path.endsWith("/") ? path : path + "/";
         if (!fileName.isBlank()) {
-            return List.of(directory.resolve(fileName).normalize());
+            URL match = registry.find(ResourceCategory.SUPPORT, prefix + fileName)
+                    .orElseThrow(() -> new IllegalArgumentException(
+                            "Application JSON load file not found in support resources: " + prefix + fileName));
+            return List.of(match);
         }
-        if (!Files.isDirectory(directory)) {
-            throw new IllegalArgumentException("Application JSON load directory does not exist: " + directory);
+        List<String> immediateChildren = new ArrayList<>();
+        for (String name : registry.names(ResourceCategory.SUPPORT)) {
+            if (name.startsWith(prefix) && name.endsWith(".json")) {
+                String tail = name.substring(prefix.length());
+                if (!tail.isEmpty() && !tail.contains("/")) {
+                    immediateChildren.add(name);
+                }
+            }
         }
-        try (var paths = Files.list(directory)) {
-            return paths
-                    .filter(Files::isRegularFile)
-                    .filter(ApplicationJsonLoad::isJsonFile)
-                    .sorted(Comparator.comparing(path -> path.getFileName().toString()))
-                    .map(Path::normalize)
-                    .toList();
-        } catch (IOException exception) {
-            throw new IllegalArgumentException("Unable to list application JSON load directory: " + directory, exception);
+        immediateChildren.sort(Comparator.naturalOrder());
+        List<URL> resolved = new ArrayList<>(immediateChildren.size());
+        for (String name : immediateChildren) {
+            resolved.add(registry.require(ResourceCategory.SUPPORT, name));
         }
-    }
-
-    private static boolean isJsonFile(Path path) {
-        return path.getFileName().toString().endsWith(".json");
+        return List.copyOf(resolved);
     }
 }

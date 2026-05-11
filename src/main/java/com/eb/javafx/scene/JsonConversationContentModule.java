@@ -9,6 +9,7 @@ import com.eb.javafx.scene.ConversationDefinition.ConversationVariant;
 import com.eb.javafx.util.JsonStrings;
 import com.eb.javafx.util.Validation;
 
+import java.net.URL;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -28,6 +29,14 @@ public final class JsonConversationContentModule implements StaticContentModule,
 
     public JsonConversationContentModule(Path jsonPath, ConversationConditionVariables conditionVariables) {
         this(ConversationDefinitionJson.load(jsonPath, conditionVariables), conditionVariables);
+    }
+
+    public JsonConversationContentModule(URL jsonUrl) {
+        this(jsonUrl, ConversationConditionVariables.fixed());
+    }
+
+    public JsonConversationContentModule(URL jsonUrl, ConversationConditionVariables conditionVariables) {
+        this(ConversationDefinitionJson.load(jsonUrl, conditionVariables), conditionVariables);
     }
 
     public JsonConversationContentModule(ConversationDefinition document) {

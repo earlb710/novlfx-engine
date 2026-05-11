@@ -1,19 +1,24 @@
 package com.eb.javafx.bootstrap;
 
+import com.eb.javafx.resources.ResourceCategory;
+import com.eb.javafx.resources.ResourceIo;
+import com.eb.javafx.resources.ResourceRegistry;
 import com.eb.javafx.util.JsonData;
 import com.eb.javafx.util.Validation;
 
 import java.io.IOException;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /** JSON document describing which JSON resource directories are loaded during app startup. */
 public final class ApplicationJsonLoadDefinition {
-    public static final String DEFAULT_DIRECTORY = "config";
-    public static final String DEFAULT_FILE_NAME = "app-load.json";
+    /** Resource registry key (under {@link ResourceCategory#SUPPORT}) for the canonical app-load document. */
+    public static final String DEFAULT_RESOURCE_KEY = "config/app-load.json";
 
     private final List<ApplicationJsonLoad> loads;
 
@@ -25,13 +30,6 @@ public final class ApplicationJsonLoadDefinition {
         return new ApplicationJsonLoadDefinition(loads);
     }
 
-    public static Path defaultPath(Path jsonResourceRoot) {
-        return Validation.requireNonNull(jsonResourceRoot, "JSON resource root is required.")
-                .resolve(DEFAULT_DIRECTORY)
-                .resolve(DEFAULT_FILE_NAME)
-                .normalize();
-    }
-
     public static ApplicationJsonLoadDefinition load(Path jsonPath) {
         Validation.requireNonNull(jsonPath, "Application JSON load definition path is required.");
         try {
@@ -39,6 +37,21 @@ public final class ApplicationJsonLoadDefinition {
         } catch (IOException exception) {
             throw new IllegalArgumentException("Unable to read application JSON load definition: " + jsonPath, exception);
         }
+    }
+
+    /** Loads the definition from a URL (filesystem or classpath). */
+    public static ApplicationJsonLoadDefinition load(URL jsonUrl) {
+        Validation.requireNonNull(jsonUrl, "Application JSON load definition URL is required.");
+        return fromJson(ResourceIo.readString(jsonUrl), jsonUrl.toString());
+    }
+
+    /**
+     * Returns the canonical {@code app-load.json} URL from the registry's support category, or empty when no
+     * application has registered the document.
+     */
+    public static Optional<URL> defaultUrl(ResourceRegistry registry) {
+        Validation.requireNonNull(registry, "Resource registry is required.");
+        return registry.find(ResourceCategory.SUPPORT, DEFAULT_RESOURCE_KEY);
     }
 
     public static ApplicationJsonLoadDefinition fromJson(String json, String sourceName) {

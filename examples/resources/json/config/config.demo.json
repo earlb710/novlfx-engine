@@ -1,8 +1,10 @@
 {
-  "_comment": "Paths in this demo config are resolved relative to the repository root.",
+  "_comment": "Demo application config.json. Paths are resolved relative to the directory containing this file when the application loads it through BootstrapOptions.fromConfig. The resourceRoots entries are layered before the engine's bundled roots so application files override engine files of the same relative name.",
   "debug": true,
-  "categoryCodeTablesPath": "examples/resources/json/code-tables/category-code-tables.demo.json",
-  "imageAssetRoot": "examples/user-manual/07-display-support/assets",
+  "resourceRoots": {
+    "images":  ["../../../user-manual/07-display-support/assets"],
+    "support": [".."]
+  },
   "defaultAppBackgroundColor": "#101820",
   "defaultAppBackgroundImage": "/com/eb/javafx/images/svg/background-gradient-rectangle.svg",
   "defaultAppBackgroundImageTransparency": "0.15",
@@ -13,9 +15,8 @@
   "defaultSaveLoadScreenBackgroundImage": "/com/eb/javafx/images/svg/background-gradient-rectangle.svg",
   "defaultSaveLoadScreenBackgroundImageTransparency": "0.25",
   "resources": {
-    "displayDefinitions": "examples/resources/json/display/display-definitions.demo.json",
-    "sceneDefinitions": "examples/resources/json/scenes/scene-definitions.demo.json",
-    "jsonResourceRoot": "examples/resources/json",
-    "uiTheme": "src/main/resources/com/eb/javafx/ui/default.css"
+    "displayDefinitions": "../display/display-definitions.demo.json",
+    "sceneDefinitions": "../scenes/scene-definitions.demo.json",
+    "uiTheme": "../../../../src/main/resources/com/eb/javafx/ui/default.css"
   }
 }

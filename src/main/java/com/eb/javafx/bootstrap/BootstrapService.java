@@ -68,9 +68,7 @@ public final class BootstrapService {
                 options.resourceRegistry(),
                 new PreferencesService(),
                 new ContentRegistry(),
-                new ImageDisplayRegistry(
-                        options.applicationRoot(),
-                        options.resourceConfig().resolveImageAssetRoot(options.applicationRoot())),
+                new ImageDisplayRegistry(options.resourceRegistry()),
                 new GameStateFactory(),
                 new SaveLoadService(),
                 new GameRandomService(),

@@ -53,7 +53,7 @@ import java.util.function.Consumer;
 
 /** Manual editor for engine default display values and viewer for related resources. */
 public final class DefaultDisplayValuesApplication {
-    static final String APPLICATION_CONFIG_RESOURCE = "/com/eb/javafx/bootstrap/config.json";
+    static final String APPLICATION_CONFIG_RESOURCE = "/config.json";
     private static final String HEX_COLOR_PATTERN = "#[0-9a-fA-F]{6}";
     private static final List<DisplayResource> DISPLAY_RESOURCES = List.of(
             new DisplayResource("Default CSS", "/com/eb/javafx/ui/default.css", true),

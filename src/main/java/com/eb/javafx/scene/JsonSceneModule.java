@@ -2,6 +2,7 @@ package com.eb.javafx.scene;
 
 import com.eb.javafx.util.Validation;
 
+import java.net.URL;
 import java.nio.file.Path;
 import java.util.List;
 
@@ -11,6 +12,10 @@ public final class JsonSceneModule implements SceneModule {
 
     public JsonSceneModule(Path jsonPath) {
         this(SceneDefinitionJson.load(jsonPath));
+    }
+
+    public JsonSceneModule(URL jsonUrl) {
+        this(SceneDefinitionJson.load(jsonUrl));
     }
 
     public JsonSceneModule(List<SceneDefinition> scenes) {

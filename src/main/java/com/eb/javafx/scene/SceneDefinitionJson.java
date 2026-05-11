@@ -1,10 +1,12 @@
 package com.eb.javafx.scene;
 
+import com.eb.javafx.resources.ResourceIo;
 import com.eb.javafx.util.JsonData;
 import com.eb.javafx.util.JsonStrings;
 import com.eb.javafx.util.Validation;
 
 import java.io.IOException;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -23,11 +25,12 @@ public final class SceneDefinitionJson {
 
     public static List<SceneDefinition> load(Path jsonPath) {
         Validation.requireNonNull(jsonPath, "Scene definition JSON path is required.");
-        try {
-            return fromJson(Files.readString(jsonPath, StandardCharsets.UTF_8), jsonPath.toString());
-        } catch (IOException exception) {
-            throw new IllegalArgumentException("Unable to read scene definition JSON: " + jsonPath, exception);
-        }
+        return load(ResourceIo.toUrl(jsonPath));
+    }
+
+    public static List<SceneDefinition> load(URL jsonUrl) {
+        Validation.requireNonNull(jsonUrl, "Scene definition JSON URL is required.");
+        return fromJson(ResourceIo.readString(jsonUrl), jsonUrl.toString());
     }
 
     public static List<SceneDefinition> fromJson(String json, String sourceName) {

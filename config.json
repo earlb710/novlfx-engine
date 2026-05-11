@@ -8,8 +8,6 @@
     "support":   ["classpath:/com/eb/javafx/gamesupport", "classpath:/com/eb/javafx/conversations"],
     "ui":        ["classpath:/com/eb/javafx/ui"]
   },
-  "categoryCodeTablesPath": "config/category-code-tables.en.json",
-  "imageAssetRoot": "game",
   "defaultAppBackgroundColor": "",
   "defaultAppBackgroundImage": "",
   "defaultAppBackgroundImageTransparency": "",
@@ -20,7 +18,6 @@
   "defaultSaveLoadScreenBackgroundImage": "",
   "defaultSaveLoadScreenBackgroundImageTransparency": "",
   "resources": {
-    "jsonResourceRoot": "examples/resources/json",
     "uiTheme": "src/main/resources/com/eb/javafx/ui/default.css"
   }
 }

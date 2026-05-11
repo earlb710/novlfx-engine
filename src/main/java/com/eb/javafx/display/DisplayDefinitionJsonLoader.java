@@ -1,12 +1,11 @@
 package com.eb.javafx.display;
 
+import com.eb.javafx.resources.ResourceIo;
 import com.eb.javafx.util.JsonData;
 import com.eb.javafx.util.Validation;
 import javafx.animation.Animation;
 
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
+import java.net.URL;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -19,11 +18,12 @@ public final class DisplayDefinitionJsonLoader {
 
     public static void loadInto(Path jsonPath, ImageDisplayRegistry registry) {
         Validation.requireNonNull(jsonPath, "Display definition JSON path is required.");
-        try {
-            loadInto(Files.readString(jsonPath, StandardCharsets.UTF_8), jsonPath.toString(), registry);
-        } catch (IOException exception) {
-            throw new IllegalArgumentException("Unable to read display definition JSON: " + jsonPath, exception);
-        }
+        loadInto(ResourceIo.toUrl(jsonPath), registry);
+    }
+
+    public static void loadInto(URL jsonUrl, ImageDisplayRegistry registry) {
+        Validation.requireNonNull(jsonUrl, "Display definition JSON URL is required.");
+        loadInto(ResourceIo.readString(jsonUrl), jsonUrl.toString(), registry);
     }
 
     public static void loadInto(String json, String sourceName, ImageDisplayRegistry registry) {
