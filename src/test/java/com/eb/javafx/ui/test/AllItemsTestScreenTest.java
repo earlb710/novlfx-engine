@@ -4,8 +4,11 @@ import com.eb.javafx.prefs.PreferencesService;
 import com.eb.javafx.testscreen.ManualTest;
 import com.eb.javafx.testscreen.TestScreenApplication;
 import com.eb.javafx.ui.ScreenLayoutModel;
+import com.eb.javafx.ui.ScreenLayoutRenderer;
 import com.eb.javafx.ui.UiTheme;
 import javafx.application.Platform;
+import javafx.scene.Scene;
+import javafx.scene.control.ScrollPane;
 import javafx.stage.Stage;
 import org.junit.jupiter.api.Test;
 
@@ -52,12 +55,17 @@ final class AllItemsTestScreenTest {
             UiTheme uiTheme = new UiTheme();
             uiTheme.initialize(preferencesService);
 
+            ScreenLayoutModel model = JsonScreenDesignTestScreen.loadLayoutModel(ALL_ITEMS_DESIGN_PATH);
+            ScrollPane scrollPane = ScreenLayoutRenderer.createScrollablePreviewRoot(model, ALL_ITEMS_DESIGN_PATH.getParent());
+
+            Scene scene = new Scene(scrollPane,
+                    TestUiScreenSize.sceneWidth(preferencesService),
+                    TestUiScreenSize.sceneHeight(preferencesService));
+            scene.getStylesheets().add(uiTheme.stylesheet());
+
             Stage stage = new Stage();
             stage.setTitle("All items test screen manual test");
-            stage.setScene(JsonScreenDesignTestScreen.createScene(
-                    ALL_ITEMS_DESIGN_PATH,
-                    preferencesService,
-                    uiTheme));
+            stage.setScene(scene);
             stage.show();
             assertTrue(stage.isShowing() && stage.getScene() != null, "All items test screen was not shown.");
         });

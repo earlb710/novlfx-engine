@@ -18,6 +18,7 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.control.Control;
 import javafx.scene.control.Label;
 import javafx.scene.control.RadioButton;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Slider;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
@@ -102,6 +103,13 @@ public final class ScreenLayoutRenderer {
      * @param resourceRoot directory used to resolve relative background image paths
      * @return preview root, optionally wrapped in a configured background container
      */
+    public static ScrollPane createScrollablePreviewRoot(ScreenLayoutModel model, Path resourceRoot) {
+        ScrollPane scrollPane = new ScrollPane(createPreviewRoot(model, resourceRoot));
+        scrollPane.setFitToWidth(true);
+        scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        return scrollPane;
+    }
+
     public static Parent createPreviewRoot(ScreenLayoutModel model, Path resourceRoot) {
         BorderPane root = createRoot(model, resourceRoot);
         if (!hasScreenBackground(model.metadata())) {
@@ -259,7 +267,16 @@ public final class ScreenLayoutRenderer {
     private static Region sectionNode(ScreenLayoutSection section, String styleClass, GameEventBus eventBus, Path resourceRoot) {
         VBox content = new VBox(SECTION_SPACING);
         content.setMaxWidth(Double.MAX_VALUE);
-        addOptionalText(content, section.title(), ScreenShell.LAYOUT_SECTION_TITLE_STYLE_CLASS);
+        if (section.title() != null) {
+            Label titleLabel = new Label(section.title());
+            titleLabel.getStyleClass().add(ScreenShell.LAYOUT_SECTION_TITLE_STYLE_CLASS);
+            titleLabel.setPadding(new Insets(0, 0, 4, 0));
+            String titleColor = section.metadata().get("titleColor");
+            if (titleColor != null && COLOR_PATTERN.matcher(titleColor).matches()) {
+                titleLabel.setStyle("-fx-text-fill: " + titleColor + "; ");
+            }
+            content.getChildren().add(titleLabel);
+        }
         for (int index = 0; index < section.lines().size(); index++) {
             String line = section.lines().get(index);
             Map<String, String> metadata = section.lineMetadata().isEmpty() ? Map.of() : section.lineMetadata().get(index);

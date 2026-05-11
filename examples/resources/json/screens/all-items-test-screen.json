@@ -24,7 +24,8 @@
         "borderStyle": "solid",
         "borderCorner": "rounded",
         "borderThickness": "1",
-        "borderColor": "#82addd"
+        "borderColor": "#82addd",
+        "titleColor": "#00e5ff"
       }
     },
     {
@@ -40,7 +41,8 @@
         "borderStyle": "solid",
         "borderCorner": "rounded",
         "borderThickness": "1",
-        "borderColor": "#82addd"
+        "borderColor": "#82addd",
+        "titleColor": "#00e5ff"
       }
     },
     {
@@ -56,7 +58,8 @@
         "borderStyle": "solid",
         "borderCorner": "rounded",
         "borderThickness": "1",
-        "borderColor": "#82addd"
+        "borderColor": "#82addd",
+        "titleColor": "#00e5ff"
       }
     },
     {
@@ -72,7 +75,8 @@
         "borderStyle": "solid",
         "borderCorner": "rounded",
         "borderThickness": "1",
-        "borderColor": "#82addd"
+        "borderColor": "#82addd",
+        "titleColor": "#00e5ff"
       }
     },
     {
@@ -88,7 +92,8 @@
         "borderStyle": "solid",
         "borderCorner": "rounded",
         "borderThickness": "1",
-        "borderColor": "#82addd"
+        "borderColor": "#82addd",
+        "titleColor": "#00e5ff"
       }
     }
   ],
