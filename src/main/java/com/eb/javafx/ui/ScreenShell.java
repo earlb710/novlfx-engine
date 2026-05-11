@@ -751,12 +751,12 @@ public final class ScreenShell {
     }
 
     private static Image loadFooterIcon(String resourcePath) {
-        try (InputStream inputStream = ScreenShell.class.getClassLoader().getResourceAsStream(resourcePath)) {
-            if (inputStream == null) {
-                return null;
+        try {
+            URL resource = resolveResource(resourcePath);
+            try (InputStream inputStream = resource.openStream()) {
+                return VectorImage.fromInputStream(inputStream).toRasterImage(FOOTER_ICON_SIZE, FOOTER_ICON_SIZE);
             }
-            return VectorImage.fromInputStream(inputStream).toRasterImage(FOOTER_ICON_SIZE, FOOTER_ICON_SIZE);
-        } catch (IOException | IllegalArgumentException | IllegalStateException exception) {
+        } catch (IllegalArgumentException | IOException | IllegalStateException exception) {
             return null;
         }
     }
@@ -794,7 +794,11 @@ public final class ScreenShell {
 
     private static URL resolveResource(String resourcePath) {
         String checkedPath = Validation.requireNonBlank(resourcePath, "Screen SVG background resource is required.");
-        URL resource = ScreenShell.class.getResource(checkedPath);
+        String absolutePath = checkedPath.startsWith("/") ? checkedPath : "/" + checkedPath;
+        URL resource = ScreenShell.class.getResource(absolutePath);
+        if (resource == null && !absolutePath.equals(checkedPath)) {
+            resource = ScreenShell.class.getResource(checkedPath);
+        }
         if (resource == null) {
             String classLoaderPath = checkedPath.startsWith("/") ? checkedPath.substring(1) : checkedPath;
             resource = ScreenShell.class.getClassLoader().getResource(classLoaderPath);
