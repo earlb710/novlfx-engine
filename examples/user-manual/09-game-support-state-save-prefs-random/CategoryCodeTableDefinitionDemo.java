@@ -1,9 +1,11 @@
-import com.eb.javafx.bootstrap.ApplicationResourceConfig;
+import com.eb.javafx.bootstrap.BootstrapOptions;
 import com.eb.javafx.gamesupport.CategoryCodeTableDefinition;
 import com.eb.javafx.gamesupport.CodeDefinition;
 import com.eb.javafx.gamesupport.CodeTableDefinition;
+import com.eb.javafx.resources.ResourceCategory;
 import com.eb.javafx.util.PathUtils;
 
+import java.net.URL;
 import java.nio.file.Path;
 import java.util.List;
 
@@ -17,11 +19,14 @@ public final class CategoryCodeTableDefinitionDemo {
     }
 
     public static void main(String[] args) {
-        Path appRoot = PathUtils.currentDirectory();
         Path configPath = PathUtils.currentDirectory(
                 "examples/resources/json/config/config.demo.json");
-        Path jsonPath = ApplicationResourceConfig.load(configPath).resolveCategoryCodeTables(appRoot);
-        CategoryCodeTableDefinition tables = CategoryCodeTableDefinition.load(jsonPath);
+
+        // The category code table file lives under the application's support root. Looking it up through the
+        // ResourceRegistry yields a URL that works for both filesystem and JAR-bundled content.
+        URL tablesUrl = BootstrapOptions.fromConfig(configPath).resourceRegistry()
+                .require(ResourceCategory.SUPPORT, "code-tables/category-code-tables.demo.json");
+        CategoryCodeTableDefinition tables = CategoryCodeTableDefinition.load(tablesUrl);
 
         CodeTableDefinition roles = tables.table("roles").orElseThrow();
         CodeTableDefinition editedRoles = roles.withTitle("Staff Roles")

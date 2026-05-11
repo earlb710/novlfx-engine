@@ -150,7 +150,7 @@ Example/demo code: [`examples/user-manual/03-module-and-package-layout/ModuleUsa
 
 Use `BootstrapService` when you want the engine to create and initialize the standard reusable services in the correct order. The bootstrap process loads preferences, initializes save/load, random, audio, game-support, and theme services, registers static content and route modules, validates game rules, and creates runtime state.
 
-For application integration, prefer `BootstrapOptions` with the options-based `BootstrapService` constructor. Options group the application root, `ApplicationResourceConfig`, static content modules, scene modules, and route modules. When created this way, bootstrap constructs its `ImageDisplayRegistry` from the configured image asset root and exposes both the application root and resource config from `BootContext`.
+For application integration, prefer `BootstrapOptions` with the options-based `BootstrapService` constructor. Options group the application root, `ApplicationResourceConfig`, the layered `ResourceRegistry`, static content modules, scene modules, and route modules. When created this way, bootstrap constructs its `ImageDisplayRegistry` from the registry's `IMAGES` category and exposes the application root, resource config, and registry from `BootContext`.
 
 The main result is a `BootContext`. Use it to access initialized services such as:
 
@@ -199,12 +199,18 @@ Lookups are strictly **category-isolated**: a missing image is not found by fall
 
 Access the registry from `BootContext.resourceRegistry()` and look up files with `registry.find(ResourceCategory.UI, "screens/main-menu.json")` or enumerate all files in a category with `registry.list(ResourceCategory.FONTS)`.
 
-Applications can also keep an external `config.json` and load it with `ApplicationResourceConfig.load(Path)` when authored resources need to live outside the engine defaults. The config stores a category code-table JSON path, an image asset root, optional default background values for the app, preferences, and save/load screens, and a generic `resources` map for other overrideable files such as themes, image groups, or the root JSON resource directory:
+### Application `config.json`
+
+Applications can keep an external `config.json` at their working directory and load it with `BootstrapOptions.fromConfig(Path)`. The schema declares per-category resource roots that layer over the engine's bundled roots, optional default background values for the app/preferences/save-load screens, and a generic `resources` map of named overrides:
 
 ```json
 {
-  "categoryCodeTablesPath": "config/category-code-tables.en.json",
-  "imageAssetRoot": "game",
+  "debug": false,
+  "resourceRoots": {
+    "images":  ["assets/images"],
+    "support": ["resources/json"],
+    "ui":      ["resources/json/screens"]
+  },
   "defaultAppBackgroundColor": "#101820",
   "defaultAppBackgroundImage": "/com/eb/javafx/images/svg/background-gradient-rectangle.svg",
   "defaultAppBackgroundImageTransparency": "0.15",
@@ -215,7 +221,6 @@ Applications can also keep an external `config.json` and load it with `Applicati
   "defaultSaveLoadScreenBackgroundImage": "/com/eb/javafx/images/svg/background-gradient-rectangle.svg",
   "defaultSaveLoadScreenBackgroundImageTransparency": "0.25",
   "resources": {
-    "jsonResourceRoot": "resources/json",
     "sceneDefinitions": "content/scene-definitions.json",
     "displayDefinitions": "content/display-definitions.json",
     "uiTheme": "src/main/resources/com/eb/javafx/ui/default.css",
@@ -224,27 +229,26 @@ Applications can also keep an external `config.json` and load it with `Applicati
 }
 ```
 
-Resolve those paths relative to an application-chosen base directory:
+Each `resourceRoots` entry is a list of root specs. Filesystem paths are resolved against the directory containing `config.json`; classpath roots use the `classpath:/path/inside/jar` form. Application roots are walked first; the engine's bundled roots are appended after, so an application file at the same relative name wins over the library file.
 
-- `resolveCategoryCodeTables(baseDir)` returns the authored category JSON file to pass into `CategoryCodeTableDefinition.load(...)`.
-- `resolveImageAssetRoot(baseDir)` returns the image root used by options-based bootstrap or to pass into `new ImageDisplayRegistry(repoRoot, imageAssetRoot)`.
-- `resolveJsonResourceRoot(baseDir)` returns the root directory for app-authored JSON organized by type.
-- `resolveResource(baseDir, "sceneDefinitions")`, `resolveResource(baseDir, "displayDefinitions")`, or other named resource IDs resolve override points that the application owns.
+For overrides that point at a single specific file rather than a category root, use the `resources` map and resolve each entry against an application-chosen base directory through `ApplicationResourceConfig.resolveResource(baseDir, "sceneDefinitions")`. The route-specific background defaults provide shared startup colors and images for app-owned shell, preferences, and save/load screens.
 
-The recommended app-authored JSON layout groups resources by type beneath that root so translation files can be selected by folder:
+The recommended app-authored JSON layout groups resources by type so translation files can be selected by folder. Map this layout onto `resourceRoots` by pointing `support` at the umbrella directory and (optionally) `ui` at the screens subdirectory:
 
 ```text
 resources/json/
-  code-tables/
-  config/
-  conversations/
-  display/
-  location/
-  scenes/
-  screens/
+  code-tables/        (support)
+  config/             (support — holds app-load.json)
+  conversations/      (support)
+  display/            (support)
+  location/           (support)
+  scenes/             (support)
+  screens/            (ui)
 ```
 
-`config/app-load.json` declares which startup-safe JSON directories should be loaded automatically by `BootstrapOptions.fromConfig(...)`. Supported load types are `display`, `scene`, and `conversation`; omit `fileName` to load every `.json` file in the directory in filename order, or set `fileName` to load one file:
+### `config/app-load.json` and per-startup JSON loading
+
+`config/app-load.json` declares which startup-safe JSON files are loaded automatically by `BootstrapOptions.fromConfig(...)`. The file is discovered through the registry as `support/config/app-load.json`, so any application that includes its `resources/json` tree as a `support` root will pick it up. Supported load types are `display`, `scene`, and `conversation`; omit `fileName` to load every immediate `.json` child of the listed directory in alphabetical order, or set `fileName` to load one specific file:
 
 ```json
 {
@@ -256,6 +260,10 @@ resources/json/
 }
 ```
 
+The `path` field is interpreted as a relative key under the `support` category, so `"path": "display"` matches the keys `display/<file>.json` produced by the registry's recursive walk of every support root.
+
+### Bootstrap call
+
 ```java
 BootstrapOptions options = BootstrapOptions.fromConfig(appRoot.resolve("config.json"))
         .withStaticContentModules(staticModules)
@@ -264,9 +272,17 @@ BootstrapOptions options = BootstrapOptions.fromConfig(appRoot.resolve("config.j
 BootContext context = new BootstrapService(options).boot(primaryStage);
 ```
 
-Use `context.resourceConfig().resolveCategoryCodeTables(context.applicationRoot())` when app-owned content modules need to load generic category JSON during startup.
-Use `config/app-load.json` plus `BootstrapOptions.fromConfig(...)` when app-owned display, scene, or conversation JSON should be loaded automatically during bootstrap. Use `resolveResource(...)` and explicit modules such as `JsonDisplayContentModule` when the application wants named one-off files or custom loading behavior instead of directory-driven startup loading.
-Use the route-specific background getters when the application wants shared startup defaults for app-owned shell, preferences, or save/load screen backgrounds.
+After `boot(...)` returns, downstream code reads files through `BootContext.resourceRegistry()`. For example, an application content module that needs the category code table at startup looks it up by relative key inside its support root:
+
+```java
+URL categoryTables = context.resourceRegistry()
+        .require(ResourceCategory.SUPPORT, "code-tables/category-code-tables.en.json");
+CategoryCodeTableDefinition definition = CategoryCodeTableDefinition.load(categoryTables);
+```
+
+The same pattern works for engine-bundled files (the registry returns a `jar:` URL that the loader reads transparently) and for application-supplied overrides (the registry returns a `file:` URL pointing at the app's directory). All four engine JSON loaders — `CategoryCodeTableDefinition.load`, `SceneDefinitionJson.load`, `ConversationDefinitionJson.load`, and `DisplayDefinitionJsonLoader.loadInto` — accept a `URL` alongside the older `Path` overload, so callers can stay registry-native.
+
+Use `config/app-load.json` plus `BootstrapOptions.fromConfig(...)` when app-owned display, scene, or conversation JSON should be loaded automatically during bootstrap. Use `ApplicationResourceConfig.resolveResource(...)` together with explicit modules such as `JsonDisplayContentModule` (which now also accepts a `URL` constructor argument) when the application wants named one-off files instead of directory-driven startup loading.
 
 The management UI includes a **Default App Values** screen for inspecting these startup defaults and related display resources. The **Application Values** tab presents editable application config fields with friendly labels, local **Save** and **Reset** actions, browse buttons for file/path-backed fields, and color pickers for color values.
 
@@ -281,10 +297,12 @@ Below that, the **Load Files** block provides a second table for tracking author
 ```json
 {
   "debug": true,
-  "categoryCodeTablesPath": "config/category-code-tables.en.json",
-  "imageAssetRoot": "game",
+  "resourceRoots": {
+    "images":  ["game"],
+    "support": ["resources/json"],
+    "ui":      ["resources/json/screens"]
+  },
   "resources": {
-    "jsonResourceRoot": "resources/json",
     "sceneDefinitions": "content/scene-definitions.json",
     "displayDefinitions": "content/display-definitions.json",
     "uiTheme": "src/main/resources/com/eb/javafx/ui/default.css"

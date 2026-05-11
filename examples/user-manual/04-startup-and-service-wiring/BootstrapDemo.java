@@ -39,8 +39,8 @@ public final class BootstrapDemo {
         System.out.println("Completed phases: " + report.completedPhases());
         System.out.println("Elapsed startup time: " + report.elapsedTime());
         System.out.println("Booted route IDs: " + context.sceneRouter().routeDescriptors().keySet());
-        System.out.println("JSON resource root: " + context.resourceConfig()
-                .resolveJsonResourceRoot(context.applicationRoot()));
+        System.out.println("Support roots: " + context.resourceConfig()
+                .resourceRoots(com.eb.javafx.resources.ResourceCategory.SUPPORT));
         System.out.println("Display definitions path: " + context.resourceConfig()
                 .resolveResource(context.applicationRoot(), "displayDefinitions")
                 .orElseThrow());
