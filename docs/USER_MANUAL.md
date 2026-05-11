@@ -477,9 +477,13 @@ Blocks and items are stable editable records:
 
 - each `ScreenDesignBlock` has `id`, optional `title`, optional block-level `layoutType`, optional `parentBlockId`, optional conversation-style `conditions`, optional `styleClass`, and `metadata`
 - each `ScreenDesignItem` has `id`, `blockId`, `type`, optional `label`, optional `text`, optional `value`, optional `defaultValue`, optional `sequence`, optional `styleClass`, and `metadata`
-- `TEXT` and `TEXT_AREA` are read-only display content and do not keep a label
-- `FIELD` and `MULTI_LINE_FIELD` support `label`, `value`, `defaultValue`, and `editable`
+- all item types support an optional `label`; TEXT and TEXT_AREA store the label on the model but the generic renderer uses it only as a section annotation, not as a rendered caption
+- `FIELD` and `MULTI_LINE_FIELD` support `label`, `value`, `defaultValue`, and `editable`; the label is rendered above the input control
 - `BUTTON` uses `label` as the rendered button caption
+- `POPLIST` renders a non-editable dropdown; put comma-separated choices in `metadata.options`
+- `COMBO_BOX` renders an editable or non-editable combo box; `editable: true` lets the user type; put comma-separated choices in `metadata.options`
+- `SLIDER` renders a range slider; use `metadata.min`, `metadata.max`, and `metadata.step` to configure the range; `editable: true` makes the slider interactive; `metadata.showTicks` and `metadata.showLabels` show tick marks and labels
+- `RADIO_GROUP` renders a group of mutually exclusive radio buttons; put comma-separated choices in `metadata.options`; `metadata.orientation` of `horizontal` or `vertical` (default) controls layout; `editable: true` makes the buttons clickable
 
 `ScreenDesignLayoutAdapter` converts a `ScreenDesignModel` into a `ScreenLayoutModel` for preview or runtime rendering. It preserves stable block/item ids, converts `parentBlockId` relationships into nested layout sections, maps field-style items to `label: value/defaultValue` lines, carries field metadata needed for JavaFX preview/runtime input controls (including editable state), sorts block items by optional `sequence` before falling back to authored JSON order, and carries item/block metadata into the layout so renderer-supported visual metadata can be applied consistently. Block `conditions` are preserved in section metadata as a JSON string array, and applications can call the binding overload with a string map so authored text such as `$playerName` or `${playerName}` is resolved during scaffolding. Complex or application-specific controls can still be added programmatically by targeting stable block ids after the JSON scaffold is loaded.
 
@@ -551,10 +555,10 @@ When editing manually:
 - block ids and item ids must be unique
 - nested blocks use `parentBlockId`; root blocks leave it as `null`
 - block `conditions` use the same `$name` / `${name}` marker style as conversation conditions and are preserved for application-owned visibility rules
-- item `type` must be one of `TEXT`, `FIELD`, `MULTI_LINE_FIELD`, `TEXT_AREA`, or `BUTTON`
-- `label` is only meaningful for `FIELD`, `MULTI_LINE_FIELD`, and `BUTTON`
-- `text` is used by `TEXT` and `TEXT_AREA`
-- `defaultValue` is the fallback text shown by `FIELD` and `MULTI_LINE_FIELD` when `value` is null
+- item `type` must be one of `TEXT`, `FIELD`, `MULTI_LINE_FIELD`, `TEXT_AREA`, `BUTTON`, `POPLIST`, `COMBO_BOX`, `SLIDER`, or `RADIO_GROUP`
+- `label` is supported on all item types; for `FIELD`, `MULTI_LINE_FIELD`, `POPLIST`, `COMBO_BOX`, `SLIDER`, and `RADIO_GROUP` it is rendered above the control; for `BUTTON` it is the button caption
+- `text` is the display content used by `TEXT` and `TEXT_AREA`
+- `defaultValue` is the fallback text shown by `FIELD`, `MULTI_LINE_FIELD`, `POPLIST`, `COMBO_BOX`, `SLIDER`, and `RADIO_GROUP` when `value` is null
 - `sequence` is an optional integer ordering hint for items within the same block
 - `editable` is only meaningful for field-style items
 - `styleClass` is a stable CSS hook; `metadata` is a string map for extra tool/renderer-owned values
@@ -566,7 +570,7 @@ The designer and JSON format currently expose these style-oriented metadata keys
 
 - screen metadata: `fontFamily`, `fontSize`, `fontStyle`, `color`, `backgroundColor`, `borderStyle`, `borderCorner`, `borderThickness`, `borderColor`, `dialog`, `dismissOnClickOutside`, `dismissOnEscape`
 - block metadata: `fontFamily`, `fontSize`, `fontStyle`, `color`, `backgroundColor`, `backgroundImage`, `backgroundImageTransparency`, `backgroundImagePlacement`, `transparency`, `borderStyle`, `borderCorner`, `borderThickness`, `borderColor`
-- item metadata: `displayRole`, `fontFamily`, `fontSize`, `fontStyle`, `color`, `backgroundColor`, `transparency`, `labelFontFamily`, `labelFontSize`, `labelFontStyle`, `labelColor`, `eventName`, `actionEvent`
+- item metadata: `displayRole`, `fontFamily`, `fontSize`, `fontStyle`, `color`, `backgroundColor`, `transparency`, `labelFontFamily`, `labelFontSize`, `labelFontStyle`, `labelColor`, `eventName`, `actionEvent`; POPLIST/COMBO_BOX/RADIO_GROUP: `options` (comma-separated); SLIDER: `min`, `max`, `step`, `showTicks`, `showLabels`; RADIO_GROUP: `orientation` (`horizontal` or `vertical`)
 
 These keys are string-valued metadata entries in the saved JSON. Leave a key out to inherit the bundled default display configuration from `src/main/resources/com/eb/javafx/ui/display-defaults.json`, or from any edited preview defaults currently loaded in the screen designer.
 

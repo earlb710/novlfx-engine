@@ -91,7 +91,7 @@ final class ScreenDesignModelTest {
         ScreenDesignItem text = new ScreenDesignItem("text", "profile", ScreenDesignItemType.TEXT,
                 "Text", "Line", null, null, true, null, Map.of());
         assertFalse(text.editable());
-        assertEquals(null, text.label());
+        assertEquals("Text", text.label());
         assertTrue(new ScreenDesignItem("multi", "profile", ScreenDesignItemType.MULTI_LINE_FIELD,
                 "Multi", null, null, "value", true, null, Map.of()).editable());
         assertFalse(new ScreenDesignItem("button", "profile", ScreenDesignItemType.BUTTON,
@@ -147,6 +147,28 @@ final class ScreenDesignModelTest {
         assertThrows(IllegalArgumentException.class, () -> ScreenDesignJson.fromJson(selfParentJson, "self-parent"));
         assertThrows(IllegalArgumentException.class, () -> ScreenDesignJson.fromJson(unsupportedTypeJson, "bad-type"));
         assertThrows(IllegalArgumentException.class, () -> ScreenDesignJson.fromJson(badConditionJson, "bad-condition"));
+    }
+
+    @Test
+    void rejectsInvalidBooleanScreenMetadata() {
+        String badDialog = """
+                {"id":"x","title":"X","layoutType":"FORM","metadata":{"dialog":"treu"},"blocks":[],"items":[]}
+                """;
+        String badDismissClickOutside = """
+                {"id":"x","title":"X","layoutType":"FORM","metadata":{"dismissOnClickOutside":"maybe"},"blocks":[],"items":[]}
+                """;
+        String badDismissEscape = """
+                {"id":"x","title":"X","layoutType":"FORM","metadata":{"dismissOnEscape":"oui"},"blocks":[],"items":[]}
+                """;
+        String validDialog = """
+                {"id":"x","title":"X","layoutType":"FORM","metadata":{"dialog":"true","dismissOnClickOutside":"false","dismissOnEscape":"yes"},"blocks":[],"items":[]}
+                """;
+
+        assertThrows(IllegalArgumentException.class, () -> ScreenDesignJson.fromJson(badDialog, "bad-dialog"));
+        assertThrows(IllegalArgumentException.class, () -> ScreenDesignJson.fromJson(badDismissClickOutside, "bad-dismiss-click"));
+        assertThrows(IllegalArgumentException.class, () -> ScreenDesignJson.fromJson(badDismissEscape, "bad-dismiss-escape"));
+        ScreenDesignModel valid = ScreenDesignJson.fromJson(validDialog, "valid-dialog");
+        assertEquals("true", valid.metadata().get("dialog"));
     }
 
     @Test
@@ -396,6 +418,86 @@ final class ScreenDesignModelTest {
         assertEquals(DisplayDefaults.ROLE_TEXT, ScreenDesignLayoutAdapter.defaultRole(ScreenDesignItemType.TEXT));
         assertEquals(DisplayDefaults.ROLE_FIELD, ScreenDesignLayoutAdapter.defaultRole(ScreenDesignItemType.FIELD));
         assertEquals(DisplayDefaults.ROLE_BUTTON, ScreenDesignLayoutAdapter.defaultRole(ScreenDesignItemType.BUTTON));
+    }
+
+    @Test
+    void newInputTypesRoundTripThroughJsonAndPreserveMetadata() {
+        ScreenDesignModel model = new ScreenDesignModel("x", "X", ScreenLayoutType.FORM, Map.of(),
+                List.of(new ScreenDesignBlock("panel", "Panel")),
+                List.of(
+                        new ScreenDesignItem("x.difficulty", "panel", ScreenDesignItemType.POPLIST,
+                                "Difficulty", null, "Normal", null, 10, null,
+                                Map.of("options", "Easy, Normal, Hard")),
+                        new ScreenDesignItem("x.name", "panel", ScreenDesignItemType.COMBO_BOX,
+                                "Name", null, null, "Player", 20, true, null,
+                                Map.of("options", "Ava, Max, Sam")),
+                        new ScreenDesignItem("x.volume", "panel", ScreenDesignItemType.SLIDER,
+                                "Volume", null, "75", null, 30, true, null,
+                                Map.of("min", "0", "max", "100", "step", "5")),
+                        new ScreenDesignItem("x.lang", "panel", ScreenDesignItemType.RADIO_GROUP,
+                                "Language", null, "EN", null, 40, true, null,
+                                Map.of("options", "EN, FR, DE", "orientation", "horizontal"))),
+                List.of());
+
+        String json = ScreenDesignJson.toJson(model);
+        ScreenDesignModel loaded = ScreenDesignJson.fromJson(json, "round-trip");
+
+        assertEquals(ScreenDesignItemType.POPLIST, loaded.items().get(0).type());
+        assertEquals("Easy, Normal, Hard", loaded.items().get(0).metadata().get("options"));
+        assertEquals(ScreenDesignItemType.COMBO_BOX, loaded.items().get(1).type());
+        assertTrue(loaded.items().get(1).editable());
+        assertEquals(ScreenDesignItemType.SLIDER, loaded.items().get(2).type());
+        assertEquals("0", loaded.items().get(2).metadata().get("min"));
+        assertEquals("100", loaded.items().get(2).metadata().get("max"));
+        assertEquals(ScreenDesignItemType.RADIO_GROUP, loaded.items().get(3).type());
+        assertEquals("horizontal", loaded.items().get(3).metadata().get("orientation"));
+    }
+
+    @Test
+    void newInputTypesAdaptToLayoutLinesAndFieldMetadata() {
+        ScreenDesignModel model = new ScreenDesignModel("x", "X", ScreenLayoutType.FORM, Map.of(),
+                List.of(new ScreenDesignBlock("panel", "Panel")),
+                List.of(
+                        new ScreenDesignItem("x.diff", "panel", ScreenDesignItemType.POPLIST,
+                                "Difficulty", null, "Normal", null, null, null, Map.of("options", "Easy, Normal, Hard")),
+                        new ScreenDesignItem("x.vol", "panel", ScreenDesignItemType.SLIDER,
+                                "Volume", null, "75", null, null, true, null, Map.of("min", "0", "max", "100")),
+                        new ScreenDesignItem("x.lang", "panel", ScreenDesignItemType.RADIO_GROUP,
+                                "Language", null, "EN", null, null, true, null, Map.of("options", "EN, FR"))),
+                List.of());
+
+        ScreenLayoutSection section = ScreenDesignLayoutAdapter.toLayoutModel(model).contentSections().get(0);
+
+        assertEquals(List.of("Difficulty: Normal", "Volume: 75", "Language: EN"), section.lines());
+        assertEquals(ScreenDesignItemType.POPLIST.name(), section.lineMetadata().get(0).get(ScreenDesignLayoutAdapter.SCREEN_DESIGN_ITEM_TYPE_KEY));
+        assertEquals("Easy, Normal, Hard", section.lineMetadata().get(0).get("options"));
+        assertEquals(ScreenDesignItemType.SLIDER.name(), section.lineMetadata().get(1).get(ScreenDesignLayoutAdapter.SCREEN_DESIGN_ITEM_TYPE_KEY));
+        assertEquals("0", section.lineMetadata().get(1).get("min"));
+        assertEquals(ScreenDesignItemType.RADIO_GROUP.name(), section.lineMetadata().get(2).get(ScreenDesignLayoutAdapter.SCREEN_DESIGN_ITEM_TYPE_KEY));
+        assertEquals("EN", section.lineMetadata().get(2).get(ScreenDesignLayoutAdapter.SCREEN_DESIGN_VALUE_KEY));
+    }
+
+    @Test
+    void rejectsInvalidSliderMetadata() {
+        String badMin = """
+                {"id":"x","title":"X","layoutType":"FORM","blocks":[{"id":"a"}],"items":[
+                  {"id":"i","blockId":"a","type":"SLIDER","label":"Vol","metadata":{"min":"abc","max":"100"}}
+                ]}
+                """;
+        String maxNotGreaterThanMin = """
+                {"id":"x","title":"X","layoutType":"FORM","blocks":[{"id":"a"}],"items":[
+                  {"id":"i","blockId":"a","type":"SLIDER","label":"Vol","metadata":{"min":"50","max":"50"}}
+                ]}
+                """;
+        String badStep = """
+                {"id":"x","title":"X","layoutType":"FORM","blocks":[{"id":"a"}],"items":[
+                  {"id":"i","blockId":"a","type":"SLIDER","label":"Vol","metadata":{"min":"0","max":"100","step":"-1"}}
+                ]}
+                """;
+
+        assertThrows(IllegalArgumentException.class, () -> ScreenDesignJson.fromJson(badMin, "bad-min"));
+        assertThrows(IllegalArgumentException.class, () -> ScreenDesignJson.fromJson(maxNotGreaterThanMin, "bad-max"));
+        assertThrows(IllegalArgumentException.class, () -> ScreenDesignJson.fromJson(badStep, "bad-step"));
     }
 
     @Test

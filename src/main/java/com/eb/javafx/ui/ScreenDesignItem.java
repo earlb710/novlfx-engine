@@ -21,9 +21,6 @@ public record ScreenDesignItem(
         id = Validation.requireNonBlank(id, "Screen design item id is required.");
         blockId = Validation.requireNonBlank(blockId, "Screen design item block id is required.");
         type = Validation.requireNonNull(type, "Screen design item type is required.");
-        if (!supportsLabel(type)) {
-            label = null;
-        }
         if (label != null && label.isBlank()) {
             throw new IllegalArgumentException("Screen design item label cannot be blank.");
         }
@@ -94,10 +91,15 @@ public record ScreenDesignItem(
     }
 
     public static boolean supportsEditable(ScreenDesignItemType type) {
-        return type == ScreenDesignItemType.FIELD || type == ScreenDesignItemType.MULTI_LINE_FIELD;
+        return type == ScreenDesignItemType.FIELD
+                || type == ScreenDesignItemType.MULTI_LINE_FIELD
+                || type == ScreenDesignItemType.POPLIST
+                || type == ScreenDesignItemType.COMBO_BOX
+                || type == ScreenDesignItemType.SLIDER
+                || type == ScreenDesignItemType.RADIO_GROUP;
     }
 
     public static boolean supportsLabel(ScreenDesignItemType type) {
-        return type != ScreenDesignItemType.TEXT && type != ScreenDesignItemType.TEXT_AREA;
+        return true;
     }
 }

@@ -36,6 +36,10 @@ public final class ManagementApplication {
                     "Render a screen-design JSON file and reload it after edits.",
                     JsonScreenDesignTestScreen::showFromManagement),
             new ManagementAction(
+                    "All Items Test Screen",
+                    "Render a test screen covering all supported item types.",
+                    JsonScreenDesignTestScreen::showAllItemsFromManagement),
+            new ManagementAction(
                     "Conversation Editor",
                     "Open the AltLife-compatible conversation JSON editor.",
                     ConversationEditorApplication::showFromManagement),

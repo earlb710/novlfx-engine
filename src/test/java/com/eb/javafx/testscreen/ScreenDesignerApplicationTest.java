@@ -396,11 +396,11 @@ final class ScreenDesignerApplicationTest {
     }
 
     @Test
-    void labelsAreNotApplicableForTextDisplayItems() {
-        assertFalse(ScreenDesignerApplication.isLabelApplicable(ScreenDesignItemType.TEXT));
-        assertFalse(ScreenDesignerApplication.isLabelApplicable(ScreenDesignItemType.TEXT_AREA));
+    void labelsAreApplicableForAllItemTypes() {
+        assertTrue(ScreenDesignerApplication.isLabelApplicable(ScreenDesignItemType.TEXT));
+        assertTrue(ScreenDesignerApplication.isLabelApplicable(ScreenDesignItemType.TEXT_AREA));
         assertTrue(ScreenDesignerApplication.isLabelApplicable(ScreenDesignItemType.FIELD));
-        assertEquals(null, ScreenDesignerApplication.itemLabel(ScreenDesignItemType.TEXT, "Title", "title.text"));
+        assertEquals("Title", ScreenDesignerApplication.itemLabel(ScreenDesignItemType.TEXT, "Title", "title.text"));
         assertEquals("name.field", ScreenDesignerApplication.itemLabel(ScreenDesignItemType.FIELD, "", "name.field"));
     }
 
