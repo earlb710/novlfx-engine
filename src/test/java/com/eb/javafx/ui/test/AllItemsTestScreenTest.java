@@ -4,12 +4,10 @@ import com.eb.javafx.prefs.PreferencesService;
 import com.eb.javafx.testscreen.ManualTest;
 import com.eb.javafx.testscreen.TestScreenApplication;
 import com.eb.javafx.ui.ScreenLayoutModel;
-import com.eb.javafx.ui.ScreenLayoutType;
 import com.eb.javafx.ui.UiTheme;
 import javafx.application.Platform;
 import javafx.stage.Stage;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -23,57 +21,27 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-final class JsonScreenDesignTestScreenTest {
+final class AllItemsTestScreenTest {
+    private static final Path ALL_ITEMS_DESIGN_PATH =
+            JsonScreenDesignTestScreen.findRepositoryRootFrom(JsonScreenDesignTestScreen.defaultDesignPath())
+                    .orElse(Path.of(""))
+                    .resolve(Path.of("examples", "resources", "json", "screens", "all-items-test-screen.json"));
     private static final AtomicBoolean JAVAFX_STARTED = new AtomicBoolean();
 
-    @TempDir
-    Path tempDir;
-
     @Test
-    void defaultDesignPathLoadsBundledReloadableScreenDefinition() {
-        Path designPath = JsonScreenDesignTestScreen.defaultDesignPath();
+    void allItemsDesignFileExistsAndLoads() {
+        assertTrue(Files.isRegularFile(ALL_ITEMS_DESIGN_PATH),
+                "all-items-test-screen.json not found at " + ALL_ITEMS_DESIGN_PATH);
 
-        ScreenLayoutModel model = JsonScreenDesignTestScreen.loadLayoutModel(designPath);
+        ScreenLayoutModel model = JsonScreenDesignTestScreen.loadLayoutModel(ALL_ITEMS_DESIGN_PATH);
 
-        assertTrue(Files.isRegularFile(designPath));
-        assertEquals("Reloadable JSON Screen", model.title());
-        assertEquals(ScreenLayoutType.FORM, model.type());
-    }
-
-    @Test
-    void loadLayoutModelReflectsJsonEditsOnNextLoad() throws Exception {
-        Path designPath = tempDir.resolve("reloadable.json");
-        Files.writeString(designPath, designJson("First title"));
-
-        ScreenLayoutModel first = JsonScreenDesignTestScreen.loadLayoutModel(designPath);
-
-        Files.writeString(designPath, designJson("Second title"));
-        ScreenLayoutModel second = JsonScreenDesignTestScreen.loadLayoutModel(designPath);
-
-        assertEquals("First title", first.title());
-        assertEquals("Second title", second.title());
-    }
-
-    @Test
-    void repositoryRootDiscoveryFindsScreenDesignExamples() {
-        Path root = JsonScreenDesignTestScreen.findRepositoryRootFrom(JsonScreenDesignTestScreen.defaultDesignPath())
-                .orElseThrow();
-
-        assertTrue(Files.isDirectory(root.resolve(Path.of("examples", "resources", "json", "screens"))));
-    }
-
-    @Test
-    void managementWorkingDirectoryCanOverrideDefaultDesignPath() throws Exception {
-        Path workingDirectory = Files.createDirectories(tempDir.resolve("screens"));
-        Path designPath = workingDirectory.resolve("reloadable-test-screen.json");
-        Files.writeString(designPath, designJson("Managed title"));
-
-        assertEquals(designPath, JsonScreenDesignTestScreen.defaultDesignPath(workingDirectory));
+        assertEquals("All Items Test Screen", model.title());
+        assertTrue(model.contentSections().size() > 0, "Expected at least one content section.");
     }
 
     @Test
     @ManualTest
-    void runReloadableJsonScreenFromTestApp() throws Exception {
+    void runAllItemsTestScreenFromTestApp() throws Exception {
         assumeTrue(Boolean.getBoolean(TestScreenApplication.TEST_SCREEN_ACTIVE_PROPERTY),
                 "Manual JavaFX screen test runs only from TestScreenApplication.");
 
@@ -85,27 +53,14 @@ final class JsonScreenDesignTestScreenTest {
             uiTheme.initialize(preferencesService);
 
             Stage stage = new Stage();
-            stage.setTitle("Reloadable JSON screen manual test");
+            stage.setTitle("All items test screen manual test");
             stage.setScene(JsonScreenDesignTestScreen.createScene(
-                    JsonScreenDesignTestScreen.defaultDesignPath(),
+                    ALL_ITEMS_DESIGN_PATH,
                     preferencesService,
                     uiTheme));
             stage.show();
-            assertTrue(stage.isShowing() && stage.getScene() != null, "Reloadable JSON screen was not shown.");
+            assertTrue(stage.isShowing() && stage.getScene() != null, "All items test screen was not shown.");
         });
-    }
-
-    private static String designJson(String title) {
-        return """
-                {
-                  "id": "test.reloadable",
-                  "title": "%s",
-                  "layoutType": "FORM",
-                  "metadata": {},
-                  "blocks": [{"id": "body", "title": "Body"}],
-                  "items": [{"id": "body.text", "blockId": "body", "type": "TEXT", "text": "Ready"}]
-                }
-                """.formatted(title);
     }
 
     private static void runOnJavaFxThread(Runnable action) throws Exception {
