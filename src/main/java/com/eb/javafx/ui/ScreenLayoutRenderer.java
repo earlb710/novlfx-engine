@@ -597,7 +597,7 @@ public final class ScreenLayoutRenderer {
         String style = lineStyle(metadata);
         if (control instanceof javafx.scene.control.TextInputControl) {
             String base = "-fx-text-fill: #1a1a1a; -fx-control-inner-background: #ffffff; ";
-            control.setStyle(base + style);
+            control.setStyle(style + base);
         } else if (!style.isEmpty()) {
             control.setStyle(style);
         }
