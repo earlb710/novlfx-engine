@@ -193,3 +193,61 @@ All 5 new tests pass. All `com.eb.javafx.save.*` and `com.eb.javafx.input.*` tes
 - `achievementRegistryRejectsDuplicateId`
 
 All 9 new tests pass. All `com.eb.javafx.achievements.*`, `com.eb.javafx.scene.*`, and `com.eb.javafx.progress.*` tests pass with no regressions.
+
+---
+
+## Phase 4 — Ren'Py Parity: UI and Meta Polish
+
+Seven UI and meta polish features added to reach Ren'Py feature parity.
+
+### Overlay / persistent screens (4.1)
+`OverlayDescriptor` record (id, factory, initiallyVisible). `RouteModule` gains default `registerOverlays(SceneRouter)`. `SceneRouter` gains `registerOverlay`, `showOverlay`, `hideOverlay`, `isOverlayVisible`, and `activeOverlays` — a persistent overlay registry that survives route navigation.
+
+### Screen variants (4.2)
+`WindowSizeClass` enum (COMPACT, MEDIUM, EXPANDED). `ScreenVariantCriteria` — fluent predicate over `WindowSizeClass` and `AccessibilityProfile` fields (highContrast, reduceMotion). `RouteDescriptor.withVariant(criteria, jsonPath)` stores ordered variant entries. `ScreenVariantResolver.resolve` returns the first matching json path for adaptive layouts.
+
+### Image buttons (4.3)
+`ScreenDesignItemType.IMAGE_BUTTON` with `idleImageRef` (required), `hoverImageRef` (optional), `selectedImageRef` (optional) metadata fields. `ScreenDesignValidator` rejects IMAGE_BUTTON items missing `idleImageRef`. `ScreenLayoutRenderer` renders a state-driven image button.
+
+### CTC indicator (4.4)
+`CtcPosition` enum (BOTTOM_RIGHT, BOTTOM_CENTER, INLINE). `CtcIndicatorDefinition` record (imageRef, animationId, position). `CtcIndicatorRegistry` holds one definition per `SceneDisplayMode`. `SceneDialogueRowViewModel` gains `ctcIndicator()` as a new record component — all construction sites updated to pass `Optional.empty()`.
+
+### Cross-playthrough persistent data (4.5)
+`PersistentProgressTracker` backed by `java.util.prefs.Preferences` under a game-namespaced node. Write-through: every mutation flushes immediately. Mirrors `ProgressTracker` API (setFlag, hasFlag, counter, incrementCounter, completeMilestone, hasMilestone, unlock, isUnlocked) plus `snapshot()` / `restore()`. `PersistentProgressSnapshotCodec` for export/import. `BootContext` gains `persistentProgress()`.
+
+### Quick save / quick load (4.6)
+`QuickSaveService` wraps `SaveLoadService` and writes to a named JSON file in the save directory (default `quicksave.json`, configurable slot id). `quickSave(GameState)` serializes state and emits `QuickSaveEvent` on `GameEventBus`. `quickLoad()` returns `Optional<GameState>`. `InputAction.QUICK_SAVE` and `QUICK_LOAD` static constants.
+
+### Achievement system (4.7)
+New package `com.eb.javafx.achievements`. `AchievementDefinition` record (id, nameTextKey, descriptionTextKey, iconRef, unlockConditionExpression). `AchievementRegistry` startup registry — rejects duplicate ids. `AchievementState` mutable unlock tracker with snapshot/restore. `AchievementService.checkAll()` evaluates all locked achievements via `SceneConditionEvaluator` and emits `AchievementUnlockedEvent` per unlock. `AchievementSnapshotCodec` persists unlocked IDs as a `SaveSnapshotSection`. Package exported in `module-info.java`.
+
+**Files changed:**
+- `src/main/java/com/eb/javafx/routing/OverlayDescriptor.java` (new)
+- `src/main/java/com/eb/javafx/routing/WindowSizeClass.java` (new)
+- `src/main/java/com/eb/javafx/routing/ScreenVariantCriteria.java` (new)
+- `src/main/java/com/eb/javafx/routing/ScreenVariantResolver.java` (new)
+- `src/main/java/com/eb/javafx/routing/RouteModule.java`
+- `src/main/java/com/eb/javafx/routing/SceneRouter.java`
+- `src/main/java/com/eb/javafx/routing/RouteDescriptor.java`
+- `src/main/java/com/eb/javafx/ui/ScreenDesignItemType.java`
+- `src/main/java/com/eb/javafx/ui/ScreenDesignValidator.java`
+- `src/main/java/com/eb/javafx/ui/ScreenLayoutRenderer.java`
+- `src/main/java/com/eb/javafx/scene/CtcPosition.java` (new)
+- `src/main/java/com/eb/javafx/scene/CtcIndicatorDefinition.java` (new)
+- `src/main/java/com/eb/javafx/scene/CtcIndicatorRegistry.java` (new)
+- `src/main/java/com/eb/javafx/scene/SceneDialogueRowViewModel.java`
+- `src/main/java/com/eb/javafx/progress/PersistentProgressTracker.java` (new)
+- `src/main/java/com/eb/javafx/progress/PersistentProgressSnapshot.java` (new)
+- `src/main/java/com/eb/javafx/progress/PersistentProgressSnapshotCodec.java` (new)
+- `src/main/java/com/eb/javafx/bootstrap/BootContext.java`
+- `src/main/java/com/eb/javafx/save/QuickSaveService.java` (new)
+- `src/main/java/com/eb/javafx/save/QuickSaveEvent.java` (new)
+- `src/main/java/com/eb/javafx/input/InputAction.java`
+- `src/main/java/com/eb/javafx/achievements/AchievementDefinition.java` (new)
+- `src/main/java/com/eb/javafx/achievements/AchievementRegistry.java` (new)
+- `src/main/java/com/eb/javafx/achievements/AchievementState.java` (new)
+- `src/main/java/com/eb/javafx/achievements/AchievementService.java` (new)
+- `src/main/java/com/eb/javafx/achievements/AchievementSnapshot.java` (new)
+- `src/main/java/com/eb/javafx/achievements/AchievementSnapshotCodec.java` (new)
+- `src/main/java/com/eb/javafx/achievements/AchievementUnlockedEvent.java` (new)
+- `src/main/java/module-info.java`
