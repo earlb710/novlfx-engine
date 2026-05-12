@@ -92,6 +92,21 @@ public final class TextTagParser {
                 tokens.add(TextToken.paragraph());
                 return true;
             }
+            case "w" -> {
+                flushText(tokens, text, state);
+                tokens.add(TextToken.waitClick());
+                return true;
+            }
+            case "nw" -> {
+                flushText(tokens, text, state);
+                tokens.add(TextToken.noWait());
+                return true;
+            }
+            case "fast" -> {
+                flushText(tokens, text, state);
+                tokens.add(TextToken.fastForward());
+                return true;
+            }
             default -> {
                 if (tag.startsWith("color=")) {
                     flushText(tokens, text, state);
@@ -122,8 +137,23 @@ public final class TextTagParser {
                     state.effects.put(tag.substring(0, separator), tag.substring(separator + 1));
                     return true;
                 }
+                if (tag.startsWith("cps=")) {
+                    flushText(tokens, text, state);
+                    tokens.add(TextToken.setCps(parseCps(tag.substring("cps=".length()))));
+                    return true;
+                }
                 return false;
             }
+        }
+    }
+
+    private int parseCps(String rawValue) {
+        try {
+            int value = Integer.parseInt(rawValue);
+            if (value <= 0) throw new IllegalArgumentException("CPS must be positive: " + rawValue);
+            return value;
+        } catch (NumberFormatException exception) {
+            throw new IllegalArgumentException("Invalid cps tag value: " + rawValue, exception);
         }
     }
 

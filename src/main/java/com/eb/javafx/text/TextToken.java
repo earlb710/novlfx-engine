@@ -45,6 +45,31 @@ public final class TextToken {
         return new TextToken(TextTokenType.PARAGRAPH, "", "", TextStyle.plain(), 0.0);
     }
 
+    /** Creates a wait-for-click pacing token. */
+    public static TextToken waitClick() {
+        return new TextToken(TextTokenType.WAIT_CLICK, "", "", TextStyle.plain(), 0.0);
+    }
+
+    /** Creates a no-wait (auto-advance) pacing token. */
+    public static TextToken noWait() {
+        return new TextToken(TextTokenType.NO_WAIT, "", "", TextStyle.plain(), 0.0);
+    }
+
+    /** Creates a set-characters-per-second pacing token. */
+    public static TextToken setCps(int cps) {
+        return new TextToken(TextTokenType.SET_CPS, "", "", TextStyle.plain(), cps);
+    }
+
+    /** Creates a fast-forward (skip typewriter animation) pacing token. */
+    public static TextToken fastForward() {
+        return new TextToken(TextTokenType.FAST_FORWARD, "", "", TextStyle.plain(), 0.0);
+    }
+
+    /** Returns the characters-per-second value for SET_CPS tokens. */
+    public int cps() {
+        return (int) durationSeconds;
+    }
+
     public TextTokenType type() {
         return type;
     }
