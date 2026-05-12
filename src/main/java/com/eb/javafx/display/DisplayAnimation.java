@@ -4,6 +4,7 @@ import com.eb.javafx.util.Validation;
 import javafx.animation.Animation;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Named animation profile replacing a reusable ATL transform sequence.
@@ -17,6 +18,7 @@ public final class DisplayAnimation {
     private final List<DisplayAnimationStep> steps;
     private final int repeatCount;
     private final boolean autoReverse;
+    private final AnimationEventTrigger trigger;
 
     /**
      * Creates a reusable animation profile.
@@ -27,6 +29,10 @@ public final class DisplayAnimation {
      * @param autoReverse whether JavaFX should reverse direction on alternating cycles
      */
     public DisplayAnimation(String id, List<DisplayAnimationStep> steps, int repeatCount, boolean autoReverse) {
+        this(id, steps, repeatCount, autoReverse, null);
+    }
+
+    private DisplayAnimation(String id, List<DisplayAnimationStep> steps, int repeatCount, boolean autoReverse, AnimationEventTrigger trigger) {
         this.id = Validation.requireNonBlank(id, "Animation id is required.");
         this.steps = List.copyOf(Validation.requireNonEmpty(steps, "Animation steps are required."));
         if (repeatCount == 0 || repeatCount < Animation.INDEFINITE) {
@@ -34,6 +40,7 @@ public final class DisplayAnimation {
         }
         this.repeatCount = repeatCount;
         this.autoReverse = autoReverse;
+        this.trigger = trigger;
     }
 
     public String id() {
@@ -51,5 +58,19 @@ public final class DisplayAnimation {
 
     public boolean autoReverse() {
         return autoReverse;
+    }
+
+    public Optional<AnimationEventTrigger> trigger() {
+        return Optional.ofNullable(trigger);
+    }
+
+    public DisplayAnimation withTrigger(AnimationEventTrigger trigger) {
+        return new DisplayAnimation(id, steps, repeatCount, autoReverse, trigger);
+    }
+
+    public static List<DisplayAnimation> forTrigger(List<DisplayAnimation> animations, AnimationEventTrigger trigger) {
+        return animations.stream()
+                .filter(a -> a.trigger().map(t -> t == trigger).orElse(false))
+                .toList();
     }
 }

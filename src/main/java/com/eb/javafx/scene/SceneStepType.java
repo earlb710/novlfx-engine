@@ -12,5 +12,6 @@ public enum SceneStepType {
     CHOICE,
     ACTION,
     TRANSITION,
-    CONDITIONAL
+    CONDITIONAL,
+    HOTSPOT_MAP
 }
