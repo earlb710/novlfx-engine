@@ -7,7 +7,7 @@
     "backgroundColor": "#0d1b2d",
     "borderStyle": "solid",
     "borderCorner": "rounded",
-    "borderThickness": "2",
+    "borderThickness": 2,
     "borderColor": "#4f86c6",
     "titleColor": "#00e5ff"
   },
@@ -21,13 +21,39 @@
       "styleClass": null,
       "metadata": {
         "backgroundColor": "#16263b",
-        "transparency": "0.05",
+        "transparency": 0.05,
         "borderStyle": "solid",
         "borderCorner": "rounded",
-        "borderThickness": "1",
+        "borderThickness": 1,
         "borderColor": "#82addd",
         "titleColor": "#00e5ff"
-      }
+      },
+      "items": [
+        {
+          "id": "display.text",
+          "type": "TEXT",
+          "label": "item.display.text.label",
+          "text": "item.display.text.text",
+          "value": null,
+          "defaultValue": null,
+          "sequence": 10,
+          "editable": false,
+          "styleClass": null,
+          "metadata": {}
+        },
+        {
+          "id": "display.text-area",
+          "type": "TEXT_AREA",
+          "label": "item.display.text-area.label",
+          "text": "item.display.text-area.text",
+          "value": null,
+          "defaultValue": null,
+          "sequence": 20,
+          "editable": false,
+          "styleClass": null,
+          "metadata": {}
+        }
+      ]
     },
     {
       "id": "text-inputs",
@@ -38,13 +64,39 @@
       "styleClass": null,
       "metadata": {
         "backgroundColor": "#1a2b40",
-        "transparency": "0.05",
+        "transparency": 0.05,
         "borderStyle": "solid",
         "borderCorner": "rounded",
-        "borderThickness": "1",
+        "borderThickness": 1,
         "borderColor": "#82addd",
         "titleColor": "#00e5ff"
-      }
+      },
+      "items": [
+        {
+          "id": "text-inputs.field",
+          "type": "FIELD",
+          "label": "item.text-inputs.field.label",
+          "text": null,
+          "value": null,
+          "defaultValue": "item.text-inputs.field.defaultValue",
+          "sequence": 10,
+          "editable": true,
+          "styleClass": null,
+          "metadata": {}
+        },
+        {
+          "id": "text-inputs.multi-line-field",
+          "type": "MULTI_LINE_FIELD",
+          "label": "item.text-inputs.multi-line-field.label",
+          "text": null,
+          "value": null,
+          "defaultValue": "item.text-inputs.multi-line-field.defaultValue",
+          "sequence": 20,
+          "editable": true,
+          "styleClass": null,
+          "metadata": {}
+        }
+      ]
     },
     {
       "id": "selection-inputs",
@@ -55,13 +107,56 @@
       "styleClass": null,
       "metadata": {
         "backgroundColor": "#1b2b42",
-        "transparency": "0.05",
+        "transparency": 0.05,
         "borderStyle": "solid",
         "borderCorner": "rounded",
-        "borderThickness": "1",
+        "borderThickness": 1,
         "borderColor": "#82addd",
         "titleColor": "#00e5ff"
-      }
+      },
+      "items": [
+        {
+          "id": "selection-inputs.poplist",
+          "type": "POPLIST",
+          "label": "item.selection-inputs.poplist.label",
+          "text": null,
+          "value": null,
+          "defaultValue": null,
+          "sequence": 10,
+          "editable": false,
+          "styleClass": null,
+          "options": ["Option A", "Option B", "Option C", "Option D"],
+          "metadata": {}
+        },
+        {
+          "id": "selection-inputs.combo-box",
+          "type": "COMBO_BOX",
+          "label": "item.selection-inputs.combo-box.label",
+          "text": null,
+          "value": null,
+          "defaultValue": null,
+          "sequence": 20,
+          "editable": true,
+          "styleClass": null,
+          "options": ["Choice 1", "Choice 2", "Choice 3"],
+          "metadata": {}
+        },
+        {
+          "id": "selection-inputs.radio-group",
+          "type": "RADIO_GROUP",
+          "label": "item.selection-inputs.radio-group.label",
+          "text": null,
+          "value": null,
+          "defaultValue": null,
+          "sequence": 30,
+          "editable": true,
+          "styleClass": null,
+          "options": ["Red", "Green", "Blue"],
+          "metadata": {
+            "orientation": "horizontal"
+          }
+        }
+      ]
     },
     {
       "id": "range-inputs",
@@ -72,13 +167,33 @@
       "styleClass": null,
       "metadata": {
         "backgroundColor": "#1c2c44",
-        "transparency": "0.05",
+        "transparency": 0.05,
         "borderStyle": "solid",
         "borderCorner": "rounded",
-        "borderThickness": "1",
+        "borderThickness": 1,
         "borderColor": "#82addd",
         "titleColor": "#00e5ff"
-      }
+      },
+      "items": [
+        {
+          "id": "range-inputs.slider",
+          "type": "SLIDER",
+          "label": "item.range-inputs.slider.label",
+          "text": null,
+          "value": null,
+          "defaultValue": null,
+          "sequence": 10,
+          "editable": true,
+          "styleClass": null,
+          "metadata": {
+            "min": 0,
+            "max": 100,
+            "step": 5,
+            "showTicks": true,
+            "showLabels": true
+          }
+        }
+      ]
     },
     {
       "id": "actions",
@@ -89,147 +204,27 @@
       "styleClass": null,
       "metadata": {
         "backgroundColor": "#1d2e46",
-        "transparency": "0.05",
+        "transparency": 0.05,
         "borderStyle": "solid",
         "borderCorner": "rounded",
-        "borderThickness": "1",
+        "borderThickness": 1,
         "borderColor": "#82addd",
         "titleColor": "#00e5ff"
-      }
-    }
-  ],
-  "items": [
-    {
-      "id": "display.text",
-      "blockId": "display",
-      "type": "TEXT",
-      "label": "item.display.text.label",
-      "text": "item.display.text.text",
-      "value": null,
-      "defaultValue": null,
-      "sequence": 10,
-      "editable": false,
-      "styleClass": null,
-      "metadata": {}
-    },
-    {
-      "id": "display.text-area",
-      "blockId": "display",
-      "type": "TEXT_AREA",
-      "label": "item.display.text-area.label",
-      "text": "item.display.text-area.text",
-      "value": null,
-      "defaultValue": null,
-      "sequence": 20,
-      "editable": false,
-      "styleClass": null,
-      "metadata": {}
-    },
-    {
-      "id": "text-inputs.field",
-      "blockId": "text-inputs",
-      "type": "FIELD",
-      "label": "item.text-inputs.field.label",
-      "text": null,
-      "value": null,
-      "defaultValue": "item.text-inputs.field.defaultValue",
-      "sequence": 10,
-      "editable": true,
-      "styleClass": null,
-      "metadata": {}
-    },
-    {
-      "id": "text-inputs.multi-line-field",
-      "blockId": "text-inputs",
-      "type": "MULTI_LINE_FIELD",
-      "label": "item.text-inputs.multi-line-field.label",
-      "text": null,
-      "value": null,
-      "defaultValue": "item.text-inputs.multi-line-field.defaultValue",
-      "sequence": 20,
-      "editable": true,
-      "styleClass": null,
-      "metadata": {}
-    },
-    {
-      "id": "selection-inputs.poplist",
-      "blockId": "selection-inputs",
-      "type": "POPLIST",
-      "label": "item.selection-inputs.poplist.label",
-      "text": null,
-      "value": null,
-      "defaultValue": null,
-      "sequence": 10,
-      "editable": false,
-      "styleClass": null,
-      "metadata": {
-        "options": "Option A,Option B,Option C,Option D"
-      }
-    },
-    {
-      "id": "selection-inputs.combo-box",
-      "blockId": "selection-inputs",
-      "type": "COMBO_BOX",
-      "label": "item.selection-inputs.combo-box.label",
-      "text": null,
-      "value": null,
-      "defaultValue": null,
-      "sequence": 20,
-      "editable": true,
-      "styleClass": null,
-      "metadata": {
-        "options": "Choice 1,Choice 2,Choice 3"
-      }
-    },
-    {
-      "id": "selection-inputs.radio-group",
-      "blockId": "selection-inputs",
-      "type": "RADIO_GROUP",
-      "label": "item.selection-inputs.radio-group.label",
-      "text": null,
-      "value": null,
-      "defaultValue": null,
-      "sequence": 30,
-      "editable": true,
-      "styleClass": null,
-      "metadata": {
-        "options": "Red,Green,Blue",
-        "orientation": "horizontal"
-      }
-    },
-    {
-      "id": "range-inputs.slider",
-      "blockId": "range-inputs",
-      "type": "SLIDER",
-      "label": "item.range-inputs.slider.label",
-      "text": null,
-      "value": null,
-      "defaultValue": null,
-      "sequence": 10,
-      "editable": true,
-      "styleClass": null,
-      "metadata": {
-        "min": "0",
-        "max": "100",
-        "step": "5",
-        "showTicks": "true",
-        "showLabels": "true"
-      }
-    },
-    {
-      "id": "actions.button",
-      "blockId": "actions",
-      "type": "BUTTON",
-      "label": "item.actions.button.label",
-      "text": null,
-      "value": null,
-      "defaultValue": null,
-      "sequence": 10,
-      "editable": false,
-      "styleClass": null,
-      "metadata": {
-        "eventName": "test.all-items.button.click"
-      }
+      },
+      "items": [
+        {
+          "id": "actions.button",
+          "type": "BUTTON",
+          "label": null,
+          "text": "item.actions.button.text",
+          "value": null,
+          "defaultValue": null,
+          "sequence": 10,
+          "editable": false,
+          "styleClass": null,
+          "metadata": {}
+        }
+      ]
     }
   ]
 }

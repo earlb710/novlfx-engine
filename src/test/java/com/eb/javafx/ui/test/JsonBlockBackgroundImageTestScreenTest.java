@@ -24,9 +24,12 @@ import com.eb.javafx.ui.ScreenLayoutType;
 import com.eb.javafx.ui.ScreenShell;
 import com.eb.javafx.ui.UiTheme;
 import javafx.application.Platform;
+import javafx.geometry.Insets;
 import javafx.scene.Node;
+import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.Region;
@@ -92,6 +95,7 @@ final class JsonBlockBackgroundImageTestScreenTest {
             StackPane root = createRoot();
             root.resize(640, 360);
             root.layout();
+            layoutScrollableContent(root);
 
             assertEquals(2, root.getChildren().size());
             Region background = assertInstanceOf(Region.class, root.getChildren().get(0));
@@ -128,6 +132,7 @@ final class JsonBlockBackgroundImageTestScreenTest {
                     "Expected the sample blocks to use rounded corners instead of pill corners.");
             root.resize(960, 540);
             root.layout();
+            layoutScrollableContent(root);
             assertTrue(layeredSections.stream().filter(JsonBlockBackgroundImageTestScreenTest::isBlockBackgroundLayer)
                             .allMatch(JsonBlockBackgroundImageTestScreenTest::clipMatchesRegionSize),
                     "Expected block background clips to update after the block resizes.");
@@ -193,11 +198,58 @@ final class JsonBlockBackgroundImageTestScreenTest {
         }
     }
 
+    /**
+     * Forces layout through ScrollPane content nodes not propagated by the standard layout pass
+     * when the scroll pane has no installed skin (no scene).
+     *
+     * <p>Also calls {@code layout()} on every {@code Parent} encountered so that nodes whose
+     * layout was run prematurely (before their parent gave them a size) get a fresh layout pass
+     * with the correct dimensions.</p>
+     *
+     * <p>When the scroll pane has not been sized by the normal cascade (e.g. because its parent
+     * ran layout in dirty-branch mode and skipped {@code layoutChildren}), the available width is
+     * derived from the parent region's usable width so the content is still sized correctly.</p>
+     */
+    private static void layoutScrollableContent(Node node) {
+        if (node instanceof ScrollPane scrollPane) {
+            Node content = scrollPane.getContent();
+            if (content instanceof Region region) {
+                double w = scrollPane.getWidth();
+                if (w <= 0 && scrollPane.getParent() instanceof Region parentRegion) {
+                    Insets insets = parentRegion.getInsets();
+                    double parentUsable = parentRegion.getWidth() - insets.getLeft() - insets.getRight();
+                    if (parentUsable > 0) {
+                        w = parentUsable;
+                    }
+                }
+                if (w > 0) {
+                    region.resize(w, region.prefHeight(w));
+                    region.requestLayout();
+                }
+            }
+            if (content instanceof Parent parent) {
+                parent.layout();
+                layoutScrollableContent(parent);
+            }
+        } else if (node instanceof Parent parent) {
+            // Call layout() here so that nodes marked NEEDS_LAYOUT after their parent resized
+            // them (but before the standard cascade reached them) get a chance to run
+            // layoutChildren() with the correct dimensions.
+            parent.layout();
+            for (Node child : parent.getChildrenUnmodifiable()) {
+                layoutScrollableContent(child);
+            }
+        }
+    }
+
     private static <T extends Node> void collectNodes(Node node, Class<T> type, List<T> nodes) {
         if (type.isInstance(node)) {
             nodes.add(type.cast(node));
         }
-        if (node instanceof Region region) {
+        // ScrollPane skins may not be installed without a scene; traverse content directly.
+        if (node instanceof ScrollPane scrollPane && scrollPane.getContent() != null) {
+            collectNodes(scrollPane.getContent(), type, nodes);
+        } else if (node instanceof Region region) {
             for (Node child : region.getChildrenUnmodifiable()) {
                 collectNodes(child, type, nodes);
             }
@@ -253,6 +305,7 @@ final class JsonBlockBackgroundImageTestScreenTest {
                 "placement-" + placement + ".json")));
         root.resize(320, 220);
         root.layout();
+        layoutScrollableContent(root);
 
         StackPane blockLayer = firstBlockBackgroundLayer(root);
         ImageView imageView = backgroundImageView(blockLayer);
@@ -301,6 +354,7 @@ final class JsonBlockBackgroundImageTestScreenTest {
                       "metadata": {
                         "backgroundImage": "%s",
                         "backgroundImagePlacement": "%s",
+                        "backgroundImageTransparency": "%s",
                         "borderStyle": "solid",
                         "borderCorner": "rounded",
                         "borderThickness": "2",
@@ -324,7 +378,7 @@ final class JsonBlockBackgroundImageTestScreenTest {
                     }
                   ]
                 }
-                """.formatted(PLACEMENT_TEST_BACKGROUND, placement);
+                """.formatted(PLACEMENT_TEST_BACKGROUND, placement, Double.toString(1.0 - BACKGROUND_OPACITY));
     }
 
     private static StackPane firstBlockBackgroundLayer(Node root) {

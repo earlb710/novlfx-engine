@@ -20,19 +20,29 @@ public final class StartupErrorReporter {
      * <p>{@link StartupFailureException} supplies the category directly; other
      * runtime exceptions fall back to programming error. Blank messages are replaced
      * by the exception class name so the dialog always contains detail text.</p>
+     *
+     * <p>The category, message, and full stack trace are also written to
+     * {@code System.err} so headless environments and CI logs can capture the
+     * failure even when the dialog is not visible.</p>
      */
     public void report(Stage owner, RuntimeException exception) {
-        Alert alert = new Alert(AlertType.ERROR);
-        alert.initOwner(owner);
-        alert.setTitle("JavaFX startup failed");
         StartupFailureCategory category = category(exception);
-        alert.setHeaderText(category.displayName());
         String message = exception.getMessage();
         if (message == null || message.isBlank()) {
             message = exception.getClass().getName();
         }
+        printToConsole(category, message, exception);
+        Alert alert = new Alert(AlertType.ERROR);
+        alert.initOwner(owner);
+        alert.setTitle("JavaFX startup failed");
+        alert.setHeaderText(category.displayName());
         alert.setContentText(message);
         alert.showAndWait();
+    }
+
+    private void printToConsole(StartupFailureCategory category, String message, RuntimeException exception) {
+        System.err.println("JavaFX startup failed [" + category.displayName() + "]: " + message);
+        exception.printStackTrace(System.err);
     }
 
     private StartupFailureCategory category(RuntimeException exception) {

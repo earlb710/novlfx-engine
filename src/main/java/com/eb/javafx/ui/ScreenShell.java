@@ -541,6 +541,8 @@ public final class ScreenShell {
         StackPane root = new StackPane();
         ConfiguredBackgroundLayer backgroundLayer = new ConfiguredBackgroundLayer(
                 imageSource == null ? null : ScreenLayoutRenderer.loadBackgroundImage(imageSource),
+                imageSource,
+                backgroundImage,
                 configuredBackgroundOpacity(backgroundImageTransparency),
                 canvasColor == null ? Color.TRANSPARENT : canvasColor);
         root.getChildren().add(backgroundLayer);
@@ -950,7 +952,12 @@ public final class ScreenShell {
     private static final class ConfiguredBackgroundLayer extends Region {
         private final ImageView imageView;
 
-        private ConfiguredBackgroundLayer(Image image, double opacity, Color canvasBackgroundColor) {
+        private ConfiguredBackgroundLayer(
+                Image image,
+                String resolvedImageSource,
+                String originalImageReference,
+                double opacity,
+                Color canvasBackgroundColor) {
             imageView = image == null ? null : new ImageView(image);
             setMinSize(0, 0);
             setMouseTransparent(true);
@@ -958,6 +965,13 @@ public final class ScreenShell {
             setBackground(canvasBackgroundColor.equals(Color.TRANSPARENT)
                     ? Background.EMPTY
                     : new Background(new BackgroundFill(canvasBackgroundColor, CornerRadii.EMPTY, Insets.EMPTY)));
+            if (originalImageReference != null && !originalImageReference.isBlank()) {
+                setUserData(originalImageReference);
+                if (originalImageReference.toLowerCase().endsWith(".svg")
+                        || (resolvedImageSource != null && resolvedImageSource.toLowerCase().endsWith(".svg"))) {
+                    getStyleClass().add(SCREEN_BACKGROUND_SVG_STYLE_CLASS);
+                }
+            }
             if (imageView != null) {
                 imageView.setMouseTransparent(true);
                 imageView.setFocusTraversable(false);

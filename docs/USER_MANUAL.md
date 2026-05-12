@@ -410,7 +410,7 @@ The `ui` package provides reusable JavaFX surfaces and helpers:
 - `DisplayPreviewBinding` carries image id, source path, layer, and asset-resolution state for display diagnostics and app-owned previews.
 - `ScreenBackgroundFit` names reusable background sizing modes: stretch or center-crop.
 - `ScreenLayoutType`, `ScreenLayoutModel`, and `ScreenLayoutSection` define reusable screen layout intent without JavaFX control state. Use them when a screen needs a stable general structure such as a titled panel, two-column layout, sidebar/content layout, HUD/status overlay, dialogue surface, menu/action list, form, or preview/card grid.
-- `ScreenDesignModel`, `ScreenDesignBlock`, and `ScreenDesignItem` define editable JSON-backed screen designs with stable screen, block, and item ids. Use `ScreenDesignService.addItemToBlock(...)` or `addTemporaryItemToBlock(...)` when code needs to target a block id directly; temporary items render in preview/test mode but `ScreenDesignJson.save(...)` excludes them from persisted JSON. `ScreenDesignJson` saves/loads documents with top-level `id`, `title`, `layoutType`, `metadata`, ordered `blocks`, and ordered saved `items`. Each block carries `id`, optional `title`, optional block-level `layoutType`, optional `parentBlockId`, optional `styleClass`, and `metadata`; each item carries `id`, `blockId`, `type`, optional `label`, `text`, `value`, `defaultValue`, `styleClass`, and `metadata`.
+- `ScreenDesignModel`, `ScreenDesignBlock`, and `ScreenDesignItem` define editable JSON-backed screen designs with stable screen, block, and item ids. Use `ScreenDesignService.addItemToBlock(...)` or `addTemporaryItemToBlock(...)` when code needs to target a block id directly; temporary items render in preview/test mode but `ScreenDesignJson.save(...)` excludes them from persisted JSON. `ScreenDesignJson` saves/loads documents with top-level `id`, `title`, `layoutType`, `metadata`, and ordered `blocks`. Each block carries `id`, optional `title`, optional block-level `layoutType`, optional `parentBlockId`, optional `styleClass`, `metadata`, and an inline `items` array containing the items that belong to that block. Each item carries `id`, `type`, optional `label`, `text`, `value`, `defaultValue`, `styleClass`, and `metadata`; `blockId` is derived from the containing block and is not required in the JSON wire format. Known boolean metadata keys (`dialog`, `dismissOnClickOutside`, `dismissOnEscape`, `showTicks`, `showLabels`, `editable`) and numeric keys (`borderThickness`, `transparency`, `min`, `max`, `step`) are serialized as JSON primitives rather than quoted strings. The parser also accepts older flat-format files that carry a top-level `items` array with explicit `blockId` fields, quoted numbers, and comma-separated `options` strings, so existing documents continue to load without conversion.
 - `ConversationDefinition`, `ConversationDefinitionJson`, and `JsonConversationContentModule` define JSON-backed conversation documents for authored visual-novel content using the AltLife exported shape. A conversation file has top-level `name`, `language`, and ordered `conversations`; each conversation carries `id`, `description`, and typed `lines`. Line `type` supports `say` by default, `shout` for uppercase bold text, `whisper` for lowercase italic text, and `choice` for player-selectable variants with per-choice values and conditions. `JsonConversationContentModule` projects that document into reusable content definitions and scene definitions when runtime registration is needed.
 - `ScreenLayoutContract` loads the machine-readable layout contract from `src/main/resources/com/eb/javafx/ui/layout-contract.json`, which lists engine-provided layout types, the default stylesheet, and stable CSS style hooks applications can target.
 - `ScreenInventory`, `ScreenInventoryItem`, `ScreenInventorySource`, `ScreenInventoryScanner`, and `ScreenInventoryAssignmentCategory` provide content-neutral inventory models for application-owned screen/style/control migration scanners. Use them to classify source artifacts as route-backed, reusable-control-backed, deferred, deprecated, excluded, or app-owned without hard-coding source-engine names in the engine.
@@ -480,10 +480,10 @@ Blocks and items are stable editable records:
 - all item types support an optional `label`; TEXT and TEXT_AREA store the label on the model but the generic renderer uses it only as a section annotation, not as a rendered caption
 - `FIELD` and `MULTI_LINE_FIELD` support `label`, `value`, `defaultValue`, and `editable`; the label is rendered above the input control
 - `BUTTON` uses `label` as the rendered button caption
-- `POPLIST` renders a non-editable dropdown; put comma-separated choices in `metadata.options`
-- `COMBO_BOX` renders an editable or non-editable combo box; `editable: true` lets the user type; put comma-separated choices in `metadata.options`
-- `SLIDER` renders a range slider; use `metadata.min`, `metadata.max`, and `metadata.step` to configure the range; `editable: true` makes the slider interactive; `metadata.showTicks` and `metadata.showLabels` show tick marks and labels
-- `RADIO_GROUP` renders a group of mutually exclusive radio buttons; put comma-separated choices in `metadata.options`; `metadata.orientation` of `horizontal` or `vertical` (default) controls layout; `editable: true` makes the buttons clickable
+- `POPLIST` renders a non-editable dropdown; put choices as a JSON string array in `options`, e.g. `["Option A", "Option B"]`
+- `COMBO_BOX` renders an editable or non-editable combo box; `editable: true` lets the user type; put choices as a JSON string array in `options`, e.g. `["Choice 1", "Choice 2"]`
+- `SLIDER` renders a range slider; use `metadata.min`, `metadata.max`, and `metadata.step` to configure the range (numeric values); `editable: true` makes the slider interactive; `metadata.showTicks` and `metadata.showLabels` (boolean values) show tick marks and labels
+- `RADIO_GROUP` renders a group of mutually exclusive radio buttons; put choices as a JSON string array in `options`, e.g. `["Red", "Green", "Blue"]`; `metadata.orientation` of `horizontal` or `vertical` (default) controls layout; `editable: true` makes the buttons clickable
 
 `ScreenDesignLayoutAdapter` converts a `ScreenDesignModel` into a `ScreenLayoutModel` for preview or runtime rendering. It preserves stable block/item ids, converts `parentBlockId` relationships into nested layout sections, maps field-style items to `label: value/defaultValue` lines, carries field metadata needed for JavaFX preview/runtime input controls (including editable state), sorts block items by optional `sequence` before falling back to authored JSON order, and carries item/block metadata into the layout so renderer-supported visual metadata can be applied consistently. Block `conditions` are preserved in section metadata as a JSON string array, and applications can call the binding overload with a string map so authored text such as `$playerName` or `${playerName}` is resolved during scaffolding. Complex or application-specific controls can still be added programmatically by targeting stable block ids after the JSON scaffold is loaded.
 
@@ -508,9 +508,9 @@ The top-level JSON shape is:
   "layoutType": "FORM",
   "metadata": {
     "description": "Example screen design document",
-    "dialog": "true",
-    "dismissOnClickOutside": "true",
-    "dismissOnEscape": "true"
+    "dialog": true,
+    "dismissOnClickOutside": true,
+    "dismissOnEscape": true
   },
   "blocks": [
     {
@@ -520,39 +520,58 @@ The top-level JSON shape is:
       "parentBlockId": null,
       "conditions": ["profile.ready"],
       "styleClass": "profile-block",
-      "metadata": {}
-    }
-  ],
-  "items": [
-    {
-      "id": "profile.name",
-      "blockId": "profile",
-      "type": "FIELD",
-      "label": "Name",
-      "text": null,
-      "value": null,
-      "defaultValue": "Player",
-      "sequence": 10,
-      "editable": true,
-      "styleClass": null,
       "metadata": {
-        "fontSize": "20",
-        "fontStyle": "bold",
-        "color": "#ffffff",
-        "labelFontSize": "18",
-        "labelFontStyle": "italic",
-        "labelColor": "#66c1e0"
-      }
+        "borderStyle": "solid",
+        "borderCorner": "rounded",
+        "borderThickness": 1,
+        "borderColor": "#4f86c6"
+      },
+      "items": [
+        {
+          "id": "profile.name",
+          "type": "FIELD",
+          "label": "Name",
+          "text": null,
+          "value": null,
+          "defaultValue": "Player",
+          "sequence": 10,
+          "editable": true,
+          "styleClass": null,
+          "metadata": {
+            "fontSize": "20",
+            "fontStyle": "bold",
+            "color": "#ffffff",
+            "labelFontSize": "18",
+            "labelFontStyle": "italic",
+            "labelColor": "#66c1e0"
+          }
+        },
+        {
+          "id": "profile.difficulty",
+          "type": "POPLIST",
+          "label": "Difficulty",
+          "text": null,
+          "value": null,
+          "defaultValue": null,
+          "sequence": 20,
+          "editable": false,
+          "styleClass": null,
+          "options": ["Easy", "Normal", "Hard"],
+          "metadata": {}
+        }
+      ]
     }
   ]
 }
 ```
 
+Items are nested inside their parent block's `items` array. The `blockId` field is not required in the JSON — the parser derives it from the containing block. Selection items (`POPLIST`, `COMBO_BOX`, `RADIO_GROUP`) use a top-level `options` field containing a JSON string array instead of a metadata string. Known boolean and numeric metadata keys are written as JSON primitives (`true`/`false`, numbers), not quoted strings.
+
 When editing manually:
 
 - `id`, `title`, `layoutType`, and `blocks` are required at the top level
-- `items` may be empty, but every saved item must point to a valid `blockId`
-- block ids and item ids must be unique
+- items are placed inside their parent block's `items` array; `blockId` on each item is optional in JSON and is derived from the containing block when absent
+- block ids and item ids must be unique across the entire document
 - nested blocks use `parentBlockId`; root blocks leave it as `null`
 - block `conditions` use the same `$name` / `${name}` marker style as conversation conditions and are preserved for application-owned visibility rules
 - item `type` must be one of `TEXT`, `FIELD`, `MULTI_LINE_FIELD`, `TEXT_AREA`, `BUTTON`, `POPLIST`, `COMBO_BOX`, `SLIDER`, or `RADIO_GROUP`
@@ -560,17 +579,20 @@ When editing manually:
 - `text` is the display content used by `TEXT` and `TEXT_AREA`
 - `defaultValue` is the fallback text shown by `FIELD`, `MULTI_LINE_FIELD`, `POPLIST`, `COMBO_BOX`, `SLIDER`, and `RADIO_GROUP` when `value` is null
 - `sequence` is an optional integer ordering hint for items within the same block
-- `editable` is only meaningful for field-style items
+- `editable` can be written as a JSON boolean (`true`/`false`) or a quoted string; it is only meaningful for field-style items
 - `styleClass` is a stable CSS hook; `metadata` is a string map for extra tool/renderer-owned values
+- known numeric metadata keys (`borderThickness`, `transparency`, `backgroundImageTransparency`, `min`, `max`, `step`) can be written as JSON numbers; known boolean metadata keys (`showTicks`, `showLabels`, `dialog`, `dismissOnClickOutside`, `dismissOnEscape`) can be written as JSON booleans — quoted string forms are also accepted for backward compatibility
+- `POPLIST`, `COMBO_BOX`, and `RADIO_GROUP` items carry a top-level `options` field holding a JSON string array, e.g. `["Easy", "Normal", "Hard"]`; legacy comma-separated strings in `metadata.options` are also accepted when loading older documents
 - nested containers are represented as blocks with `parentBlockId`; a block-level `layoutType` controls how its child blocks are arranged
 - `$name` and `${name}` tokens in titles, labels, text, values, default values, and metadata can be resolved by passing bindings to `ScreenDesignLayoutAdapter`
 - `BUTTON` item metadata can include `eventName` or `actionEvent`; when rendered with a `GameEventBus`, clicking the button publishes that named event with the item id as the source id
+- `ScreenDesignItem.options()` returns the decoded list of option strings for selection-type items; it reads from the canonical `options` metadata key regardless of whether the source was a JSON array or legacy CSV string
 
 The designer and JSON format currently expose these style-oriented metadata keys:
 
 - screen metadata: `fontFamily`, `fontSize`, `fontStyle`, `color`, `backgroundColor`, `borderStyle`, `borderCorner`, `borderThickness`, `borderColor`, `dialog`, `dismissOnClickOutside`, `dismissOnEscape`
 - block metadata: `fontFamily`, `fontSize`, `fontStyle`, `color`, `backgroundColor`, `backgroundImage`, `backgroundImageTransparency`, `backgroundImagePlacement`, `transparency`, `borderStyle`, `borderCorner`, `borderThickness`, `borderColor`
-- item metadata: `displayRole`, `fontFamily`, `fontSize`, `fontStyle`, `color`, `backgroundColor`, `transparency`, `labelFontFamily`, `labelFontSize`, `labelFontStyle`, `labelColor`, `eventName`, `actionEvent`; POPLIST/COMBO_BOX/RADIO_GROUP: `options` (comma-separated); SLIDER: `min`, `max`, `step`, `showTicks`, `showLabels`; RADIO_GROUP: `orientation` (`horizontal` or `vertical`)
+- item metadata: `displayRole`, `fontFamily`, `fontSize`, `fontStyle`, `color`, `backgroundColor`, `transparency`, `labelFontFamily`, `labelFontSize`, `labelFontStyle`, `labelColor`, `eventName`, `actionEvent`; POPLIST/COMBO_BOX/RADIO_GROUP: top-level `options` field (JSON string array, e.g. `["A", "B", "C"]`); SLIDER: `min`, `max`, `step` (numeric), `showTicks`, `showLabels` (boolean); RADIO_GROUP: `orientation` (`horizontal` or `vertical`)
 
 These keys are string-valued metadata entries in the saved JSON. Leave a key out to inherit the bundled default display configuration from `src/main/resources/com/eb/javafx/ui/display-defaults.json`, or from any edited preview defaults currently loaded in the screen designer.
 
@@ -608,13 +630,13 @@ Block background images are metadata-driven. Add `backgroundImage`, `backgroundI
   "styleClass": "block-background-image-demo-section",
   "metadata": {
     "backgroundColor": "#203a67",
-    "transparency": "0.15",
+    "transparency": 0.15,
     "backgroundImage": "/com/eb/javafx/images/svg/circle2-background.svg",
-    "backgroundImageTransparency": "0.5",
+    "backgroundImageTransparency": 0.5,
     "backgroundImagePlacement": "fixed center",
     "borderStyle": "solid",
     "borderCorner": "rounded",
-    "borderThickness": "3",
+    "borderThickness": 3,
     "borderColor": "#d7e7ff"
   }
 }

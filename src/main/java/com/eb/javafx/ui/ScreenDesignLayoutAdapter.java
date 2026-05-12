@@ -49,7 +49,7 @@ public final class ScreenDesignLayoutAdapter {
     }
 
     public static ScreenLayoutModel toLayoutModel(ScreenDesignModel design, boolean includeTemporaryItems) {
-        return toLayoutModel(design, includeTemporaryItems, DisplayDefaults.defaults());
+        return toLayoutModel(design, includeTemporaryItems, DisplayDefaults.active());
     }
 
     public static ScreenLayoutModel toLayoutModel(
@@ -62,7 +62,7 @@ public final class ScreenDesignLayoutAdapter {
     public static ScreenLayoutModel toLayoutModel(
             ScreenDesignModel design,
             Map<String, String> bindings) {
-        return toLayoutModel(design, true, DisplayDefaults.defaults(), bindings);
+        return toLayoutModel(design, true, DisplayDefaults.active(), bindings);
     }
 
     public static ScreenLayoutModel toLayoutModel(

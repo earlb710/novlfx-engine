@@ -249,16 +249,9 @@ public final class ScreenDesignValidator {
             Map<String, String> metadata,
             String path,
             List<ScreenDesignValidationProblem> problems) {
-        String options = metadata.get("options");
+        String options = metadata.get(OptionListEncoding.OPTIONS_KEY);
         if (options != null && !options.isBlank()) {
-            boolean anyNonEmpty = false;
-            for (String option : options.split(",")) {
-                if (!option.trim().isEmpty()) {
-                    anyNonEmpty = true;
-                    break;
-                }
-            }
-            if (!anyNonEmpty) {
+            if (OptionListEncoding.decode(options).isEmpty()) {
                 problems.add(error(path + ".options", "options must contain at least one non-empty entry."));
             }
         }

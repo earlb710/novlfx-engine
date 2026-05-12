@@ -6,6 +6,7 @@ import com.eb.javafx.content.EnginePlaceholderContentModule;
 import com.eb.javafx.display.ImageDisplayRegistry;
 import com.eb.javafx.prefs.PreferencesService;
 import com.eb.javafx.save.SaveLoadService;
+import com.eb.javafx.ui.DisplayDefaults;
 import com.eb.javafx.ui.UiTheme;
 import javafx.application.Platform;
 import javafx.scene.Scene;
@@ -41,6 +42,7 @@ final class SceneRouterTest {
     void clearTestPreferences() throws BackingStoreException {
         preferences.clear();
         preferences.flush();
+        DisplayDefaults.resetActive();
     }
 
     @Test

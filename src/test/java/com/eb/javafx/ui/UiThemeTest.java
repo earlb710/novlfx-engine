@@ -22,6 +22,7 @@ final class UiThemeTest {
         PreferencesService preferencesService = new PreferencesService();
         preferencesService.load();
         new UiTheme().initialize(preferencesService);
+        DisplayDefaults.resetActive();
     }
 
     @Test
@@ -86,6 +87,60 @@ final class UiThemeTest {
                 assertTrue(theme.stylesheetContent().contains(".screen-text"));
             }
         }
+    }
+
+    @Test
+    void darkThemeProducesDarkFieldBackgroundAndLightFieldText() {
+        preferences.put("ui.themeFamily", "ocean");
+        preferences.put("ui.themeVariant", "dark");
+        PreferencesService preferencesService = new PreferencesService();
+        preferencesService.load();
+
+        UiTheme theme = new UiTheme();
+        theme.initialize(preferencesService);
+
+        RoleColors roleColors = theme.roleColors();
+        assertEquals("#ffffff", roleColors.fieldColor());
+        assertEquals("#0a1426", roleColors.fieldBackground());
+        assertEquals("#0a1426",
+                theme.themedDisplayDefaults().itemDefaults(DisplayDefaults.ROLE_FIELD).get("backgroundColor"));
+        assertEquals("#ffffff",
+                theme.themedDisplayDefaults().itemDefaults(DisplayDefaults.ROLE_FIELD).get("color"));
+    }
+
+    @Test
+    void lightPastelThemeProducesLighterFieldBackgroundAndDarkFieldText() {
+        preferences.put("ui.themeFamily", "ocean");
+        preferences.put("ui.themeVariant", "light-pastel");
+        PreferencesService preferencesService = new PreferencesService();
+        preferencesService.load();
+
+        UiTheme theme = new UiTheme();
+        theme.initialize(preferencesService);
+
+        RoleColors roleColors = theme.roleColors();
+        assertEquals("#1f3e50", roleColors.fieldColor());
+        assertEquals("#fbfeff", roleColors.fieldBackground());
+        assertEquals("#fbfeff",
+                theme.themedDisplayDefaults().itemDefaults(DisplayDefaults.ROLE_FIELD).get("backgroundColor"));
+        assertEquals("#1f3e50",
+                theme.themedDisplayDefaults().itemDefaults(DisplayDefaults.ROLE_FIELD).get("color"));
+    }
+
+    @Test
+    void initializeInstallsThemedDefaultsAsActive() {
+        preferences.put("ui.themeFamily", "forest");
+        preferences.put("ui.themeVariant", "light-pastel");
+        PreferencesService preferencesService = new PreferencesService();
+        preferencesService.load();
+
+        UiTheme theme = new UiTheme();
+        theme.initialize(preferencesService);
+
+        assertEquals("#1d3427",
+                DisplayDefaults.active().itemDefaults(DisplayDefaults.ROLE_FIELD).get("color"));
+        assertEquals("#f5fdf8",
+                DisplayDefaults.active().itemDefaults(DisplayDefaults.ROLE_FIELD).get("backgroundColor"));
     }
 
     @Test

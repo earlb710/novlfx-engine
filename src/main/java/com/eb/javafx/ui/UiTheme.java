@@ -274,6 +274,8 @@ public final class UiTheme {
     private boolean reducedMotion;
     private String stylesheet;
     private String stylesheetContent;
+    private RoleColors roleColors;
+    private DisplayDefaults themedDisplayDefaults;
 
     /**
      * Loads the active theme from preferences and writes a generated stylesheet for the current palette.
@@ -299,6 +301,24 @@ public final class UiTheme {
                 palette.buttonGradientStart(),
                 palette.buttonGradientMid(),
                 palette.buttonGradientEnd());
+        roleColors = palette.roleColors();
+        themedDisplayDefaults = DisplayDefaults.defaults().withRoleColors(roleColors);
+        DisplayDefaults.installActive(themedDisplayDefaults);
+    }
+
+    /**
+     * Returns the theme-resolved role colors for the active palette — used to drive
+     * per-item-type color/background for all nine {@link ScreenDesignItemType} values.
+     */
+    public RoleColors roleColors() {
+        return roleColors;
+    }
+
+    /**
+     * Returns the bundled display defaults with the active palette's role colors applied.
+     */
+    public DisplayDefaults themedDisplayDefaults() {
+        return themedDisplayDefaults;
     }
 
     public String fontFamily() {
@@ -389,7 +409,9 @@ public final class UiTheme {
             String svgButtonHoverText,
             String buttonGradientStart,
             String buttonGradientMid,
-            String buttonGradientEnd) {
+            String buttonGradientEnd,
+            String fieldRoleColor,
+            String fieldRoleBackground) {
         private static ThemePalette forSelection(ThemeFamily family, ThemeVariant variant) {
             return switch (family) {
                 case OCEAN -> variant == ThemeVariant.DARK
@@ -403,7 +425,8 @@ public final class UiTheme {
                         "#143869", "#ffffff", "#0099cc",
                         "#0099cc", "#ffffff", "#66c1e0",
                         "#bfd3ec", "#ffffff",
-                        "#9dccff", "#0f4f9f", "#052f6f")
+                        "#9dccff", "#0f4f9f", "#052f6f",
+                        "#ffffff", "#0a1426")
                         : new ThemePalette(
                         "#f4fbff", "#f4fbff", "#dcefff", "#3c7ea3",
                         "rgba(229, 243, 251, 0.92)", "#7cb8d6",
@@ -414,7 +437,8 @@ public final class UiTheme {
                         "#cfe8f6", "#234052", "#5ba6c8",
                         "#8cc9e3", "#1f3e50", "#cae8f6",
                         "#36576a", "#1f3e50",
-                        "#eef8fd", "#9fd3ea", "#5a9ec0");
+                        "#eef8fd", "#9fd3ea", "#5a9ec0",
+                        "#1f3e50", "#fbfeff");
                 case FOREST -> variant == ThemeVariant.DARK
                         ? new ThemePalette(
                         "#0f1a13", "#0f1a13", "#0a140f", "#8dd7a8",
@@ -426,7 +450,8 @@ public final class UiTheme {
                         "#2d6a45", "#ffffff", "#57b27e",
                         "#57b27e", "#082212", "#9fe0ba",
                         "#d2eedc", "#ffffff",
-                        "#b7ebc8", "#40916c", "#1b4332")
+                        "#b7ebc8", "#40916c", "#1b4332",
+                        "#ffffff", "#0a140f")
                         : new ThemePalette(
                         "#f5fcf7", "#f5fcf7", "#e1f3e5", "#4f8b66",
                         "rgba(231, 246, 235, 0.92)", "#90c7a4",
@@ -437,7 +462,8 @@ public final class UiTheme {
                         "#d4ecdb", "#284233", "#6aad87",
                         "#9ed3b4", "#1d3427", "#d7f0df",
                         "#365343", "#1d3427",
-                        "#eef8f0", "#abd7bb", "#6aa07f");
+                        "#eef8f0", "#abd7bb", "#6aa07f",
+                        "#1d3427", "#f5fdf8");
                 case SUNSET -> variant == ThemeVariant.DARK
                         ? new ThemePalette(
                         "#24131a", "#24131a", "#160d12", "#f3a6a0",
@@ -449,7 +475,8 @@ public final class UiTheme {
                         "#8f3f4c", "#ffffff", "#e07a6e",
                         "#e07a6e", "#2a151d", "#f7c1b8",
                         "#f8d8d3", "#ffffff",
-                        "#f7c8c2", "#d16b62", "#7f3b45")
+                        "#f7c8c2", "#d16b62", "#7f3b45",
+                        "#ffffff", "#160d12")
                         : new ThemePalette(
                         "#fff6f3", "#fff6f3", "#ffe6df", "#b86d61",
                         "rgba(255, 235, 228, 0.92)", "#e6ae9f",
@@ -460,7 +487,8 @@ public final class UiTheme {
                         "#ffdcd0", "#593e3a", "#d99081",
                         "#efb0a2", "#4c322c", "#f9d7cf",
                         "#6f4d47", "#4c322c",
-                        "#fff5f1", "#f0b8ab", "#d88978");
+                        "#fff5f1", "#f0b8ab", "#d88978",
+                        "#4c322c", "#fff8f4");
                 case VIOLET -> variant == ThemeVariant.DARK
                         ? new ThemePalette(
                         "#191427", "#191427", "#110d1b", "#c7b5ff",
@@ -472,7 +500,8 @@ public final class UiTheme {
                         "#5b4b8a", "#ffffff", "#9b7be6",
                         "#9b7be6", "#1c1730", "#d7c9ff",
                         "#ddd3ff", "#ffffff",
-                        "#e3d8ff", "#8f6ad8", "#4c3b78")
+                        "#e3d8ff", "#8f6ad8", "#4c3b78",
+                        "#ffffff", "#110d1b")
                         : new ThemePalette(
                         "#faf6ff", "#faf6ff", "#ede3ff", "#775fc1",
                         "rgba(240, 232, 255, 0.92)", "#b9a2ea",
@@ -483,7 +512,8 @@ public final class UiTheme {
                         "#e6dafd", "#43395a", "#9f81dd",
                         "#c5b0f2", "#352c49", "#e9e0ff",
                         "#5b5076", "#352c49",
-                        "#faf5ff", "#cebdf3", "#a287dd");
+                        "#faf5ff", "#cebdf3", "#a287dd",
+                        "#352c49", "#fcf9ff");
             };
         }
 
@@ -498,7 +528,19 @@ public final class UiTheme {
                     "#333300", "#ffffff", "#ffff66",
                     "#ffff66", "#000000", "#ffffff",
                     "#ffff66", "#ffffff",
-                    "#fff8a6", "#c7bf2d", "#5c5400");
+                    "#fff8a6", "#c7bf2d", "#5c5400",
+                    "#ffff66", "#000000");
+        }
+
+        private RoleColors roleColors() {
+            return new RoleColors(
+                    labelText, "transparent",
+                    accentColor, "transparent",
+                    accentColor, "transparent",
+                    fieldRoleColor, fieldRoleBackground,
+                    buttonText, buttonBackground,
+                    accentColor,
+                    labelText, screenPanelBackground, sectionBorder);
         }
 
         private String toStylesheet(String fontFamily) {
