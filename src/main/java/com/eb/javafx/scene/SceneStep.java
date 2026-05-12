@@ -194,6 +194,41 @@ public final class SceneStep {
         return withMetadataValue("displayMode", Objects.requireNonNull(mode, "mode").name());
     }
 
+    public Long choiceTimeoutMs() {
+        String value = metadata.get("choiceTimeoutMs");
+        return value == null ? null : Long.parseLong(value);
+    }
+
+    public String choiceTimeoutDefaultId() {
+        return metadata.get("choiceTimeoutDefaultId");
+    }
+
+    public String menuCaptionTextKey() {
+        return metadata.get("menuCaptionTextKey");
+    }
+
+    public boolean menuLoop() {
+        return Boolean.parseBoolean(metadata.get("menuLoop"));
+    }
+
+    public SceneStep withChoiceTimeout(long timeoutMs, String defaultChoiceId) {
+        Map<String, String> updated = new LinkedHashMap<>(metadata);
+        updated.put("choiceTimeoutMs", Long.toString(timeoutMs));
+        if (defaultChoiceId != null) {
+            updated.put("choiceTimeoutDefaultId", defaultChoiceId);
+        }
+        return withMetadata(updated);
+    }
+
+    public SceneStep withMenuCaption(String captionTextKey) {
+        return withMetadataValue("menuCaptionTextKey",
+                Validation.requireNonBlank(captionTextKey, "Menu caption text key is required."));
+    }
+
+    public SceneStep withMenuLoop() {
+        return withMetadataValue("menuLoop", "true");
+    }
+
     private void validateShape() {
         if (type == SceneStepType.CHOICE && choices.isEmpty()) {
             throw new IllegalArgumentException("Scene choice step requires choices.");
