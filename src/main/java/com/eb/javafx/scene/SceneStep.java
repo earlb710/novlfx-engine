@@ -152,6 +152,16 @@ public final class SceneStep {
         return withMetadata(updatedMetadata);
     }
 
+    public SceneDisplayMode displayMode() {
+        String value = metadata.get("displayMode");
+        if (value == null) return SceneDisplayMode.ADV;
+        return SceneDisplayMode.valueOf(value);
+    }
+
+    public SceneStep withDisplayMode(SceneDisplayMode mode) {
+        return withMetadataValue("displayMode", Objects.requireNonNull(mode, "mode").name());
+    }
+
     private void validateShape() {
         if (type == SceneStepType.CHOICE && choices.isEmpty()) {
             throw new IllegalArgumentException("Scene choice step requires choices.");
