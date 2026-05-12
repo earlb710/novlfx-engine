@@ -19,6 +19,6 @@
     "item.selection-inputs.combo-box.label": "Combo box (editable)",
     "item.selection-inputs.radio-group.label": "Radio group (horizontal)",
     "item.range-inputs.slider.label": "Slider (0–100, step 5)",
-    "item.actions.button.text": "Sample Button"
+    "item.actions.button.label": "Sample Button"
   }
 }

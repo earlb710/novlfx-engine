@@ -103,6 +103,28 @@ public final class ScreenLayoutRenderer {
      * @param resourceRoot directory used to resolve relative background image paths
      * @return preview root, optionally wrapped in a configured background container
      */
+    public static Parent createScrollablePreviewRoot(ScreenLayoutModel model, Path resourceRoot) {
+        BorderPane root = createRoot(model, resourceRoot);
+        // Wrap only the center panel so the title and footer bar stay fixed outside the scroll area.
+        javafx.scene.Node center = root.getCenter();
+        if (center != null) {
+            ScrollPane scrollPane = new ScrollPane(center);
+            scrollPane.setFitToWidth(true);
+            scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+            root.setCenter(scrollPane);
+        }
+        if (!hasScreenBackground(model.metadata())) {
+            return root;
+        }
+        root.setStyle(containerStyle(model.metadata(), true));
+        return ScreenShell.withConfiguredBackground(
+                root,
+                resourceRoot,
+                model.metadata().get("backgroundColor"),
+                model.metadata().get(SCREEN_BACKGROUND_IMAGE_KEY),
+                model.metadata().get(SCREEN_BACKGROUND_IMAGE_TRANSPARENCY_KEY));
+    }
+
     public static Parent createPreviewRoot(ScreenLayoutModel model, Path resourceRoot) {
         BorderPane root = createRoot(model, resourceRoot);
         if (!hasScreenBackground(model.metadata())) {
@@ -152,6 +174,11 @@ public final class ScreenLayoutRenderer {
         VBox.setVgrow(content, Priority.ALWAYS);
         BorderPane root = ScreenShell.titled(model.title(), content);
         applyContainerStyle(root, model.metadata());
+        String titleColor = model.metadata().get("titleColor");
+        if (titleColor != null && !titleColor.isBlank() && COLOR_PATTERN.matcher(titleColor).matches()
+                && root.getTop() instanceof Label titleLabel) {
+            titleLabel.setStyle("-fx-text-fill: " + titleColor + "; ");
+        }
         return root;
     }
 
@@ -276,7 +303,16 @@ public final class ScreenLayoutRenderer {
     private static Region sectionNode(ScreenLayoutSection section, String styleClass, GameEventBus eventBus, Path resourceRoot) {
         VBox content = new VBox(SECTION_SPACING);
         content.setMaxWidth(Double.MAX_VALUE);
-        addOptionalText(content, section.title(), ScreenShell.LAYOUT_SECTION_TITLE_STYLE_CLASS);
+        if (section.title() != null) {
+            Label titleLabel = new Label(section.title());
+            titleLabel.getStyleClass().add(ScreenShell.LAYOUT_SECTION_TITLE_STYLE_CLASS);
+            titleLabel.setPadding(new Insets(0, 0, 4, 0));
+            String titleColor = section.metadata().get("titleColor");
+            if (titleColor != null && COLOR_PATTERN.matcher(titleColor).matches()) {
+                titleLabel.setStyle("-fx-text-fill: " + titleColor + "; ");
+            }
+            content.getChildren().add(titleLabel);
+        }
         for (int index = 0; index < section.lines().size(); index++) {
             String line = section.lines().get(index);
             Map<String, String> metadata = section.lineMetadata().isEmpty() ? Map.of() : section.lineMetadata().get(index);
@@ -562,7 +598,10 @@ public final class ScreenLayoutRenderer {
 
     private static void applyLineStyle(javafx.scene.control.Control control, Map<String, String> metadata) {
         String style = lineStyle(metadata);
-        if (!style.isEmpty()) {
+        if (control instanceof javafx.scene.control.TextInputControl) {
+            String base = "-fx-text-fill: #1a1a1a; -fx-control-inner-background: #ffffff; ";
+            control.setStyle(style + base);
+        } else if (!style.isEmpty()) {
             control.setStyle(style);
         }
     }
