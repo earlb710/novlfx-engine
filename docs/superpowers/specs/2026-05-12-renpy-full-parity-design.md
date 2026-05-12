@@ -45,33 +45,49 @@ phases unblock later ones.
 
 **Engine design:**
 
-- `RollbackContributor<T>` — interface with two methods: `T capture()` and `void restore(T)`.
-  Any state type that wants to participate in rollback implements this interface. The type
-  parameter is the snapshot value (must be immutable).
-- `RollbackBuffer` — fixed-size ring buffer of `RollbackSnapshot` entries. Capacity is
+The rollback system is built on the existing `SaveSnapshotCodec<T>` / `SaveSnapshotSection`
+infrastructure already in `com.eb.javafx.save`. No new serialization contract is introduced.
+
+- `RollbackContributor<T>` — interface with two methods: `T capture()` (capture current
+  state as an immutable value) and `void restore(T)` (apply a previously captured value).
+  The type parameter is the snapshot type. This is the only new interface needed for
+  in-memory rollback.
+- `PersistableRollbackContributor<T>` — extends both `RollbackContributor<T>` and the
+  existing `SaveSnapshotCodec<T>`. Contributors that implement this sub-interface
+  participate in both rollback and save-file persistence using a single implementation.
+  Any existing codec (e.g. `ProgressSnapshotCodec`, `SeenStepSnapshotCodec`,
+  `InventorySnapshotCodec`) can be promoted to a persistable contributor just by adding
+  `capture()` and `restore()` — no other changes needed.
+- `RollbackBuffer` — fixed-size ring buffer of `RollbackEntry` records. Capacity is
   configurable at bootstrap (default 100). When full, oldest entries are discarded.
   Contributors are registered via `RollbackBuffer.register(String id, RollbackContributor<?>)`.
-  When a snapshot is taken, the buffer calls `capture()` on every registered contributor
-  and stores the results keyed by id. When restoring, it calls `restore(value)` on each.
-- `RollbackSnapshot` — a map of contributor id → captured value, plus scene ID and step
-  index. Opaque to callers outside the buffer; contributors only ever see their own type.
+  On snapshot: calls `capture()` on every contributor and stores results keyed by id.
+  On restore: calls `restore(value)` on each contributor with its stored value.
+- `RollbackEntry` — scene ID, step index, and a map of contributor id → captured value.
+  Opaque outside the buffer; each contributor sees only its own type via its own
+  `restore()` call.
 - Built-in contributors registered automatically at bootstrap: `ProgressTracker`,
-  `SeenStepTracker`. Optional engine contributors registered when present: `InventoryState`,
-  `JournalState`, `WardrobeState`. Any application-defined state type can register its own
-  contributor at bootstrap using the same API — no engine changes needed.
+  `SeenStepTracker`. Existing engine services (`InventoryState`, `JournalState`,
+  `WardrobeState`, etc.) register when present. Any application-defined state type with an
+  existing `SaveSnapshotCodec<T>` registers at bootstrap using the same API — no engine
+  changes needed.
+- `RollbackSnapshotCodec` — persists the buffer to a save section by delegating to each
+  contributor's `SaveSnapshotCodec` methods (only `PersistableRollbackContributor`
+  instances are included; non-persistable contributors are excluded from persistence and
+  reset to post-load state on reload).
 - `SceneExecutor.rollback(int steps)` — triggers the buffer to pop N entries, restore all
-  contributors, then returns a `SceneExecutionResult` for the restored step.
+  contributors atomically, then returns a `SceneExecutionResult` for the restored step.
 - `SceneExecutionResult.canRollback()` — boolean; false when the buffer is empty or rollback
   is disabled (e.g. during skip mode).
-- `RollbackSnapshotCodec` — serializes the full contributor map to JSON for save persistence.
-  Each contributor that needs persistence also implements `RollbackContributorCodec<T>` (a
-  sub-interface adding `String toJson(T)` and `T fromJson(String)`). Contributors that do
-  not implement the codec sub-interface are excluded from persistence (rollback resets to
-  post-load state for those).
-- Adapter contract: one optional hook `Runnable onRollbackEffect` supplied at executor
+- Adapter contract: one optional `Runnable onRollbackEffect` supplied at executor
   construction time. The engine calls it before re-displaying the restored step.
 
-**Key types:** `RollbackContributor`, `RollbackContributorCodec`, `RollbackSnapshot`,
+**Note on custom app state:** `GameplayStateSnapshot.customSections` already accepts
+arbitrary `SaveSnapshotSection` entries — app state that already has a `SaveSnapshotCodec<T>`
+participates in rollback at near-zero additional cost by implementing the two
+`RollbackContributor` methods alongside the existing codec.
+
+**Key types:** `RollbackContributor`, `PersistableRollbackContributor`, `RollbackEntry`,
 `RollbackBuffer`, `RollbackSnapshotCodec`
 **Modified types:** `SceneExecutor`, `SceneExecutionResult`
 **Package:** `com.eb.javafx.scene`
@@ -558,7 +574,7 @@ gallery CGs.
 
 | # | Feature | Phase | Package(s) | Invasive? |
 |---|---------|-------|-----------|-----------|
-| 1.1 | Dialogue rollback + contributor registry | 1 | scene | Yes — SceneExecutor |
+| 1.1 | Dialogue rollback (builds on SaveSnapshotCodec) | 1 | scene | Yes — SceneExecutor |
 | 1.2 | Conditional choice visibility | 1 | scene | Minor — ChoiceOption |
 | 1.3 | Text pacing control tags | 1 | text | Additive |
 | 1.4 | Timed choices | 1 | scene | Additive |
