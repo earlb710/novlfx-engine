@@ -14,13 +14,20 @@ public final class SceneExecutionResult {
     private final SceneStep step;
     private final List<SceneChoice> availableChoices;
     private final String message;
+    private final boolean canRollback;
 
-    public SceneExecutionResult(SceneExecutionStatus status, SceneFlowState state, SceneStep step, List<SceneChoice> availableChoices, String message) {
+    public SceneExecutionResult(SceneExecutionStatus status, SceneFlowState state, SceneStep step,
+            List<SceneChoice> availableChoices, String message, boolean canRollback) {
         this.status = status;
         this.state = state;
         this.step = step;
         this.availableChoices = List.copyOf(availableChoices);
         this.message = message;
+        this.canRollback = canRollback;
+    }
+
+    public SceneExecutionResult(SceneExecutionStatus status, SceneFlowState state, SceneStep step, List<SceneChoice> availableChoices, String message) {
+        this(status, state, step, availableChoices, message, false);
     }
 
     public SceneExecutionStatus status() {
@@ -41,5 +48,9 @@ public final class SceneExecutionResult {
 
     public String message() {
         return message;
+    }
+
+    public boolean canRollback() {
+        return canRollback;
     }
 }

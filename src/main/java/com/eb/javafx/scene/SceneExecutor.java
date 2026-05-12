@@ -18,14 +18,20 @@ import java.util.Objects;
 public final class SceneExecutor {
     private final SceneRegistry sceneRegistry;
     private final SceneConditionEvaluator conditionEvaluator;
+    private final RollbackBuffer rollbackBuffer;
 
     public SceneExecutor(SceneRegistry sceneRegistry) {
-        this(sceneRegistry, null);
+        this(sceneRegistry, null, null);
     }
 
     public SceneExecutor(SceneRegistry sceneRegistry, SceneConditionEvaluator conditionEvaluator) {
+        this(sceneRegistry, conditionEvaluator, null);
+    }
+
+    public SceneExecutor(SceneRegistry sceneRegistry, SceneConditionEvaluator conditionEvaluator, RollbackBuffer rollbackBuffer) {
         this.sceneRegistry = Objects.requireNonNull(sceneRegistry, "sceneRegistry");
         this.conditionEvaluator = conditionEvaluator;
+        this.rollbackBuffer = rollbackBuffer;
     }
 
     public SceneFlowState start(String sceneId) {
@@ -44,13 +50,15 @@ public final class SceneExecutor {
             SceneStep step = scene.steps().get(current.stepIndex());
             switch (step.type()) {
                 case DIALOGUE, NARRATION -> {
-                    return new SceneExecutionResult(SceneExecutionStatus.DISPLAYING_TEXT, current, step, List.of(), null);
+                    if (rollbackBuffer != null) rollbackBuffer.snapshot(current);
+                    return new SceneExecutionResult(SceneExecutionStatus.DISPLAYING_TEXT, current, step, List.of(), null,
+                            rollbackBuffer != null && rollbackBuffer.canRollback());
                 }
                 case CHOICE -> {
-                    List<SceneChoice> availableChoices = step.choices().stream()
-                            .filter(choice -> choice.availability(context).isAllowed())
-                            .toList();
-                    return new SceneExecutionResult(SceneExecutionStatus.WAITING_FOR_CHOICE, current, step, availableChoices, null);
+                    if (rollbackBuffer != null) rollbackBuffer.snapshot(current);
+                    List<SceneChoice> resolvedChoices = resolveChoices(step.choices(), context);
+                    return new SceneExecutionResult(SceneExecutionStatus.WAITING_FOR_CHOICE, current, step, resolvedChoices, null,
+                            rollbackBuffer != null && rollbackBuffer.canRollback());
                 }
                 case ACTION -> {
                     ActionResult result = applyEffects(context, step.effects());
@@ -102,6 +110,11 @@ public final class SceneExecutor {
         List<String> selectedChoiceIds = new ArrayList<>(state.selectedChoiceIds());
         selectedChoiceIds.add(choice.id());
         SceneFlowState selectedState = new SceneFlowState(state.activeSceneId(), state.stepIndex(), state.callStack(), selectedChoiceIds, state.pendingUiInterruption());
+
+        if (step.menuLoop() && !choice.exitsMenu()) {
+            return advanceUntilPause(context, selectedState);
+        }
+
         return advanceUntilPause(context, applyTransition(selectedState, choice.transition()));
     }
 
@@ -125,10 +138,8 @@ public final class SceneExecutor {
                     }
                 }
                 case CHOICE -> {
-                    List<SceneChoice> availableChoices = step.choices().stream()
-                            .filter(choice -> choice.availability(context).isAllowed())
-                            .toList();
-                    return new SceneExecutionResult(SceneExecutionStatus.WAITING_FOR_CHOICE, current, step, availableChoices, null);
+                    List<SceneChoice> resolvedChoices = resolveChoices(step.choices(), context);
+                    return new SceneExecutionResult(SceneExecutionStatus.WAITING_FOR_CHOICE, current, step, resolvedChoices, null);
                 }
                 case ACTION -> {
                     ActionResult result = applyEffects(context, step.effects());
@@ -148,6 +159,42 @@ public final class SceneExecutor {
                 }
             }
         }
+    }
+
+    public SceneExecutionResult rollback(ActionContext context) {
+        if (rollbackBuffer == null || !rollbackBuffer.canRollback()) {
+            throw new IllegalStateException("Rollback is not available.");
+        }
+        rollbackBuffer.pop(); // discard current step snapshot
+        RollbackEntry previous = rollbackBuffer.pop().orElseThrow();
+        rollbackBuffer.restore(previous);
+        return advanceUntilPause(context, previous.flowState());
+    }
+
+    private List<SceneChoice> resolveChoices(List<SceneChoice> choices, ActionContext context) {
+        return choices.stream()
+                .flatMap(choice -> {
+                    String expr = choice.conditionExpression();
+                    if (expr == null || conditionEvaluator == null) {
+                        return choice.availability(context).isAllowed()
+                                ? java.util.stream.Stream.of(choice)
+                                : java.util.stream.Stream.empty();
+                    }
+                    boolean conditionMet = conditionEvaluator.evaluate(SceneConditionExpression.parse(expr));
+                    if (conditionMet) {
+                        return choice.availability(context).isAllowed()
+                                ? java.util.stream.Stream.of(choice)
+                                : java.util.stream.Stream.empty();
+                    }
+                    return switch (choice.conditionPolicy()) {
+                        case HIDE -> java.util.stream.Stream.empty();
+                        case GREY -> java.util.stream.Stream.of(
+                                choice.disabled(choice.disabledReason() != null
+                                        ? choice.disabledReason()
+                                        : "Not available"));
+                    };
+                })
+                .toList();
     }
 
     private ActionResult applyEffects(ActionContext context, List<ActionEffect> effects) {
