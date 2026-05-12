@@ -29,6 +29,7 @@ import javax.swing.JButton;
 import javax.swing.AbstractCellEditor;
 import javax.swing.BorderFactory;
 import javax.swing.DefaultCellEditor;
+import javax.swing.DefaultListCellRenderer;
 import javax.swing.JCheckBox;
 import javax.swing.JColorChooser;
 import javax.swing.JComboBox;
@@ -174,6 +175,7 @@ public final class ScreenDesignerApplication {
     private ScreenDesignModel design = sampleDesign();
     private final DefaultTreeModel objectTreeModel = new DefaultTreeModel(new DefaultMutableTreeNode());
     private final JTree objectTree = new JTree(objectTreeModel);
+    private final JTextField treeFilterField = new JTextField();
     private final JButton addItemButton = new JButton("Add Item");
     private final JPanel propertiesPanel = new ViewportWidthTrackingPanel(new BorderLayout(8, 8));
     private final JButton applyPropertiesButton = new JButton("Apply Properties");
@@ -241,7 +243,7 @@ public final class ScreenDesignerApplication {
     private final JTextField itemLabelColorField = new JTextField();
     private final JTextArea itemMetadataArea = new JTextArea(4, 20);
     private final JTextArea jsonArea = new JTextArea();
-    private final JTextArea validationArea = new JTextArea(3, 20);
+    private final JList<ScreenDesignValidationProblem> validationList = new JList<>();
     private final JLabel statusLabel = new JLabel();
     private final JTextField workingDirectoryField = new JTextField();
     private JFXPanel dockedPreviewPanel;
@@ -395,11 +397,34 @@ public final class ScreenDesignerApplication {
         objectTree.addTreeSelectionListener(event -> updateSelectedNavigationState());
         installTreeContextMenu();
         installTreeDragAndDrop();
+
+        treeFilterField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            @Override public void insertUpdate(javax.swing.event.DocumentEvent e) { applyTreeFilter(); }
+            @Override public void removeUpdate(javax.swing.event.DocumentEvent e) { applyTreeFilter(); }
+            @Override public void changedUpdate(javax.swing.event.DocumentEvent e) { applyTreeFilter(); }
+        });
+
+        JPanel filterPanel = new JPanel(new BorderLayout(4, 4));
+        filterPanel.add(new JLabel("Filter"), BorderLayout.WEST);
+        filterPanel.add(treeFilterField, BorderLayout.CENTER);
+
+        JPanel northPanel = new JPanel(new BorderLayout(4, 8));
+        northPanel.add(workingDirectoryPanel(), BorderLayout.NORTH);
+        northPanel.add(filterPanel, BorderLayout.SOUTH);
+
         JPanel panel = new JPanel(new BorderLayout(8, 8));
-        panel.add(workingDirectoryPanel(), BorderLayout.NORTH);
+        panel.add(northPanel, BorderLayout.NORTH);
         panel.add(new JScrollPane(objectTree), BorderLayout.CENTER);
         panel.add(navigationActions(), BorderLayout.SOUTH);
         return panel;
+    }
+
+    private void applyTreeFilter() {
+        String filter = treeFilterField.getText();
+        objectTreeModel.setRoot(buildNavigationTree(design, filter));
+        for (int row = 0; row < objectTree.getRowCount(); row++) {
+            objectTree.expandRow(row);
+        }
     }
 
     private JPanel workingDirectoryPanel() {
@@ -428,12 +453,16 @@ public final class ScreenDesignerApplication {
         resetPropertiesButton.addActionListener(event -> resetSelectedProperties());
         itemTypeBox.addActionListener(event -> refreshItemEditableState());
         jsonArea.setEditable(false);
-        validationArea.setEditable(false);
-        validationArea.setLineWrap(true);
-        validationArea.setWrapStyleWord(true);
+        validationList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        validationList.setCellRenderer(new ValidationProblemCellRenderer());
+        validationList.addListSelectionListener(event -> {
+            if (!event.getValueIsAdjusting() && validationList.getSelectedValue() != null) {
+                selectNavigationNode(navigationNodeForValidationPath(validationList.getSelectedValue().path()));
+            }
+        });
         JScrollPane propertiesScrollPane = new JScrollPane(propertiesPanel);
         propertiesScrollPane.setPreferredSize(new Dimension(0, 340));
-        JSplitPane lowerSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT, new JScrollPane(validationArea), new JScrollPane(jsonArea));
+        JSplitPane lowerSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT, new JScrollPane(validationList), new JScrollPane(jsonArea));
         lowerSplit.setDividerLocation(95);
         JSplitPane split = new JSplitPane(JSplitPane.VERTICAL_SPLIT, propertiesScrollPane, lowerSplit);
         split.setDividerLocation(340);
@@ -958,14 +987,6 @@ public final class ScreenDesignerApplication {
         selectNavigationNode(navigationNode);
     }
 
-    private void promoteTemporary() {
-        String itemId = JOptionPane.showInputDialog("Temporary item id to promote");
-        if (itemId != null && !itemId.isBlank()) {
-            design = ScreenDesignService.promoteTemporaryItem(design, itemId);
-            refreshAll();
-        }
-    }
-
     private void loadJson() {
         JFileChooser chooser = jsonChooser();
         if (chooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
@@ -1138,7 +1159,7 @@ public final class ScreenDesignerApplication {
         updateSelectedNavigationState();
         jsonArea.setText(ScreenDesignJson.toJson(design));
         List<ScreenDesignValidationProblem> problems = ScreenDesignValidator.validate(design);
-        validationArea.setText(validationSummary(problems));
+        validationList.setListData(problems.toArray(ScreenDesignValidationProblem[]::new));
         statusLabel.setText(statusText(currentPath, problems));
         refreshPreview();
     }
@@ -1169,6 +1190,43 @@ public final class ScreenDesignerApplication {
         addItemNodes(blockNodes, design.items(), false);
         addItemNodes(blockNodes, design.temporaryItems(), true);
         return root;
+    }
+
+    static DefaultMutableTreeNode buildNavigationTree(ScreenDesignModel design, String filter) {
+        if (filter == null || filter.isBlank()) {
+            return buildNavigationTree(design);
+        }
+        String lower = filter.strip().toLowerCase();
+        DefaultMutableTreeNode fullRoot = buildNavigationTree(design);
+        pruneNonMatchingChildren(fullRoot, lower);
+        return fullRoot;
+    }
+
+    private static boolean pruneNonMatchingChildren(DefaultMutableTreeNode node, String filter) {
+        NavigationNode nav = navigationNodeFor(node).orElse(null);
+        if (nav != null && nav.type() == NodeType.SCREEN) {
+            for (int i = node.getChildCount() - 1; i >= 0; i--) {
+                DefaultMutableTreeNode child = (DefaultMutableTreeNode) node.getChildAt(i);
+                if (!pruneNonMatchingChildren(child, filter)) {
+                    node.remove(i);
+                }
+            }
+            return true;
+        }
+        if (nav != null && (nav.type() == NodeType.ITEM || nav.type() == NodeType.TEMPORARY_ITEM)) {
+            return nav.id().toLowerCase().contains(filter);
+        }
+        if (nav != null && nav.type() == NodeType.BLOCK) {
+            boolean blockMatches = nav.id().toLowerCase().contains(filter);
+            for (int i = node.getChildCount() - 1; i >= 0; i--) {
+                DefaultMutableTreeNode child = (DefaultMutableTreeNode) node.getChildAt(i);
+                if (!pruneNonMatchingChildren(child, filter)) {
+                    node.remove(i);
+                }
+            }
+            return blockMatches || node.getChildCount() > 0;
+        }
+        return false;
     }
 
     static void addItemNodes(
@@ -1376,12 +1434,18 @@ public final class ScreenDesignerApplication {
         try {
             action.run();
         } catch (RuntimeException exception) {
-            statusLabel.setText(actionName + " failed: " + exception.getMessage());
+            String message = errorDisplayMessage(exception);
+            statusLabel.setText(actionName + " failed: " + message);
             JOptionPane.showMessageDialog(null,
-                    exception.getMessage(),
+                    message,
                     actionName + " Error",
                     JOptionPane.ERROR_MESSAGE);
         }
+    }
+
+    static String errorDisplayMessage(RuntimeException exception) {
+        String message = exception.getMessage();
+        return message != null ? message : exception.getClass().getSimpleName();
     }
 
     private static String blankToNull(String value) {
@@ -3470,6 +3534,18 @@ public final class ScreenDesignerApplication {
     }
 
     private static record NavigationDropTarget(String blockId, int siblingIndex) {
+    }
+
+    private static final class ValidationProblemCellRenderer extends DefaultListCellRenderer {
+        @Override
+        public Component getListCellRendererComponent(
+                JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
+            super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+            if (value instanceof ScreenDesignValidationProblem problem) {
+                setText(problem.path() + ": " + problem.message());
+            }
+            return this;
+        }
     }
 
     private final class ValidationTreeCellRenderer extends DefaultTreeCellRenderer {
