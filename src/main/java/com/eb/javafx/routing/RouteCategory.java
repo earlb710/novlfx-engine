@@ -15,5 +15,7 @@ public enum RouteCategory {
     /** Notification, modal, and visual overlay routes. */
     OVERLAY,
     /** Tooltip/help panel routes. */
-    TOOLTIP
+    TOOLTIP,
+    /** Generic screen routes. */
+    SCREEN
 }

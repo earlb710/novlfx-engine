@@ -34,3 +34,21 @@
 
 ### Test results
 - All 11 tests pass (6 OverlayDescriptorTest + 5 SceneRouterOverlayTest + 1 new wiring test = 12 total across both files).
+
+---
+
+## Task: WindowSizeClass, ScreenVariantCriteria, ScreenVariantResolver (Spec 4.2)
+
+### New files
+- `src/main/java/com/eb/javafx/routing/WindowSizeClass.java` — enum with COMPACT, MEDIUM, EXPANDED breakpoints.
+- `src/main/java/com/eb/javafx/routing/ScreenVariantCriteria.java` — immutable criteria for matching a screen variant by window size class and/or accessibility profile flags (highContrast, reduceMotion). Null fields are "don't care". Fluent builder returns new instances.
+- `src/main/java/com/eb/javafx/routing/ScreenVariantResolver.java` — resolves the first matching variant JSON path from a `RouteDescriptor`'s registered variants list; returns `Optional.empty()` when no match.
+- `src/test/java/com/eb/javafx/routing/ScreenVariantResolverTest.java` — 6 tests covering empty variants, matching/non-matching size class, first-match-wins order, high-contrast-only criteria match, and non-matching default profile.
+
+### Modified files
+- `src/main/java/com/eb/javafx/routing/RouteDescriptor.java` — added `variants` field (immutable, empty by default); added private 6-arg constructor; added `withVariant(ScreenVariantCriteria, String)` builder method; added `variants()` accessor. The existing 5-arg public constructor is unchanged.
+- `src/main/java/com/eb/javafx/routing/RouteCategory.java` — added `SCREEN` enum constant for generic screen routes (required by test).
+
+### Test results
+- All 6 new ScreenVariantResolverTest tests pass.
+- No routing regressions.

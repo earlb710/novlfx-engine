@@ -1,11 +1,20 @@
 package com.eb.javafx.routing;
 
+import com.eb.javafx.util.Validation;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+
 /**
  * Metadata for a JavaFX route representing a screen or label entry point.
  *
  * <p>The descriptor records the stable route ID, content definition used for the
  * title, high-level category, whether the route is fully migrated, and human
  * status text for diagnostics or route inventory screens.</p>
+ *
+ * <p>Optional screen variants can be registered via {@link #withVariant} to map
+ * window size class and accessibility criteria to alternative JSON screen paths.</p>
  */
 public final class RouteDescriptor {
     private final String id;
@@ -13,9 +22,10 @@ public final class RouteDescriptor {
     private final RouteCategory category;
     private final boolean migrated;
     private final String status;
+    private final List<Map.Entry<ScreenVariantCriteria, String>> variants;
 
     /**
-     * Creates route metadata.
+     * Creates route metadata with no screen variants.
      *
      * @param id stable route ID used by {@link SceneRouter#open(String)}
      * @param titleDefinition content-registry key for the route title
@@ -29,11 +39,22 @@ public final class RouteDescriptor {
             RouteCategory category,
             boolean migrated,
             String status) {
+        this(id, titleDefinition, category, migrated, status, List.of());
+    }
+
+    private RouteDescriptor(
+            String id,
+            String titleDefinition,
+            RouteCategory category,
+            boolean migrated,
+            String status,
+            List<Map.Entry<ScreenVariantCriteria, String>> variants) {
         this.id = id;
         this.titleDefinition = titleDefinition;
         this.category = category;
         this.migrated = migrated;
         this.status = status;
+        this.variants = variants;
     }
 
     public String id() {
@@ -55,5 +76,28 @@ public final class RouteDescriptor {
 
     public String status() {
         return status;
+    }
+
+    /**
+     * Returns the registered screen variants in registration order.
+     * The list is immutable and empty when no variants have been registered.
+     */
+    public List<Map.Entry<ScreenVariantCriteria, String>> variants() {
+        return variants;
+    }
+
+    /**
+     * Returns a new {@code RouteDescriptor} with the given variant appended.
+     * Variants are checked in registration order by {@link ScreenVariantResolver}.
+     *
+     * @param criteria matching criteria for this variant
+     * @param jsonPath path to the alternative screen JSON file
+     */
+    public RouteDescriptor withVariant(ScreenVariantCriteria criteria, String jsonPath) {
+        Objects.requireNonNull(criteria, "criteria");
+        Validation.requireNonBlank(jsonPath, "jsonPath must not be blank");
+        List<Map.Entry<ScreenVariantCriteria, String>> updated = new ArrayList<>(variants);
+        updated.add(Map.entry(criteria, jsonPath));
+        return new RouteDescriptor(id, titleDefinition, category, migrated, status, List.copyOf(updated));
     }
 }
