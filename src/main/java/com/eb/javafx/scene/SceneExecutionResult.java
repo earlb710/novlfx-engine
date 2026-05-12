@@ -1,6 +1,9 @@
 package com.eb.javafx.scene;
 
+import com.eb.javafx.audio.SoundRequest;
+
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Immutable scene execution result for UI adapters and tests.
@@ -15,19 +18,27 @@ public final class SceneExecutionResult {
     private final List<SceneChoice> availableChoices;
     private final String message;
     private final boolean canRollback;
+    private final SoundRequest voiceRequest;
 
     public SceneExecutionResult(SceneExecutionStatus status, SceneFlowState state, SceneStep step,
             List<SceneChoice> availableChoices, String message, boolean canRollback) {
+        this(status, state, step, availableChoices, message, canRollback, null);
+    }
+
+    public SceneExecutionResult(SceneExecutionStatus status, SceneFlowState state, SceneStep step,
+            List<SceneChoice> availableChoices, String message) {
+        this(status, state, step, availableChoices, message, false, null);
+    }
+
+    private SceneExecutionResult(SceneExecutionStatus status, SceneFlowState state, SceneStep step,
+            List<SceneChoice> availableChoices, String message, boolean canRollback, SoundRequest voiceRequest) {
         this.status = status;
         this.state = state;
         this.step = step;
         this.availableChoices = List.copyOf(availableChoices);
         this.message = message;
         this.canRollback = canRollback;
-    }
-
-    public SceneExecutionResult(SceneExecutionStatus status, SceneFlowState state, SceneStep step, List<SceneChoice> availableChoices, String message) {
-        this(status, state, step, availableChoices, message, false);
+        this.voiceRequest = voiceRequest;
     }
 
     public SceneExecutionStatus status() {
@@ -52,5 +63,13 @@ public final class SceneExecutionResult {
 
     public boolean canRollback() {
         return canRollback;
+    }
+
+    public Optional<SoundRequest> voiceRequest() {
+        return Optional.ofNullable(voiceRequest);
+    }
+
+    public SceneExecutionResult withVoiceRequest(SoundRequest voiceRequest) {
+        return new SceneExecutionResult(status, state, step, availableChoices, message, canRollback, voiceRequest);
     }
 }

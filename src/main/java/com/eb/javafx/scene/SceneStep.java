@@ -229,6 +229,15 @@ public final class SceneStep {
         return withMetadataValue("menuLoop", "true");
     }
 
+    public String voiceRef() {
+        return metadata.get("voiceRef");
+    }
+
+    public SceneStep withVoiceRef(String voiceRef) {
+        return withMetadataValue("voiceRef",
+                Validation.requireNonBlank(voiceRef, "Voice ref is required."));
+    }
+
     private void validateShape() {
         if (type == SceneStepType.CHOICE && choices.isEmpty()) {
             throw new IllegalArgumentException("Scene choice step requires choices.");

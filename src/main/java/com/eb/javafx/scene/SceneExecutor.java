@@ -1,5 +1,7 @@
 package com.eb.javafx.scene;
 
+import com.eb.javafx.audio.AudioService;
+import com.eb.javafx.audio.SoundRequest;
 import com.eb.javafx.gamesupport.ActionContext;
 import com.eb.javafx.gamesupport.ActionEffect;
 import com.eb.javafx.gamesupport.ActionResult;
@@ -51,8 +53,11 @@ public final class SceneExecutor {
             switch (step.type()) {
                 case DIALOGUE, NARRATION -> {
                     if (rollbackBuffer != null) rollbackBuffer.snapshot(current);
-                    return new SceneExecutionResult(SceneExecutionStatus.DISPLAYING_TEXT, current, step, List.of(), null,
+                    SceneExecutionResult result = new SceneExecutionResult(
+                            SceneExecutionStatus.DISPLAYING_TEXT, current, step, List.of(), null,
                             rollbackBuffer != null && rollbackBuffer.canRollback());
+                    SoundRequest voice = buildVoiceRequest(step);
+                    return voice != null ? result.withVoiceRequest(voice) : result;
                 }
                 case CHOICE -> {
                     if (rollbackBuffer != null) rollbackBuffer.snapshot(current);
@@ -195,6 +200,11 @@ public final class SceneExecutor {
                     };
                 })
                 .toList();
+    }
+
+    private SoundRequest buildVoiceRequest(SceneStep step) {
+        String ref = step.voiceRef();
+        return ref != null ? new SoundRequest(AudioService.VOICE_CHANNEL, ref, false, 1.0) : null;
     }
 
     private ActionResult applyEffects(ActionContext context, List<ActionEffect> effects) {
