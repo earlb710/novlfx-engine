@@ -224,7 +224,7 @@ public final class ScreenDesignLayoutAdapter {
         return switch (type) {
             case TEXT, TEXT_AREA -> DisplayDefaults.ROLE_TEXT;
             case FIELD, MULTI_LINE_FIELD, POPLIST, COMBO_BOX, SLIDER, RADIO_GROUP -> DisplayDefaults.ROLE_FIELD;
-            case BUTTON -> DisplayDefaults.ROLE_BUTTON;
+            case BUTTON, IMAGE_BUTTON -> DisplayDefaults.ROLE_BUTTON;
         };
     }
 
@@ -242,7 +242,7 @@ public final class ScreenDesignLayoutAdapter {
             case TEXT_AREA -> prefix + (item.text() == null ? item.id() : resolve(item.text(), bindings));
             case FIELD, MULTI_LINE_FIELD, POPLIST, COMBO_BOX, SLIDER, RADIO_GROUP ->
                     prefix + label + ": " + resolve(fallback(item.value(), item.defaultValue()), bindings);
-            case BUTTON -> hasEvent(item) ? prefix + label : prefix + "[" + label + "]";
+            case BUTTON, IMAGE_BUTTON -> hasEvent(item) ? prefix + label : prefix + "[" + label + "]";
         };
     }
 

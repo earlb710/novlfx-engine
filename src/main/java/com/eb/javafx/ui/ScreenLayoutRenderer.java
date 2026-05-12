@@ -420,6 +420,9 @@ public final class ScreenLayoutRenderer {
         if (ScreenDesignItemType.RADIO_GROUP.name().equals(itemType)) {
             return radioGroupNode(id, metadata);
         }
+        if (ScreenDesignItemType.IMAGE_BUTTON.name().equals(itemType)) {
+            return imageButtonNode(id, metadata);
+        }
         return null;
     }
 
@@ -530,6 +533,59 @@ public final class ScreenLayoutRenderer {
         }
         container.getChildren().add(buttonRow);
         return container;
+    }
+
+    private static Node imageButtonNode(String id, Map<String, String> metadata) {
+        String idleRef = metadata.getOrDefault("idleImageRef", "");
+        String hoverRef = metadata.getOrDefault("hoverImageRef", "");
+        String selectedRef = metadata.getOrDefault("selectedImageRef", "");
+
+        Image idleImage;
+        try {
+            idleImage = loadBackgroundImage(idleRef);
+        } catch (Exception e) {
+            // Resource not resolvable at design time — fall back to labelled button.
+            Button fallback = new Button(idleRef);
+            fallback.getStyleClass().add(ScreenShell.LAYOUT_SECTION_ROW_STYLE_CLASS);
+            if (id != null) fallback.setId(id);
+            applyLineStyle(fallback, metadata);
+            return fallback;
+        }
+
+        ImageView imageView = new ImageView(idleImage);
+        imageView.setPreserveRatio(true);
+        imageView.setSmooth(true);
+        Button button = new Button();
+        button.setGraphic(imageView);
+        button.getStyleClass().add(ScreenShell.LAYOUT_SECTION_ROW_STYLE_CLASS);
+        if (id != null) button.setId(id);
+        applyLineStyle(button, metadata);
+
+        if (!hoverRef.isBlank()) {
+            Image hoverImage;
+            try {
+                hoverImage = loadBackgroundImage(hoverRef);
+            } catch (Exception e) {
+                hoverImage = idleImage;
+            }
+            final Image resolvedHover = hoverImage;
+            button.setOnMouseEntered(e -> imageView.setImage(resolvedHover));
+            button.setOnMouseExited(e -> imageView.setImage(idleImage));
+        }
+
+        if (!selectedRef.isBlank()) {
+            Image selectedImage;
+            try {
+                selectedImage = loadBackgroundImage(selectedRef);
+            } catch (Exception e) {
+                selectedImage = idleImage;
+            }
+            final Image resolvedSelected = selectedImage;
+            button.setOnMousePressed(e -> imageView.setImage(resolvedSelected));
+            button.setOnMouseReleased(e -> imageView.setImage(idleImage));
+        }
+
+        return button;
     }
 
     private static double parseSliderBound(String value, double defaultValue) {

@@ -10,5 +10,6 @@ public enum ScreenDesignItemType {
     POPLIST,
     COMBO_BOX,
     SLIDER,
-    RADIO_GROUP
+    RADIO_GROUP,
+    IMAGE_BUTTON
 }

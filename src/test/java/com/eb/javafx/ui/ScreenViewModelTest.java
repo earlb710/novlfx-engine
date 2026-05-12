@@ -61,7 +61,7 @@ final class ScreenViewModelTest {
                         Map.of("preview.effect", "advance"),
                         List.of(new SceneEffectPreviewViewModel("effect", "advance")))),
                 "Waiting for input.",
-                List.of(new SceneDialogueRowViewModel(SceneStepType.DIALOGUE, "ava", "dialogue.ava", "ava/happy")),
+                List.of(new SceneDialogueRowViewModel(SceneStepType.DIALOGUE, "ava", "dialogue.ava", "ava/happy", java.util.Optional.empty())),
                 List.of(new SceneStatusRowViewModel("Status", "WAITING_FOR_CHOICE")),
                 List.of(new SceneEffectPreviewViewModel("pose", "happy")),
                 List.of("continue"));
