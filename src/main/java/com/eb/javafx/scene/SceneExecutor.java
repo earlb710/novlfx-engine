@@ -91,6 +91,43 @@ public final class SceneExecutor {
         return advanceUntilPause(context, applyTransition(selectedState, choice.transition()));
     }
 
+    public SceneExecutionResult advanceSkipping(ActionContext context, SceneFlowState state, SeenStepTracker seenSteps) {
+        Objects.requireNonNull(context, "context");
+        Objects.requireNonNull(seenSteps, "seenSteps");
+        SceneFlowState current = Objects.requireNonNull(state, "state");
+        while (true) {
+            SceneDefinition scene = sceneRegistry.requireScene(current.activeSceneId());
+            if (current.stepIndex() >= scene.steps().size()) {
+                return complete(current, "Scene completed: " + scene.id());
+            }
+            SceneStep step = scene.steps().get(current.stepIndex());
+            switch (step.type()) {
+                case DIALOGUE, NARRATION -> {
+                    if (seenSteps.hasSeen(current.activeSceneId(), step.id())) {
+                        current = applyTransition(current, step.transition());
+                    } else {
+                        seenSteps.markSeen(current.activeSceneId(), step.id());
+                        return new SceneExecutionResult(SceneExecutionStatus.DISPLAYING_TEXT, current, step, List.of(), null);
+                    }
+                }
+                case CHOICE -> {
+                    List<SceneChoice> availableChoices = step.choices().stream()
+                            .filter(choice -> choice.availability(context).isAllowed())
+                            .toList();
+                    return new SceneExecutionResult(SceneExecutionStatus.WAITING_FOR_CHOICE, current, step, availableChoices, null);
+                }
+                case ACTION -> {
+                    ActionResult result = applyEffects(context, step.effects());
+                    if (!result.success()) {
+                        return fail(current, result.message());
+                    }
+                    current = applyTransition(current, step.transition());
+                }
+                case TRANSITION -> current = applyTransition(current, step.transition());
+            }
+        }
+    }
+
     private ActionResult applyEffects(ActionContext context, List<ActionEffect> effects) {
         ActionResult lastResult = ActionResult.noChange("No scene effects registered.");
         for (ActionEffect effect : effects) {
