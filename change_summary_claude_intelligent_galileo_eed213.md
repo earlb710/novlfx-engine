@@ -149,3 +149,47 @@ All 11 new tests pass. All `com.eb.javafx.progress.*` tests pass with no regress
 - `customSlotIdWritesToSeparateFile`
 
 All 5 new tests pass. All `com.eb.javafx.save.*` and `com.eb.javafx.input.*` tests pass with no regressions.
+
+---
+
+## feat(achievements): add Achievement system (Task 7)
+
+### Files changed
+- `src/main/java/com/eb/javafx/achievements/AchievementDefinition.java` (new)
+- `src/main/java/com/eb/javafx/achievements/AchievementRegistry.java` (new)
+- `src/main/java/com/eb/javafx/achievements/AchievementState.java` (new)
+- `src/main/java/com/eb/javafx/achievements/AchievementService.java` (new)
+- `src/main/java/com/eb/javafx/achievements/AchievementSnapshot.java` (new)
+- `src/main/java/com/eb/javafx/achievements/AchievementSnapshotCodec.java` (new)
+- `src/main/java/com/eb/javafx/achievements/AchievementUnlockedEvent.java` (new)
+- `src/main/java/module-info.java` — added `exports com.eb.javafx.achievements;`
+- `src/test/java/com/eb/javafx/achievements/AchievementServiceTest.java` (new)
+
+### What changed
+
+**AchievementDefinition** — immutable record holding `id`, `nameTextKey`, `descriptionTextKey`, `Optional<String> iconRef`, and `unlockConditionExpression`; validated with `Validation.requireNonBlank`/`requireNonNull`.
+
+**AchievementRegistry** — mutable registry mapping achievement ids to definitions; rejects duplicate ids with `IllegalArgumentException`.
+
+**AchievementState** — mutable runtime state tracking unlocked achievement ids; supports `unlock`, `isUnlocked`, `snapshot`, and `restore`.
+
+**AchievementSnapshot** — immutable record of unlocked ids for save/restore.
+
+**AchievementSnapshotCodec** — `SaveSnapshotCodec<AchievementSnapshot>` serializing to/from a JSON array of unlocked id strings; `sectionId = "achievements"`, `schemaVersion = 1`.
+
+**AchievementUnlockedEvent** — utility factory for `ACHIEVEMENT_UNLOCKED` `GameEvent`s with `achievementId` payload entry.
+
+**AchievementService** — evaluates all registered achievement unlock conditions against live `ProgressTracker` state via `SceneConditionExpression.parse` and `SceneConditionEvaluator.evaluate`; unlocks newly met achievements and publishes `AchievementUnlockedEvent`; skips already-unlocked achievements.
+
+### Test coverage (AchievementServiceTest — 9 tests)
+- `achievementDefinitionStoresFields`
+- `achievementDefinitionAcceptsEmptyIcon`
+- `checkAllDoesNotUnlockWhenConditionFalse`
+- `checkAllUnlocksWhenConditionMet`
+- `checkAllEmitsEventOnUnlock`
+- `alreadyUnlockedAchievementDoesNotEmitAgain`
+- `snapshotRoundTripsViaCodec`
+- `achievementStateRestoreFromSnapshot`
+- `achievementRegistryRejectsDuplicateId`
+
+All 9 new tests pass. All `com.eb.javafx.achievements.*`, `com.eb.javafx.scene.*`, and `com.eb.javafx.progress.*` tests pass with no regressions.

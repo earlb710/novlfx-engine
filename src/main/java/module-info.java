@@ -9,6 +9,7 @@ module com.novlfx.engine {
     requires org.fxyz3d.core;
     requires xml.apis.ext;
 
+    exports com.eb.javafx.achievements;
     exports com.eb.javafx.audio;
     exports com.eb.javafx.accessibility;
     exports com.eb.javafx.assets;
