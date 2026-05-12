@@ -11,5 +11,6 @@ public enum SceneStepType {
     NARRATION,
     CHOICE,
     ACTION,
-    TRANSITION
+    TRANSITION,
+    CONDITIONAL
 }
