@@ -539,17 +539,53 @@ public final class ScreenLayoutRenderer {
         String idleRef = metadata.getOrDefault("idleImageRef", "");
         String hoverRef = metadata.getOrDefault("hoverImageRef", "");
         String selectedRef = metadata.getOrDefault("selectedImageRef", "");
-        // Placeholder: actual image loading is adapter responsibility.
-        Label placeholder = new Label(idleRef);
+
+        Image idleImage;
+        try {
+            idleImage = loadBackgroundImage(idleRef);
+        } catch (Exception e) {
+            // Resource not resolvable at design time — fall back to labelled button.
+            Button fallback = new Button(idleRef);
+            fallback.getStyleClass().add(ScreenShell.LAYOUT_SECTION_ROW_STYLE_CLASS);
+            if (id != null) fallback.setId(id);
+            applyLineStyle(fallback, metadata);
+            return fallback;
+        }
+
+        ImageView imageView = new ImageView(idleImage);
+        imageView.setPreserveRatio(true);
+        imageView.setSmooth(true);
+        Button button = new Button();
+        button.setGraphic(imageView);
+        button.getStyleClass().add(ScreenShell.LAYOUT_SECTION_ROW_STYLE_CLASS);
+        if (id != null) button.setId(id);
+        applyLineStyle(button, metadata);
+
         if (!hoverRef.isBlank()) {
-            placeholder.setUserData(Map.of("hoverImageRef", hoverRef, "selectedImageRef", selectedRef));
+            Image hoverImage;
+            try {
+                hoverImage = loadBackgroundImage(hoverRef);
+            } catch (Exception e) {
+                hoverImage = idleImage;
+            }
+            final Image resolvedHover = hoverImage;
+            button.setOnMouseEntered(e -> imageView.setImage(resolvedHover));
+            button.setOnMouseExited(e -> imageView.setImage(idleImage));
         }
-        placeholder.getStyleClass().add(ScreenShell.LAYOUT_SECTION_ROW_STYLE_CLASS);
-        if (id != null) {
-            placeholder.setId(id);
+
+        if (!selectedRef.isBlank()) {
+            Image selectedImage;
+            try {
+                selectedImage = loadBackgroundImage(selectedRef);
+            } catch (Exception e) {
+                selectedImage = idleImage;
+            }
+            final Image resolvedSelected = selectedImage;
+            button.setOnMousePressed(e -> imageView.setImage(resolvedSelected));
+            button.setOnMouseReleased(e -> imageView.setImage(idleImage));
         }
-        applyLineStyle(placeholder, metadata);
-        return placeholder;
+
+        return button;
     }
 
     private static double parseSliderBound(String value, double defaultValue) {
