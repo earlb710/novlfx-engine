@@ -30,6 +30,16 @@ public final class SoundRequest {
         this.relativeVolume = Validation.requireUnitInterval(relativeVolume, "Sound request relative volume must be between 0 and 1.");
     }
 
+    /**
+     * Creates a queued sound request at full relative volume and no loop for the given channel.
+     *
+     * @param audioRef non-blank authored asset path
+     * @param channelId registered audio channel ID
+     */
+    public static SoundRequest queued(String audioRef, String channelId) {
+        return new SoundRequest(channelId, audioRef, false, 1.0);
+    }
+
     public String channelId() {
         return channelId;
     }

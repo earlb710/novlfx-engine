@@ -33,6 +33,9 @@ public final class PreferencesService {
     private static final String MUSIC_VOLUME_KEY = "audio.musicVolume";
     private static final String SOUND_VOLUME_KEY = "audio.soundVolume";
     private static final String MUTE_ALL_KEY = "audio.muteAll";
+    private static final String VOICE_VOLUME_KEY = "audio.voiceVolume";
+    private static final String VOICE_ENABLED_KEY = "audio.voiceEnabled";
+    private static final String AUTO_ADVANCE_ON_VOICE_END_KEY = "audio.autoAdvanceOnVoiceEnd";
     private static final String FULLSCREEN_KEY = "window.fullscreen";
     private static final String LANGUAGE_KEY = "ui.language";
 
@@ -56,6 +59,9 @@ public final class PreferencesService {
     private double musicVolume;
     private double soundVolume;
     private boolean muteAll;
+    private double voiceVolume;
+    private boolean voiceEnabled;
+    private boolean autoAdvanceOnVoiceEnd;
     private boolean fullscreen;
     private Language language;
 
@@ -85,6 +91,9 @@ public final class PreferencesService {
         musicVolume = clamp(preferences.getDouble(MUSIC_VOLUME_KEY, 1.0), 0.0, 1.0);
         soundVolume = clamp(preferences.getDouble(SOUND_VOLUME_KEY, 1.0), 0.0, 1.0);
         muteAll = preferences.getBoolean(MUTE_ALL_KEY, false);
+        voiceVolume = clamp(preferences.getDouble(VOICE_VOLUME_KEY, 1.0), 0.0, 1.0);
+        voiceEnabled = preferences.getBoolean(VOICE_ENABLED_KEY, true);
+        autoAdvanceOnVoiceEnd = preferences.getBoolean(AUTO_ADVANCE_ON_VOICE_END_KEY, false);
         fullscreen = preferences.getBoolean(FULLSCREEN_KEY, false);
         language = validatedLanguage(preferences.get(LANGUAGE_KEY, Language.ENGLISH.preferenceValue()));
     }
@@ -192,6 +201,21 @@ public final class PreferencesService {
     /** Returns whether all audio channels should be muted. */
     public boolean muteAll() {
         return muteAll;
+    }
+
+    /** Returns the persisted voice channel volume multiplier. */
+    public double voiceVolume() {
+        return voiceVolume;
+    }
+
+    /** Returns whether the voice channel is enabled. */
+    public boolean voiceEnabled() {
+        return voiceEnabled;
+    }
+
+    /** Returns whether scene steps should auto-advance when voice playback ends. */
+    public boolean autoAdvanceOnVoiceEnd() {
+        return autoAdvanceOnVoiceEnd;
     }
 
     /** Returns whether the primary window should be displayed in fullscreen mode. */
@@ -322,6 +346,24 @@ public final class PreferencesService {
     public void saveMuteAll(boolean muteAll) {
         this.muteAll = muteAll;
         preferences.putBoolean(MUTE_ALL_KEY, muteAll);
+    }
+
+    /** Persists a clamped voice channel volume. */
+    public void saveVoiceVolume(double voiceVolume) {
+        this.voiceVolume = clamp(voiceVolume, 0.0, 1.0);
+        preferences.putDouble(VOICE_VOLUME_KEY, this.voiceVolume);
+    }
+
+    /** Persists whether the voice channel is enabled. */
+    public void saveVoiceEnabled(boolean voiceEnabled) {
+        this.voiceEnabled = voiceEnabled;
+        preferences.putBoolean(VOICE_ENABLED_KEY, voiceEnabled);
+    }
+
+    /** Persists the auto-advance-on-voice-end preference. */
+    public void saveAutoAdvanceOnVoiceEnd(boolean autoAdvanceOnVoiceEnd) {
+        this.autoAdvanceOnVoiceEnd = autoAdvanceOnVoiceEnd;
+        preferences.putBoolean(AUTO_ADVANCE_ON_VOICE_END_KEY, autoAdvanceOnVoiceEnd);
     }
 
     /** Persists the fullscreen preference and updates the loaded value. */

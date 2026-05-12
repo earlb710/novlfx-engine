@@ -26,10 +26,13 @@ public final class AudioService {
     public static final String SOUND_CHANNEL = "sound";
     public static final String EFFECTS_CHANNEL = "effects";
     public static final String INTIMATE_EFFECTS_CHANNEL = "intimate-effects";
+    public static final String VOICE_CHANNEL = "voice";
 
     private final Map<String, AudioChannelDefinition> channels = new LinkedHashMap<>();
     private final Map<String, Double> channelVolumes = new LinkedHashMap<>();
     private final Map<String, AudioPlaybackCommand> lastPlaybackCommands = new LinkedHashMap<>();
+    private final Map<String, SoundRequest> queuedRequests = new LinkedHashMap<>();
+    private final Map<String, AudioChannelConfig> channelConfigs = new LinkedHashMap<>();
     private final InitializationGuard initializationGuard = new InitializationGuard("Audio service used before initialization.");
     private boolean muted;
     private double masterVolume;
@@ -45,14 +48,18 @@ public final class AudioService {
         channels.clear();
         channelVolumes.clear();
         lastPlaybackCommands.clear();
+        queuedRequests.clear();
+        channelConfigs.clear();
         masterVolume = preferencesService.masterVolume();
         muted = preferencesService.muteAll();
         registerChannel(new AudioChannelDefinition(MUSIC_CHANNEL, "Looping background music.", true, 1, 1.0));
         registerChannel(new AudioChannelDefinition(SOUND_CHANNEL, "Short one-shot UI and gameplay sounds.", false, 8, 1.0));
         registerChannel(new AudioChannelDefinition(EFFECTS_CHANNEL, "Reusable environmental and scene effects.", true, 4, 1.0));
         registerChannel(new AudioChannelDefinition(INTIMATE_EFFECTS_CHANNEL, "Dedicated migrated effect channel.", true, 2, 1.0));
+        registerChannel(new AudioChannelDefinition(VOICE_CHANNEL, "Character voice lines.", false, 1, 1.0));
         channelVolumes.put(MUSIC_CHANNEL, preferencesService.musicVolume());
         channelVolumes.put(SOUND_CHANNEL, preferencesService.soundVolume());
+        channelVolumes.put(VOICE_CHANNEL, preferencesService.voiceVolume());
         initializationGuard.markInitialized();
     }
 
@@ -69,6 +76,17 @@ public final class AudioService {
     public void registerChannel(AudioChannelDefinition definition) {
         channels.put(definition.id(), definition);
         channelVolumes.put(definition.id(), definition.defaultVolume());
+    }
+
+    /**
+     * Registers priority and ducking configuration for a named channel.
+     * Replaces any previously registered config for that channel ID.
+     * The channel ID does not need to have an {@link AudioChannelDefinition} registered first.
+     *
+     * @param config priority and ducking policy for the channel
+     */
+    public void registerChannel(AudioChannelConfig config) {
+        channelConfigs.put(Validation.requireNonNull(config, "config").channelId(), config);
     }
 
     /** Returns immutable channel definitions keyed by channel id. */
@@ -141,11 +159,51 @@ public final class AudioService {
         return command;
     }
 
-    /** Clears the last command for a channel to model a stop request. */
+    /** Clears the last command for a channel and cancels any pending queued request. */
     public void stopChannel(String channelId) {
         assertInitialized();
         requireChannel(channelId);
         lastPlaybackCommands.remove(channelId);
+        queuedRequests.remove(channelId);
+    }
+
+    /**
+     * Schedules a track to play after the current playback on the same channel ends naturally.
+     * Calling again replaces the pending entry — single-depth queue matching Ren'Py semantics.
+     *
+     * @param request the sound request to queue; its channel must already be registered
+     */
+    public void queueMusic(SoundRequest request) {
+        assertInitialized();
+        requireChannel(request.channelId());
+        queuedRequests.put(request.channelId(), request);
+    }
+
+    /** Cancels any pending queued request for the given channel. */
+    public void clearQueue(String channelId) {
+        assertInitialized();
+        requireChannel(channelId);
+        queuedRequests.remove(channelId);
+    }
+
+    /** Returns the pending queued request for a channel, if one has been scheduled. */
+    public Optional<SoundRequest> queuedRequest(String channelId) {
+        assertInitialized();
+        requireChannel(channelId);
+        return Optional.ofNullable(queuedRequests.get(channelId));
+    }
+
+    /**
+     * Returns the registered priority and ducking configuration for a channel.
+     * Channels with no registered config return a default with priority 0 and {@link DuckingPolicy#NONE}.
+     *
+     * @param channelId registered audio channel ID
+     */
+    public AudioChannelConfig channelConfig(String channelId) {
+        assertInitialized();
+        requireChannel(channelId);
+        return channelConfigs.getOrDefault(channelId,
+                new AudioChannelConfig(channelId, 0, 1.0, DuckingPolicy.NONE, 0.0));
     }
 
     /** Returns the last validated command for a channel if one exists. */

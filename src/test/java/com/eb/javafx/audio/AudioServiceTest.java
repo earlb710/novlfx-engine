@@ -32,7 +32,7 @@ final class AudioServiceTest {
         service.initialize(preferencesService);
 
         assertTrue(service.isInitialized());
-        assertEquals(4, service.channels().size());
+        assertEquals(5, service.channels().size());
         assertEquals(0.5, service.masterVolume());
         assertEquals(0.25, service.channelVolume(AudioService.MUSIC_CHANNEL));
         assertEquals(0.75, service.channelVolume(AudioService.SOUND_CHANNEL));

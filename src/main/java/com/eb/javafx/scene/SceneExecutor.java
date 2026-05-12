@@ -1,5 +1,7 @@
 package com.eb.javafx.scene;
 
+import com.eb.javafx.audio.AudioService;
+import com.eb.javafx.audio.SoundRequest;
 import com.eb.javafx.characters.CharacterTemplateRegistry;
 import com.eb.javafx.gamesupport.ActionContext;
 import com.eb.javafx.gamesupport.ActionEffect;
@@ -69,8 +71,11 @@ public final class SceneExecutor {
                 case DIALOGUE, NARRATION -> {
                     if (rollbackBuffer != null) rollbackBuffer.snapshot(current);
                     TalkingAnimationCue cue = buildTalkingCue(step);
-                    return new SceneExecutionResult(SceneExecutionStatus.DISPLAYING_TEXT, current, step, List.of(),
+                    SceneExecutionResult result = new SceneExecutionResult(
+                            SceneExecutionStatus.DISPLAYING_TEXT, current, step, List.of(),
                             null, cue, null, rollbackBuffer != null && rollbackBuffer.canRollback());
+                    SoundRequest voice = buildVoiceRequest(step);
+                    return voice != null ? result.withVoiceRequest(voice) : result;
                 }
                 case CHOICE -> {
                     if (rollbackBuffer != null) rollbackBuffer.snapshot(current);
@@ -219,6 +224,11 @@ public final class SceneExecutor {
         return characterTemplateRegistry.template(step.speakerId())
                 .flatMap(t -> t.talkingAnimationId().map(animId -> new TalkingAnimationCue(step.speakerId(), animId)))
                 .orElse(null);
+    }
+
+    private SoundRequest buildVoiceRequest(SceneStep step) {
+        String ref = step.voiceRef();
+        return ref != null ? new SoundRequest(AudioService.VOICE_CHANNEL, ref, false, 1.0) : null;
     }
 
     private HotspotMapViewModel buildHotspotMapViewModel(String hotspotMapId) {

@@ -11,4 +11,7 @@ public final class VisualTransitionRequest {
     }
 
     public VisualTransitionDefinition definition() { return definition; }
+
+    /** Returns the audio asset ref to play during this transition, or null if none. */
+    public String soundRef() { return definition.soundRef(); }
 }

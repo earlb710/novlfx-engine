@@ -1,5 +1,7 @@
 package com.eb.javafx.scene;
 
+import com.eb.javafx.audio.SoundRequest;
+
 import java.util.List;
 import java.util.Optional;
 
@@ -19,10 +21,11 @@ public final class SceneExecutionResult {
     private final TalkingAnimationCue talkingCue;
     private final String message;
     private final boolean canRollback;
+    private final SoundRequest voiceRequest;
 
-    public SceneExecutionResult(SceneExecutionStatus status, SceneFlowState state, SceneStep step,
+    private SceneExecutionResult(SceneExecutionStatus status, SceneFlowState state, SceneStep step,
             List<SceneChoice> availableChoices, HotspotMapViewModel hotspotMapViewModel,
-            TalkingAnimationCue talkingCue, String message, boolean canRollback) {
+            TalkingAnimationCue talkingCue, String message, boolean canRollback, SoundRequest voiceRequest) {
         this.status = status;
         this.state = state;
         this.step = step;
@@ -31,27 +34,34 @@ public final class SceneExecutionResult {
         this.talkingCue = talkingCue;
         this.message = message;
         this.canRollback = canRollback;
+        this.voiceRequest = voiceRequest;
+    }
+
+    public SceneExecutionResult(SceneExecutionStatus status, SceneFlowState state, SceneStep step,
+            List<SceneChoice> availableChoices, HotspotMapViewModel hotspotMapViewModel,
+            TalkingAnimationCue talkingCue, String message, boolean canRollback) {
+        this(status, state, step, availableChoices, hotspotMapViewModel, talkingCue, message, canRollback, null);
     }
 
     public SceneExecutionResult(SceneExecutionStatus status, SceneFlowState state, SceneStep step,
             List<SceneChoice> availableChoices, String message, boolean canRollback) {
-        this(status, state, step, availableChoices, null, null, message, canRollback);
+        this(status, state, step, availableChoices, null, null, message, canRollback, null);
     }
 
     public SceneExecutionResult(SceneExecutionStatus status, SceneFlowState state, SceneStep step,
             List<SceneChoice> availableChoices, HotspotMapViewModel hotspotMapViewModel, String message) {
-        this(status, state, step, availableChoices, hotspotMapViewModel, null, message, false);
+        this(status, state, step, availableChoices, hotspotMapViewModel, null, message, false, null);
     }
 
     public SceneExecutionResult(SceneExecutionStatus status, SceneFlowState state, SceneStep step,
             List<SceneChoice> availableChoices, HotspotMapViewModel hotspotMapViewModel,
             TalkingAnimationCue talkingCue, String message) {
-        this(status, state, step, availableChoices, hotspotMapViewModel, talkingCue, message, false);
+        this(status, state, step, availableChoices, hotspotMapViewModel, talkingCue, message, false, null);
     }
 
     public SceneExecutionResult(SceneExecutionStatus status, SceneFlowState state, SceneStep step,
             List<SceneChoice> availableChoices, String message) {
-        this(status, state, step, availableChoices, null, null, message, false);
+        this(status, state, step, availableChoices, null, null, message, false, null);
     }
 
     public SceneExecutionStatus status() { return status; }
@@ -62,4 +72,9 @@ public final class SceneExecutionResult {
     public Optional<TalkingAnimationCue> talkingCue() { return Optional.ofNullable(talkingCue); }
     public String message() { return message; }
     public boolean canRollback() { return canRollback; }
+    public Optional<SoundRequest> voiceRequest() { return Optional.ofNullable(voiceRequest); }
+
+    public SceneExecutionResult withVoiceRequest(SoundRequest voiceRequest) {
+        return new SceneExecutionResult(status, state, step, availableChoices, hotspotMapViewModel, talkingCue, message, canRollback, voiceRequest);
+    }
 }
