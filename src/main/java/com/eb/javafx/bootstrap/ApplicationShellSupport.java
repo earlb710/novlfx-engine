@@ -1,6 +1,8 @@
 package com.eb.javafx.bootstrap;
 
+import com.eb.javafx.debug.DebugScreenInspector;
 import com.eb.javafx.util.Validation;
+import javafx.scene.Scene;
 import javafx.stage.Stage;
 
 /** Reusable application-shell helper that wires boot diagnostics, stage preferences, and the first route. */
@@ -17,6 +19,12 @@ public final class ApplicationShellSupport {
             stage.heightProperty().addListener((observable, oldValue, newValue) ->
                     context.preferencesService().saveWindowSize(stage.getWidth(), newValue.doubleValue()));
         }
-        stage.setScene(context.sceneRouter().open(options.startupRouteId()));
+        Scene scene = context.sceneRouter().open(options.startupRouteId());
+        stage.setScene(scene);
+        DebugScreenInspector.attach(
+                scene,
+                options.startupRouteId(),
+                context.resourceConfig().debug(),
+                context.uiTheme());
     }
 }

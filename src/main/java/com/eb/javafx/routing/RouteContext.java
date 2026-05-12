@@ -3,6 +3,7 @@ package com.eb.javafx.routing;
 import com.eb.javafx.bootstrap.ApplicationResourceConfig;
 import com.eb.javafx.content.ContentRegistry;
 import com.eb.javafx.audio.AudioService;
+import com.eb.javafx.debug.DebugScreenInspector;
 import com.eb.javafx.display.ImageDisplayRegistry;
 import com.eb.javafx.gamesupport.GameSupportService;
 import com.eb.javafx.prefs.PreferencesService;
@@ -192,7 +193,9 @@ public final class RouteContext {
 
     /** Opens a route and attaches it to the primary stage. */
     public void navigateTo(String routeId) {
-        primaryStage.setScene(sceneRouter.open(routeId));
+        Scene scene = sceneRouter.open(routeId);
+        primaryStage.setScene(scene);
+        DebugScreenInspector.attach(scene, routeId, resourceConfig.debug(), uiTheme);
     }
 
     /** Creates a consistently sized and themed scene for a screen shell root. */

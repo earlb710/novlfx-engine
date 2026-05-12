@@ -117,7 +117,7 @@ The engine publishes the Java module `com.novlfx.engine`. It exports reusable pa
 - `bootstrap`: startup phases, bootstrap reporting, and boot context assembly.
 - `characters`: generic character profiles, templates, stat blocks, mutable character state, tags, metadata, and relationship values.
 - `content`: reusable static content module and registry contracts, content-pack descriptors, and JSON-backed display content modules.
-- `debug`: reusable debug snapshot, panel descriptor, and inspector models for app-owned developer tools.
+- `debug`: reusable debug snapshot, panel descriptor, and inspector models for app-owned developer tools, plus `DebugScreenInspector` which installs a Ctrl+D shortcut that opens a copyable info dialog (route ID, screen class, JSON source) when the active `ApplicationResourceConfig.debug()` flag is enabled.
 - `diagnostics`: structured health-check problems, reports, check descriptors, and check registries.
 - `display`: image assets, display layers, transforms, layered characters, JSON definition loading, interpolation, and animation playback.
 - `events`: lightweight runtime event bus, event queues, listeners, command dispatch, and event history models.
@@ -872,6 +872,7 @@ Use the generic support packages when an application needs reusable game systems
 - `SettingsStore` carries `SettingDefinition` entries, `SettingType` metadata, and runtime values above raw preferences. `AccessibilityProfile` carries accessibility choices such as font scale, contrast, motion, captions, and screen-reader labels.
 - `TimelineSequence`, `TimelineStep`, and `TimelinePlayer` provide deterministic timing primitives with `TimelineStatus` state that can drive UI, display, text, or audio adapters.
 - `DebugRegistry` collects `DebugSnapshot` values from `DebugInspector` callbacks for application-owned developer menus or test screens.
+- `DebugScreenInspector` records the active route ID on each navigated scene and, when the `ApplicationResourceConfig.debug()` flag is enabled, wires the `Ctrl+D` (Cmd+D on macOS) shortcut so it opens a modal dialog showing the current screen name, screen class, and JSON source path in copyable text fields. Shortcut dispatch is performed by `ScreenShell.installFooterShortcuts(Scene, Map<String, Runnable>)` next to the other footer-shortcut configuration, so engine code and apps share one consistent shortcut-parsing pipeline (`ScreenShell.matchesShortcut(KeyEvent, String)` accepts `Ctrl`/`Cmd`/`Meta`, `Shift`, `Alt`/`Option`, plus named keys like `Space`, `Backspace`, `Tab`, `Enter`, `Escape`). Screens opt in to richer metadata by calling `DebugScreenInspector.setScreenClass(scene, MyScreen.class)` and `DebugScreenInspector.setJsonFilePath(scene, path)`; the route ID is populated automatically by `RouteContext.navigateTo` and `ApplicationShellSupport.openStartupRoute`. The dialog dismisses via the Close button (focused by default) or the Escape key.
 - `ImportValidationReport`, `ImportValidationIssue`, `ImportIssueSeverity`, and `GenericValidation` provide shared helper types for import summaries, missing-reference diagnostics, and known-ID validation.
 
 These modules intentionally store IDs, metadata, and reusable state only. Concrete content, progression rules, screen design, and save-file schemas should stay in application repositories.
