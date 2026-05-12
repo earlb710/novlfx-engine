@@ -958,14 +958,6 @@ public final class ScreenDesignerApplication {
         selectNavigationNode(navigationNode);
     }
 
-    private void promoteTemporary() {
-        String itemId = JOptionPane.showInputDialog("Temporary item id to promote");
-        if (itemId != null && !itemId.isBlank()) {
-            design = ScreenDesignService.promoteTemporaryItem(design, itemId);
-            refreshAll();
-        }
-    }
-
     private void loadJson() {
         JFileChooser chooser = jsonChooser();
         if (chooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {

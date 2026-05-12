@@ -929,6 +929,18 @@ final class ScreenDesignerApplicationTest {
         assertEquals("Screen design block references unknown parent block id: missing", exception.getMessage());
     }
 
+    @Test
+    void promoteTemporaryMethodIsRemoved() throws Exception {
+        boolean found = false;
+        for (java.lang.reflect.Method m : ScreenDesignerApplication.class.getDeclaredMethods()) {
+            if ("promoteTemporary".equals(m.getName())) {
+                found = true;
+                break;
+            }
+        }
+        assertFalse(found, "Dead promoteTemporary() method should be removed");
+    }
+
     private static Object invokePrivateMethod(Object target, String methodName) throws Exception {
         Method method = target.getClass().getDeclaredMethod(methodName);
         method.setAccessible(true);
