@@ -1,3 +1,31 @@
+---
+
+# Change Summary — Ren'Py Feature Parity (branch: claude/dreamy-shirley-454088)
+
+## Overview
+
+Added six independent Ren'Py-parity feature areas to the novlfx engine. All changes are data-model and service-layer only — no JavaFX rendering. Each feature is fully covered by unit tests.
+
+### 1. Visual Scene Transitions (`com.eb.javafx.transitions`)
+New package: `SceneTransitionEffect` (enum), `VisualTransitionDefinition`, `VisualTransitionRegistry`, `VisualTransitionRequest`. Package exported in module-info.
+
+### 2. Image Tag Resolution (`com.eb.javafx.display`)
+New classes: `DisplayTagDefinition`, `DisplayTagRegistry`, `DisplayTagResolution`, `DisplayTagResolver`. Semantic tag → display ID + layer + transform preset resolution.
+
+### 3. Skip / Auto Modes (`com.eb.javafx.scene`)
+New: `SeenStepSnapshot`, `SeenStepTracker`, `ScenePlaybackMode`. Added `SceneExecutor.advanceSkipping()` — bypasses seen DIALOGUE/NARRATION steps, always stops at CHOICE steps and unseen text.
+
+### 4. NVL Mode (`com.eb.javafx.scene`)
+New: `SceneDisplayMode` (ADV/NVL enum). Added `SceneStep.displayMode()` and `withDisplayMode()` — presentation-only hint stored in step metadata; no executor behaviour change.
+
+### 5. Scene-Level Conditionals (`com.eb.javafx.scene`)
+New: `SceneConditionExpression` (DSL parser for flag/unlock/counter expressions), `SceneConditionEvaluator`. Added `SceneStepType.CONDITIONAL`, `SceneStep.conditional()` factory, `conditionExpression()`, `elseTransition()`. Updated `SceneExecutor` with optional two-arg constructor and CONDITIONAL handling in both `advanceUntilPause()` and `advanceSkipping()`.
+
+### 6. Gallery Framework (`com.eb.javafx.gallery`)
+New package: `GalleryEntry`, `GalleryDefinition`, `GalleryRegistry`, `GalleryEntryViewModel`, `GalleryService`. Gallery entries are gated behind `ProgressTracker` unlocks; locked entries return empty `imageRef()`. Package exported in module-info.
+
+---
+
 ## Fix ScreenDesignItem label handling and screen metadata boolean validation
 
 **Bug 1 — Labels silently dropped for TEXT and TEXT_AREA items**
