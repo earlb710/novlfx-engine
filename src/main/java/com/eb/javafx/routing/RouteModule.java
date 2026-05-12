@@ -14,6 +14,5 @@ public interface RouteModule {
 
     /** Registers persistent overlay screens with the supplied router. Override to contribute overlays. */
     default void registerOverlays(SceneRouter router) {
-        // Override to register persistent overlay screens.
     }
 }

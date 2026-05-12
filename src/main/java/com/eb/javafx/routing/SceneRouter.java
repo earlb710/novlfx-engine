@@ -14,12 +14,13 @@ import com.eb.javafx.ui.UiTheme;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 
+import com.eb.javafx.util.Validation;
+
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -111,9 +112,10 @@ public final class SceneRouter {
         routeModules.forEach(this::registerRouteModule);
     }
 
-    /** Registers all routes from a module against this router. */
+    /** Registers all routes and overlays from a module against this router. */
     public void registerRouteModule(RouteModule routeModule) {
         routeModule.registerRoutes(this);
+        routeModule.registerOverlays(this);
     }
 
     /** Registers or replaces a route descriptor and factory. */
@@ -161,7 +163,7 @@ public final class SceneRouter {
 
     /** Registers a persistent overlay screen. Re-registering the same id replaces the previous entry. */
     public void registerOverlay(OverlayDescriptor descriptor) {
-        Objects.requireNonNull(descriptor, "descriptor");
+        Validation.requireNonNull(descriptor, "descriptor");
         overlayDescriptors.put(descriptor.id(), descriptor);
         overlayVisibility.put(descriptor.id(), descriptor.initiallyVisible());
     }
@@ -181,7 +183,7 @@ public final class SceneRouter {
     /** Returns true if the overlay with the given id is currently visible. */
     public boolean isOverlayVisible(String overlayId) {
         requireRegisteredOverlay(overlayId);
-        return Boolean.TRUE.equals(overlayVisibility.get(overlayId));
+        return overlayVisibility.get(overlayId);
     }
 
     /** Returns the ids of all currently visible overlays, in registration order. */

@@ -16,7 +16,17 @@ final class OverlayDescriptorTest {
 
     @Test
     void overlayDescriptorRejectsNullId() {
-        assertThrows(Exception.class, () -> new OverlayDescriptor(null, ctx -> null, true));
+        assertThrows(IllegalArgumentException.class, () -> new OverlayDescriptor(null, ctx -> null, true));
+    }
+
+    @Test
+    void overlayDescriptorRejectsBlankId() {
+        assertThrows(IllegalArgumentException.class, () -> new OverlayDescriptor("  ", ctx -> null, true));
+    }
+
+    @Test
+    void overlayDescriptorRejectsNullFactory() {
+        assertThrows(IllegalArgumentException.class, () -> new OverlayDescriptor("hud", null, true));
     }
 
     @Test

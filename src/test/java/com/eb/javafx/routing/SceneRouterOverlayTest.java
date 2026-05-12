@@ -43,4 +43,21 @@ final class SceneRouterOverlayTest {
         SceneRouter router = new SceneRouter();
         assertThrows(IllegalArgumentException.class, () -> router.hideOverlay("nonexistent"));
     }
+
+    @Test
+    void registerRouteModuleWiresOverlays() {
+        SceneRouter router = new SceneRouter();
+        RouteModule module = new RouteModule() {
+            @Override
+            public void registerRoutes(SceneRouter r) {
+            }
+
+            @Override
+            public void registerOverlays(SceneRouter r) {
+                r.registerOverlay(new OverlayDescriptor("hud", ctx -> null, true));
+            }
+        };
+        router.registerRouteModule(module);
+        assertTrue(router.isOverlayVisible("hud"));
+    }
 }
