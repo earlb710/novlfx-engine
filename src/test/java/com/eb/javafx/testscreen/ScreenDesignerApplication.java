@@ -175,6 +175,7 @@ public final class ScreenDesignerApplication {
     private ScreenDesignModel design = sampleDesign();
     private final DefaultTreeModel objectTreeModel = new DefaultTreeModel(new DefaultMutableTreeNode());
     private final JTree objectTree = new JTree(objectTreeModel);
+    private final JTextField treeFilterField = new JTextField();
     private final JButton addItemButton = new JButton("Add Item");
     private final JPanel propertiesPanel = new ViewportWidthTrackingPanel(new BorderLayout(8, 8));
     private final JButton applyPropertiesButton = new JButton("Apply Properties");
@@ -396,11 +397,34 @@ public final class ScreenDesignerApplication {
         objectTree.addTreeSelectionListener(event -> updateSelectedNavigationState());
         installTreeContextMenu();
         installTreeDragAndDrop();
+
+        treeFilterField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            @Override public void insertUpdate(javax.swing.event.DocumentEvent e) { applyTreeFilter(); }
+            @Override public void removeUpdate(javax.swing.event.DocumentEvent e) { applyTreeFilter(); }
+            @Override public void changedUpdate(javax.swing.event.DocumentEvent e) { applyTreeFilter(); }
+        });
+
+        JPanel filterPanel = new JPanel(new BorderLayout(4, 4));
+        filterPanel.add(new JLabel("Filter"), BorderLayout.WEST);
+        filterPanel.add(treeFilterField, BorderLayout.CENTER);
+
+        JPanel northPanel = new JPanel(new BorderLayout(4, 8));
+        northPanel.add(workingDirectoryPanel(), BorderLayout.NORTH);
+        northPanel.add(filterPanel, BorderLayout.SOUTH);
+
         JPanel panel = new JPanel(new BorderLayout(8, 8));
-        panel.add(workingDirectoryPanel(), BorderLayout.NORTH);
+        panel.add(northPanel, BorderLayout.NORTH);
         panel.add(new JScrollPane(objectTree), BorderLayout.CENTER);
         panel.add(navigationActions(), BorderLayout.SOUTH);
         return panel;
+    }
+
+    private void applyTreeFilter() {
+        String filter = treeFilterField.getText();
+        objectTreeModel.setRoot(buildNavigationTree(design, filter));
+        for (int row = 0; row < objectTree.getRowCount(); row++) {
+            objectTree.expandRow(row);
+        }
     }
 
     private JPanel workingDirectoryPanel() {
@@ -1166,6 +1190,43 @@ public final class ScreenDesignerApplication {
         addItemNodes(blockNodes, design.items(), false);
         addItemNodes(blockNodes, design.temporaryItems(), true);
         return root;
+    }
+
+    static DefaultMutableTreeNode buildNavigationTree(ScreenDesignModel design, String filter) {
+        if (filter == null || filter.isBlank()) {
+            return buildNavigationTree(design);
+        }
+        String lower = filter.strip().toLowerCase();
+        DefaultMutableTreeNode fullRoot = buildNavigationTree(design);
+        pruneNonMatchingChildren(fullRoot, lower);
+        return fullRoot;
+    }
+
+    private static boolean pruneNonMatchingChildren(DefaultMutableTreeNode node, String filter) {
+        NavigationNode nav = navigationNodeFor(node).orElse(null);
+        if (nav != null && nav.type() == NodeType.SCREEN) {
+            for (int i = node.getChildCount() - 1; i >= 0; i--) {
+                DefaultMutableTreeNode child = (DefaultMutableTreeNode) node.getChildAt(i);
+                if (!pruneNonMatchingChildren(child, filter)) {
+                    node.remove(i);
+                }
+            }
+            return true;
+        }
+        if (nav != null && (nav.type() == NodeType.ITEM || nav.type() == NodeType.TEMPORARY_ITEM)) {
+            return nav.id().toLowerCase().contains(filter);
+        }
+        if (nav != null && nav.type() == NodeType.BLOCK) {
+            boolean blockMatches = nav.id().toLowerCase().contains(filter);
+            for (int i = node.getChildCount() - 1; i >= 0; i--) {
+                DefaultMutableTreeNode child = (DefaultMutableTreeNode) node.getChildAt(i);
+                if (!pruneNonMatchingChildren(child, filter)) {
+                    node.remove(i);
+                }
+            }
+            return blockMatches || node.getChildCount() > 0;
+        }
+        return false;
     }
 
     static void addItemNodes(

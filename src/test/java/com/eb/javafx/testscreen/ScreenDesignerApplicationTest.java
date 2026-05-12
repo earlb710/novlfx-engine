@@ -38,6 +38,7 @@ import javax.swing.tree.DefaultMutableTreeNode;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -928,6 +929,67 @@ final class ScreenDesignerApplicationTest {
                         List.of()));
 
         assertEquals("Screen design block references unknown parent block id: missing", exception.getMessage());
+    }
+
+    @Test
+    void navigationTreeFilterExcludesNonMatchingNodesButKeepsParentsWithMatchingChildren() {
+        ScreenDesignModel design = new ScreenDesignModel(
+                "sample.screen",
+                "Sample Screen",
+                com.eb.javafx.ui.ScreenLayoutType.FORM,
+                Map.of(),
+                List.of(
+                        new ScreenDesignBlock("main", "Main"),
+                        new ScreenDesignBlock("secondary", "Secondary")),
+                List.of(
+                        new ScreenDesignItem("title.text", "main", ScreenDesignItemType.TEXT,
+                                "Title", "Saved", null, null, null, Map.of()),
+                        new ScreenDesignItem("subtitle.text", "secondary", ScreenDesignItemType.TEXT,
+                                "Subtitle", "Saved", null, null, null, Map.of())),
+                List.of());
+
+        DefaultMutableTreeNode filtered = ScreenDesignerApplication.buildNavigationTree(design, "subtitle");
+
+        assertEquals("screen: sample.screen", filtered.getUserObject().toString());
+        assertEquals(1, filtered.getChildCount());
+        DefaultMutableTreeNode secondaryBlock = (DefaultMutableTreeNode) filtered.getChildAt(0);
+        assertEquals("block: secondary", secondaryBlock.getUserObject().toString());
+        assertEquals(1, secondaryBlock.getChildCount());
+        assertEquals("item: subtitle.text",
+                ((DefaultMutableTreeNode) secondaryBlock.getChildAt(0)).getUserObject().toString());
+    }
+
+    @Test
+    void navigationTreeFilterIsBlankReturnsSameTreeAsNoFilter() {
+        ScreenDesignModel design = new ScreenDesignModel(
+                "sample.screen",
+                "Sample Screen",
+                com.eb.javafx.ui.ScreenLayoutType.FORM,
+                Map.of(),
+                List.of(new ScreenDesignBlock("main", "Main")),
+                List.of(new ScreenDesignItem("title.text", "main", ScreenDesignItemType.TEXT,
+                        "Title", "Saved", null, null, null, Map.of())),
+                List.of());
+
+        DefaultMutableTreeNode unfiltered = ScreenDesignerApplication.buildNavigationTree(design);
+        DefaultMutableTreeNode blankFilter = ScreenDesignerApplication.buildNavigationTree(design, "");
+        DefaultMutableTreeNode nullFilter  = ScreenDesignerApplication.buildNavigationTree(design, null);
+
+        assertEquals(unfiltered.getChildCount(), blankFilter.getChildCount());
+        assertEquals(unfiltered.getChildCount(), nullFilter.getChildCount());
+    }
+
+    @Test
+    void navigationPanelIncludesFilterFieldAboveTree() throws Exception {
+        ScreenDesignerApplication application = new ScreenDesignerApplication();
+        invokePrivateMethod(application, "refreshAll");
+
+        JPanel navPanel = (JPanel) invokePrivateMethod(application, "navigation");
+        java.awt.BorderLayout navLayout = (java.awt.BorderLayout) navPanel.getLayout();
+        JPanel northPanel = assertInstanceOf(JPanel.class, navLayout.getLayoutComponent(java.awt.BorderLayout.NORTH));
+        java.awt.BorderLayout northLayout = assertInstanceOf(java.awt.BorderLayout.class, northPanel.getLayout());
+        assertNotNull(northLayout.getLayoutComponent(java.awt.BorderLayout.SOUTH),
+                "Filter row should be present as SOUTH child of the north container");
     }
 
     @Test
