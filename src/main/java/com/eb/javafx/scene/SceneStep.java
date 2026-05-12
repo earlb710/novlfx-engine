@@ -76,6 +76,13 @@ public final class SceneStep {
                 List.of(), List.of(), transition, Map.of());
     }
 
+    public static SceneStep hotspotMap(String id, String hotspotMapId) {
+        Map<String, String> meta = new LinkedHashMap<>();
+        meta.put("hotspotMapId", Validation.requireNonBlank(hotspotMapId, "hotspotMapId is required."));
+        return new SceneStep(id, SceneStepType.HOTSPOT_MAP, null, null, null,
+                List.of(), List.of(), SceneTransition.next(), meta);
+    }
+
     public static SceneStep conditional(String id, String conditionExpression, SceneTransition thenTransition, SceneTransition elseTransition) {
         Map<String, String> meta = new LinkedHashMap<>();
         meta.put("conditionExpression", Validation.requireNonBlank(conditionExpression, "conditionExpression"));
@@ -167,6 +174,10 @@ public final class SceneStep {
 
     public String conditionExpression() {
         return metadata.get("conditionExpression");
+    }
+
+    public String hotspotMapId() {
+        return metadata.get("hotspotMapId");
     }
 
     public SceneTransition elseTransition() {

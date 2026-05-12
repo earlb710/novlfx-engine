@@ -6,6 +6,7 @@ import com.eb.javafx.util.Validation;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Reusable character definition used to seed per-save {@link CharacterState} instances.
@@ -28,5 +29,13 @@ public record CharacterTemplate(
         tags = ImmutableCollections.copyList(tags);
         tags.forEach(tag -> Validation.requireNonBlank(tag, "Character template tag is required."));
         metadata = ImmutableCollections.copyMap(metadata);
+    }
+
+    public Optional<String> talkingAnimationId() {
+        return Optional.ofNullable(metadata.get("talkingAnimationId"));
+    }
+
+    public Optional<String> idleAnimationId() {
+        return Optional.ofNullable(metadata.get("idleAnimationId"));
     }
 }

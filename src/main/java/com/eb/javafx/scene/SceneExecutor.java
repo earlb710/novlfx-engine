@@ -1,5 +1,6 @@
 package com.eb.javafx.scene;
 
+import com.eb.javafx.characters.CharacterTemplateRegistry;
 import com.eb.javafx.gamesupport.ActionContext;
 import com.eb.javafx.gamesupport.ActionEffect;
 import com.eb.javafx.gamesupport.ActionResult;
@@ -18,19 +19,35 @@ import java.util.Objects;
 public final class SceneExecutor {
     private final SceneRegistry sceneRegistry;
     private final SceneConditionEvaluator conditionEvaluator;
+    private final HotspotMapRegistry hotspotMapRegistry;
+    private final CharacterTemplateRegistry characterTemplateRegistry;
     private final RollbackBuffer rollbackBuffer;
 
     public SceneExecutor(SceneRegistry sceneRegistry) {
-        this(sceneRegistry, null, null);
+        this(sceneRegistry, null, new HotspotMapRegistry(), new CharacterTemplateRegistry(), null);
     }
 
     public SceneExecutor(SceneRegistry sceneRegistry, SceneConditionEvaluator conditionEvaluator) {
-        this(sceneRegistry, conditionEvaluator, null);
+        this(sceneRegistry, conditionEvaluator, new HotspotMapRegistry(), new CharacterTemplateRegistry(), null);
     }
 
     public SceneExecutor(SceneRegistry sceneRegistry, SceneConditionEvaluator conditionEvaluator, RollbackBuffer rollbackBuffer) {
+        this(sceneRegistry, conditionEvaluator, new HotspotMapRegistry(), new CharacterTemplateRegistry(), rollbackBuffer);
+    }
+
+    public SceneExecutor(SceneRegistry sceneRegistry, SceneConditionEvaluator conditionEvaluator, HotspotMapRegistry hotspotMapRegistry) {
+        this(sceneRegistry, conditionEvaluator, hotspotMapRegistry, new CharacterTemplateRegistry(), null);
+    }
+
+    public SceneExecutor(SceneRegistry sceneRegistry, SceneConditionEvaluator conditionEvaluator, HotspotMapRegistry hotspotMapRegistry, CharacterTemplateRegistry characterTemplateRegistry) {
+        this(sceneRegistry, conditionEvaluator, hotspotMapRegistry, characterTemplateRegistry, null);
+    }
+
+    public SceneExecutor(SceneRegistry sceneRegistry, SceneConditionEvaluator conditionEvaluator, HotspotMapRegistry hotspotMapRegistry, CharacterTemplateRegistry characterTemplateRegistry, RollbackBuffer rollbackBuffer) {
         this.sceneRegistry = Objects.requireNonNull(sceneRegistry, "sceneRegistry");
         this.conditionEvaluator = conditionEvaluator;
+        this.hotspotMapRegistry = Objects.requireNonNull(hotspotMapRegistry, "hotspotMapRegistry");
+        this.characterTemplateRegistry = Objects.requireNonNull(characterTemplateRegistry, "characterTemplateRegistry");
         this.rollbackBuffer = rollbackBuffer;
     }
 
@@ -51,8 +68,9 @@ public final class SceneExecutor {
             switch (step.type()) {
                 case DIALOGUE, NARRATION -> {
                     if (rollbackBuffer != null) rollbackBuffer.snapshot(current);
-                    return new SceneExecutionResult(SceneExecutionStatus.DISPLAYING_TEXT, current, step, List.of(), null,
-                            rollbackBuffer != null && rollbackBuffer.canRollback());
+                    TalkingAnimationCue cue = buildTalkingCue(step);
+                    return new SceneExecutionResult(SceneExecutionStatus.DISPLAYING_TEXT, current, step, List.of(),
+                            null, cue, null, rollbackBuffer != null && rollbackBuffer.canRollback());
                 }
                 case CHOICE -> {
                     if (rollbackBuffer != null) rollbackBuffer.snapshot(current);
@@ -75,6 +93,10 @@ public final class SceneExecutor {
                     SceneConditionExpression expr = SceneConditionExpression.parse(step.conditionExpression());
                     boolean conditionMet = conditionEvaluator.evaluate(expr);
                     current = applyTransition(current, conditionMet ? step.transition() : step.elseTransition());
+                }
+                case HOTSPOT_MAP -> {
+                    HotspotMapViewModel vm = buildHotspotMapViewModel(step.hotspotMapId());
+                    return new SceneExecutionResult(SceneExecutionStatus.WAITING_FOR_HOTSPOT, current, step, List.of(), vm, null);
                 }
             }
         }
@@ -134,7 +156,8 @@ public final class SceneExecutor {
                         current = applyTransition(current, step.transition());
                     } else {
                         seenSteps.markSeen(current.activeSceneId(), step.id());
-                        return new SceneExecutionResult(SceneExecutionStatus.DISPLAYING_TEXT, current, step, List.of(), null);
+                        TalkingAnimationCue cue = buildTalkingCue(step);
+                        return new SceneExecutionResult(SceneExecutionStatus.DISPLAYING_TEXT, current, step, List.of(), null, cue, null);
                     }
                 }
                 case CHOICE -> {
@@ -157,6 +180,10 @@ public final class SceneExecutor {
                     boolean conditionMet = conditionEvaluator.evaluate(expr);
                     current = applyTransition(current, conditionMet ? step.transition() : step.elseTransition());
                 }
+                case HOTSPOT_MAP -> {
+                    HotspotMapViewModel vm = buildHotspotMapViewModel(step.hotspotMapId());
+                    return new SceneExecutionResult(SceneExecutionStatus.WAITING_FOR_HOTSPOT, current, step, List.of(), vm, null);
+                }
             }
         }
     }
@@ -169,6 +196,37 @@ public final class SceneExecutor {
         RollbackEntry previous = rollbackBuffer.pop().orElseThrow();
         rollbackBuffer.restore(previous);
         return advanceUntilPause(context, previous.flowState());
+    }
+
+    public SceneExecutionResult selectHotspot(ActionContext context, SceneFlowState state, String hotspotId) {
+        SceneDefinition scene = sceneRegistry.requireScene(state.activeSceneId());
+        SceneStep step = scene.steps().get(state.stepIndex());
+        if (step.type() != SceneStepType.HOTSPOT_MAP) {
+            throw new IllegalStateException("Scene is not waiting for a hotspot: " + step.id());
+        }
+        HotspotMapDefinition map = hotspotMapRegistry.require(step.hotspotMapId());
+        HotspotDefinition hotspot = map.hotspots().stream()
+                .filter(h -> h.id().equals(hotspotId))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Unknown hotspot: " + hotspotId));
+        return advanceUntilPause(context, applyTransition(state, SceneTransition.jump(hotspot.targetSceneId())));
+    }
+
+    private TalkingAnimationCue buildTalkingCue(SceneStep step) {
+        if (step.type() != SceneStepType.DIALOGUE || step.speakerId() == null) {
+            return null;
+        }
+        return characterTemplateRegistry.template(step.speakerId())
+                .flatMap(t -> t.talkingAnimationId().map(animId -> new TalkingAnimationCue(step.speakerId(), animId)))
+                .orElse(null);
+    }
+
+    private HotspotMapViewModel buildHotspotMapViewModel(String hotspotMapId) {
+        HotspotMapDefinition map = hotspotMapRegistry.require(hotspotMapId);
+        List<HotspotOptionViewModel> options = map.hotspots().stream()
+                .map(h -> new HotspotOptionViewModel(h.id(), h.labelTextKey(), h.x(), h.y(), h.width(), h.height(), true))
+                .toList();
+        return new HotspotMapViewModel(map.backgroundImageRef(), options);
     }
 
     private List<SceneChoice> resolveChoices(List<SceneChoice> choices, ActionContext context) {
