@@ -219,18 +219,26 @@ final class PreferencesSummaryScreenTest {
     }
 
     private static Label findLabel(Pane pane, String text) {
+        Label found = searchLabel(pane, text);
+        if (found == null) {
+            throw new AssertionError("Missing label: " + text);
+        }
+        return found;
+    }
+
+    private static Label searchLabel(Pane pane, String text) {
         for (Node child : pane.getChildren()) {
             if (child instanceof Label label && text.equals(label.getText())) {
                 return label;
             }
             if (child instanceof Pane childPane) {
-                Label found = findLabel(childPane, text);
+                Label found = searchLabel(childPane, text);
                 if (found != null) {
                     return found;
                 }
             }
         }
-        throw new AssertionError("Missing label: " + text);
+        return null;
     }
 
     private static void runOnJavaFxThread(Runnable action) throws Exception {

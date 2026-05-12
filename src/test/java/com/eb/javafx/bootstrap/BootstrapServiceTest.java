@@ -15,6 +15,7 @@ import com.eb.javafx.routing.SceneRouter;
 import com.eb.javafx.save.SaveLoadService;
 import com.eb.javafx.scene.EnginePlaceholderSceneModule;
 import com.eb.javafx.state.GameStateFactory;
+import com.eb.javafx.ui.DisplayDefaults;
 import com.eb.javafx.ui.UiTheme;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -42,6 +43,7 @@ final class BootstrapServiceTest {
     void clearTestPreferences() throws BackingStoreException {
         preferences.clear();
         preferences.flush();
+        DisplayDefaults.resetActive();
     }
 
     @Test

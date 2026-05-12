@@ -8,6 +8,7 @@ import com.eb.javafx.prefs.PreferencesService;
 import com.eb.javafx.random.GameRandomService;
 import com.eb.javafx.routing.SceneRouter;
 import com.eb.javafx.save.SaveLoadService;
+import com.eb.javafx.ui.DisplayDefaults;
 import com.eb.javafx.ui.UiTheme;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -26,6 +27,7 @@ final class GlobalApiAdapterTest {
     void clearTestPreferences() throws BackingStoreException {
         preferences.clear();
         preferences.flush();
+        DisplayDefaults.resetActive();
     }
 
     @Test

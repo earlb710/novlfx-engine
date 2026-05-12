@@ -18,6 +18,7 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.control.Control;
 import javafx.scene.control.Label;
 import javafx.scene.control.RadioButton;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Slider;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
@@ -107,7 +108,11 @@ public final class ScreenLayoutRenderer {
         if (!hasScreenBackground(model.metadata())) {
             return root;
         }
-        root.setStyle(containerStyle(model.metadata(), true));
+        root.setStyle("-fx-background-color: transparent;" + containerStyle(model.metadata(), true));
+        if (root.getCenter() instanceof Region center) {
+            String existing = center.getStyle();
+            center.setStyle((existing == null ? "" : existing) + "-fx-background-color: transparent;");
+        }
         return ScreenShell.withConfiguredBackground(
                 root,
                 resourceRoot,
@@ -126,13 +131,25 @@ public final class ScreenLayoutRenderer {
 
     private static BorderPane createRoot(RouteContext context, ScreenLayoutModel model, GameEventBus eventBus, Path resourceRoot) {
         Validation.requireNonNull(model, "Screen layout model is required.");
+        ScrollPane blocksScroll = new ScrollPane(layoutContent(context, model, eventBus, resourceRoot));
+        blocksScroll.setFitToWidth(true);
+        blocksScroll.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+        blocksScroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        blocksScroll.setMinHeight(0);
+        // Transparent so block backgrounds show through; the scrollbar track inherits the theme.
+        blocksScroll.setStyle("-fx-background-color: transparent; -fx-border-color: transparent; -fx-background: transparent;");
+        VBox.setVgrow(blocksScroll, Priority.ALWAYS);
         VBox content = new VBox(REGION_SPACING);
         content.getStyleClass().add(ScreenShell.LAYOUT_CONTENT_STYLE_CLASS);
+        content.setMinHeight(0);
         addOptionalText(content, model.subtitle(), ScreenShell.LAYOUT_SUBTITLE_STYLE_CLASS);
-        content.getChildren().add(layoutContent(context, model, eventBus, resourceRoot));
+        content.getChildren().add(blocksScroll);
         addActions(content, context, model.primaryActions(), ScreenShell.LAYOUT_PRIMARY_ACTION_STYLE_CLASS);
         addActions(content, context, model.secondaryActions(), ScreenShell.LAYOUT_SECONDARY_ACTION_STYLE_CLASS);
         addOptionalText(content, model.footer(), ScreenShell.LAYOUT_FOOTER_STYLE_CLASS);
+        // VBox.vgrow on content ensures the body VBox (from ScreenShell.titled) fills BorderPane center,
+        // so the scroll pane inside content has a bounded height and can trigger scrollbars.
+        VBox.setVgrow(content, Priority.ALWAYS);
         BorderPane root = ScreenShell.titled(model.title(), content);
         applyContainerStyle(root, model.metadata());
         return root;
@@ -392,14 +409,8 @@ public final class ScreenLayoutRenderer {
             comboBox.setId(id);
         }
         comboBox.getStyleClass().add(ScreenShell.LAYOUT_VALUE_STYLE_CLASS);
-        String options = metadata.get("options");
-        if (options != null && !options.isBlank()) {
-            for (String option : options.split(",")) {
-                String trimmed = option.trim();
-                if (!trimmed.isEmpty()) {
-                    comboBox.getItems().add(trimmed);
-                }
-            }
+        for (String option : OptionListEncoding.decode(metadata.get(OptionListEncoding.OPTIONS_KEY))) {
+            comboBox.getItems().add(option);
         }
         String value = metadata.get(ScreenDesignLayoutAdapter.SCREEN_DESIGN_VALUE_KEY);
         if (value != null && !value.isBlank()) {
@@ -470,23 +481,16 @@ public final class ScreenLayoutRenderer {
         ToggleGroup toggleGroup = new ToggleGroup();
         boolean horizontal = "horizontal".equalsIgnoreCase(metadata.get("orientation"));
         javafx.scene.layout.Pane buttonRow = horizontal ? new HBox(8) : new VBox(4);
-        String options = metadata.get("options");
-        if (options != null && !options.isBlank()) {
-            for (String option : options.split(",")) {
-                String trimmed = option.trim();
-                if (trimmed.isEmpty()) {
-                    continue;
-                }
-                RadioButton rb = new RadioButton(trimmed);
-                rb.setToggleGroup(toggleGroup);
-                rb.setDisable(!editable);
-                rb.setSelected(trimmed.equals(currentValue));
-                if (id != null) {
-                    rb.setId(id + "." + trimmed);
-                }
-                rb.getStyleClass().add(ScreenShell.LAYOUT_VALUE_STYLE_CLASS);
-                buttonRow.getChildren().add(rb);
+        for (String option : OptionListEncoding.decode(metadata.get(OptionListEncoding.OPTIONS_KEY))) {
+            RadioButton rb = new RadioButton(option);
+            rb.setToggleGroup(toggleGroup);
+            rb.setDisable(!editable);
+            rb.setSelected(option.equals(currentValue));
+            if (id != null) {
+                rb.setId(id + "." + option);
             }
+            rb.getStyleClass().add(ScreenShell.LAYOUT_VALUE_STYLE_CLASS);
+            buttonRow.getChildren().add(rb);
         }
         container.getChildren().add(buttonRow);
         return container;

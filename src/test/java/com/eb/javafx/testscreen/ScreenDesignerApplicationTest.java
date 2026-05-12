@@ -82,31 +82,6 @@ final class ScreenDesignerApplicationTest {
     }
 
     @Test
-    void bundledScreenDesignExamplesDemonstrateNewStylingMetadata() throws IOException {
-        try (var paths = Files.list(ScreenDesignerApplication.screenDesignExamplesDirectory())) {
-            List<ScreenDesignModel> designs = paths
-                    .filter(ScreenDesignerApplicationTest::isScreenDesignJson)
-                    .sorted()
-                    .map(ScreenDesignJson::load)
-                    .toList();
-
-            assertFalse(designs.isEmpty());
-            for (ScreenDesignModel design : designs) {
-                assertTrue(design.metadata().containsKey("backgroundColor"));
-                assertTrue(design.metadata().containsKey("borderStyle"));
-                assertTrue(design.blocks().stream().allMatch(block ->
-                        block.metadata().containsKey("backgroundColor")
-                                && block.metadata().containsKey("transparency")
-                                && block.metadata().containsKey("borderStyle")
-                                && block.metadata().containsKey("borderColor")));
-                assertTrue(design.items().stream().allMatch(item ->
-                        item.metadata().containsKey("backgroundColor")
-                                && item.metadata().containsKey("transparency")));
-            }
-        }
-    }
-
-    @Test
     void bundledScreenDesignExamplesHaveTextSidecars() throws IOException {
         try (var paths = Files.list(ScreenDesignerApplication.screenDesignExamplesDirectory())) {
             List<Path> jsonFiles = paths

@@ -1,6 +1,8 @@
 package com.eb.javafx.ui;
 
 import com.eb.javafx.scene.ConversationConditionVariables;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -17,6 +19,16 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 final class ScreenDesignModelTest {
     @TempDir
     Path tempDir;
+
+    @BeforeEach
+    void resetThemeOverlay() {
+        DisplayDefaults.resetActive();
+    }
+
+    @AfterEach
+    void tearDownThemeOverlay() {
+        DisplayDefaults.resetActive();
+    }
 
     @Test
     void roundTripsJsonAndPreservesBlockAndItemOrdering() {
@@ -443,13 +455,15 @@ final class ScreenDesignModelTest {
         ScreenDesignModel loaded = ScreenDesignJson.fromJson(json, "round-trip");
 
         assertEquals(ScreenDesignItemType.POPLIST, loaded.items().get(0).type());
-        assertEquals("Easy, Normal, Hard", loaded.items().get(0).metadata().get("options"));
+        assertEquals(List.of("Easy", "Normal", "Hard"), loaded.items().get(0).options());
         assertEquals(ScreenDesignItemType.COMBO_BOX, loaded.items().get(1).type());
         assertTrue(loaded.items().get(1).editable());
+        assertEquals(List.of("Ava", "Max", "Sam"), loaded.items().get(1).options());
         assertEquals(ScreenDesignItemType.SLIDER, loaded.items().get(2).type());
         assertEquals("0", loaded.items().get(2).metadata().get("min"));
         assertEquals("100", loaded.items().get(2).metadata().get("max"));
         assertEquals(ScreenDesignItemType.RADIO_GROUP, loaded.items().get(3).type());
+        assertEquals(List.of("EN", "FR", "DE"), loaded.items().get(3).options());
         assertEquals("horizontal", loaded.items().get(3).metadata().get("orientation"));
     }
 
@@ -470,7 +484,8 @@ final class ScreenDesignModelTest {
 
         assertEquals(List.of("Difficulty: Normal", "Volume: 75", "Language: EN"), section.lines());
         assertEquals(ScreenDesignItemType.POPLIST.name(), section.lineMetadata().get(0).get(ScreenDesignLayoutAdapter.SCREEN_DESIGN_ITEM_TYPE_KEY));
-        assertEquals("Easy, Normal, Hard", section.lineMetadata().get(0).get("options"));
+        assertEquals(List.of("Easy", "Normal", "Hard"),
+                OptionListEncoding.decode(section.lineMetadata().get(0).get("options")));
         assertEquals(ScreenDesignItemType.SLIDER.name(), section.lineMetadata().get(1).get(ScreenDesignLayoutAdapter.SCREEN_DESIGN_ITEM_TYPE_KEY));
         assertEquals("0", section.lineMetadata().get(1).get("min"));
         assertEquals(ScreenDesignItemType.RADIO_GROUP.name(), section.lineMetadata().get(2).get(ScreenDesignLayoutAdapter.SCREEN_DESIGN_ITEM_TYPE_KEY));

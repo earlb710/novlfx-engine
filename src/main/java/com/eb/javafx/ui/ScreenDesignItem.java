@@ -2,6 +2,7 @@ package com.eb.javafx.ui;
 
 import com.eb.javafx.util.Validation;
 
+import java.util.List;
 import java.util.Map;
 
 /** UI-neutral screen design item or form field with a stable editable id. */
@@ -101,5 +102,13 @@ public record ScreenDesignItem(
 
     public static boolean supportsLabel(ScreenDesignItemType type) {
         return true;
+    }
+
+    /**
+     * Decodes the {@code options} metadata entry into a list of option strings. Accepts both the canonical
+     * JSON-array form and the legacy comma-separated form. Returns an empty list when no options are set.
+     */
+    public List<String> options() {
+        return OptionListEncoding.decode(metadata.get(OptionListEncoding.OPTIONS_KEY));
     }
 }
