@@ -9,7 +9,7 @@ Example/demo index: [`examples/user-manual/README.md`](../examples/user-manual/R
 - **Project setup and validation**: open the repository, build it, run tests, and launch the manual test screen.
 - **Module and package layout**: understand the `com.novlfx.engine` module and exported `com.eb.javafx.*` packages.
 - **Startup and service wiring**: initialize the engine with `BootstrapService` and use the resulting `BootContext`.
-- **Content, routing, and scenes**: register static content, routes, scene definitions, choices, transitions, JSON-backed scene data, and resumable scene flow state.
+- **Content, routing, and scenes**: register static content, routes, scene definitions, choices, transitions, JSON-backed scene data, and resumable scene flow state. Includes skip/auto modes, dialogue rollback, conditional step branching, conditional choice visibility, timed choices, loop menus, NVL display mode, visual transitions, image tag resolution, and gallery framework.
 - **UI screens and themes**: use reusable JavaFX screens, navigation helpers, startup error reporting, and CSS theme loading.
 - **Display support**: define image assets, layers, transforms, layered characters, JSON-backed display definitions, interpolation, and animations.
 - **Audio support**: validate channel-based sound requests and produce playback commands for application media adapters.
@@ -371,9 +371,59 @@ Use `SceneRegistry` to register `SceneModule` implementations. A scene is descri
 - transition types such as jump, call, return, complete, and route-style transitions identified by `SceneTransitionType`
 - resumable state through `SceneFlowState` and `SceneReturnPoint`
 
-Use `SceneExecutor` to execute scene flow and return a `SceneExecutionResult` with `SceneExecutionStatus`. Use `ScenePresenter` and view-model classes when JavaFX UI code needs a UI-neutral representation of the current scene and choices.
+Use `SceneExecutor` to execute scene flow and return a `SceneExecutionResult` with `SceneExecutionStatus`. `SceneExecutionResult.canRollback()` indicates whether the player can step back to the previous pause point. Use `ScenePresenter` and view-model classes when JavaFX UI code needs a UI-neutral representation of the current scene and choices.
 
 Use `SceneRegistry.validationReport(...)` when application startup needs diagnostics rather than fail-fast validation. The returned `SceneValidationReport` contains `SceneGraphSummary` entries plus `SceneValidationProblem` diagnostics with `SceneValidationSeverity` levels for duplicate IDs, missing jump/call targets, unreachable steps, and final-step `NEXT` warnings. Applications can pass `SceneReferenceValidator` instances such as `SceneReferenceValidators.knownSpeakers(...)` or `knownDisplayReferences(...)` to validate app-owned speaker/display IDs without moving those registries into the engine.
+
+### Scene step and choice enhancements
+
+**NVL display mode.** `SceneStep.withDisplayMode(SceneDisplayMode)` stores a presentation hint in step metadata. `SceneDisplayMode.ADV` is the default (single-dialogue-box mode); `SceneDisplayMode.NVL` signals the adapter to accumulate lines in a full-screen text block. Read the hint with `SceneStep.displayMode()`. The executor is unaffected; mode is purely presentational.
+
+**Conditional steps.** Use `SceneStep.conditional(id, expression, thenTransition, elseTransition)` for invisible branching without a visible choice menu. The expression is a `SceneConditionExpression` string DSL: `flag:id`, `!flag:id`, `unlock:id`, `counter:id>=N`, `counter:id>N`, `counter:id<N`, `counter:id==N`. Construct a `SceneConditionEvaluator` with a `ProgressTracker` and pass it to the `SceneExecutor(SceneRegistry, SceneConditionEvaluator)` constructor.
+
+**Conditional choice visibility.** Attach a condition expression and a `ConditionPolicy` to any `SceneChoice` with `choice.withCondition(expression, policy)`. `ConditionPolicy.HIDE` removes the choice from the resolved list when the condition is false. `ConditionPolicy.GREY` keeps the choice in the list but marks it disabled. Read the stored values with `conditionExpression()` and `conditionPolicy()`. The executor evaluates conditions automatically at CHOICE step time when a `SceneConditionEvaluator` is wired in.
+
+**Timed choices.** Use `SceneStep.withChoiceTimeout(timeoutMs, defaultChoiceId)` to mark a choice menu as time-limited. Read with `choiceTimeoutMs()` (returns `null` when no timeout is set) and `choiceTimeoutDefaultId()`. The UI adapter drives the countdown timer and calls `SceneExecutor.selectChoice(...)` with the default ID on expiry; the executor has no built-in timer.
+
+**Menu captions.** Use `SceneStep.withMenuCaption(captionTextKey)` to attach a prompt label above a choice menu. Read with `menuCaptionTextKey()` (returns `null` when no caption is set). The adapter looks up and renders the text; the executor is unaffected.
+
+**Per-choice captions.** Use `SceneChoice.withCaption(captionTextKey)` to attach a flavour-text hint label to a single choice (e.g. a cost or tooltip). Read with `captionTextKey()` (returns `null` by default). Adapter renders the label near the choice button; the executor is unaffected.
+
+**Loop menus.** Use `SceneStep.withMenuLoop()` to make a choice menu re-present itself after the player picks a non-exit option. Mark a choice as non-exiting with `SceneChoice.asMenuReturn()`; any choice without that marker exits the menu normally. Read the flags with `menuLoop()` and `exitsMenu()`. The executor handles the loop in `selectChoice` — no extra state is needed.
+
+### Skip mode and auto mode
+
+Use `SeenStepTracker` to track which dialogue and narration steps the player has already read. Call `markSeen(sceneId, stepId)` when a step is displayed and `hasSeen(sceneId, stepId)` to query it. `SeenStepSnapshot` snapshots the full set for save/load; `SeenStepSnapshotCodec` serializes and deserializes it as a versioned save section under the section id `seenSteps`.
+
+Use `SceneExecutor.advanceSkipping(context, state, seenSteps)` to run in skip mode: it fast-forwards past already-seen DIALOGUE and NARRATION steps and always pauses on unseen steps and on CHOICE steps. Combine this with a `ScenePlaybackMode` value (`NORMAL`, `SKIP`, `AUTO`) stored by the adapter to control playback behavior:
+
+- `NORMAL` — advance only on explicit user input; call `advanceUntilPause` or `continueFromText`.
+- `SKIP` — call `advanceSkipping` instead of `continueFromText` to bypass seen text automatically.
+- `AUTO` — advance text steps automatically after a delay; adapter drives a timer and calls `continueFromText` on expiry; CHOICE steps always pause.
+
+### Dialogue rollback
+
+Use `RollbackBuffer` to let players step back through previously displayed lines. The buffer is a fixed-capacity ring of `RollbackEntry` snapshots, each recording the `SceneFlowState` at a pause point plus captured values from registered `RollbackContributor<T>` instances.
+
+Construct a `RollbackBuffer(capacity)` and pass it to `SceneExecutor(SceneRegistry, SceneConditionEvaluator, RollbackBuffer)`. The executor snapshots the state automatically before each DIALOGUE, NARRATION, and CHOICE pause. Call `executor.rollback(context)` to return to the previous pause point; it throws `IllegalStateException` when there is nothing to roll back to. `SceneExecutionResult.canRollback()` tells the adapter whether to show the back button.
+
+Register application-owned state contributors with `buffer.register(id, contributor)`. `RollbackContributor<T>` is a two-method interface: `T capture()` and `void restore(T snapshot)`. Contributors that also need to persist across save/load should implement `PersistableRollbackContributor<T>`, which extends both `RollbackContributor<T>` and the existing `SaveSnapshotCodec<T>`.
+
+`RollbackSnapshotCodec` persists the buffer's scene flow positions as a versioned save section under the section id `rollback`. Contributor state values are not included in the rollback section; they are restored from the main save data when the save is loaded.
+
+### Visual scene transitions
+
+Use `VisualTransitionRegistry` to register named `VisualTransitionDefinition` instances at startup. Each definition carries a `SceneTransitionEffect` (DISSOLVE, FADE_BLACK, WIPE_LEFT, WIPE_RIGHT, MOVE_IN_LEFT, MOVE_IN_RIGHT, NONE) and a duration in milliseconds. Scene steps that reference a named transition produce a `VisualTransitionRequest` in `SceneExecutionResult`; adapters read this request and play the visual effect between scene changes.
+
+### Image tag resolution
+
+Use `DisplayTagRegistry` to register `DisplayTagDefinition` instances that map semantic tag strings to target display IDs, optional layer overrides, and transform preset names. Use `DisplayTagResolver` to resolve a tag string plus an optional position hint to a concrete `DisplayTagResolution` containing the display ID, layer, and transform. Unknown tags return a descriptive error rather than null.
+
+### Gallery framework
+
+Use `GalleryRegistry` to register `GalleryDefinition` instances at startup. Each definition has an id, title text key, and an ordered list of `GalleryEntry` objects. Each entry carries an id, image reference, caption text key, and a required unlock id. The registry validates all image references against `ImageDisplayRegistry` at startup.
+
+Use `GalleryService` to query entries for display. It returns a list of `GalleryEntryViewModel` objects: unlocked entries expose the full image reference, locked entries return `unlocked = false` with no image reference exposed.
 
 ### Scene presentation view models
 
@@ -889,6 +939,11 @@ Use `GameStateFactory` to create base `GameState` instances. `GameState` current
 
 Use `SaveLoadService` for reusable save-slot workflows. It supports slot summaries and JSON persistence behavior suitable for engine-level tests and extension by application code. `SaveLoadSummaryScreen` and `SaveLoadSummaryViewModel` expose the current save schema version and configured save directory as reusable diagnostic UI data. Use `SaveSnapshotCodec` and `SaveSnapshotSection` when an application wants to compose engine-owned state slices, such as scene-flow progress, into its own save document; the application still owns the outer save schema and any project-specific state fields.
 
+The following engine-provided `SaveSnapshotCodec` implementations are available for composition into application save documents:
+
+- `SeenStepSnapshotCodec` — persists the set of scene step keys the player has already read (section id `seenSteps`, schema version 1). Used with `SeenStepTracker` for skip-mode support.
+- `RollbackSnapshotCodec` — persists the scene flow positions stored in a `RollbackBuffer` (section id `rollback`, schema version 1). Construct with an optional capacity argument to control the maximum number of entries restored on load.
+
 Use `ReusableGameplaySnapshot` and `ReusableGameplaySnapshotDocuments` for the reusable vertical-slice save contract: scene-flow state, scene checkpoint history, game time, generic progress, inventory, wardrobe, character state, journal/quest state, and location occupancy. The helper validates those required engine-owned sections while preserving additional application-owned sections for AltLife or other ports. Snapshot values such as `InventorySnapshot`, `WardrobeSnapshot`, `CharacterStatesSnapshot`, `JournalSnapshot`, and `LocationOccupancySnapshot` expose hydration helpers that rebuild the matching mutable engine state after an application validates its outer save document.
 
 `SaveLoadService.SaveSchema` reports the current save schema version and directory, while `SaveLoadService.SaveSlotSummary` summarizes one slot number and whether it currently has data. Use `SaveSnapshotRegistry` to register required or optional snapshot sections and validate composed `SaveSnapshotDocument` objects. If an application needs to load older section payloads, register a `SaveSnapshotSectionMigration` so the registry can migrate sections to the current version during compose/decompose.
@@ -914,6 +969,21 @@ Additional example/demo code:
 ## 10. Text and utility helpers
 
 Use `TextTagParser` to tokenize visual-novel-style text with simple styling metadata. Parsed output is represented through `TextToken`, `TextTokenType`, and `TextStyle`.
+
+`TextTokenType` values and their corresponding inline tags:
+
+| Type | Tag | Meaning |
+|---|---|---|
+| `TEXT` | (plain text) | Styled text span |
+| `ICON` | `{icon=id}` | Inline image marker |
+| `PAUSE` | `{w=2.5}` | Timed pause (duration in seconds) |
+| `PARAGRAPH` | `{p}` | Paragraph break |
+| `WAIT_CLICK` | `{w}` | Pause until player clicks to continue |
+| `NO_WAIT` | `{nw}` | Suppress end-of-line pause; advance immediately |
+| `SET_CPS` | `{cps=N}` | Set typewriter speed to N characters per second; read with `token.cps()` |
+| `FAST_FORWARD` | `{fast}` | Skip remaining typewriter animation and show full text immediately |
+
+Adapters receive these tokens in the parsed list alongside text and styling tokens. Pacing tokens (`WAIT_CLICK`, `NO_WAIT`, `SET_CPS`, `FAST_FORWARD`) are hints for the typewriter/animation layer; the engine does not act on them.
 
 Use `JavaFxRichTextRenderer` when parsed tokens should be displayed directly in JavaFX. It renders text, paragraph, and inline `{icon=image.id}` tokens into a `TextFlow`, skips pause tokens for timeline/typewriter code to consume separately, and applies parsed `{gradient=...}`, `{kinetic=...}`, and `{glitch=...}` metadata to JavaFX `Text` nodes. Inline icons resolve through registered `ImageDisplayRegistry` image IDs, use a standard inline size/baseline offset, and fall back to plain `[image.id]` text when the image ID is unknown or the asset file is missing. Kinetic animations are attached to node properties by default so callers can start them when the JavaFX toolkit is active; use the autoplay constructor in live UI code when immediate playback is desired.
 

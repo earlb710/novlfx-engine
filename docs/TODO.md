@@ -1,6 +1,6 @@
 # novlfx Engine — Ren'Py Feature Parity TODO
 
-_Last updated: 2026-05-12_
+_Last updated: 2026-05-12 (all items complete)_
 
 This document tracks the six remaining feature areas needed to reach Ren'Py feature parity.
 Each item has a linked implementation plan under `docs/superpowers/plans/`.
@@ -11,12 +11,12 @@ Each item has a linked implementation plan under `docs/superpowers/plans/`.
 
 | # | Feature | Priority | Status | Plan |
 |---|---------|----------|--------|------|
-| 1 | [Visual Scene Transitions](#1-visual-scene-transitions) | High | Not started | [2026-05-12-renpy-feature-parity.md](superpowers/plans/2026-05-12-renpy-feature-parity.md#task-group-1-visual-scene-transitions) |
-| 2 | [Image Tag Resolution](#2-image-tag-resolution) | High | Not started | [2026-05-12-renpy-feature-parity.md](superpowers/plans/2026-05-12-renpy-feature-parity.md#task-group-2-image-tag-resolution) |
-| 3 | [Skip / Auto Modes](#3-skip--auto-modes) | High | Not started | [2026-05-12-renpy-feature-parity.md](superpowers/plans/2026-05-12-renpy-feature-parity.md#task-group-3-skip--auto-modes) |
-| 4 | [NVL Mode](#4-nvl-mode) | Medium | Not started | [2026-05-12-renpy-feature-parity.md](superpowers/plans/2026-05-12-renpy-feature-parity.md#task-group-4-nvl-mode) |
-| 5 | [Scene-Level Conditionals](#5-scene-level-conditionals) | Medium | Not started | [2026-05-12-renpy-feature-parity.md](superpowers/plans/2026-05-12-renpy-feature-parity.md#task-group-5-scene-level-conditionals) |
-| 6 | [Gallery Framework](#6-gallery-framework) | Medium | Not started | [2026-05-12-renpy-feature-parity.md](superpowers/plans/2026-05-12-renpy-feature-parity.md#task-group-6-gallery-framework) |
+| 1 | [Visual Scene Transitions](#1-visual-scene-transitions) | High | Done | [2026-05-12-renpy-feature-parity.md](superpowers/plans/2026-05-12-renpy-feature-parity.md#task-group-1-visual-scene-transitions) |
+| 2 | [Image Tag Resolution](#2-image-tag-resolution) | High | Done | [2026-05-12-renpy-feature-parity.md](superpowers/plans/2026-05-12-renpy-feature-parity.md#task-group-2-image-tag-resolution) |
+| 3 | [Skip / Auto Modes](#3-skip--auto-modes) | High | Done | [2026-05-12-renpy-feature-parity.md](superpowers/plans/2026-05-12-renpy-feature-parity.md#task-group-3-skip--auto-modes) |
+| 4 | [NVL Mode](#4-nvl-mode) | Medium | Done | [2026-05-12-renpy-feature-parity.md](superpowers/plans/2026-05-12-renpy-feature-parity.md#task-group-4-nvl-mode) |
+| 5 | [Scene-Level Conditionals](#5-scene-level-conditionals) | Medium | Done | [2026-05-12-renpy-feature-parity.md](superpowers/plans/2026-05-12-renpy-feature-parity.md#task-group-5-scene-level-conditionals) |
+| 6 | [Gallery Framework](#6-gallery-framework) | Medium | Done | [2026-05-12-renpy-feature-parity.md](superpowers/plans/2026-05-12-renpy-feature-parity.md#task-group-6-gallery-framework) |
 
 ---
 
