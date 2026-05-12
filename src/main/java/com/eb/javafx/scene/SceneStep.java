@@ -76,6 +76,19 @@ public final class SceneStep {
                 List.of(), List.of(), transition, Map.of());
     }
 
+    public static SceneStep conditional(String id, String conditionExpression, SceneTransition thenTransition, SceneTransition elseTransition) {
+        Map<String, String> meta = new LinkedHashMap<>();
+        meta.put("conditionExpression", Validation.requireNonBlank(conditionExpression, "conditionExpression"));
+        meta.put("elseTransitionType", Objects.requireNonNull(elseTransition, "elseTransition").type().name());
+        if (elseTransition.targetSceneId() != null) {
+            meta.put("elseTransitionTarget", elseTransition.targetSceneId());
+        }
+        return new SceneStep(id, SceneStepType.CONDITIONAL, null, null, null,
+                List.of(), List.of(),
+                Objects.requireNonNull(thenTransition, "thenTransition"),
+                meta);
+    }
+
     public static SceneStep create(
             String id,
             SceneStepType type,
@@ -150,6 +163,35 @@ public final class SceneStep {
         Map<String, String> updatedMetadata = new LinkedHashMap<>(metadata);
         updatedMetadata.put(checkedKey, Validation.requireNonNull(value, "Scene metadata value is required."));
         return withMetadata(updatedMetadata);
+    }
+
+    public String conditionExpression() {
+        return metadata.get("conditionExpression");
+    }
+
+    public SceneTransition elseTransition() {
+        String typeStr = metadata.get("elseTransitionType");
+        if (typeStr == null) return SceneTransition.next();
+        SceneTransitionType type = SceneTransitionType.valueOf(typeStr);
+        String target = metadata.get("elseTransitionTarget");
+        return switch (type) {
+            case NEXT -> SceneTransition.next();
+            case JUMP -> SceneTransition.jump(target);
+            case CALL -> SceneTransition.call(target);
+            case RETURN -> SceneTransition.returnToCaller();
+            case COMPLETE -> SceneTransition.complete();
+            case FAIL -> SceneTransition.fail(target);
+        };
+    }
+
+    public SceneDisplayMode displayMode() {
+        String value = metadata.get("displayMode");
+        if (value == null) return SceneDisplayMode.ADV;
+        return SceneDisplayMode.valueOf(value);
+    }
+
+    public SceneStep withDisplayMode(SceneDisplayMode mode) {
+        return withMetadataValue("displayMode", Objects.requireNonNull(mode, "mode").name());
     }
 
     private void validateShape() {
