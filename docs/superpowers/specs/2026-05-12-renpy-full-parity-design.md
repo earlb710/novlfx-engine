@@ -45,23 +45,34 @@ phases unblock later ones.
 
 **Engine design:**
 
-- `RollbackSnapshot` — immutable record capturing all restorable state at one step boundary:
-  scene ID, step index, `ProgressSnapshot`, `SeenStepSnapshot`, plus inventory/journal/
-  wardrobe snapshots for any of those services registered at bootstrap. Snapshots are taken
-  before each step executes.
+- `RollbackContributor<T>` — interface with two methods: `T capture()` and `void restore(T)`.
+  Any state type that wants to participate in rollback implements this interface. The type
+  parameter is the snapshot value (must be immutable).
 - `RollbackBuffer` — fixed-size ring buffer of `RollbackSnapshot` entries. Capacity is
   configurable at bootstrap (default 100). When full, oldest entries are discarded.
-- `SceneExecutor.rollback(int steps)` — pops N snapshots, restores all state atomically,
-  and returns a `SceneExecutionResult` for the restored step so the adapter re-displays it.
+  Contributors are registered via `RollbackBuffer.register(String id, RollbackContributor<?>)`.
+  When a snapshot is taken, the buffer calls `capture()` on every registered contributor
+  and stores the results keyed by id. When restoring, it calls `restore(value)` on each.
+- `RollbackSnapshot` — a map of contributor id → captured value, plus scene ID and step
+  index. Opaque to callers outside the buffer; contributors only ever see their own type.
+- Built-in contributors registered automatically at bootstrap: `ProgressTracker`,
+  `SeenStepTracker`. Optional engine contributors registered when present: `InventoryState`,
+  `JournalState`, `WardrobeState`. Any application-defined state type can register its own
+  contributor at bootstrap using the same API — no engine changes needed.
+- `SceneExecutor.rollback(int steps)` — triggers the buffer to pop N entries, restore all
+  contributors, then returns a `SceneExecutionResult` for the restored step.
 - `SceneExecutionResult.canRollback()` — boolean; false when the buffer is empty or rollback
   is disabled (e.g. during skip mode).
-- `RollbackSnapshotCodec` — for persisting the buffer into a save section so rollback
-  survives save/load.
+- `RollbackSnapshotCodec` — serializes the full contributor map to JSON for save persistence.
+  Each contributor that needs persistence also implements `RollbackContributorCodec<T>` (a
+  sub-interface adding `String toJson(T)` and `T fromJson(String)`). Contributors that do
+  not implement the codec sub-interface are excluded from persistence (rollback resets to
+  post-load state for those).
 - Adapter contract: one optional hook `Runnable onRollbackEffect` supplied at executor
-  construction time. The engine calls it before re-displaying the restored step. The adapter
-  plays whatever rewind visual it chooses; the engine does not dictate the effect.
+  construction time. The engine calls it before re-displaying the restored step.
 
-**Key types:** `RollbackSnapshot`, `RollbackBuffer`, `RollbackSnapshotCodec`
+**Key types:** `RollbackContributor`, `RollbackContributorCodec`, `RollbackSnapshot`,
+`RollbackBuffer`, `RollbackSnapshotCodec`
 **Modified types:** `SceneExecutor`, `SceneExecutionResult`
 **Package:** `com.eb.javafx.scene`
 
@@ -547,7 +558,7 @@ gallery CGs.
 
 | # | Feature | Phase | Package(s) | Invasive? |
 |---|---------|-------|-----------|-----------|
-| 1.1 | Dialogue rollback | 1 | scene | Yes — SceneExecutor |
+| 1.1 | Dialogue rollback + contributor registry | 1 | scene | Yes — SceneExecutor |
 | 1.2 | Conditional choice visibility | 1 | scene | Minor — ChoiceOption |
 | 1.3 | Text pacing control tags | 1 | text | Additive |
 | 1.4 | Timed choices | 1 | scene | Additive |
