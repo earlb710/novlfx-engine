@@ -1,7 +1,7 @@
 package com.eb.javafx.routing;
 
 import com.eb.javafx.accessibility.AccessibilityProfile;
-import java.util.Objects;
+import com.eb.javafx.util.Validation;
 
 /**
  * Immutable criteria used to select a screen variant JSON path based on
@@ -23,7 +23,7 @@ public final class ScreenVariantCriteria {
 
     /** Creates criteria that matches only the given window size class (accessibility fields unconstrained). */
     public static ScreenVariantCriteria forSizeClass(WindowSizeClass sizeClass) {
-        return new ScreenVariantCriteria(Objects.requireNonNull(sizeClass, "sizeClass"), null, null);
+        return new ScreenVariantCriteria(Validation.requireNonNull(sizeClass, "sizeClass"), null, null);
     }
 
     /** Creates criteria that matches only the given high-contrast value (size class and reduceMotion unconstrained). */
@@ -48,6 +48,7 @@ public final class ScreenVariantCriteria {
      * @param profile the active accessibility profile
      */
     public boolean matches(WindowSizeClass actualSizeClass, AccessibilityProfile profile) {
+        Validation.requireNonNull(profile, "profile");
         if (sizeClass != null && sizeClass != actualSizeClass) return false;
         if (highContrast != null && highContrast != profile.highContrast()) return false;
         if (reduceMotion != null && reduceMotion != profile.reduceMotion()) return false;

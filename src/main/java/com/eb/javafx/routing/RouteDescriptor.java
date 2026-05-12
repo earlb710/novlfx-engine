@@ -4,7 +4,6 @@ import com.eb.javafx.util.Validation;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 /**
  * Metadata for a JavaFX route representing a screen or label entry point.
@@ -94,7 +93,7 @@ public final class RouteDescriptor {
      * @param jsonPath path to the alternative screen JSON file
      */
     public RouteDescriptor withVariant(ScreenVariantCriteria criteria, String jsonPath) {
-        Objects.requireNonNull(criteria, "criteria");
+        Validation.requireNonNull(criteria, "criteria");
         Validation.requireNonBlank(jsonPath, "jsonPath must not be blank");
         List<Map.Entry<ScreenVariantCriteria, String>> updated = new ArrayList<>(variants);
         updated.add(Map.entry(criteria, jsonPath));

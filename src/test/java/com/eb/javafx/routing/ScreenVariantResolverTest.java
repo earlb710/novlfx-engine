@@ -73,4 +73,38 @@ final class ScreenVariantResolverTest {
         Optional<String> result = resolver.resolve(descriptor, WindowSizeClass.MEDIUM, defaults());
         assertTrue(result.isEmpty());
     }
+
+    @Test
+    void withVariantNullCriteriaThrowsIllegalArgument() {
+        RouteDescriptor descriptor = new RouteDescriptor("id", "title", RouteCategory.SCREEN, false, "active");
+        assertThrows(IllegalArgumentException.class, () -> descriptor.withVariant(null, "screens/id.json"));
+    }
+
+    @Test
+    void withVariantBlankPathThrowsIllegalArgument() {
+        ScreenVariantCriteria criteria = ScreenVariantCriteria.forSizeClass(WindowSizeClass.COMPACT);
+        RouteDescriptor descriptor = new RouteDescriptor("id", "title", RouteCategory.SCREEN, false, "active");
+        assertThrows(IllegalArgumentException.class, () -> descriptor.withVariant(criteria, ""));
+    }
+
+    @Test
+    void reduceMotionCriteriaMatchesReduceMotionProfile() {
+        ScreenVariantCriteria reduceMotion = ScreenVariantCriteria.forHighContrast(false).withReduceMotion(true);
+        RouteDescriptor descriptor = new RouteDescriptor("id", "title", RouteCategory.SCREEN, false, "active")
+                .withVariant(reduceMotion, "screens/id_rm.json");
+        ScreenVariantResolver resolver = new ScreenVariantResolver();
+        AccessibilityProfile rm = new AccessibilityProfile(1.0, false, true, false, false);
+        Optional<String> result = resolver.resolve(descriptor, WindowSizeClass.MEDIUM, rm);
+        assertEquals("screens/id_rm.json", result.orElseThrow());
+    }
+
+    @Test
+    void forHighContrastFalseMatchesNonHighContrastProfile() {
+        ScreenVariantCriteria notHighContrast = ScreenVariantCriteria.forHighContrast(false);
+        RouteDescriptor descriptor = new RouteDescriptor("id", "title", RouteCategory.SCREEN, false, "active")
+                .withVariant(notHighContrast, "screens/id_normal.json");
+        ScreenVariantResolver resolver = new ScreenVariantResolver();
+        Optional<String> result = resolver.resolve(descriptor, WindowSizeClass.MEDIUM, defaults());
+        assertEquals("screens/id_normal.json", result.orElseThrow());
+    }
 }
