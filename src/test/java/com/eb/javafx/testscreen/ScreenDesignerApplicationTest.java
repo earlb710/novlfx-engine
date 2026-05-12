@@ -930,6 +930,15 @@ final class ScreenDesignerApplicationTest {
     }
 
     @Test
+    void runSafelyErrorMessageFallsBackToClassNameWhenMessageIsNull() {
+        NullPointerException nullMessage = new NullPointerException();
+        IllegalArgumentException withMessage = new IllegalArgumentException("bad input");
+
+        assertEquals("NullPointerException", ScreenDesignerApplication.errorDisplayMessage(nullMessage));
+        assertEquals("bad input", ScreenDesignerApplication.errorDisplayMessage(withMessage));
+    }
+
+    @Test
     void promoteTemporaryMethodIsRemoved() throws Exception {
         boolean found = false;
         for (java.lang.reflect.Method m : ScreenDesignerApplication.class.getDeclaredMethods()) {

@@ -1368,12 +1368,18 @@ public final class ScreenDesignerApplication {
         try {
             action.run();
         } catch (RuntimeException exception) {
-            statusLabel.setText(actionName + " failed: " + exception.getMessage());
+            String message = errorDisplayMessage(exception);
+            statusLabel.setText(actionName + " failed: " + message);
             JOptionPane.showMessageDialog(null,
-                    exception.getMessage(),
+                    message,
                     actionName + " Error",
                     JOptionPane.ERROR_MESSAGE);
         }
+    }
+
+    static String errorDisplayMessage(RuntimeException exception) {
+        String message = exception.getMessage();
+        return message != null ? message : exception.getClass().getSimpleName();
     }
 
     private static String blankToNull(String value) {
