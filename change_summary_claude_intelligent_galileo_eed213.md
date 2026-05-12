@@ -86,3 +86,39 @@ All `com.eb.javafx.ui.*` tests pass with no regressions.
 **CtcIndicatorTest** — 7 tests covering field storage, empty animation, registry by mode, unregistered mode, both modes, and `SceneDialogueRowViewModel` integration.
 
 All 7 new tests pass. All `com.eb.javafx.scene.*` tests pass with no regressions.
+
+---
+
+## feat(progress): add PersistentProgressTracker backed by java.util.prefs.Preferences; add to BootContext
+
+### Files changed
+- `src/main/java/com/eb/javafx/progress/PersistentProgressSnapshot.java` (new)
+- `src/main/java/com/eb/javafx/progress/PersistentProgressTracker.java` (new)
+- `src/main/java/com/eb/javafx/progress/PersistentProgressSnapshotCodec.java` (new)
+- `src/main/java/com/eb/javafx/bootstrap/BootContext.java`
+- `src/test/java/com/eb/javafx/progress/PersistentProgressTrackerTest.java` (new)
+
+### What changed
+
+**PersistentProgressSnapshot** — new record holding immutable sets/maps for `flags`, `counters`, `milestones`, and `unlocks`; compact constructor defensively copies all collections.
+
+**PersistentProgressTracker** — new class backed by `java.util.prefs.Preferences`; supports `setFlag`, `hasFlag`, `counter`, `incrementCounter`, `completeMilestone`, `hasMilestone`, `unlock`, `isUnlocked`, `snapshot`, and `restore`; all mutations are immediately flushed to the backing store.
+
+**PersistentProgressSnapshotCodec** — new `SaveSnapshotCodec<PersistentProgressSnapshot>` with `sectionId = "persistent-progress"`, `schemaVersion = 1`; serializes to/from JSON using `SimpleJson` and `JsonStrings.escape` for safe string encoding.
+
+**BootContext** — added nullable `PersistentProgressTracker persistentProgress` field; added new widest constructor overload accepting it as the last parameter; existing widest constructor now delegates to it passing `null` for backward compatibility; added `persistentProgress()` accessor.
+
+### Test coverage (PersistentProgressTrackerTest — 11 tests)
+- `flagFalseByDefault`
+- `setFlagTruePersistsAcrossInstances`
+- `setFlagFalseRemovesIt`
+- `counterStartsAtZero`
+- `incrementCounterAccumulates`
+- `milestoneStartsUnreached`
+- `completeMilestonePersistsAcrossInstances`
+- `unlockStartsLocked`
+- `unlockPersistsAcrossInstances`
+- `snapshotRoundTripsViaCodec`
+- `restoreFromSnapshotOverwritesCurrentState`
+
+All 11 new tests pass. All `com.eb.javafx.progress.*` tests pass with no regressions.

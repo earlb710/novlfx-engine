@@ -5,6 +5,7 @@ import com.eb.javafx.content.ContentRegistry;
 import com.eb.javafx.display.ImageDisplayRegistry;
 import com.eb.javafx.gamesupport.GameSupportService;
 import com.eb.javafx.prefs.PreferencesService;
+import com.eb.javafx.progress.PersistentProgressTracker;
 import com.eb.javafx.random.GameRandomService;
 import com.eb.javafx.resources.ResourceRegistry;
 import com.eb.javafx.globalApi.GlobalApiAdapter;
@@ -45,6 +46,7 @@ public final class BootContext {
     private final ApplicationResourceConfig resourceConfig;
     private final ResourceRegistry resourceRegistry;
     private final BootstrapReport bootstrapReport;
+    private final PersistentProgressTracker persistentProgress;
 
     /**
      * Creates a completed startup handoff containing initialized services and state.
@@ -116,6 +118,9 @@ public final class BootContext {
     /**
      * Creates a completed startup handoff with initialized services, state, application resource paths, and the
      * preloaded {@link ResourceRegistry} that bootstrap built before any phase ran.
+     *
+     * <p>Delegates to the persistent-progress-aware constructor with {@code null} for
+     * {@link PersistentProgressTracker} to preserve backward compatibility.</p>
      */
     public BootContext(
             PreferencesService preferencesService,
@@ -135,6 +140,36 @@ public final class BootContext {
             ApplicationResourceConfig resourceConfig,
             ResourceRegistry resourceRegistry,
             BootstrapReport bootstrapReport) {
+        this(preferencesService, contentRegistry, imageDisplayRegistry, saveLoadService, randomService, audioService,
+                gameSupportService, sceneRegistry, sceneExecutor, globalApiAdapter, sceneRouter, uiTheme, gameState,
+                applicationRoot, resourceConfig, resourceRegistry, bootstrapReport, null);
+    }
+
+    /**
+     * Creates a completed startup handoff with all services, state, application resource paths, the preloaded
+     * {@link ResourceRegistry}, and an optional {@link PersistentProgressTracker}.
+     *
+     * @param persistentProgress cross-session progress tracker, or {@code null} when not configured
+     */
+    public BootContext(
+            PreferencesService preferencesService,
+            ContentRegistry contentRegistry,
+            ImageDisplayRegistry imageDisplayRegistry,
+            SaveLoadService saveLoadService,
+            GameRandomService randomService,
+            AudioService audioService,
+            GameSupportService gameSupportService,
+            SceneRegistry sceneRegistry,
+            SceneExecutor sceneExecutor,
+            GlobalApiAdapter globalApiAdapter,
+            SceneRouter sceneRouter,
+            UiTheme uiTheme,
+            GameState gameState,
+            Path applicationRoot,
+            ApplicationResourceConfig resourceConfig,
+            ResourceRegistry resourceRegistry,
+            BootstrapReport bootstrapReport,
+            PersistentProgressTracker persistentProgress) {
         this.preferencesService = preferencesService;
         this.contentRegistry = contentRegistry;
         this.imageDisplayRegistry = imageDisplayRegistry;
@@ -152,6 +187,7 @@ public final class BootContext {
         this.resourceConfig = resourceConfig;
         this.resourceRegistry = resourceRegistry;
         this.bootstrapReport = bootstrapReport;
+        this.persistentProgress = persistentProgress;
     }
 
     /** Returns the preferences model loaded before UI construction. */
@@ -241,5 +277,13 @@ public final class BootContext {
     /** Returns phase-by-phase startup diagnostics for progress UI and tests. */
     public BootstrapReport bootstrapReport() {
         return bootstrapReport;
+    }
+
+    /**
+     * Returns the cross-session persistent progress tracker, or {@code null} when none was configured
+     * during bootstrap.
+     */
+    public PersistentProgressTracker persistentProgress() {
+        return persistentProgress;
     }
 }
