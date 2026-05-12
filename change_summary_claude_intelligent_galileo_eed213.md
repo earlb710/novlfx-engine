@@ -122,3 +122,30 @@ All 7 new tests pass. All `com.eb.javafx.scene.*` tests pass with no regressions
 - `restoreFromSnapshotOverwritesCurrentState`
 
 All 11 new tests pass. All `com.eb.javafx.progress.*` tests pass with no regressions.
+
+---
+
+## feat(save): add QuickSaveService, QuickSaveEvent, and QUICK_SAVE/QUICK_LOAD InputAction constants
+
+### Files changed
+- `src/main/java/com/eb/javafx/save/QuickSaveEvent.java` (new)
+- `src/main/java/com/eb/javafx/save/QuickSaveService.java` (new)
+- `src/main/java/com/eb/javafx/input/InputAction.java`
+- `src/test/java/com/eb/javafx/save/QuickSaveServiceTest.java` (new)
+
+### What changed
+
+**QuickSaveEvent** — new utility class with `EVENT_TYPE = "QUICK_SAVE_COMPLETED"` constant and `create(String slotId)` factory that wraps `GameEvent.now` with a `slotId` payload entry.
+
+**QuickSaveService** — new service that writes `GameState` as a JSON file (`<slotId>.json`) in the `SaveLoadService` save directory; default slot id is `"quicksave"`; supports a 3-arg constructor for custom slot ids; `quickSave` serializes `startupRoute` and publishes a `QuickSaveEvent`; `quickLoad` parses the JSON and returns `Optional<GameState>` (empty when file is absent or parse fails).
+
+**InputAction** — added two static constants: `QUICK_SAVE` (`"quick-save"`, context `"global"`, rebindable, tag `"save"`) and `QUICK_LOAD` (`"quick-load"`, context `"global"`, rebindable, tag `"save"`).
+
+### Test coverage (QuickSaveServiceTest — 5 tests)
+- `quickLoadReturnsEmptyBeforeAnySave`
+- `quickSaveAndLoadRoundTrips`
+- `quickSaveEmitsQuickSaveEvent`
+- `quickSaveOverwritesPreviousSave`
+- `customSlotIdWritesToSeparateFile`
+
+All 5 new tests pass. All `com.eb.javafx.save.*` and `com.eb.javafx.input.*` tests pass with no regressions.
