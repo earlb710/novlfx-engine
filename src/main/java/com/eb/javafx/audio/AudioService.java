@@ -32,6 +32,7 @@ public final class AudioService {
     private final Map<String, Double> channelVolumes = new LinkedHashMap<>();
     private final Map<String, AudioPlaybackCommand> lastPlaybackCommands = new LinkedHashMap<>();
     private final Map<String, SoundRequest> queuedRequests = new LinkedHashMap<>();
+    private final Map<String, AudioChannelConfig> channelConfigs = new LinkedHashMap<>();
     private final InitializationGuard initializationGuard = new InitializationGuard("Audio service used before initialization.");
     private boolean muted;
     private double masterVolume;
@@ -48,6 +49,7 @@ public final class AudioService {
         channelVolumes.clear();
         lastPlaybackCommands.clear();
         queuedRequests.clear();
+        channelConfigs.clear();
         masterVolume = preferencesService.masterVolume();
         muted = preferencesService.muteAll();
         registerChannel(new AudioChannelDefinition(MUSIC_CHANNEL, "Looping background music.", true, 1, 1.0));
@@ -74,6 +76,17 @@ public final class AudioService {
     public void registerChannel(AudioChannelDefinition definition) {
         channels.put(definition.id(), definition);
         channelVolumes.put(definition.id(), definition.defaultVolume());
+    }
+
+    /**
+     * Registers priority and ducking configuration for a named channel.
+     * Replaces any previously registered config for that channel ID.
+     * The channel ID does not need to have an {@link AudioChannelDefinition} registered first.
+     *
+     * @param config priority and ducking policy for the channel
+     */
+    public void registerChannel(AudioChannelConfig config) {
+        channelConfigs.put(Validation.requireNonNull(config, "config").channelId(), config);
     }
 
     /** Returns immutable channel definitions keyed by channel id. */
@@ -178,6 +191,19 @@ public final class AudioService {
         assertInitialized();
         requireChannel(channelId);
         return Optional.ofNullable(queuedRequests.get(channelId));
+    }
+
+    /**
+     * Returns the registered priority and ducking configuration for a channel.
+     * Channels with no registered config return a default with priority 0 and {@link DuckingPolicy#NONE}.
+     *
+     * @param channelId registered audio channel ID
+     */
+    public AudioChannelConfig channelConfig(String channelId) {
+        assertInitialized();
+        requireChannel(channelId);
+        return channelConfigs.getOrDefault(channelId,
+                new AudioChannelConfig(channelId, 0, 1.0, DuckingPolicy.NONE, 0.0));
     }
 
     /** Returns the last validated command for a channel if one exists. */
