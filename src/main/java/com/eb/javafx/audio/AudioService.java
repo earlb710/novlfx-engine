@@ -31,6 +31,7 @@ public final class AudioService {
     private final Map<String, AudioChannelDefinition> channels = new LinkedHashMap<>();
     private final Map<String, Double> channelVolumes = new LinkedHashMap<>();
     private final Map<String, AudioPlaybackCommand> lastPlaybackCommands = new LinkedHashMap<>();
+    private final Map<String, SoundRequest> queuedRequests = new LinkedHashMap<>();
     private final InitializationGuard initializationGuard = new InitializationGuard("Audio service used before initialization.");
     private boolean muted;
     private double masterVolume;
@@ -46,6 +47,7 @@ public final class AudioService {
         channels.clear();
         channelVolumes.clear();
         lastPlaybackCommands.clear();
+        queuedRequests.clear();
         masterVolume = preferencesService.masterVolume();
         muted = preferencesService.muteAll();
         registerChannel(new AudioChannelDefinition(MUSIC_CHANNEL, "Looping background music.", true, 1, 1.0));
@@ -144,11 +146,38 @@ public final class AudioService {
         return command;
     }
 
-    /** Clears the last command for a channel to model a stop request. */
+    /** Clears the last command for a channel and cancels any pending queued request. */
     public void stopChannel(String channelId) {
         assertInitialized();
         requireChannel(channelId);
         lastPlaybackCommands.remove(channelId);
+        queuedRequests.remove(channelId);
+    }
+
+    /**
+     * Schedules a track to play after the current playback on the same channel ends naturally.
+     * Calling again replaces the pending entry — single-depth queue matching Ren'Py semantics.
+     *
+     * @param request the sound request to queue; its channel must already be registered
+     */
+    public void queueMusic(SoundRequest request) {
+        assertInitialized();
+        requireChannel(request.channelId());
+        queuedRequests.put(request.channelId(), request);
+    }
+
+    /** Cancels any pending queued request for the given channel. */
+    public void clearQueue(String channelId) {
+        assertInitialized();
+        requireChannel(channelId);
+        queuedRequests.remove(channelId);
+    }
+
+    /** Returns the pending queued request for a channel, if one has been scheduled. */
+    public Optional<SoundRequest> queuedRequest(String channelId) {
+        assertInitialized();
+        requireChannel(channelId);
+        return Optional.ofNullable(queuedRequests.get(channelId));
     }
 
     /** Returns the last validated command for a channel if one exists. */
