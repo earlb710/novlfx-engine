@@ -1,6 +1,7 @@
 package com.eb.javafx.ui;
 
 import com.eb.javafx.audio.AudioService;
+import com.eb.javafx.debug.DebugScreenInspector;
 import com.eb.javafx.prefs.PreferencesService.FooterShortcutDisplay;
 import com.eb.javafx.prefs.PreferencesService;
 import com.eb.javafx.prefs.PreferencesService.Language;
@@ -82,6 +83,7 @@ public final class PreferencesSummaryScreen {
                 event.consume();
             }
         });
+        DebugScreenInspector.setScreenClass(scene, PreferencesSummaryScreen.class);
         return scene;
     }
 
@@ -326,7 +328,13 @@ public final class PreferencesSummaryScreen {
         Scene currentScene = context.primaryStage().getScene();
         double width = currentScene == null ? context.preferencesService().windowWidth() : currentScene.getWidth();
         double height = currentScene == null ? context.preferencesService().windowHeight() : currentScene.getHeight();
-        context.primaryStage().setScene(createScene(context, width, height));
+        Scene rebuiltScene = createScene(context, width, height);
+        context.primaryStage().setScene(rebuiltScene);
+        DebugScreenInspector.attach(
+                rebuiltScene,
+                SceneRouter.PREFERENCES_ROUTE,
+                context.resourceConfig().debug(),
+                context.uiTheme());
     }
 
     private static void applyCurrentFooterPreferences(RouteContext context) {

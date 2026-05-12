@@ -13,10 +13,13 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.scene.control.Tooltip;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.Background;
 import javafx.scene.layout.BackgroundFill;
 import javafx.scene.layout.BackgroundImage;
@@ -45,6 +48,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -383,6 +387,88 @@ public final class ScreenShell {
 
     public static List<FooterOption> defaultFooterOptions() {
         return FOOTER_OPTIONS;
+    }
+
+    /** Shortcut string used by {@link #installDebugScreenInfoShortcut} and the debug-info dialog footer hint. */
+    public static final String DEBUG_SCREEN_INFO_SHORTCUT = "Ctrl+D";
+
+    /**
+     * Returns {@code true} when a key event matches a footer-option shortcut string such as
+     * {@code "Ctrl+D"}, {@code "Space"}, or {@code "Ctrl+Shift+S"}.
+     *
+     * <p>Recognized tokens: {@code Ctrl}/{@code Cmd}/{@code Meta} (mapped to JavaFX shortcut modifier),
+     * {@code Shift}, {@code Alt}/{@code Option}. Key tokens include {@code Space}, {@code Backspace},
+     * {@code Tab}, {@code Enter}/{@code Return}, {@code Escape}/{@code Esc}, and any JavaFX
+     * {@link KeyCode} name (case-insensitive). Unknown keys return {@code false}.</p>
+     */
+    public static boolean matchesShortcut(KeyEvent event, String shortcut) {
+        Validation.requireNonNull(event, "Key event is required.");
+        Validation.requireNonBlank(shortcut, "Footer option shortcut is required.");
+        boolean wantShortcut = false;
+        boolean wantShift = false;
+        boolean wantAlt = false;
+        KeyCode wantKey = null;
+        for (String rawToken : shortcut.split("\\+")) {
+            String token = rawToken.trim();
+            if (token.isEmpty()) {
+                continue;
+            }
+            String lower = token.toLowerCase(Locale.ROOT);
+            switch (lower) {
+                case "ctrl", "control", "cmd", "command", "meta" -> wantShortcut = true;
+                case "shift" -> wantShift = true;
+                case "alt", "option" -> wantAlt = true;
+                default -> wantKey = parseShortcutKeyCode(token);
+            }
+        }
+        if (wantKey == null) {
+            return false;
+        }
+        return event.getCode() == wantKey
+                && event.isShortcutDown() == wantShortcut
+                && event.isShiftDown() == wantShift
+                && event.isAltDown() == wantAlt;
+    }
+
+    private static KeyCode parseShortcutKeyCode(String token) {
+        return switch (token.toLowerCase(Locale.ROOT)) {
+            case "space" -> KeyCode.SPACE;
+            case "backspace", "back_space" -> KeyCode.BACK_SPACE;
+            case "tab" -> KeyCode.TAB;
+            case "enter", "return" -> KeyCode.ENTER;
+            case "escape", "esc" -> KeyCode.ESCAPE;
+            case "delete", "del" -> KeyCode.DELETE;
+            default -> {
+                try {
+                    yield KeyCode.valueOf(token.toUpperCase(Locale.ROOT));
+                } catch (IllegalArgumentException exception) {
+                    yield null;
+                }
+            }
+        };
+    }
+
+    /**
+     * Installs a single {@link KeyEvent#KEY_PRESSED} filter that dispatches footer-shortcut keys to
+     * the supplied {@link Runnable} handlers. Handler keys are the footer-option shortcut strings
+     * (e.g. {@code "Ctrl+P"}); the first matching binding consumes the event.
+     */
+    public static void installFooterShortcuts(Scene scene, Map<String, Runnable> handlersByShortcut) {
+        Validation.requireNonNull(scene, "Scene is required.");
+        Validation.requireNonNull(handlersByShortcut, "Footer shortcut handlers are required.");
+        if (handlersByShortcut.isEmpty()) {
+            return;
+        }
+        Map<String, Runnable> bindings = Map.copyOf(handlersByShortcut);
+        scene.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
+            for (Map.Entry<String, Runnable> entry : bindings.entrySet()) {
+                if (matchesShortcut(event, entry.getKey())) {
+                    entry.getValue().run();
+                    event.consume();
+                    return;
+                }
+            }
+        });
     }
 
     public static List<FooterOption> changeFooterIcon(List<FooterOption> options, String id, String icon) {

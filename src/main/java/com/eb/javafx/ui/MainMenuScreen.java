@@ -1,5 +1,6 @@
 package com.eb.javafx.ui;
 
+import com.eb.javafx.debug.DebugScreenInspector;
 import com.eb.javafx.routing.RouteContext;
 import com.eb.javafx.routing.RouteDescriptor;
 import com.eb.javafx.routing.SceneRouter;
@@ -24,7 +25,9 @@ public final class MainMenuScreen {
             context.primaryStage().setMinHeight(480);
         }
 
-        return ViewModelScreen.createScene(context, viewModel(context));
+        Scene scene = ViewModelScreen.createScene(context, viewModel(context));
+        DebugScreenInspector.setScreenClass(scene, MainMenuScreen.class);
+        return scene;
     }
 
     public static ScreenViewModel viewModel(RouteContext context) {

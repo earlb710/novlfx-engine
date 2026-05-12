@@ -315,3 +315,59 @@ Also removed lingering diagnostic `System.err.println` calls that were left in f
 **Files changed:**
 - `src/test/java/com/eb/javafx/ui/test/BlockBackgroundImageTestScreenTest.java`
 - `src/test/java/com/eb/javafx/ui/test/JsonBlockBackgroundImageTestScreenTest.java`
+
+---
+
+## Add Ctrl+D debug-mode screen-info dialog
+
+When `ApplicationResourceConfig.debug()` is enabled, pressing `Ctrl+D` (Cmd+D on macOS) on any navigated screen now opens a modal dialog that reports the active route ID, screen-builder class, and JSON source path. Each value is rendered in a read-only `TextField` so it can be selected and copied. The dialog dismisses via the focused **Close** button or the Escape key. Blank fields render as `(unknown)` so the layout is stable regardless of how much metadata a screen exposes.
+
+**Engine wiring:**
+- `RouteContext.navigateTo(String routeId)` now records the route ID on the new scene and installs the Ctrl+D event filter when `resourceConfig.debug()` is true.
+- `ApplicationShellSupport.openStartupRoute(...)` does the same for the initial scene.
+- `PreferencesSummaryScreen.applyTheme(...)` reattaches the shortcut after rebuilding its scene on theme change so the dialog keeps working without a full route re-navigation.
+- Re-entrant `attach` calls reuse the existing scene metadata and do not install a second filter (idempotent on `SCENE_PROPERTY_HANDLER_INSTALLED`).
+
+**Opt-in screen metadata:**
+- `DebugScreenInspector.setScreenClass(scene, MyScreen.class)` — declare the builder class for the dialog. Wired into `MainMenuScreen.createScene` and `PreferencesSummaryScreen.createScene` as engine examples; app/game screens can call the same helper.
+- `DebugScreenInspector.setJsonFilePath(scene, path)` — declare the JSON source path (`Path` or `String`). Intentionally left as a per-screen opt-in because most engine screens are class-driven, not JSON-driven.
+
+**New files:**
+- `src/main/java/com/eb/javafx/debug/DebugScreenInfo.java` — immutable record carrying `routeId`, `screenClass`, `jsonFilePath`. Null fields normalize to empty strings; `empty()`, `forRoute(String)`, `withScreenClass`, and `withJsonFilePath` factories supplied.
+- `src/main/java/com/eb/javafx/debug/DebugScreenInspector.java` — utility class. Stores metadata on `Scene.getProperties()` under namespaced keys, installs the keyboard filter, builds the themed dialog, and exposes `readInfo`, `showDebugDialog(Scene,...)`, and `showDebugDialog(Window, DebugScreenInfo, UiTheme)` for tests and ad-hoc inspection.
+- `src/test/java/com/eb/javafx/debug/DebugScreenInfoTest.java` — exercises record normalization and `with*` copy helpers.
+- `src/test/java/com/eb/javafx/debug/DebugScreenInspectorTest.java` — verifies route-ID storage, idempotent handler installation, debug-disabled behavior, dialog rendering with stable labels, and the `(unknown)` placeholder. Tests are `assumeTrue`-gated on JavaFX toolkit availability.
+
+**Files changed:**
+- `src/main/java/com/eb/javafx/routing/RouteContext.java`
+- `src/main/java/com/eb/javafx/bootstrap/ApplicationShellSupport.java`
+- `src/main/java/com/eb/javafx/ui/MainMenuScreen.java`
+- `src/main/java/com/eb/javafx/ui/PreferencesSummaryScreen.java`
+- `docs/USER_MANUAL.md`
+
+---
+
+## Move debug-shortcut dispatch into ScreenShell footer-shortcut helpers
+
+Followed up on the Ctrl+D debug dialog by relocating the keyboard dispatch from a standalone scene event filter in `DebugScreenInspector.attach` into `ScreenShell`, next to the existing footer shortcut configuration. Apps now get the debug shortcut through the same pipeline they would use to wire any other footer-shortcut key, so the dispatch lives where the rest of the footer-shortcut metadata already lives.
+
+**ScreenShell additions:**
+- `ScreenShell.DEBUG_SCREEN_INFO_SHORTCUT` constant (`"Ctrl+D"`).
+- `ScreenShell.matchesShortcut(KeyEvent, String)` parses shortcut strings in the same format the `FooterOption.shortcut()` field already uses. Recognizes `Ctrl`/`Cmd`/`Control`/`Command`/`Meta`, `Shift`, `Alt`/`Option`, plus named keys (`Space`, `Backspace`, `Tab`, `Enter`/`Return`, `Escape`/`Esc`, `Delete`/`Del`) and any JavaFX `KeyCode` name (case-insensitive). Unknown keys return `false`; blank shortcut strings throw `IllegalArgumentException`.
+- `ScreenShell.installFooterShortcuts(Scene, Map<String, Runnable>)` installs a single `KEY_PRESSED` event filter that dispatches to the first matching `Runnable`; the matched event is consumed. Apps can supply additional handlers (e.g. `Ctrl+P` → preferences nav) using the same helper instead of writing per-screen event filters.
+
+**DebugScreenInspector refactor:**
+- `attach(Scene, String routeId, boolean debugEnabled, UiTheme)` no longer adds its own scene event filter. It now stores route-ID metadata and delegates to `ScreenShell.installFooterShortcuts(scene, Map.of(DEBUG_SCREEN_INFO_SHORTCUT, ...))` when `debugEnabled` is true, so the Ctrl+D filter is created by the same code path as any other footer shortcut.
+- Removed the now-unused `SCENE_PROPERTY_HANDLER_INSTALLED` idempotency flag; each navigated scene is a fresh instance, so single-install protection is no longer needed.
+- Public surface (`readInfo`, `setScreenClass`, `setJsonFilePath`, `showDebugDialog(Scene,...)`, `showDebugDialog(Window, DebugScreenInfo, UiTheme)`) is unchanged.
+
+**Tests:**
+- New `ScreenShellShortcutsTest` covers `matchesShortcut` for Ctrl/Shift/Alt combinations, named keys, unknown keys, and blank-string rejection. Also exercises `installFooterShortcuts` end-to-end via `Scene.getRoot().fireEvent(...)` to confirm matched events fire the handler and unmatched events do not.
+- `DebugScreenInspectorTest` updated: dropped the handler-installed property assertions; added a positive test that route ID is recorded when debug is enabled.
+
+**Files changed:**
+- `src/main/java/com/eb/javafx/ui/ScreenShell.java`
+- `src/main/java/com/eb/javafx/debug/DebugScreenInspector.java`
+- `src/test/java/com/eb/javafx/debug/DebugScreenInspectorTest.java`
+- `src/test/java/com/eb/javafx/ui/ScreenShellShortcutsTest.java` (new)
+- `docs/USER_MANUAL.md`
