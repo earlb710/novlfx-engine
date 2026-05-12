@@ -38,7 +38,7 @@ public final class ScenePresenter {
                 .toList();
         List<SceneDialogueRowViewModel> dialogueRows = step == null || (step.type() != SceneStepType.DIALOGUE && step.type() != SceneStepType.NARRATION)
                 ? List.of()
-                : List.of(new SceneDialogueRowViewModel(step.type(), step.speakerId(), step.textDefinition(), step.displayReference()));
+                : List.of(new SceneDialogueRowViewModel(step.type(), step.speakerId(), step.textDefinition(), step.displayReference(), java.util.Optional.empty()));
         List<SceneStatusRowViewModel> statusRows = statusRows(result, step, selectedChoiceIds);
         List<SceneEffectPreviewViewModel> effectPreviews = step == null
                 ? List.of()
