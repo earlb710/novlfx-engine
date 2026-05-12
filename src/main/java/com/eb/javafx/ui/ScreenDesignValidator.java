@@ -223,6 +223,7 @@ public final class ScreenDesignValidator {
         switch (item.type()) {
             case SLIDER -> validateSliderMetadata(item.metadata(), path, problems);
             case POPLIST, COMBO_BOX, RADIO_GROUP -> validateOptionsMetadata(item.metadata(), path, problems);
+            case IMAGE_BUTTON -> validateImageButtonMetadata(item.metadata(), path, problems);
             default -> {
             }
         }
@@ -254,6 +255,16 @@ public final class ScreenDesignValidator {
             if (OptionListEncoding.decode(options).isEmpty()) {
                 problems.add(error(path + ".options", "options must contain at least one non-empty entry."));
             }
+        }
+    }
+
+    private static void validateImageButtonMetadata(
+            Map<String, String> metadata,
+            String path,
+            List<ScreenDesignValidationProblem> problems) {
+        String idleRef = metadata.get("idleImageRef");
+        if (idleRef == null || idleRef.isBlank()) {
+            problems.add(error(path + ".idleImageRef", "IMAGE_BUTTON requires an idleImageRef metadata value."));
         }
     }
 

@@ -420,6 +420,9 @@ public final class ScreenLayoutRenderer {
         if (ScreenDesignItemType.RADIO_GROUP.name().equals(itemType)) {
             return radioGroupNode(id, metadata);
         }
+        if (ScreenDesignItemType.IMAGE_BUTTON.name().equals(itemType)) {
+            return imageButtonNode(id, metadata);
+        }
         return null;
     }
 
@@ -530,6 +533,23 @@ public final class ScreenLayoutRenderer {
         }
         container.getChildren().add(buttonRow);
         return container;
+    }
+
+    private static Node imageButtonNode(String id, Map<String, String> metadata) {
+        String idleRef = metadata.getOrDefault("idleImageRef", "");
+        String hoverRef = metadata.getOrDefault("hoverImageRef", "");
+        String selectedRef = metadata.getOrDefault("selectedImageRef", "");
+        // Placeholder: actual image loading is adapter responsibility.
+        Label placeholder = new Label(idleRef);
+        if (!hoverRef.isBlank()) {
+            placeholder.setUserData(Map.of("hoverImageRef", hoverRef, "selectedImageRef", selectedRef));
+        }
+        placeholder.getStyleClass().add(ScreenShell.LAYOUT_SECTION_ROW_STYLE_CLASS);
+        if (id != null) {
+            placeholder.setId(id);
+        }
+        applyLineStyle(placeholder, metadata);
+        return placeholder;
     }
 
     private static double parseSliderBound(String value, double defaultValue) {
