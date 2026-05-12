@@ -26,6 +26,7 @@ public final class AudioService {
     public static final String SOUND_CHANNEL = "sound";
     public static final String EFFECTS_CHANNEL = "effects";
     public static final String INTIMATE_EFFECTS_CHANNEL = "intimate-effects";
+    public static final String VOICE_CHANNEL = "voice";
 
     private final Map<String, AudioChannelDefinition> channels = new LinkedHashMap<>();
     private final Map<String, Double> channelVolumes = new LinkedHashMap<>();
@@ -51,8 +52,10 @@ public final class AudioService {
         registerChannel(new AudioChannelDefinition(SOUND_CHANNEL, "Short one-shot UI and gameplay sounds.", false, 8, 1.0));
         registerChannel(new AudioChannelDefinition(EFFECTS_CHANNEL, "Reusable environmental and scene effects.", true, 4, 1.0));
         registerChannel(new AudioChannelDefinition(INTIMATE_EFFECTS_CHANNEL, "Dedicated migrated effect channel.", true, 2, 1.0));
+        registerChannel(new AudioChannelDefinition(VOICE_CHANNEL, "Character voice lines.", false, 1, 1.0));
         channelVolumes.put(MUSIC_CHANNEL, preferencesService.musicVolume());
         channelVolumes.put(SOUND_CHANNEL, preferencesService.soundVolume());
+        channelVolumes.put(VOICE_CHANNEL, preferencesService.voiceVolume());
         initializationGuard.markInitialized();
     }
 
