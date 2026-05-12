@@ -9,6 +9,7 @@ package com.eb.javafx.scene;
 public enum SceneExecutionStatus {
     DISPLAYING_TEXT,
     WAITING_FOR_CHOICE,
+    WAITING_FOR_HOTSPOT,
     COMPLETED,
     FAILED
 }
