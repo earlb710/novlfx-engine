@@ -371,3 +371,29 @@ Followed up on the Ctrl+D debug dialog by relocating the keyboard dispatch from 
 - `src/test/java/com/eb/javafx/debug/DebugScreenInspectorTest.java`
 - `src/test/java/com/eb/javafx/ui/ScreenShellShortcutsTest.java` (new)
 - `docs/USER_MANUAL.md`
+
+---
+
+## Screen Designer UX improvements
+
+Four targeted improvements to `ScreenDesignerApplication`:
+
+**1. Remove dead `promoteTemporary()` method**
+
+The private method was defined but never called — the "Promote Temporary" context-menu action was already wired inline. Removed the dead method and added a reflection-based test to guard against re-introduction.
+
+**2. Fix `runSafely()` showing "null" on NullPointerException**
+
+`exception.getMessage()` returns `null` for `NullPointerException` and some other exceptions, causing both the status bar and the error dialog to display the literal text "null". Extracted a package-private `errorDisplayMessage(RuntimeException)` helper that falls back to `exception.getClass().getSimpleName()` when the message is null.
+
+**3. Replace validation `JTextArea` with a clickable `JList`**
+
+The read-only `JTextArea` in the editor's lower split pane listed validation problems but gave no way to navigate to the offending node. Replaced it with a `JList<ScreenDesignValidationProblem>` backed by `ValidationProblemCellRenderer`. Selecting a row calls the existing `navigationNodeForValidationPath()` logic and highlights the corresponding node in the tree.
+
+**4. Add filter field above the navigation tree**
+
+Added a `JTextField` ("Filter") between the working-directory widget and the tree. A `DocumentListener` on each keystroke calls `applyTreeFilter()`, which rebuilds the tree using the new `buildNavigationTree(ScreenDesignModel, String)` overload. The overload prunes non-matching nodes: items are kept if their ID contains the filter string (case-insensitive); block nodes are kept if they match directly or have at least one matching descendant; the screen root is always shown. Blank/null filter delegates to the existing no-filter overload.
+
+**Files changed:**
+- `src/test/java/com/eb/javafx/testscreen/ScreenDesignerApplication.java`
+- `src/test/java/com/eb/javafx/testscreen/ScreenDesignerApplicationTest.java`
