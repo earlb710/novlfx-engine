@@ -16,8 +16,12 @@ import javafx.stage.Stage;
 
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Route table for labels, jumps, calls, and screen entry points.
@@ -44,6 +48,8 @@ public final class SceneRouter {
 
     private final Map<String, RouteFactory> routes = new LinkedHashMap<>();
     private final Map<String, RouteDescriptor> routeDescriptors = new LinkedHashMap<>();
+    private final Map<String, OverlayDescriptor> overlayDescriptors = new LinkedHashMap<>();
+    private final Map<String, Boolean> overlayVisibility = new LinkedHashMap<>();
     private RouteContext routeContext;
 
     /**
@@ -151,5 +157,44 @@ public final class SceneRouter {
     public void validateRouteDefinitions(ContentRegistry contentRegistry) {
         routeDescriptors.values().forEach(descriptor ->
                 contentRegistry.definition(descriptor.titleDefinition()));
+    }
+
+    /** Registers a persistent overlay screen. Re-registering the same id replaces the previous entry. */
+    public void registerOverlay(OverlayDescriptor descriptor) {
+        Objects.requireNonNull(descriptor, "descriptor");
+        overlayDescriptors.put(descriptor.id(), descriptor);
+        overlayVisibility.put(descriptor.id(), descriptor.initiallyVisible());
+    }
+
+    /** Makes the overlay with the given id visible. */
+    public void showOverlay(String overlayId) {
+        requireRegisteredOverlay(overlayId);
+        overlayVisibility.put(overlayId, true);
+    }
+
+    /** Makes the overlay with the given id hidden. */
+    public void hideOverlay(String overlayId) {
+        requireRegisteredOverlay(overlayId);
+        overlayVisibility.put(overlayId, false);
+    }
+
+    /** Returns true if the overlay with the given id is currently visible. */
+    public boolean isOverlayVisible(String overlayId) {
+        requireRegisteredOverlay(overlayId);
+        return Boolean.TRUE.equals(overlayVisibility.get(overlayId));
+    }
+
+    /** Returns the ids of all currently visible overlays, in registration order. */
+    public Set<String> activeOverlays() {
+        return overlayVisibility.entrySet().stream()
+                .filter(Map.Entry::getValue)
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+    }
+
+    private void requireRegisteredOverlay(String overlayId) {
+        if (!overlayDescriptors.containsKey(overlayId)) {
+            throw new IllegalArgumentException("No overlay registered with id: " + overlayId);
+        }
     }
 }

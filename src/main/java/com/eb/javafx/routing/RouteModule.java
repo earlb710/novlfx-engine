@@ -11,4 +11,9 @@ package com.eb.javafx.routing;
 public interface RouteModule {
     /** Registers this module's routes with the supplied router. */
     void registerRoutes(SceneRouter router);
+
+    /** Registers persistent overlay screens with the supplied router. Override to contribute overlays. */
+    default void registerOverlays(SceneRouter router) {
+        // Override to register persistent overlay screens.
+    }
 }
