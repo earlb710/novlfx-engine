@@ -40,4 +40,5 @@ module com.novlfx.engine {
     exports com.eb.javafx.timeline;
     exports com.eb.javafx.ui;
     exports com.eb.javafx.util;
+    exports com.eb.javafx.transitions;
 }
