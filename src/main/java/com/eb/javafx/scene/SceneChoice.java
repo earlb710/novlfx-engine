@@ -147,6 +147,15 @@ public final class SceneChoice {
         return withMetadata(updated);
     }
 
+    public String captionTextKey() {
+        return metadata.get("captionTextKey");
+    }
+
+    public SceneChoice withCaption(String captionTextKey) {
+        return withMetadataValue("captionTextKey",
+                Validation.requireNonBlank(captionTextKey, "Choice caption text key is required."));
+    }
+
     public boolean exitsMenu() {
         String value = metadata.get("exitsMenu");
         return !"false".equals(value);
