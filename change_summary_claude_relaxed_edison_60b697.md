@@ -399,3 +399,57 @@ Followed up on the Ctrl+D debug dialog by relocating the keyboard dispatch from 
 - `src/test/java/com/eb/javafx/debug/DebugScreenInspectorTest.java`
 - `src/test/java/com/eb/javafx/ui/ScreenShellShortcutsTest.java` (new)
 - `docs/USER_MANUAL.md`
+
+---
+
+## Add SeenStepSnapshotCodec — JSON persistence for skip-mode seen-step tracking
+
+`SeenStepSnapshotCodec` was the one missing piece for the Skip/Auto Modes feature (TODO item 3). The model and in-memory snapshot existed; this adds the `SaveSnapshotCodec<SeenStepSnapshot>` implementation required for save/load persistence.
+
+- `SeenStepSnapshotCodec` implements `SaveSnapshotCodec<SeenStepSnapshot>` — section ID `"seenSteps"`, schema version `1`. Serializes the seen-key set as a JSON array; deserializes back via `SimpleJson` using the same patterns as `ProgressSnapshotCodec`.
+- `SeenStepSnapshotCodecTest` covers: stable section ID/version, non-empty round-trip, empty round-trip, rejection of a non-object JSON root, and rejection of a non-array `seenKeys` field.
+- `docs/TODO.md` updated: all six items marked **Done**.
+
+**Files changed:**
+- `src/main/java/com/eb/javafx/scene/SeenStepSnapshotCodec.java` (new)
+- `src/test/java/com/eb/javafx/scene/SeenStepSnapshotCodecTest.java` (new)
+- `docs/TODO.md`
+
+---
+
+## Phase 1 — Ren'Py Parity: Foundational Scene Mechanics (branch: claude/relaxed-edison-60b697)
+
+Six core scene mechanics added to reach Ren'Py feature parity.
+
+### Dialogue rollback
+`RollbackContributor<T>` and `PersistableRollbackContributor<T>` (extends `SaveSnapshotCodec<T>`) define the contribution contract. `RollbackBuffer` is a fixed-capacity ring buffer that snapshots all registered contributors before each DIALOGUE, NARRATION, and CHOICE pause. `SceneExecutor` gains an optional `RollbackBuffer` constructor parameter and a `rollback(ActionContext)` method that pops two entries, restores the previous state, and re-advances. `SceneExecutionResult` gains `canRollback()`. `RollbackSnapshotCodec` persists the buffer's flow states as a save section.
+
+### Conditional choice visibility
+`ConditionPolicy` enum (HIDE, GREY). `SceneChoice.withCondition(expression, policy)` stores a `SceneConditionExpression` string and policy in metadata. `SceneExecutor` evaluates conditions at CHOICE step time via a new private `resolveChoices()` helper: HIDE excludes the choice from the result, GREY includes it as disabled.
+
+### Text pacing control tags
+`TextTokenType` gains WAIT_CLICK, NO_WAIT, SET_CPS, FAST_FORWARD. `TextToken` gains factory methods and `cps()` accessor. `TextTagParser` handles `{w}` (wait-click), `{nw}` (no-wait), `{cps=N}` (set chars/sec), `{fast}` (fast-forward).
+
+### Timed choices
+`SceneStep` gains `choiceTimeoutMs()` (Long, null = no timeout), `choiceTimeoutDefaultId()` (String, null = first option), and `withChoiceTimeout(long, String)` builder method. Adapter drives the timer; calls existing `selectChoice()` on expiry.
+
+### Menu captions
+`SceneStep` gains `menuCaptionTextKey()` (String, null = no caption) and `withMenuCaption(String)` builder method.
+
+### Sticky/loop menus
+`SceneChoice` gains `exitsMenu()` (default true) and `asMenuReturn()` builder. `SceneStep` gains `menuLoop()` and `withMenuLoop()`. When `menuLoop` is true and a selected choice has `exitsMenu = false`, `SceneExecutor.selectChoice` re-presents the same CHOICE step after applying effects.
+
+**Files changed:**
+- `src/main/java/com/eb/javafx/scene/RollbackContributor.java` (new)
+- `src/main/java/com/eb/javafx/scene/PersistableRollbackContributor.java` (new)
+- `src/main/java/com/eb/javafx/scene/RollbackEntry.java` (new)
+- `src/main/java/com/eb/javafx/scene/RollbackBuffer.java` (new)
+- `src/main/java/com/eb/javafx/scene/RollbackSnapshotCodec.java` (new)
+- `src/main/java/com/eb/javafx/scene/ConditionPolicy.java` (new)
+- `src/main/java/com/eb/javafx/scene/SceneExecutor.java`
+- `src/main/java/com/eb/javafx/scene/SceneExecutionResult.java`
+- `src/main/java/com/eb/javafx/scene/SceneChoice.java`
+- `src/main/java/com/eb/javafx/scene/SceneStep.java`
+- `src/main/java/com/eb/javafx/text/TextTokenType.java`
+- `src/main/java/com/eb/javafx/text/TextToken.java`
+- `src/main/java/com/eb/javafx/text/TextTagParser.java`
