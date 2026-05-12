@@ -131,6 +131,31 @@ public final class SceneChoice {
         return withMetadata(updatedMetadata);
     }
 
+    public String conditionExpression() {
+        return metadata.get("conditionExpression");
+    }
+
+    public ConditionPolicy conditionPolicy() {
+        String value = metadata.get("conditionPolicy");
+        return value == null ? ConditionPolicy.HIDE : ConditionPolicy.valueOf(value);
+    }
+
+    public SceneChoice withCondition(String expression, ConditionPolicy policy) {
+        Map<String, String> updated = new LinkedHashMap<>(metadata);
+        updated.put("conditionExpression", Validation.requireNonBlank(expression, "Condition expression is required."));
+        updated.put("conditionPolicy", Objects.requireNonNull(policy, "policy").name());
+        return withMetadata(updated);
+    }
+
+    public boolean exitsMenu() {
+        String value = metadata.get("exitsMenu");
+        return !"false".equals(value);
+    }
+
+    public SceneChoice asMenuReturn() {
+        return withMetadataValue("exitsMenu", "false");
+    }
+
     public SceneChoice withIcon(String iconId) {
         String checkedIconId = Validation.requireNonBlank(iconId, "Scene choice icon id is required.");
         Map<String, String> updatedMetadata = new LinkedHashMap<>(metadata);
