@@ -29,6 +29,7 @@ import javax.swing.JButton;
 import javax.swing.AbstractCellEditor;
 import javax.swing.BorderFactory;
 import javax.swing.DefaultCellEditor;
+import javax.swing.DefaultListCellRenderer;
 import javax.swing.JCheckBox;
 import javax.swing.JColorChooser;
 import javax.swing.JComboBox;
@@ -241,7 +242,7 @@ public final class ScreenDesignerApplication {
     private final JTextField itemLabelColorField = new JTextField();
     private final JTextArea itemMetadataArea = new JTextArea(4, 20);
     private final JTextArea jsonArea = new JTextArea();
-    private final JTextArea validationArea = new JTextArea(3, 20);
+    private final JList<ScreenDesignValidationProblem> validationList = new JList<>();
     private final JLabel statusLabel = new JLabel();
     private final JTextField workingDirectoryField = new JTextField();
     private JFXPanel dockedPreviewPanel;
@@ -428,12 +429,16 @@ public final class ScreenDesignerApplication {
         resetPropertiesButton.addActionListener(event -> resetSelectedProperties());
         itemTypeBox.addActionListener(event -> refreshItemEditableState());
         jsonArea.setEditable(false);
-        validationArea.setEditable(false);
-        validationArea.setLineWrap(true);
-        validationArea.setWrapStyleWord(true);
+        validationList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        validationList.setCellRenderer(new ValidationProblemCellRenderer());
+        validationList.addListSelectionListener(event -> {
+            if (!event.getValueIsAdjusting() && validationList.getSelectedValue() != null) {
+                selectNavigationNode(navigationNodeForValidationPath(validationList.getSelectedValue().path()));
+            }
+        });
         JScrollPane propertiesScrollPane = new JScrollPane(propertiesPanel);
         propertiesScrollPane.setPreferredSize(new Dimension(0, 340));
-        JSplitPane lowerSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT, new JScrollPane(validationArea), new JScrollPane(jsonArea));
+        JSplitPane lowerSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT, new JScrollPane(validationList), new JScrollPane(jsonArea));
         lowerSplit.setDividerLocation(95);
         JSplitPane split = new JSplitPane(JSplitPane.VERTICAL_SPLIT, propertiesScrollPane, lowerSplit);
         split.setDividerLocation(340);
@@ -1130,7 +1135,7 @@ public final class ScreenDesignerApplication {
         updateSelectedNavigationState();
         jsonArea.setText(ScreenDesignJson.toJson(design));
         List<ScreenDesignValidationProblem> problems = ScreenDesignValidator.validate(design);
-        validationArea.setText(validationSummary(problems));
+        validationList.setListData(problems.toArray(ScreenDesignValidationProblem[]::new));
         statusLabel.setText(statusText(currentPath, problems));
         refreshPreview();
     }
@@ -3468,6 +3473,18 @@ public final class ScreenDesignerApplication {
     }
 
     private static record NavigationDropTarget(String blockId, int siblingIndex) {
+    }
+
+    private static final class ValidationProblemCellRenderer extends DefaultListCellRenderer {
+        @Override
+        public Component getListCellRendererComponent(
+                JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
+            super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+            if (value instanceof ScreenDesignValidationProblem problem) {
+                setText(problem.path() + ": " + problem.message());
+            }
+            return this;
+        }
     }
 
     private final class ValidationTreeCellRenderer extends DefaultTreeCellRenderer {

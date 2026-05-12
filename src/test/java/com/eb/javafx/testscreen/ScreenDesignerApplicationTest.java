@@ -24,6 +24,7 @@ import java.util.Set;
 
 import javax.swing.JButton;
 import javax.swing.JComboBox;
+import javax.swing.JList;
 import javax.swing.JFileChooser;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
@@ -927,6 +928,15 @@ final class ScreenDesignerApplicationTest {
                         List.of()));
 
         assertEquals("Screen design block references unknown parent block id: missing", exception.getMessage());
+    }
+
+    @Test
+    void validationPanelUsesClickableListNotTextArea() throws Exception {
+        ScreenDesignerApplication application = new ScreenDesignerApplication();
+
+        Object field = fieldValue(application, "validationList");
+
+        assertInstanceOf(JList.class, field);
     }
 
     @Test
