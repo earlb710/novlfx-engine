@@ -17,9 +17,15 @@ import java.util.Objects;
  */
 public final class SceneExecutor {
     private final SceneRegistry sceneRegistry;
+    private final SceneConditionEvaluator conditionEvaluator;
 
     public SceneExecutor(SceneRegistry sceneRegistry) {
+        this(sceneRegistry, null);
+    }
+
+    public SceneExecutor(SceneRegistry sceneRegistry, SceneConditionEvaluator conditionEvaluator) {
         this.sceneRegistry = Objects.requireNonNull(sceneRegistry, "sceneRegistry");
+        this.conditionEvaluator = conditionEvaluator;
     }
 
     public SceneFlowState start(String sceneId) {
@@ -54,6 +60,14 @@ public final class SceneExecutor {
                     current = applyTransition(current, step.transition());
                 }
                 case TRANSITION -> current = applyTransition(current, step.transition());
+                case CONDITIONAL -> {
+                    if (conditionEvaluator == null) {
+                        throw new IllegalStateException("SceneConditionEvaluator required for CONDITIONAL steps.");
+                    }
+                    SceneConditionExpression expr = SceneConditionExpression.parse(step.conditionExpression());
+                    boolean conditionMet = conditionEvaluator.evaluate(expr);
+                    current = applyTransition(current, conditionMet ? step.transition() : step.elseTransition());
+                }
             }
         }
     }
@@ -124,6 +138,14 @@ public final class SceneExecutor {
                     current = applyTransition(current, step.transition());
                 }
                 case TRANSITION -> current = applyTransition(current, step.transition());
+                case CONDITIONAL -> {
+                    if (conditionEvaluator == null) {
+                        throw new IllegalStateException("SceneConditionEvaluator required for CONDITIONAL steps.");
+                    }
+                    SceneConditionExpression expr = SceneConditionExpression.parse(step.conditionExpression());
+                    boolean conditionMet = conditionEvaluator.evaluate(expr);
+                    current = applyTransition(current, conditionMet ? step.transition() : step.elseTransition());
+                }
             }
         }
     }
