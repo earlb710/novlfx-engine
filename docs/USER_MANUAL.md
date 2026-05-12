@@ -119,7 +119,7 @@ The engine publishes the Java module `com.novlfx.engine`. It exports reusable pa
 - `content`: reusable static content module and registry contracts, content-pack descriptors, and JSON-backed display content modules.
 - `debug`: reusable debug snapshot, panel descriptor, and inspector models for app-owned developer tools, plus `DebugScreenInspector` which installs a Ctrl+D shortcut that opens a copyable info dialog (route ID, screen class, JSON source) when the active `ApplicationResourceConfig.debug()` flag is enabled.
 - `diagnostics`: structured health-check problems, reports, check descriptors, and check registries.
-- `display`: image assets, display layers, transforms, layered characters, JSON definition loading, interpolation, and animation playback.
+- `display`: image assets, display layers, transforms with render-order zorder, layered characters, layered image composition, JSON definition loading, interpolation, animation playback, and animation block grouping with event trigger support.
 - `events`: lightweight runtime event bus, event queues, listeners, command dispatch, and event history models.
 - `gamesupport`: generic action, requirement, effect, descriptor registry, clock, date/time, time scheduling, location, movement, and game-support registry behavior.
 - `globalApi`: adapters for global-style navigation, screen visibility, randomness, and sound requests.
@@ -134,7 +134,7 @@ The engine publishes the Java module `com.novlfx.engine`. It exports reusable pa
 - `random`: deterministic and non-deterministic random helpers.
 - `routing`: route descriptors, route modules, route factories, contexts, and scene router behavior.
 - `save`: reusable save/load slot metadata and JSON persistence workflow.
-- `scene`: scene definitions, JSON import/export, steps, choices, transitions, execution results, flow-state JSON snapshots, and view models.
+- `scene`: scene definitions, JSON import/export, steps, choices, transitions, hotspot map definitions and registries, execution results, flow-state JSON snapshots, and view models including hotspot map and talking animation cues.
 - `settings`: higher-level game setting definitions and runtime value store above raw preferences.
 - `state`: basic mutable game-state creation, startup-route state, and conversation-history state.
 - `text`: text tag parsing, text tokens, token types, text style metadata, template interpolation, rendering-neutral text effects/spans, and dialog history models.
@@ -370,6 +370,11 @@ Use `SceneRegistry` to register `SceneModule` implementations. A scene is descri
 - transitions through `SceneTransition`
 - transition types such as jump, call, return, complete, and route-style transitions identified by `SceneTransitionType`
 - resumable state through `SceneFlowState` and `SceneReturnPoint`
+- hotspot map steps through `SceneStepType.HOTSPOT_MAP` and `SceneStep.hotspotMap(id, mapId)`
+
+Use `HotspotDefinition` to define a named clickable region within a hotspot map. Each hotspot stores a stable id, label text key, fractional bounds (`x`, `y`, `width`, `height` all in `0.0–1.0` space), an optional condition expression, and a target scene id. Use `HotspotMapDefinition` to group a background image reference with an ordered list of `HotspotDefinition` entries. Register maps with `HotspotMapRegistry` using `register(...)`, `find(id)`, and `require(id)`.
+
+When a scene executor reaches a `HOTSPOT_MAP` step it pauses with `SceneExecutionStatus.WAITING_FOR_HOTSPOT` and populates `SceneExecutionResult.hotspotMapViewModel()` with a resolved `HotspotMapViewModel`. Call `SceneExecutor.selectHotspot(context, state, hotspotId)` when the player clicks a region; this jumps to the selected hotspot's target scene and returns the next `SceneExecutionResult`. Wire a `HotspotMapRegistry` into the executor via its 3-arg or 4-arg constructor; the 1- and 2-arg constructors create an empty registry.
 
 Use `SceneExecutor` to execute scene flow and return a `SceneExecutionResult` with `SceneExecutionStatus`. `SceneExecutionResult.canRollback()` indicates whether the player can step back to the previous pause point. Use `ScenePresenter` and view-model classes when JavaFX UI code needs a UI-neutral representation of the current scene and choices.
 
@@ -434,6 +439,9 @@ Scene view models are deliberately UI-neutral. They are useful when the engine n
 - `SceneDialogueRowViewModel` represents one dialogue or narration row. It includes the step type, optional speaker id, text definition id, and optional display reference. Use it when a renderer needs a normalized row for dialogue panels instead of inspecting raw `SceneStep` objects.
 - `SceneStatusRowViewModel` represents one label/value diagnostic row such as status, active scene, active step, selected choices, pending interruption, or message. Use it for HUD, debug, and manual-test surfaces where scene execution state should be visible in a consistent format.
 - `SceneEffectPreviewViewModel` represents preview-only metadata for a scene step or choice. It contains a label and value derived from `preview.*` metadata or a fallback reference. Use it when a prototype UI wants to show what display, effect, or authored metadata would be applied before an application supplies custom rendering.
+- `HotspotOptionViewModel` represents one evaluated hotspot region ready for UI rendering. It carries the hotspot id, label text key, fractional bounds (x, y, width, height), and an enabled flag that reflects whether the hotspot's condition was satisfied. Use it to build clickable overlay buttons or test hotspot state without re-evaluating conditions in the UI layer.
+- `HotspotMapViewModel` carries the resolved background image reference and an immutable list of `HotspotOptionViewModel` entries ready for overlay rendering. Retrieved from `SceneExecutionResult.hotspotMapViewModel()` when the result status is `WAITING_FOR_HOTSPOT`.
+- `TalkingAnimationCue` signals which talking animation should play while a speaker delivers dialogue. It pairs a `speakerId` with a `talkingAnimationId` resolved from the speaker's `CharacterTemplate` metadata. Retrieved from `SceneExecutionResult.talkingCue()` when the result is a `DIALOGUE` step and the speaker's template declares a `talkingAnimationId` metadata key. Absent for narration steps and dialogue steps whose speaker has no registered template or no `talkingAnimationId` metadata.
 
 `SceneFlowView.createContent(...)` renders choice buttons that call the supplied choice handler with the `SceneChoiceViewModel.value()`, not the internal choice id. `SceneFlowView.displayAndWaitForChoice(...)` can display a conversation-style `SceneViewModel` through an application-supplied display handler, block until a choice button is pressed, and return that choice value. If the displayed view model has no choices, it displays the content and returns `null`.
 
@@ -773,7 +781,8 @@ Use `ImageDisplayRegistry` as the central registry for reusable visual definitio
 
 - `ImageAssetDefinition` objects for authored image paths and display metadata
 - `DisplayLayer` values for render ordering
-- `DisplayTransform` values for placement, scale, opacity, and other reusable transform data
+- `DisplayTransform` values for placement, scale, opacity, render-order `zorder`, and other reusable transform data. The `zorder` defaults to `0`; use the 7-arg constructor or `withZorder(int)` to create a copy with a different value. Adapters are expected to sort render lists ascending by `zorder`.
+- `DisplayTagDefinition` values mapping a semantic author tag to a concrete display ID, layer, optional transform preset, and render-order `zorder`. The 4-arg constructor defaults `zorder` to `0`; use the 5-arg constructor or `withZorder(int)` to copy with a new value.
 - `LayeredCharacterDefinition` values for composed character displays
 - `DisplayAnimation` and `DisplayAnimationStep` definitions, including authored ATL-style animation scripts
 
@@ -801,6 +810,74 @@ Standalone script resources can also be supplied through `animationScripts`, whe
 The registry can resolve image paths from a checked-out game tree through `GameAssetLocator`, but concrete image assets remain application-owned.
 
 Use `DisplayDefinitionJsonLoader` to load app-owned display JSON into an `ImageDisplayRegistry`, or wrap that loading in `JsonDisplayContentModule` for bootstrap registration. The supported root fields are `transforms`, `images`, `layeredCharacters`, `animations`, and `animationScripts`; authored image files and IDs remain outside the engine. Applications can store this JSON path under a named `ApplicationResourceConfig` resource such as `displayDefinitions`.
+
+### Layered image composition
+
+Use layered image composition when a character or display tag should be assembled from multiple conditional image layers at runtime — for example combining a base portrait with an expression layer and an outfit layer.
+
+- `LayeredImageVariant` pairs an `imageRef` with an optional condition expression string. Condition expression is nullable; a null variant is the unconditional fallback for its layer.
+- `LayeredImageLayer` groups an ordered list of `LayeredImageVariant` entries under a named layer. The first variant whose condition is satisfied is selected; if no conditioned variant matches, the first unconditioned variant is used.
+- `LayeredImageDefinition` groups a stable `id`, a `displayTagId` (the display tag this composition targets), and an ordered list of `LayeredImageLayer` entries.
+- `LayeredImageRegistry` stores definitions by `id` with `register(...)`, `find(id)`, and `require(id)`.
+- `LayeredCompositionEntry` pairs a `layerName` with the resolved `imageRef` for that layer.
+- `LayeredImageComposition` bundles the source `definitionId` with the resolved list of `LayeredCompositionEntry` values.
+- `LayeredImageResolver.resolve(definition, conditionEval)` iterates the layers, picks the first matching variant per layer using a `Predicate<String>` condition evaluator, and returns a `LayeredImageComposition`. Layers with no matching variant produce no entry in the result.
+
+```java
+LayeredImageDefinition def = new LayeredImageDefinition(
+    "hero",
+    "tag_hero",
+    List.of(
+        new LayeredImageLayer("base", List.of(
+            new LayeredImageVariant("hero_base.png", null))),
+        new LayeredImageLayer("expression", List.of(
+            new LayeredImageVariant("hero_smile.png", "flag:happy"),
+            new LayeredImageVariant("hero_neutral.png", null)))));
+
+LayeredImageComposition result = new LayeredImageResolver()
+    .resolve(def, condition -> gameState.flags().contains(condition.replace("flag:", "")));
+// result.entries() → [("base", "hero_base.png"), ("expression", "hero_smile.png")] or fallback
+```
+
+### Animation block grouping and event triggers
+
+Use `AnimationBlock` to associate a `DisplayAnimation` with a semantic category and optional event trigger.
+
+`AnimationBlockType` classifies how the block plays:
+
+- `IDLE` — continuous looping animation played while a display tag is idle
+- `TALKING` — mouth-sync animation played while the character speaks
+- `EVENT` — one-shot animation fired in response to a scene event
+
+`AnimationEventTrigger` names the scene event that fires an `EVENT` block:
+
+- `SHOW` — display tag becomes visible
+- `HIDE` — display tag is removed from the scene
+- `CLICK` — display tag is clicked by the player
+
+`AnimationBlock` stores a stable `id`, an `AnimationBlockType`, a `DisplayAnimation`, and an optional `AnimationEventTrigger`. Use `block.trigger()` to retrieve it as an `Optional<AnimationEventTrigger>`.
+
+```java
+AnimationBlock idleBlock = new AnimationBlock(
+    "hero-idle", AnimationBlockType.IDLE, idleAnimation, null);
+
+AnimationBlock showBlock = new AnimationBlock(
+    "hero-show", AnimationBlockType.EVENT, fadeInAnimation, AnimationEventTrigger.SHOW);
+```
+
+`DisplayAnimation` now carries an optional `AnimationEventTrigger` alongside its existing fields:
+
+- `animation.trigger()` returns `Optional<AnimationEventTrigger>`.
+- `animation.withTrigger(trigger)` returns a copy with the given trigger; the original is unchanged.
+- `DisplayAnimation.forTrigger(animations, trigger)` filters a list to those matching a specific trigger. Use it to find all animations that should fire when a display tag is shown, hidden, or clicked.
+
+```java
+DisplayAnimation fadeIn = new DisplayAnimation("fade-in", steps, 1, false)
+    .withTrigger(AnimationEventTrigger.SHOW);
+
+List<DisplayAnimation> showAnims =
+    DisplayAnimation.forTrigger(allAnimations, AnimationEventTrigger.SHOW);
+```
 
 Example/demo code: [`examples/resources/json/display/display-definitions.demo.json`](../examples/resources/json/display/display-definitions.demo.json)
 
@@ -914,7 +991,7 @@ Use the generic support packages when an application needs reusable game systems
 - `GameEventBus` publishes lightweight runtime events and keeps a deterministic history for diagnostics, tests, or save-related inspection. Use `GameEventQueue` for FIFO deferred event processing, `GameEventListener` for listener adapters, and `GameCommandDispatcher` with `GameCommandHandler` for type-keyed command dispatch that can emit events back to the bus.
 - `ProgressTracker`, `ProgressSupport`, and `ProgressSnapshotCodec` model reusable flags, counters, milestones, unlocks, action requirements/effects, and save snapshot sections.
 - `InventoryCatalog` and `InventoryState` provide generic `InventoryItemDefinition` metadata and stack quantities while authored item data remains application-owned. Use `WearableSlotDefinition`, `WearableDefinition`, `WardrobeCatalog`, `OutfitState`, and `WardrobeState` for generic wearable slots, equipped item maps, unlocked wearables, and named outfit snapshots. `InventorySnapshotCodec` and `WardrobeSnapshotCodec` serialize those reusable state slices into application-owned save documents.
-- `CharacterRegistry` and `RelationshipState` provide reusable `CharacterProfile` metadata and numeric relationship state. Use `CharacterTemplate`, `CharacterTemplateRegistry`, `CharacterStatBlock`, and `CharacterState` for template-level base stats plus per-save mutable stats, relationship values, flags, and metadata. `CharacterStatesSnapshotCodec` serializes per-save character state without owning application rules.
+- `CharacterRegistry` and `RelationshipState` provide reusable `CharacterProfile` metadata and numeric relationship state. Use `CharacterTemplate`, `CharacterTemplateRegistry`, `CharacterStatBlock`, and `CharacterState` for template-level base stats plus per-save mutable stats, relationship values, flags, and metadata. `CharacterStatesSnapshotCodec` serializes per-save character state without owning application rules. `CharacterTemplate` exposes two metadata-backed accessors for animation wiring: `talkingAnimationId()` returns `Optional<String>` from the `"talkingAnimationId"` metadata key and is used by `SceneExecutor` to populate `SceneExecutionResult.talkingCue()` on dialogue steps; `idleAnimationId()` returns `Optional<String>` from the `"idleAnimationId"` metadata key for application-owned idle animation setup. Register these IDs in the template's `metadata` map; they are not record components.
 - `NotificationState`, `Notification`, `MessageThreadState`, and `MessageEntry` model read/unread notifications and generic message threads without owning app-specific sender semantics or UI layout.
 - `OrganizationDescriptor`, `ResourceLedger`, `ProductionOrder`, and `ProductionQueue` provide reusable organization metadata, non-negative resource balances, and tick-based production primitives.
 - `JournalState` provides generic unlocked/read state for `JournalEntryDefinition` entries, with `JournalEntryStatus` recording whether each journal, quest, task, or log entry is unlocked and read. `JournalSnapshotCodec` serializes generic journal or quest read/unlocked state.
