@@ -110,6 +110,7 @@ Recent reusable TODO extraction work has expanded the scene-flow and save seams 
 - `HudStatusContainerViewModel`, `HudStatusGroupViewModel`, and `HudStatusRowViewModel` provide reusable HUD/status overlay models while keeping game-specific status values app-owned.
 - `ReusableGameplaySnapshot` and `ReusableGameplaySnapshotDocuments` compose the reusable gameplay save slice—scene-flow state, scene checkpoint history, game time, generic progress, inventory, wardrobe, character state, journal/quest state, and location occupancy—while preserving application-owned save sections outside the engine.
 - Test-only `com.eb.javafx.testsupport` helpers cover record assertions, route descriptor assertions, and generic scene-flow fixtures for downstream application tests.
+- `ScreenSnapshotApplication` (`src/test/java/com/eb/javafx/testscreen`) is a headless JavaFX `Application` that renders a screen JSON design to a PNG, JPEG, or BMP image file via the `runScreenSnapshot` Gradle task. It uses the same `ScreenDesignJson` → `ScreenDesignLayoutAdapter` → `ScreenLayoutRenderer` pipeline as the designer's live preview, applies the user's saved theme preferences, and exports via `Scene.snapshot()` + `SwingFXUtils` + `ImageIO`. Run with `-Pscreen=<json> -Pout=<image> [-Pwidth=N] [-Pheight=N]`; omit all arguments to print usage.
 
 Validation for this repository should continue to use the checked-in Gradle wrapper:
 

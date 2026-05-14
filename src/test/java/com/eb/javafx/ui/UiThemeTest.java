@@ -144,6 +144,47 @@ final class UiThemeTest {
     }
 
     @Test
+    void crimsonThemeProducesRedAccentColors() {
+        preferences.put("ui.themeFamily", "crimson");
+        preferences.put("ui.themeVariant", "dark");
+        PreferencesService preferencesService = new PreferencesService();
+        preferencesService.load();
+
+        UiTheme theme = new UiTheme();
+        theme.initialize(preferencesService);
+
+        assertEquals("#e83030", theme.accentColor());
+        assertTrue(theme.stylesheet().startsWith("file:"));
+        assertTrue(theme.stylesheetContent().contains("-fx-selection-bar: #e83030;"));
+
+        preferences.put("ui.themeVariant", "light-pastel");
+        preferencesService.load();
+        theme.initialize(preferencesService);
+
+        assertEquals("#c01515", theme.accentColor());
+        assertTrue(theme.stylesheetContent().contains("-fx-selection-bar: #c01515;"));
+    }
+
+    @Test
+    void accentOverrideStylesheetGeneratesOverrideForSpecifiedColor() {
+        preferences.put("ui.themeFamily", "ocean");
+        preferences.put("ui.themeVariant", "dark");
+        PreferencesService preferencesService = new PreferencesService();
+        preferencesService.load();
+        UiTheme theme = new UiTheme();
+        theme.initialize(preferencesService);
+
+        String overrideUri = theme.accentOverrideStylesheet("#ff4444");
+
+        assertTrue(overrideUri.startsWith("file:"));
+
+        String nullResult = theme.accentOverrideStylesheet(null);
+        String blankResult = theme.accentOverrideStylesheet("  ");
+        assertEquals(null, nullResult);
+        assertEquals(null, blankResult);
+    }
+
+    @Test
     void initializeKeepsHighContrastOverrideForAnyThemeSelection() {
         preferences.put("ui.themeFamily", "forest");
         preferences.put("ui.themeVariant", "light-pastel");

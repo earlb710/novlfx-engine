@@ -37,6 +37,7 @@ Manual launchers are Gradle `JavaExec` tasks in `build.gradle`:
 | `runTestScreen` | Interactive test screen |
 | `runManagementApp` | Button-only launcher for authoring/diagnostic screens |
 | `runScreenDesigner` | Screen designer (starts in `examples/screen-designs`) |
+| `runScreenSnapshot` | Headless screen-to-image renderer (`-Pscreen=<json> -Pout=<image> [-Pwidth=N] [-Pheight=N]`) |
 | `runConversationEditor` | Conversation editor (starts in `examples/conversations`) |
 | `runCodeTableManager` | Code table manager |
 

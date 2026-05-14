@@ -609,6 +609,39 @@
       ]
     },
     {
+      "id": "footer-icon-display",
+      "title": "Footer Icon Display",
+      "codes": [
+        {
+          "id": "icons-only",
+          "title": "Icons only",
+          "sortOrder": 10,
+          "tags": [
+            "settings",
+            "ui"
+          ]
+        },
+        {
+          "id": "icons-with-text",
+          "title": "Icons with text",
+          "sortOrder": 20,
+          "tags": [
+            "settings",
+            "ui"
+          ]
+        },
+        {
+          "id": "text-only",
+          "title": "Text only",
+          "sortOrder": 30,
+          "tags": [
+            "settings",
+            "ui"
+          ]
+        }
+      ]
+    },
+    {
       "id": "theme-family",
       "title": "Theme Family",
       "codes": [
@@ -643,6 +676,15 @@
           "id": "violet",
           "title": "Violet",
           "sortOrder": 40,
+          "tags": [
+            "settings",
+            "ui"
+          ]
+        },
+        {
+          "id": "crimson",
+          "title": "Crimson",
+          "sortOrder": 50,
           "tags": [
             "settings",
             "ui"

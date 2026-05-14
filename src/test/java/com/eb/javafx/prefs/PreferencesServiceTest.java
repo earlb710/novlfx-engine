@@ -29,6 +29,7 @@ final class PreferencesServiceTest {
         preferences.putBoolean("ui.cheatsVisible", false);
         preferences.putBoolean("ui.logStatChanges", true);
         preferences.put("ui.footerShortcutDisplay", "display");
+        preferences.put("ui.footerIconDisplay", "icons-only");
         preferences.put("ui.fontFamily", "Test Font");
         preferences.putDouble("ui.fontScale", 9.0);
         preferences.put("ui.themeFamily", "forest");
@@ -52,6 +53,7 @@ final class PreferencesServiceTest {
         assertTrue(service.logStatChanges());
         assertTrue(service.footerLabelsVisible());
         assertEquals(PreferencesService.FooterShortcutDisplay.DISPLAY, service.footerShortcutDisplay());
+        assertEquals(PreferencesService.FooterIconDisplay.ICONS_ONLY, service.footerIconDisplay());
         assertEquals("Test Font", service.fontFamily());
         assertEquals(2.0, service.fontScale());
         assertEquals(PreferencesService.ThemeFamily.FOREST, service.themeFamily());
@@ -197,6 +199,24 @@ final class PreferencesServiceTest {
         service.saveFooterShortcutDisplay("invalid");
 
         assertEquals(PreferencesService.FooterShortcutDisplay.TOOLTIP_ONLY, service.footerShortcutDisplay());
+    }
+
+    @Test
+    void saveFooterIconDisplayAcceptsKnownValuesAndFallsBackForUnknownValues() {
+        PreferencesService service = new PreferencesService();
+        service.load();
+
+        service.saveFooterIconDisplay("icons-only");
+
+        assertEquals(PreferencesService.FooterIconDisplay.ICONS_ONLY, service.footerIconDisplay());
+
+        service.saveFooterIconDisplay("text-only");
+
+        assertEquals(PreferencesService.FooterIconDisplay.TEXT_ONLY, service.footerIconDisplay());
+
+        service.saveFooterIconDisplay("invalid");
+
+        assertEquals(PreferencesService.FooterIconDisplay.ICONS_WITH_TEXT, service.footerIconDisplay());
     }
 
     @Test
