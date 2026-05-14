@@ -116,10 +116,11 @@ final class PreferencesSummaryScreenTest {
                     .findFirst()
                     .orElseThrow();
 
+            javafx.scene.Parent initialRoot = initialScene.getRoot();
             preferencesLabel.getOnMouseClicked().handle(null);
 
-            assertTrue(stage.getScene() != null && stage.getScene() != initialScene,
-                    "Preferences footer action should replace the scene.");
+            assertTrue(stage.getScene() != null && stage.getScene().getRoot() != initialRoot,
+                    "Preferences footer action should replace the scene root.");
             BorderPane mainMenuRoot = ScreenShell.shellRoot(stage.getScene().getRoot());
             assertEquals("Main Menu", ((Label) mainMenuRoot.getTop()).getText());
             stage.close();

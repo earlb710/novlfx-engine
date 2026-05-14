@@ -386,9 +386,19 @@ public final class PreferencesSummaryScreen {
         double width = currentScene == null ? context.preferencesService().windowWidth() : currentScene.getWidth();
         double height = currentScene == null ? context.preferencesService().windowHeight() : currentScene.getHeight();
         Scene rebuiltScene = createScene(context, width, height);
-        context.primaryStage().setScene(rebuiltScene);
+        Scene activeScene;
+        if (currentScene != null && rebuiltScene != null && rebuiltScene.getRoot() != null) {
+            javafx.scene.Parent rebuiltRoot = rebuiltScene.getRoot();
+            rebuiltScene.setRoot(new javafx.scene.layout.Pane());
+            currentScene.setRoot(rebuiltRoot);
+            currentScene.getStylesheets().setAll(rebuiltScene.getStylesheets());
+            activeScene = currentScene;
+        } else {
+            context.primaryStage().setScene(rebuiltScene);
+            activeScene = rebuiltScene;
+        }
         DebugScreenInspector.attach(
-                rebuiltScene,
+                activeScene,
                 SceneRouter.PREFERENCES_ROUTE,
                 context.resourceConfig().debug(),
                 context.uiTheme());

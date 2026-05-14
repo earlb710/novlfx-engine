@@ -96,10 +96,11 @@ final class PreferencesFooterTestScreenTest {
                     .findFirst()
                     .orElseThrow();
 
+            javafx.scene.Parent initialRoot = initialScene.getRoot();
             preferencesLabel.getOnMouseClicked().handle(null);
 
-            assertTrue(stage.getScene() != null && stage.getScene() != initialScene,
-                    "Preferences footer action should replace the scene.");
+            assertTrue(stage.getScene() != null && stage.getScene().getRoot() != initialRoot,
+                    "Preferences footer action should replace the scene root.");
             BorderPane preferencesRoot = (BorderPane) stage.getScene().getRoot();
             assertEquals("Preferences", ((Label) preferencesRoot.getTop()).getText());
             stage.close();

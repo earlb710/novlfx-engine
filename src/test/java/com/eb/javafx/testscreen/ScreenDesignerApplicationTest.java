@@ -285,7 +285,8 @@ final class ScreenDesignerApplicationTest {
                 ScreenDesignerApplication.NavigationNode.screen("sample.screen")));
         assertEquals(List.of("Screen id", "Title", "Layout type", "Font", "Font size", "Font style", "Color", "Background color",
                         "Border style", "Border corner", "Border thickness", "Border color",
-                        "Dialog", "Dismiss on click outside", "Dismiss on Escape", "Advanced metadata"),
+                        "Dialog", "Dismiss on click outside", "Dismiss on Escape",
+                        "Default color theme", "Overwrite color theme", "Advanced metadata"),
                 ScreenDesignerApplication.propertyLabelsFor(
                         ScreenDesignerApplication.NavigationNode.screen("sample.screen")));
         assertEquals("Block Properties", ScreenDesignerApplication.propertiesTitleFor(
