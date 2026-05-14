@@ -4,6 +4,7 @@ import com.eb.javafx.gamesupport.GameDateTime;
 import com.eb.javafx.localization.LocalizationService;
 import com.eb.javafx.localization.LocalizedTextBundle;
 import com.eb.javafx.prefs.PreferencesService;
+import com.eb.javafx.prefs.PreferencesService.FooterIconDisplay;
 import com.eb.javafx.prefs.PreferencesService.FooterShortcutDisplay;
 import com.eb.javafx.state.GameState;
 import com.eb.javafx.util.VectorImage;
@@ -528,6 +529,20 @@ final class ScreenShellTest {
         assertFalse(footer.getStyleClass().contains(ScreenShell.SCREEN_FOOTER_COMPACT_STYLE_CLASS));
         assertEquals(14.0, footer.getSpacing());
         assertEquals("‹ Back (Backspace)", firstOption.displayText());
+    }
+
+    @Test
+    void footerIconDisplayControlsIconAndTextVisibility() {
+        ScreenShell.FooterOption back = ScreenShell.defaultFooterOptions().get(0);
+
+        assertEquals("‹", back.displayText(FooterShortcutDisplay.TOOLTIP_ONLY, FooterIconDisplay.ICONS_ONLY));
+        assertEquals("‹", back.displayText(FooterShortcutDisplay.DISPLAY, FooterIconDisplay.ICONS_ONLY));
+
+        assertEquals("‹ Back", back.displayText(FooterShortcutDisplay.TOOLTIP_ONLY, FooterIconDisplay.ICONS_WITH_TEXT));
+        assertEquals("‹ Back (Backspace)", back.displayText(FooterShortcutDisplay.DISPLAY, FooterIconDisplay.ICONS_WITH_TEXT));
+
+        assertEquals("Back", back.displayText(FooterShortcutDisplay.TOOLTIP_ONLY, FooterIconDisplay.TEXT_ONLY));
+        assertEquals("Back (Backspace)", back.displayText(FooterShortcutDisplay.DISPLAY, FooterIconDisplay.TEXT_ONLY));
     }
 
     @Test

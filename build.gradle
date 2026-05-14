@@ -70,6 +70,21 @@ tasks.register('runScreenDesigner', JavaExec) {
     workingDir = file("$projectDir/examples/resources/json/screens")
 }
 
+tasks.register('runScreenSnapshot', JavaExec) {
+    group = 'application'
+    description = 'Renders a screen JSON design to an image file. Supply -Pscreen=<json> -Pout=<image> [-Pwidth=N] [-Pheight=N].'
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.eb.javafx.testscreen.ScreenSnapshotApplication'
+    doFirst {
+        def argsList = []
+        if (project.hasProperty('screen')) argsList << project.property('screen').toString()
+        if (project.hasProperty('out')) argsList << project.property('out').toString()
+        if (project.hasProperty('width')) { argsList << '--width'; argsList << project.property('width').toString() }
+        if (project.hasProperty('height')) { argsList << '--height'; argsList << project.property('height').toString() }
+        args = argsList
+    }
+}
+
 tasks.register('runConversationEditor', JavaExec) {
     group = 'application'
     description = 'Launches the manual conversation JSON editor UI from the test source set.'

@@ -775,6 +775,46 @@ Additional example/demo code:
 - [`examples/resources/json/screens/quest-log-screen-design.json`](../examples/resources/json/screens/quest-log-screen-design.json)
 - [`examples/resources/json/screens/gallery-preview-screen-design.json`](../examples/resources/json/screens/gallery-preview-screen-design.json)
 
+### Screen snapshot tool
+
+The screen snapshot tool renders a screen JSON design to an image file without opening the interactive designer. It applies the same rendering pipeline as the designer's live preview — loads design and text sidecar, resolves display defaults from the active theme, renders via `ScreenLayoutRenderer.createPreviewRoot`, and applies the theme stylesheet — then writes the result to a PNG, JPEG, or BMP file.
+
+```bash
+./gradlew --no-daemon runScreenSnapshot \
+    -Pscreen=<screen.json> \
+    -Pout=<output-image> \
+    [-Pwidth=N] [-Pheight=N]
+```
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `-Pscreen` | yes | Path to the screen JSON design file |
+| `-Pout` | yes | Output image path — file extension determines format |
+| `-Pwidth` | no | Scene width in pixels (default: preferences window width, capped at 800) |
+| `-Pheight` | no | Scene height in pixels (default: preferences window height, capped at 600) |
+
+Supported output formats (by file extension): `.png` (default, preserves transparency), `.jpg` / `.jpeg` (alpha composited on white), `.bmp`.
+
+Running the task without `-Pscreen` and `-Pout` prints usage help and exits cleanly.
+
+Example — render the bundled main-menu design to a PNG:
+
+```bash
+./gradlew --no-daemon runScreenSnapshot \
+    -Pscreen=examples/resources/json/screens/main-menu-screen-design.json \
+    -Pout=out/main-menu.png
+```
+
+Example — render at a fixed size:
+
+```bash
+./gradlew --no-daemon runScreenSnapshot \
+    -Pscreen=examples/resources/json/screens/main-menu-screen-design.json \
+    -Pout=out/main-menu-800x600.png -Pwidth=800 -Pheight=600
+```
+
+The tool reads the user's saved theme preference from `java.util.prefs` so the snapshot reflects the same palette used when the designer or test screen was last run. To produce a snapshot with a specific theme, temporarily set the theme preference via the preferences screen before running the tool, or override the preference key `ui.themeFamily` / `ui.themeVariant` directly.
+
 ## 7. Display support
 
 Use `ImageDisplayRegistry` as the central registry for reusable visual definitions. It can register and resolve:

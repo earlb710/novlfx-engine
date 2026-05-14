@@ -20,6 +20,7 @@ public final class SystemCodeTables {
     public static final String SETTING_TYPES_TABLE_ID = "setting-types";
     public static final String SYS_MESSAGE_TABLE_ID = "sys_message";
     public static final String FOOTER_SHORTCUT_DISPLAY_TABLE_ID = "footer-shortcut-display";
+    public static final String FOOTER_ICON_DISPLAY_TABLE_ID = "footer-icon-display";
     public static final String THEME_FAMILY_TABLE_ID = "theme-family";
     public static final String THEME_VARIANT_TABLE_ID = "theme-variant";
     public static final String VOLUME_LEVEL_TABLE_ID = "volume-level";

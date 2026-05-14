@@ -2,6 +2,7 @@ package com.eb.javafx.ui;
 
 import com.eb.javafx.audio.AudioService;
 import com.eb.javafx.debug.DebugScreenInspector;
+import com.eb.javafx.prefs.PreferencesService.FooterIconDisplay;
 import com.eb.javafx.prefs.PreferencesService.FooterShortcutDisplay;
 import com.eb.javafx.prefs.PreferencesService;
 import com.eb.javafx.prefs.PreferencesService.Language;
@@ -18,6 +19,7 @@ import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.RadioButton;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Slider;
 import javafx.scene.control.Toggle;
 import javafx.scene.control.ToggleGroup;
@@ -62,6 +64,7 @@ public final class PreferencesSummaryScreen {
         content.getChildren().add(settingsBlock(
                 screenText("block.visual.title"),
                 themeSelectionRow(context),
+                footerIconDisplayRow(context),
                 footerDisplayRow(context),
                 fullscreenRow(context)));
         content.getChildren().add(settingsBlock(
@@ -70,9 +73,14 @@ public final class PreferencesSummaryScreen {
 
         Button closeButton = ScreenNavigation.button(context, screenText("item.close.label"), SceneRouter.MAIN_MENU_ROUTE);
         content.getChildren().add(closeButton);
-        BorderPane root = ScreenShell.titled(viewModel.title(), content, footerOptions());
+        ScrollPane scrollPane = new ScrollPane(content);
+        scrollPane.setFitToWidth(true);
+        scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        scrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+        scrollPane.setStyle("-fx-background: transparent; -fx-background-color: transparent;");
+        BorderPane root = ScreenShell.titled(viewModel.title(), scrollPane, footerOptions());
         HBox footer = (HBox) root.getBottom();
-        ScreenShell.applyFooterPreferences(footer, context.preferencesService());
+        ScreenShell.applyFooterPreferences(footer, context.preferencesService(), context.uiTheme());
         wireFooter(footer, closeAction);
 
         Scene scene = themedPreferencesScene(context, root, width, height);
@@ -102,6 +110,7 @@ public final class PreferencesSummaryScreen {
                         new PreferencesSummaryRowViewModel(screenText("item.sound-volume.label"), percentLabel(preferencesService.soundVolume())),
                         new PreferencesSummaryRowViewModel(screenText("item.theme-color.label"),
                                 themeOptionLabel(preferencesService.themeFamily(), preferencesService.themeVariant())),
+                        new PreferencesSummaryRowViewModel(screenText("item.footer-icon-display.label"), preferencesService.footerIconDisplay().label()),
                         new PreferencesSummaryRowViewModel(screenText("item.footer-display.label"), preferencesService.footerShortcutDisplay().label())),
                 List.of(new ScreenActionViewModel(screenText("item.close.label"), SceneRouter.MAIN_MENU_ROUTE, true)));
     }
@@ -115,7 +124,9 @@ public final class PreferencesSummaryScreen {
                 "Sunset - Dark",
                 "Sunset - Light pastel",
                 "Violet - Dark",
-                "Violet - Light pastel");
+                "Violet - Light pastel",
+                "Crimson - Dark",
+                "Crimson - Light pastel");
     }
 
     static List<ScreenShell.FooterOption> footerOptions() {
@@ -247,6 +258,40 @@ public final class PreferencesSummaryScreen {
         return row;
     }
 
+    private static HBox footerIconDisplayRow(RouteContext context) {
+        Label label = new Label(screenText("item.footer-icon-display.label"));
+        label.getStyleClass().add(ScreenShell.SCREEN_TEXT_STYLE_CLASS);
+        ComboBox<FooterIconDisplay> comboBox = new ComboBox<>();
+        comboBox.getItems().addAll(FooterIconDisplay.values());
+        comboBox.setConverter(new StringConverter<>() {
+            @Override
+            public String toString(FooterIconDisplay display) {
+                return display == null ? "" : display.label();
+            }
+
+            @Override
+            public FooterIconDisplay fromString(String string) {
+                for (FooterIconDisplay display : FooterIconDisplay.values()) {
+                    if (display.label().equals(string)) {
+                        return display;
+                    }
+                }
+                return null;
+            }
+        });
+        comboBox.setValue(context.preferencesService().footerIconDisplay());
+        comboBox.setOnAction(event -> {
+            FooterIconDisplay selected = comboBox.getValue();
+            if (selected != null) {
+                context.preferencesService().saveFooterIconDisplay(selected);
+                applyCurrentFooterPreferences(context);
+            }
+        });
+        HBox row = new HBox(8, label, comboBox);
+        row.getStyleClass().add(ScreenShell.LAYOUT_SECTION_ROW_STYLE_CLASS);
+        return row;
+    }
+
     private static HBox muteAllRow(RouteContext context) {
         CheckBox checkBox = new CheckBox(screenText("item.mute-all.label"));
         checkBox.getStyleClass().add(ScreenShell.SCREEN_TEXT_STYLE_CLASS);
@@ -319,7 +364,9 @@ public final class PreferencesSummaryScreen {
                 new ThemeChoice(ThemeFamily.SUNSET, ThemeVariant.DARK),
                 new ThemeChoice(ThemeFamily.SUNSET, ThemeVariant.LIGHT_PASTEL),
                 new ThemeChoice(ThemeFamily.VIOLET, ThemeVariant.DARK),
-                new ThemeChoice(ThemeFamily.VIOLET, ThemeVariant.LIGHT_PASTEL));
+                new ThemeChoice(ThemeFamily.VIOLET, ThemeVariant.LIGHT_PASTEL),
+                new ThemeChoice(ThemeFamily.CRIMSON, ThemeVariant.DARK),
+                new ThemeChoice(ThemeFamily.CRIMSON, ThemeVariant.LIGHT_PASTEL));
     }
 
     private static void applyTheme(RouteContext context, ThemeFamily family, ThemeVariant variant) {
@@ -343,7 +390,7 @@ public final class PreferencesSummaryScreen {
         if (root == null) {
             return;
         }
-        ScreenShell.applyFooterPreferences(root.getBottom(), context.preferencesService());
+        ScreenShell.applyFooterPreferences(root.getBottom(), context.preferencesService(), context.uiTheme());
     }
 
     private static void wireFooter(HBox footer, Runnable closeAction) {

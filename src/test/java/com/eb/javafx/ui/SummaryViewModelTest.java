@@ -27,7 +27,7 @@ final class SummaryViewModelTest {
         PreferencesSummaryViewModel viewModel = PreferencesSummaryScreen.viewModel("Preferences", preferencesService);
 
         assertEquals("Preferences", viewModel.title());
-        assertEquals(5, viewModel.rows().size());
+        assertEquals(6, viewModel.rows().size());
         assertEquals("Master volume", viewModel.rows().get(0).label());
         assertEquals("42%", viewModel.rows().get(0).value());
         assertEquals("Music volume", viewModel.rows().get(1).label());
@@ -36,8 +36,10 @@ final class SummaryViewModelTest {
         assertEquals("75%", viewModel.rows().get(2).value());
         assertEquals("Theme color", viewModel.rows().get(3).label());
         assertEquals("Sunset - Light pastel", viewModel.rows().get(3).value());
-        assertEquals("Footer display", viewModel.rows().get(4).label());
-        assertEquals("Do not display", viewModel.rows().get(4).value());
+        assertEquals("Footer icons", viewModel.rows().get(4).label());
+        assertEquals("Icons with text", viewModel.rows().get(4).value());
+        assertEquals("Footer display", viewModel.rows().get(5).label());
+        assertEquals("Do not display", viewModel.rows().get(5).value());
         assertEquals("Music volume: 25%", viewModel.screenViewModel().lines().get(1));
         assertEquals("Close", viewModel.actions().get(0).label());
     }
@@ -59,7 +61,9 @@ final class SummaryViewModelTest {
                         "Sunset - Dark",
                         "Sunset - Light pastel",
                         "Violet - Dark",
-                        "Violet - Light pastel"),
+                        "Violet - Light pastel",
+                        "Crimson - Dark",
+                        "Crimson - Light pastel"),
                 PreferencesSummaryScreen.themeOptionLabels());
         assertEquals("Forest - Light pastel",
                 PreferencesSummaryScreen.themeOptionLabel(

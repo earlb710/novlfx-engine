@@ -13,6 +13,7 @@
     "item.theme.label": "Theme",
     "item.theme-color.label": "Theme color",
     "item.footer-shortcuts.label": "Footer shortcuts",
+    "item.footer-icon-display.label": "Footer icons",
     "item.footer-display.label": "Footer display",
     "item.close.label": "Close",
     "footer.preferences.close.tooltip": "Close preferences."

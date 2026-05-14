@@ -269,6 +269,7 @@ public final class UiTheme {
     private String textColor;
     private String panelBackground;
     private String hoverBackground;
+    private String footerIconColor;
     private double fontScale;
     private boolean highContrast;
     private boolean reducedMotion;
@@ -295,6 +296,7 @@ public final class UiTheme {
         textColor = palette.labelText();
         panelBackground = palette.screenPanelBackground();
         hoverBackground = palette.buttonHoverBackground();
+        footerIconColor = palette.footerIconColor();
         stylesheetContent = palette.toStylesheet(fontFamily);
         stylesheet = writeStylesheet(stylesheetContent);
         ButtonVisuals.configureArtworkGradient(
@@ -341,6 +343,11 @@ public final class UiTheme {
         return hoverBackground;
     }
 
+    /** Returns the hex color used to tint footer button SVG icons for the active theme variant. */
+    public String footerIconColor() {
+        return footerIconColor;
+    }
+
     public double fontScale() {
         return fontScale;
     }
@@ -367,6 +374,25 @@ public final class UiTheme {
 
     String stylesheetContent() {
         return stylesheetContent;
+    }
+
+    /**
+     * Returns a URI for a CSS snippet that overrides the accent color for a single scene.
+     * Apply by adding the returned URI to {@code scene.getStylesheets()} after the global theme stylesheet.
+     * Pass {@code null} or blank to produce no override (returns {@code null}).
+     */
+    public String accentOverrideStylesheet(String accentColor) {
+        if (accentColor == null || accentColor.isBlank()) {
+            return null;
+        }
+        String css = """
+                .root { -fx-accent: %1$s; -fx-default-button: %1$s; -fx-focus-color: %1$s;
+                        -fx-selection-bar: %1$s; -fx-mark-color: %1$s; }
+                .screen-title { -fx-text-fill: %1$s; }
+                .screen-text-highlight, .layout-text-highlight { -fx-text-fill: %1$s; }
+                .layout-section-title { -fx-text-fill: %1$s; }
+                """.formatted(accentColor);
+        return writeStylesheet(css);
     }
 
     private static String writeStylesheet(String css) {
@@ -411,7 +437,8 @@ public final class UiTheme {
             String buttonGradientMid,
             String buttonGradientEnd,
             String fieldRoleColor,
-            String fieldRoleBackground) {
+            String fieldRoleBackground,
+            String footerIconColor) {
         private static ThemePalette forSelection(ThemeFamily family, ThemeVariant variant) {
             return switch (family) {
                 case OCEAN -> variant == ThemeVariant.DARK
@@ -426,7 +453,7 @@ public final class UiTheme {
                         "#0099cc", "#ffffff", "#66c1e0",
                         "#bfd3ec", "#ffffff",
                         "#9dccff", "#0f4f9f", "#052f6f",
-                        "#ffffff", "#0a1426")
+                        "#ffffff", "#0a1426", "#ffe066")
                         : new ThemePalette(
                         "#f4fbff", "#f4fbff", "#dcefff", "#3c7ea3",
                         "rgba(229, 243, 251, 0.92)", "#7cb8d6",
@@ -438,7 +465,7 @@ public final class UiTheme {
                         "#8cc9e3", "#1f3e50", "#cae8f6",
                         "#36576a", "#1f3e50",
                         "#eef8fd", "#9fd3ea", "#5a9ec0",
-                        "#1f3e50", "#fbfeff");
+                        "#1f3e50", "#fbfeff", "#7a5800");
                 case FOREST -> variant == ThemeVariant.DARK
                         ? new ThemePalette(
                         "#0f1a13", "#0f1a13", "#0a140f", "#8dd7a8",
@@ -451,7 +478,7 @@ public final class UiTheme {
                         "#57b27e", "#082212", "#9fe0ba",
                         "#d2eedc", "#ffffff",
                         "#b7ebc8", "#40916c", "#1b4332",
-                        "#ffffff", "#0a140f")
+                        "#ffffff", "#0a140f", "#ffe066")
                         : new ThemePalette(
                         "#f5fcf7", "#f5fcf7", "#e1f3e5", "#4f8b66",
                         "rgba(231, 246, 235, 0.92)", "#90c7a4",
@@ -463,7 +490,7 @@ public final class UiTheme {
                         "#9ed3b4", "#1d3427", "#d7f0df",
                         "#365343", "#1d3427",
                         "#eef8f0", "#abd7bb", "#6aa07f",
-                        "#1d3427", "#f5fdf8");
+                        "#1d3427", "#f5fdf8", "#7a5800");
                 case SUNSET -> variant == ThemeVariant.DARK
                         ? new ThemePalette(
                         "#24131a", "#24131a", "#160d12", "#f3a6a0",
@@ -476,7 +503,7 @@ public final class UiTheme {
                         "#e07a6e", "#2a151d", "#f7c1b8",
                         "#f8d8d3", "#ffffff",
                         "#f7c8c2", "#d16b62", "#7f3b45",
-                        "#ffffff", "#160d12")
+                        "#ffffff", "#160d12", "#ffe066")
                         : new ThemePalette(
                         "#fff6f3", "#fff6f3", "#ffe6df", "#b86d61",
                         "rgba(255, 235, 228, 0.92)", "#e6ae9f",
@@ -488,7 +515,7 @@ public final class UiTheme {
                         "#efb0a2", "#4c322c", "#f9d7cf",
                         "#6f4d47", "#4c322c",
                         "#fff5f1", "#f0b8ab", "#d88978",
-                        "#4c322c", "#fff8f4");
+                        "#4c322c", "#fff8f4", "#7a5800");
                 case VIOLET -> variant == ThemeVariant.DARK
                         ? new ThemePalette(
                         "#191427", "#191427", "#110d1b", "#c7b5ff",
@@ -501,7 +528,7 @@ public final class UiTheme {
                         "#9b7be6", "#1c1730", "#d7c9ff",
                         "#ddd3ff", "#ffffff",
                         "#e3d8ff", "#8f6ad8", "#4c3b78",
-                        "#ffffff", "#110d1b")
+                        "#ffffff", "#110d1b", "#ffe066")
                         : new ThemePalette(
                         "#faf6ff", "#faf6ff", "#ede3ff", "#775fc1",
                         "rgba(240, 232, 255, 0.92)", "#b9a2ea",
@@ -513,7 +540,32 @@ public final class UiTheme {
                         "#c5b0f2", "#352c49", "#e9e0ff",
                         "#5b5076", "#352c49",
                         "#faf5ff", "#cebdf3", "#a287dd",
-                        "#352c49", "#fcf9ff");
+                        "#352c49", "#fcf9ff", "#7a5800");
+                case CRIMSON -> variant == ThemeVariant.DARK
+                        ? new ThemePalette(
+                        "#1a0608", "#1a0608", "#0e0304", "#e83030",
+                        "rgba(14, 3, 4, 0.86)", "#c01515",
+                        "rgba(14, 3, 4, 0.52)", "#f5c8c8",
+                        "#8a1a20", "#f5c8c8", "#e83030", "#ffffff", "#f5c8c8",
+                        "rgba(20, 5, 7, 0.68)", "#ffffff",
+                        "#1a0608", "#f5c8c8", "#8a1a20",
+                        "#8a1a20", "#ffffff", "#c01515",
+                        "#c01515", "#1a0608", "#e83030",
+                        "#f5c8c8", "#ffffff",
+                        "#ff8080", "#c01515", "#7a0a0a",
+                        "#ffffff", "#0e0304", "#ffe066")
+                        : new ThemePalette(
+                        "#fff5f5", "#fff5f5", "#ffe8e8", "#c01515",
+                        "rgba(255, 232, 232, 0.92)", "#e89090",
+                        "rgba(255, 232, 232, 0.72)", "#7a1a1a",
+                        "#e8b0b0", "#7a1a1a", "#c01515", "#7a0a0a", "#7a1a1a",
+                        "rgba(255, 226, 226, 0.84)", "#000000",
+                        "#fff0f0", "#7a1a1a", "#e8b0b0",
+                        "#ffd5d5", "#5a0f0f", "#d08080",
+                        "#ffb8b8", "#4a0808", "#f09090",
+                        "#7a1a1a", "#4a0808",
+                        "#fff8f8", "#f0b0b0", "#d07070",
+                        "#4a0808", "#fff8f8", "#7a5800");
             };
         }
 
@@ -529,7 +581,7 @@ public final class UiTheme {
                     "#ffff66", "#000000", "#ffffff",
                     "#ffff66", "#ffffff",
                     "#fff8a6", "#c7bf2d", "#5c5400",
-                    "#ffff66", "#000000");
+                    "#ffff66", "#000000", "#ffcc00");
         }
 
         private RoleColors roleColors() {

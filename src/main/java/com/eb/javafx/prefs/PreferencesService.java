@@ -22,6 +22,7 @@ public final class PreferencesService {
     private static final String LOG_STAT_CHANGES_KEY = "ui.logStatChanges";
     private static final String FOOTER_LABELS_VISIBLE_KEY = "ui.footerLabelsVisible";
     private static final String FOOTER_SHORTCUT_DISPLAY_KEY = "ui.footerShortcutDisplay";
+    private static final String FOOTER_ICON_DISPLAY_KEY = "ui.footerIconDisplay";
     private static final String FONT_FAMILY_KEY = "ui.fontFamily";
     private static final String FONT_SCALE_KEY = "ui.fontScale";
     private static final String THEME_FAMILY_KEY = "ui.themeFamily";
@@ -48,6 +49,7 @@ public final class PreferencesService {
     private boolean cheatsVisible;
     private boolean logStatChanges;
     private FooterShortcutDisplay footerShortcutDisplay;
+    private FooterIconDisplay footerIconDisplay;
     private String fontFamily;
     private double fontScale;
     private ThemeFamily themeFamily;
@@ -80,6 +82,8 @@ public final class PreferencesService {
         cheatsVisible = preferences.getBoolean(CHEATS_VISIBLE_KEY, true);
         logStatChanges = preferences.getBoolean(LOG_STAT_CHANGES_KEY, false);
         footerShortcutDisplay = validatedFooterShortcutDisplay(footerShortcutDisplayPreferenceValue());
+        footerIconDisplay = validatedFooterIconDisplay(
+                preferences.get(FOOTER_ICON_DISPLAY_KEY, FooterIconDisplay.ICONS_WITH_TEXT.preferenceValue()));
         fontFamily = preferences.get(FONT_FAMILY_KEY, "System");
         fontScale = clamp(preferences.getDouble(FONT_SCALE_KEY, 1.0), 0.75, 2.0);
         themeFamily = validatedThemeFamily(preferences.get(THEME_FAMILY_KEY, ThemeFamily.OCEAN.preferenceValue()));
@@ -146,6 +150,11 @@ public final class PreferencesService {
     /** Returns how footer keyboard shortcuts should be displayed. */
     public FooterShortcutDisplay footerShortcutDisplay() {
         return footerShortcutDisplay;
+    }
+
+    /** Returns how footer button icons should be displayed relative to their text labels. */
+    public FooterIconDisplay footerIconDisplay() {
+        return footerIconDisplay;
     }
 
     /** Returns the preferred JavaFX font family for migrated UI controls. */
@@ -266,6 +275,19 @@ public final class PreferencesService {
     /** Persists a validated footer shortcut display value, falling back to tooltip-only for unknown strings. */
     public void saveFooterShortcutDisplay(String footerShortcutDisplay) {
         saveFooterShortcutDisplay(validatedFooterShortcutDisplay(footerShortcutDisplay));
+    }
+
+    /** Persists how reusable footer buttons should display icons relative to text labels. */
+    public void saveFooterIconDisplay(FooterIconDisplay footerIconDisplay) {
+        this.footerIconDisplay = footerIconDisplay == null
+                ? FooterIconDisplay.ICONS_WITH_TEXT
+                : footerIconDisplay;
+        preferences.put(FOOTER_ICON_DISPLAY_KEY, this.footerIconDisplay.preferenceValue());
+    }
+
+    /** Persists a validated footer icon display value, falling back to icons-with-text for unknown strings. */
+    public void saveFooterIconDisplay(String footerIconDisplay) {
+        saveFooterIconDisplay(validatedFooterIconDisplay(footerIconDisplay));
     }
 
     /** Persists dialogue/HUD opacity preferences and updates the loaded model. */
@@ -448,6 +470,15 @@ public final class PreferencesService {
         return FooterShortcutDisplay.TOOLTIP_ONLY;
     }
 
+    private FooterIconDisplay validatedFooterIconDisplay(String value) {
+        for (FooterIconDisplay display : FooterIconDisplay.values()) {
+            if (display.preferenceValue().equals(value)) {
+                return display;
+            }
+        }
+        return FooterIconDisplay.ICONS_WITH_TEXT;
+    }
+
     /** User preference for whether footer shortcut text is visible, hidden, or represented by tooltips only. */
     public enum FooterShortcutDisplay {
         DISPLAY("display"),
@@ -469,12 +500,34 @@ public final class PreferencesService {
         }
     }
 
+    /** User preference for whether footer buttons show icons, text, or both. */
+    public enum FooterIconDisplay {
+        ICONS_ONLY("icons-only"),
+        ICONS_WITH_TEXT("icons-with-text"),
+        TEXT_ONLY("text-only");
+
+        private final String preferenceValue;
+
+        FooterIconDisplay(String preferenceValue) {
+            this.preferenceValue = preferenceValue;
+        }
+
+        public String preferenceValue() {
+            return preferenceValue;
+        }
+
+        public String label() {
+            return SystemCodeTables.defaultCodeTitle(SystemCodeTables.FOOTER_ICON_DISPLAY_TABLE_ID, preferenceValue);
+        }
+    }
+
     /** Supported UI theme color families persisted as user preference values. */
     public enum ThemeFamily {
         OCEAN("ocean"),
         FOREST("forest"),
         SUNSET("sunset"),
-        VIOLET("violet");
+        VIOLET("violet"),
+        CRIMSON("crimson");
 
         private final String preferenceValue;
 

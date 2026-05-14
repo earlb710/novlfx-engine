@@ -3,6 +3,7 @@ package com.eb.javafx.ui;
 import com.eb.javafx.localization.LocalizationService;
 import com.eb.javafx.gamesupport.SystemCodeTables;
 import com.eb.javafx.prefs.PreferencesService;
+import com.eb.javafx.prefs.PreferencesService.FooterIconDisplay;
 import com.eb.javafx.prefs.PreferencesService.FooterShortcutDisplay;
 import com.eb.javafx.state.GameState;
 import com.eb.javafx.util.Validation;
@@ -128,6 +129,8 @@ public final class ScreenShell {
     private static final String FOOTER_BORDER_COLOR_PROPERTY = "screenFooterBorderColor";
     private static final String FOOTER_BORDER_SIZE_PROPERTY = "screenFooterBorderSize";
     private static final FooterShortcutDisplay DEFAULT_FOOTER_SHORTCUT_DISPLAY = FooterShortcutDisplay.TOOLTIP_ONLY;
+    private static final FooterIconDisplay DEFAULT_FOOTER_ICON_DISPLAY = FooterIconDisplay.ICONS_WITH_TEXT;
+    static final String FOOTER_ICON_SOURCE_COLOR = "#ffcc00";
     private static final Map<String, Image> FOOTER_ICON_CACHE = new ConcurrentHashMap<>();
     private static final List<FooterOption> FOOTER_OPTIONS = List.of(
             footerOption("back", "‹", "Backspace"),
@@ -366,10 +369,24 @@ public final class ScreenShell {
         }
     }
 
-    /** Applies the persisted user preference for showing footer labels. */
+    /** Applies the persisted user preferences for footer shortcut and icon display. */
     public static void applyFooterPreferences(Node footer, PreferencesService preferencesService) {
+        applyFooterPreferences(footer, preferencesService, (UiTheme) null);
+    }
+
+    /** Applies footer shortcut display, icon display, and the theme icon color from {@code uiTheme}. */
+    public static void applyFooterPreferences(Node footer, PreferencesService preferencesService, UiTheme uiTheme) {
         Validation.requireNonNull(preferencesService, "Preferences service is required.");
-        setFooterShortcutDisplay(footer, preferencesService.footerShortcutDisplay());
+        FooterShortcutDisplay shortcutDisplay = preferencesService.footerShortcutDisplay();
+        FooterIconDisplay iconDisplay = preferencesService.footerIconDisplay();
+        String iconColor = uiTheme != null ? uiTheme.footerIconColor() : null;
+        if (footer instanceof HBox footerBox) {
+            footerBox.getChildren().forEach(child -> {
+                if (child instanceof Label label && label.getUserData() instanceof FooterOption option) {
+                    applyFooterOption(label, option, shortcutDisplay, iconDisplay, iconColor);
+                }
+            });
+        }
     }
 
     /** Adds responsive compact/mobile footer behavior based on the screen width. */
@@ -803,19 +820,39 @@ public final class ScreenShell {
     }
 
     public static void applyFooterOption(Label label, FooterOption option, FooterShortcutDisplay shortcutDisplay) {
+        applyFooterOption(label, option, shortcutDisplay, DEFAULT_FOOTER_ICON_DISPLAY);
+    }
+
+    public static void applyFooterOption(Label label, FooterOption option,
+            FooterShortcutDisplay shortcutDisplay, FooterIconDisplay iconDisplay) {
+        applyFooterOption(label, option, shortcutDisplay, iconDisplay, null);
+    }
+
+    public static void applyFooterOption(Label label, FooterOption option,
+            FooterShortcutDisplay shortcutDisplay, FooterIconDisplay iconDisplay, String iconColor) {
         Validation.requireNonNull(label, "Footer label is required.");
         Validation.requireNonNull(option, "Footer option is required.");
-        FooterShortcutDisplay checkedDisplay = shortcutDisplay == null
+        FooterShortcutDisplay checkedShortcut = shortcutDisplay == null
                 ? DEFAULT_FOOTER_SHORTCUT_DISPLAY
                 : shortcutDisplay;
-        applyFooterOption(label, option, option.displayText(checkedDisplay), option.tooltipText(checkedDisplay));
+        FooterIconDisplay checkedIcon = iconDisplay == null
+                ? DEFAULT_FOOTER_ICON_DISPLAY
+                : iconDisplay;
+        String displayText = option.displayText(checkedShortcut, checkedIcon);
+        String tooltipText = option.tooltipText(checkedShortcut);
+        ImageView graphic = checkedIcon == FooterIconDisplay.TEXT_ONLY ? null : footerGraphic(option, iconColor);
+        applyFooterOption(label, option, displayText, tooltipText, graphic);
     }
 
     private static void applyFooterOption(Label label, FooterOption option, String displayText, String tooltipText) {
+        applyFooterOption(label, option, displayText, tooltipText, footerGraphic(option));
+    }
+
+    private static void applyFooterOption(Label label, FooterOption option, String displayText, String tooltipText,
+            ImageView graphic) {
         Validation.requireNonNull(label, "Footer label is required.");
         Validation.requireNonNull(option, "Footer option is required.");
         label.setUserData(option);
-        ImageView graphic = footerGraphic(option);
         label.setGraphic(graphic);
         label.setGraphicTextGap(4);
         label.setText(graphic == null ? displayText : footerTextWithoutFallbackIcon(option, displayText));
@@ -824,10 +861,18 @@ public final class ScreenShell {
     }
 
     static ImageView footerGraphic(FooterOption option) {
+        return footerGraphic(option, null);
+    }
+
+    static ImageView footerGraphic(FooterOption option, String iconColor) {
         if (option.iconResourcePath().isBlank()) {
             return null;
         }
-        Image image = FOOTER_ICON_CACHE.computeIfAbsent(option.iconResourcePath(), ScreenShell::loadFooterIcon);
+        String cacheKey = iconColor == null || iconColor.isBlank()
+                ? option.iconResourcePath()
+                : option.iconResourcePath() + ":" + iconColor;
+        Image image = FOOTER_ICON_CACHE.computeIfAbsent(cacheKey,
+                k -> loadFooterIcon(option.iconResourcePath(), iconColor));
         if (image == null) {
             return null;
         }
@@ -838,11 +883,15 @@ public final class ScreenShell {
         return imageView;
     }
 
-    private static Image loadFooterIcon(String resourcePath) {
+    private static Image loadFooterIcon(String resourcePath, String iconColor) {
         try {
             URL resource = resolveResource(resourcePath);
             try (InputStream inputStream = resource.openStream()) {
-                return VectorImage.fromInputStream(inputStream).toRasterImage(FOOTER_ICON_SIZE, FOOTER_ICON_SIZE);
+                VectorImage image = VectorImage.fromInputStream(inputStream);
+                if (iconColor != null && !iconColor.isBlank()) {
+                    image = image.replaceFillColor(FOOTER_ICON_SOURCE_COLOR, iconColor);
+                }
+                return image.toRasterImage(FOOTER_ICON_SIZE, FOOTER_ICON_SIZE);
             }
         } catch (IllegalArgumentException | IOException | IllegalStateException exception) {
             return null;
@@ -1133,6 +1182,22 @@ public final class ScreenShell {
                 return displayText();
             }
             return icon + " " + label;
+        }
+
+        public String displayText(FooterShortcutDisplay shortcutDisplay, FooterIconDisplay iconDisplay) {
+            if (iconDisplay == FooterIconDisplay.ICONS_ONLY) {
+                return icon;
+            }
+            if (iconDisplay == FooterIconDisplay.TEXT_ONLY) {
+                FooterShortcutDisplay checkedDisplay = shortcutDisplay == null
+                        ? FooterShortcutDisplay.TOOLTIP_ONLY
+                        : shortcutDisplay;
+                if (checkedDisplay == FooterShortcutDisplay.DISPLAY) {
+                    return label + " (" + shortcut + ")";
+                }
+                return label;
+            }
+            return displayText(shortcutDisplay);
         }
 
         public String tooltipText(FooterShortcutDisplay shortcutDisplay) {
