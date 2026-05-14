@@ -125,7 +125,9 @@ public final class ScreenDesignJson {
                 tolerantStringMap(root.get("metadata"), "screen design metadata"),
                 List.copyOf(blocks),
                 List.copyOf(items),
-                List.of());
+                List.of(),
+                optionalString(root, "defaultColorTheme", "screen design defaultColorTheme"),
+                JsonData.optionalBoolean(root, "overwriteColorTheme", false, "screen design overwriteColorTheme"));
         ScreenDesignValidator.requireValid(design, conditionVariables);
         return design;
     }
@@ -153,6 +155,8 @@ public final class ScreenDesignJson {
                 .append("  \"id\": ").append(JsonStrings.quote(design.id())).append(",\n")
                 .append("  \"title\": ").append(JsonStrings.quote(design.title())).append(",\n")
                 .append("  \"layoutType\": ").append(JsonStrings.quote(design.layoutType().name())).append(",\n")
+                .append("  \"defaultColorTheme\": ").append(JsonStrings.nullableQuote(design.defaultColorTheme())).append(",\n")
+                .append("  \"overwriteColorTheme\": ").append(design.overwriteColorTheme()).append(",\n")
                 .append("  \"metadata\": ").append(metadataJson(design.metadata(), "    ")).append(",\n")
                 .append("  \"blocks\": [\n");
         for (int index = 0; index < design.blocks().size(); index++) {
@@ -347,7 +351,7 @@ public final class ScreenDesignJson {
                 .map(item -> itemWithTextReferences(item, texts))
                 .toList();
         return new ExtractedText(new ScreenDesignModel(design.id(), screenTitleId, design.layoutType(),
-                design.metadata(), blocks, items, List.of()),
+                design.metadata(), blocks, items, List.of(), design.defaultColorTheme(), design.overwriteColorTheme()),
                 Collections.unmodifiableMap(new LinkedHashMap<>(texts)));
     }
 
@@ -389,7 +393,8 @@ public final class ScreenDesignJson {
                         item.metadata()))
                 .toList();
         return new ScreenDesignModel(design.id(), resolveText(design.title(), texts), design.layoutType(),
-                design.metadata(), blocks, items, design.temporaryItems());
+                design.metadata(), blocks, items, design.temporaryItems(),
+                design.defaultColorTheme(), design.overwriteColorTheme());
     }
 
     private static String resolveText(String textReference, Map<String, String> texts) {

@@ -1,6 +1,8 @@
 package com.eb.javafx.testscreen;
 
 import com.eb.javafx.prefs.PreferencesService;
+import com.eb.javafx.prefs.PreferencesService.ThemeFamily;
+import com.eb.javafx.prefs.PreferencesService.ThemeVariant;
 import com.eb.javafx.ui.ScreenDesignBlock;
 import com.eb.javafx.ui.ScreenDesignItem;
 import com.eb.javafx.ui.ScreenDesignItemType;
@@ -150,6 +152,14 @@ public final class ScreenDesignerApplication {
     private static final String[] BORDER_STYLE_OPTIONS = {DEFAULT_OPTION, "solid", "dashed", "dotted", "none"};
     private static final String[] BORDER_CORNER_OPTIONS = {DEFAULT_OPTION, "square", "rounded", "pill"};
     private static final String[] BORDER_THICKNESS_OPTIONS = {DEFAULT_OPTION, "1", "2", "3", "4", "6", "8"};
+    private static final String[] COLOR_THEME_OPTIONS = {
+            DEFAULT_OPTION,
+            "ocean/dark", "ocean/light-pastel",
+            "forest/dark", "forest/light-pastel",
+            "sunset/dark", "sunset/light-pastel",
+            "violet/dark", "violet/light-pastel",
+            "crimson/dark", "crimson/light-pastel"
+    };
     private static final String[] ITEM_ROLE_OPTIONS = {
             DEFAULT_OPTION,
             DisplayDefaults.ROLE_TEXT,
@@ -195,6 +205,8 @@ public final class ScreenDesignerApplication {
     private final JCheckBox screenDialogBox = new JCheckBox();
     private final JCheckBox screenDismissOnClickOutsideBox = new JCheckBox();
     private final JCheckBox screenDismissOnEscapeBox = new JCheckBox();
+    private final JComboBox<String> screenDefaultColorThemeBox = new JComboBox<>(COLOR_THEME_OPTIONS);
+    private final JCheckBox screenOverwriteColorThemeBox = new JCheckBox();
     private final JTextArea screenMetadataArea = new JTextArea(4, 20);
     private final JTextField blockIdField = new JTextField();
     private final JTextField blockTitleField = new JTextField();
@@ -533,10 +545,13 @@ public final class ScreenDesignerApplication {
     }
 
     private void applyScreenProperties() {
+        String selectedTheme = (String) screenDefaultColorThemeBox.getSelectedItem();
+        String defaultColorTheme = DEFAULT_OPTION.equals(selectedTheme) ? null : selectedTheme;
         design = new ScreenDesignModel(screenIdField.getText(), titleField.getText(),
                 layoutTypeOrDefault((ScreenLayoutType) layoutTypeBox.getSelectedItem()),
                 screenMetadata(design.metadata()),
-                design.blocks(), design.items(), design.temporaryItems());
+                design.blocks(), design.items(), design.temporaryItems(),
+                defaultColorTheme, screenOverwriteColorThemeBox.isSelected());
     }
 
     private void applyBlockProperties(String oldBlockId) {
@@ -1685,7 +1700,13 @@ public final class ScreenDesignerApplication {
         preferencesService.load();
 
         UiTheme uiTheme = new UiTheme();
-        uiTheme.initialize(preferencesService);
+        if (designSnapshot.overwriteColorTheme() && designSnapshot.defaultColorTheme() != null) {
+            ThemeFamily family = parseThemeFamily(designSnapshot.defaultColorTheme());
+            ThemeVariant variant = parseThemeVariant(designSnapshot.defaultColorTheme());
+            uiTheme.initializeWithThemeOverride(preferencesService, family, variant);
+        } else {
+            uiTheme.initialize(preferencesService);
+        }
 
         ScreenLayoutModel previewModel = ScreenDesignLayoutAdapter.toLayoutModel(designSnapshot, true, defaultsSnapshot);
         Parent previewRoot = ScreenLayoutRenderer.createPreviewRoot(previewModel, workingDirectory);
@@ -1695,6 +1716,29 @@ public final class ScreenDesignerApplication {
                 TestUiScreenSize.sceneHeight(preferencesService));
         scene.getStylesheets().add(uiTheme.stylesheet());
         return scene;
+    }
+
+    private static ThemeFamily parseThemeFamily(String colorTheme) {
+        String family = colorTheme.contains("/") ? colorTheme.substring(0, colorTheme.indexOf('/')) : colorTheme;
+        for (ThemeFamily f : ThemeFamily.values()) {
+            if (f.preferenceValue().equals(family)) {
+                return f;
+            }
+        }
+        return ThemeFamily.OCEAN;
+    }
+
+    private static ThemeVariant parseThemeVariant(String colorTheme) {
+        if (!colorTheme.contains("/")) {
+            return ThemeVariant.DARK;
+        }
+        String variant = colorTheme.substring(colorTheme.indexOf('/') + 1);
+        for (ThemeVariant v : ThemeVariant.values()) {
+            if (v.preferenceValue().equals(variant)) {
+                return v;
+            }
+        }
+        return ThemeVariant.DARK;
     }
 
     private static Scene messageScene(String message) {
@@ -2371,6 +2415,8 @@ public final class ScreenDesignerApplication {
         screenDialogBox.setSelected(booleanMetadataValue(design.metadata(), DIALOG_KEY));
         screenDismissOnClickOutsideBox.setSelected(booleanMetadataValue(design.metadata(), DISMISS_ON_CLICK_OUTSIDE_KEY));
         screenDismissOnEscapeBox.setSelected(booleanMetadataValue(design.metadata(), DISMISS_ON_ESCAPE_KEY));
+        setComboValue(screenDefaultColorThemeBox, design.defaultColorTheme());
+        screenOverwriteColorThemeBox.setSelected(design.overwriteColorTheme());
         configureMetadataArea(screenMetadataArea, metadataText(design.metadata(), SCREEN_EXPOSED_METADATA_KEYS));
         List<ScreenDesignValidationProblem> problems = ScreenDesignValidator.validate(design);
         JPanel fields = propertyGrid(propertyLabelsFor(NavigationNode.screen(design.id())).size());
@@ -2391,7 +2437,9 @@ public final class ScreenDesignerApplication {
         addPropertyRow(fields, 12, "Dialog", screenDialogBox);
         addPropertyRow(fields, 13, "Dismiss on click outside", screenDismissOnClickOutsideBox);
         addPropertyRow(fields, 14, "Dismiss on Escape", screenDismissOnEscapeBox);
-        addPropertyRow(fields, 15, "Advanced metadata", advancedMetadataEditor(screenMetadataArea));
+        addPropertyRow(fields, 15, "Default color theme", screenDefaultColorThemeBox);
+        addPropertyRow(fields, 16, "Overwrite color theme", screenOverwriteColorThemeBox);
+        addPropertyRow(fields, 17, "Advanced metadata", advancedMetadataEditor(screenMetadataArea));
         return fields;
     }
 
@@ -3117,7 +3165,8 @@ public final class ScreenDesignerApplication {
         return switch (navigationNode.type()) {
             case SCREEN -> List.of("Screen id", "Title", "Layout type", "Font", "Font size", "Font style", "Color", "Background color",
                     "Border style", "Border corner", "Border thickness", "Border color",
-                    "Dialog", "Dismiss on click outside", "Dismiss on Escape", "Advanced metadata");
+                    "Dialog", "Dismiss on click outside", "Dismiss on Escape",
+                    "Default color theme", "Overwrite color theme", "Advanced metadata");
             case BLOCK -> List.of("Block id", "Title", "Layout type", "Parent block", "Style class", "Conditions", "Font", "Font size", "Font style", "Color", "Background color",
                     "Background image", "Background image transparency", "Background image placement", "Transparency", "Border style", "Border corner", "Border thickness", "Border color",
                     "Advanced metadata");
