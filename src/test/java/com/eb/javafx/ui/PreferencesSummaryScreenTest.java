@@ -15,6 +15,7 @@ import javafx.scene.control.CheckBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.RadioButton;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.input.KeyCode;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
@@ -190,6 +191,9 @@ final class PreferencesSummaryScreenTest {
         runOnJavaFxThread(() -> {
             PreferencesService preferencesService = new PreferencesService();
             preferencesService.load();
+            preferencesService.saveMuteAll(false);
+            preferencesService.saveFullscreen(false);
+            preferencesService.saveLanguage(PreferencesService.Language.ENGLISH);
 
             UiTheme uiTheme = new UiTheme();
             uiTheme.initialize(preferencesService);
@@ -205,23 +209,25 @@ final class PreferencesSummaryScreenTest {
             assertFalse(muteAll.isSelected());
             assertFalse(fullscreen.isSelected());
 
-            muteAll.setSelected(true);
-            fullscreen.setSelected(true);
-            assertTrue(preferencesService.muteAll());
-            assertTrue(preferencesService.fullscreen());
+            try {
+                muteAll.setSelected(true);
+                fullscreen.setSelected(true);
+                assertTrue(preferencesService.muteAll());
+                assertTrue(preferencesService.fullscreen());
 
-            java.util.List<RadioButton> languageButtons = findRadioButtons(root);
-            assertEquals(PreferencesService.Language.values().length, languageButtons.size());
-            for (RadioButton button : languageButtons) {
-                PreferencesService.Language language = (PreferencesService.Language) button.getUserData();
-                assertEquals(!language.enabled(), button.isDisable(),
-                        language + " radio button disabled state should match enabled flag.");
+                java.util.List<RadioButton> languageButtons = findRadioButtons(root);
+                assertEquals(PreferencesService.Language.values().length, languageButtons.size());
+                for (RadioButton button : languageButtons) {
+                    PreferencesService.Language language = (PreferencesService.Language) button.getUserData();
+                    assertEquals(!language.enabled(), button.isDisable(),
+                            language + " radio button disabled state should match enabled flag.");
+                }
+            } finally {
+                preferencesService.saveMuteAll(false);
+                preferencesService.saveFullscreen(false);
+                preferencesService.saveLanguage(PreferencesService.Language.ENGLISH);
+                stage.close();
             }
-
-            preferencesService.saveMuteAll(false);
-            preferencesService.saveFullscreen(false);
-            preferencesService.saveLanguage(PreferencesService.Language.ENGLISH);
-            stage.close();
         });
     }
 
@@ -238,6 +244,12 @@ final class PreferencesSummaryScreenTest {
             if (child instanceof CheckBox checkBox && labelText.equals(checkBox.getText())) {
                 return checkBox;
             }
+            if (child instanceof ScrollPane scrollPane && scrollPane.getContent() instanceof Pane inner) {
+                CheckBox found = findCheckBoxRecursive(inner, labelText);
+                if (found != null) {
+                    return found;
+                }
+            }
             if (child instanceof Pane childPane) {
                 CheckBox found = findCheckBoxRecursive(childPane, labelText);
                 if (found != null) {
@@ -253,6 +265,8 @@ final class PreferencesSummaryScreenTest {
         for (Node child : pane.getChildren()) {
             if (child instanceof RadioButton button) {
                 buttons.add(button);
+            } else if (child instanceof ScrollPane scrollPane && scrollPane.getContent() instanceof Pane inner) {
+                buttons.addAll(findRadioButtons(inner));
             } else if (child instanceof Pane childPane) {
                 buttons.addAll(findRadioButtons(childPane));
             }
@@ -292,6 +306,8 @@ final class PreferencesSummaryScreenTest {
         for (javafx.scene.Node child : children) {
             if (child instanceof ComboBox<?> comboBox) {
                 comboBoxes.add(comboBox);
+            } else if (child instanceof ScrollPane scrollPane && scrollPane.getContent() instanceof Pane inner) {
+                comboBoxes.addAll(findComboBoxes(inner));
             } else if (child instanceof Pane childPane) {
                 comboBoxes.addAll(findComboBoxes(childPane));
             }
@@ -311,6 +327,12 @@ final class PreferencesSummaryScreenTest {
         for (Node child : pane.getChildren()) {
             if (child instanceof Label label && text.equals(label.getText())) {
                 return label;
+            }
+            if (child instanceof ScrollPane scrollPane && scrollPane.getContent() instanceof Pane inner) {
+                Label found = findLabelRecursive(inner, text);
+                if (found != null) {
+                    return found;
+                }
             }
             if (child instanceof Pane childPane) {
                 Label found = findLabelRecursive(childPane, text);

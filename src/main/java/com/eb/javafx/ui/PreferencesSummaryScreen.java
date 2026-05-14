@@ -11,6 +11,7 @@ import com.eb.javafx.prefs.PreferencesService.ThemeVariant;
 import com.eb.javafx.routing.RouteContext;
 import com.eb.javafx.routing.SceneRouter;
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -71,14 +72,23 @@ public final class PreferencesSummaryScreen {
                 screenText("block.language.title"),
                 languageRow(context)));
 
-        Button closeButton = ScreenNavigation.button(context, screenText("item.close.label"), SceneRouter.MAIN_MENU_ROUTE);
-        content.getChildren().add(closeButton);
         ScrollPane scrollPane = new ScrollPane(content);
         scrollPane.setFitToWidth(true);
         scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         scrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
         scrollPane.setStyle("-fx-background: transparent; -fx-background-color: transparent;");
-        BorderPane root = ScreenShell.titled(viewModel.title(), scrollPane, footerOptions());
+
+        Button closeButton = ScreenNavigation.button(context, screenText("item.close.label"), SceneRouter.MAIN_MENU_ROUTE);
+        closeButton.setMinWidth(220);
+        HBox closeBox = new HBox(closeButton);
+        closeBox.setAlignment(Pos.CENTER);
+        closeBox.setPadding(new Insets(12, 0, 12, 0));
+
+        BorderPane contentArea = new BorderPane();
+        contentArea.setCenter(scrollPane);
+        contentArea.setBottom(closeBox);
+
+        BorderPane root = ScreenShell.titled(viewModel.title(), contentArea, footerOptions());
         HBox footer = (HBox) root.getBottom();
         ScreenShell.applyFooterPreferences(footer, context.preferencesService(), context.uiTheme());
         wireFooter(footer, closeAction);

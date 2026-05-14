@@ -309,6 +309,42 @@ public final class UiTheme {
     }
 
     /**
+     * Loads preferences as in {@link #initialize} but overrides the theme family and variant.
+     * Useful for per-screen theme previews without persisting user preferences.
+     *
+     * @param preferencesService loaded preferences supplying font, scale, and accessibility tokens
+     * @param themeFamily        theme family to use instead of the preference value
+     * @param themeVariant       theme variant to use instead of the preference value
+     */
+    public void initializeWithThemeOverride(
+            PreferencesService preferencesService,
+            ThemeFamily themeFamily,
+            ThemeVariant themeVariant) {
+        fontFamily = preferencesService.fontFamily();
+        fontScale = preferencesService.fontScale();
+        highContrast = preferencesService.highContrast();
+        reducedMotion = preferencesService.reducedMotion();
+
+        ThemePalette palette = highContrast
+                ? ThemePalette.highContrast()
+                : ThemePalette.forSelection(themeFamily, themeVariant);
+        accentColor = palette.accentColor();
+        textColor = palette.labelText();
+        panelBackground = palette.screenPanelBackground();
+        hoverBackground = palette.buttonHoverBackground();
+        footerIconColor = palette.footerIconColor();
+        stylesheetContent = palette.toStylesheet(fontFamily);
+        stylesheet = writeStylesheet(stylesheetContent);
+        ButtonVisuals.configureArtworkGradient(
+                palette.buttonGradientStart(),
+                palette.buttonGradientMid(),
+                palette.buttonGradientEnd());
+        roleColors = palette.roleColors();
+        themedDisplayDefaults = DisplayDefaults.defaults().withRoleColors(roleColors);
+        DisplayDefaults.installActive(themedDisplayDefaults);
+    }
+
+    /**
      * Returns the theme-resolved role colors for the active palette — used to drive
      * per-item-type color/background for all nine {@link ScreenDesignItemType} values.
      */
