@@ -2,7 +2,6 @@ package com.eb.javafx.ui;
 
 import com.eb.javafx.gamesupport.SystemCodeTables;
 import com.eb.javafx.routing.RouteContext;
-import com.eb.javafx.routing.SceneRouter;
 import com.eb.javafx.state.GameState;
 import com.eb.javafx.text.DialogColumn;
 import com.eb.javafx.text.DialogHistory;
@@ -70,7 +69,7 @@ public final class ConversationHistoryScreen {
                 title,
                 messages,
                 entries,
-                List.of(new ScreenActionViewModel(screenText("item.back.label"), SceneRouter.MAIN_MENU_ROUTE, true)));
+                List.of());
     }
 
     private static VBox createContent(RouteContext context, ConversationHistoryViewModel viewModel) {

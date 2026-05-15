@@ -4,7 +4,6 @@
     "screen.title": "Conversation History",
     "line.unavailable": "Conversation history is unavailable.",
     "line.empty": "No conversations have been recorded yet.",
-    "entry.header": "$dialogId started $startedAt with $participants ($status)",
-    "item.back.label": "Back to main menu"
+    "entry.header": "$dialogId started $startedAt with $participants ($status)"
   }
 }
