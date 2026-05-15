@@ -19,7 +19,7 @@ final class ConversationHistoryScreenTest {
         assertEquals("Conversation History", viewModel.title());
         assertEquals(List.of("No conversations have been recorded yet."), viewModel.messages());
         assertEquals(List.of(), viewModel.entries());
-        assertEquals("Back to main menu", viewModel.actions().get(0).label());
+        assertEquals(List.of(), viewModel.actions());
     }
 
     @Test
