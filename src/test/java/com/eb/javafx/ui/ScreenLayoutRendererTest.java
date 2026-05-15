@@ -240,6 +240,81 @@ final class ScreenLayoutRendererTest {
         assertFalse(notesField.isEditable());
     }
 
+    @Test
+    void mainAppLayoutDesignerPreviewRendersWithoutThrowing() throws Exception {
+        assumeFalse(GraphicsEnvironment.isHeadless(), "Main app layout preview requires a display.");
+        startJavaFxToolkit();
+        ScreenLayoutModel model = new ScreenLayoutModel(
+                ScreenLayoutType.MAIN_APP_LAYOUT,
+                "Main App",
+                null,
+                List.of(new ScreenLayoutSection(
+                        "hud.status", "Status", List.of(), null,
+                        Map.of(
+                                MainAppLayoutPlan.OVERLAY_SCREEN_ID_KEY, "hud-status",
+                                MainAppLayoutPlan.OVERLAY_ANCHOR_KEY, "TOP_LEFT"))),
+                List.of(),
+                List.of(),
+                List.of(),
+                null,
+                Map.of(
+                        MainAppLayoutPlan.STORY_SCREEN_ID_KEY, "story",
+                        MainAppLayoutPlan.DIALOG_SCREEN_ID_KEY, "dialog"));
+
+        Parent previewRoot = ScreenLayoutRenderer.createPreviewRoot(model, tempDir);
+
+        assertNotNull(previewRoot);
+        // The structural-preview labels include the referenced screen ids, which is the easiest
+        // signal that we routed through MainAppLayoutRenderer's placeholder resolver rather than
+        // tripping the legacy "must be rendered through MainAppLayoutRenderer" guard.
+        assertTrue(previewContainsLabel(previewRoot, "story"),
+                "Preview should contain a placeholder labelled with the story screen id.");
+        assertTrue(previewContainsLabel(previewRoot, "dialog"),
+                "Preview should contain a placeholder labelled with the dialog screen id.");
+        assertTrue(previewContainsLabel(previewRoot, "hud-status"),
+                "Preview should contain a placeholder labelled with the overlay screen id.");
+    }
+
+    @Test
+    void mainAppLayoutPreviewShowsFriendlyMessageWhenStoryScreenIdMissing() throws Exception {
+        assumeFalse(GraphicsEnvironment.isHeadless(), "Main app layout preview requires a display.");
+        startJavaFxToolkit();
+        ScreenLayoutModel model = new ScreenLayoutModel(
+                ScreenLayoutType.MAIN_APP_LAYOUT,
+                "Main App",
+                null,
+                List.of(),
+                List.of(),
+                List.of(),
+                List.of(),
+                null,
+                Map.of());
+
+        Parent previewRoot = ScreenLayoutRenderer.createPreviewRoot(model, tempDir);
+
+        assertNotNull(previewRoot);
+        assertTrue(previewContainsLabel(previewRoot, "storyScreenId"),
+                "Preview should explain that storyScreenId metadata is required.");
+    }
+
+    private static boolean previewContainsLabel(Node node, String fragment) {
+        if (node instanceof Label label && label.getText() != null && label.getText().contains(fragment)) {
+            return true;
+        }
+        if (node instanceof ScrollPane scrollPane && scrollPane.getContent() != null
+                && previewContainsLabel(scrollPane.getContent(), fragment)) {
+            return true;
+        }
+        if (node instanceof Parent parent) {
+            for (Node child : parent.getChildrenUnmodifiable()) {
+                if (previewContainsLabel(child, fragment)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     private static void startJavaFxToolkit() throws InterruptedException {
         CountDownLatch started = new CountDownLatch(1);
         if (JAVAFX_STARTED.compareAndSet(false, true)) {

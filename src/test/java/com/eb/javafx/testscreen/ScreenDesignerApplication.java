@@ -13,6 +13,7 @@ import com.eb.javafx.ui.ScreenDesignService;
 import com.eb.javafx.ui.ScreenDesignValidationProblem;
 import com.eb.javafx.ui.ScreenDesignValidator;
 import com.eb.javafx.ui.DisplayDefaults;
+import com.eb.javafx.ui.MainAppLayoutPlan;
 import com.eb.javafx.ui.ScreenLayoutModel;
 import com.eb.javafx.ui.ScreenLayoutRenderer;
 import com.eb.javafx.ui.ScreenLayoutType;
@@ -160,6 +161,16 @@ public final class ScreenDesignerApplication {
             "violet/dark", "violet/light-pastel",
             "crimson/dark", "crimson/light-pastel"
     };
+    private static final String[] APP_LAYOUT_ORIENTATION_OPTIONS = {DEFAULT_OPTION, "vertical", "horizontal"};
+    private static final String[] APP_LAYOUT_BACKGROUND_FIT_OPTIONS = {DEFAULT_OPTION, "STRETCH", "CROP_CENTER"};
+    private static final String[] OVERLAY_PLACEMENT_OPTIONS = {DEFAULT_OPTION, "alignment", "pixels", "percent", "relative"};
+    private static final String[] OVERLAY_ANCHOR_OPTIONS = {
+            DEFAULT_OPTION,
+            "TOP_LEFT", "TOP_CENTER", "TOP_RIGHT",
+            "CENTER_LEFT", "CENTER", "CENTER_RIGHT",
+            "BOTTOM_LEFT", "BOTTOM_CENTER", "BOTTOM_RIGHT",
+            "ABOVE", "BELOW", "LEFT", "RIGHT"
+    };
     private static final String[] ITEM_ROLE_OPTIONS = {
             DEFAULT_OPTION,
             DisplayDefaults.ROLE_TEXT,
@@ -171,11 +182,23 @@ public final class ScreenDesignerApplication {
     private static final Set<String> SCREEN_EXPOSED_METADATA_KEYS = Set.of(
             FONT_FAMILY_KEY, ITEM_FONT_SIZE_KEY, ITEM_FONT_STYLE_KEY, ITEM_COLOR_KEY,
             BACKGROUND_COLOR_KEY, BORDER_STYLE_KEY, BORDER_CORNER_KEY, BORDER_THICKNESS_KEY, BORDER_COLOR_KEY,
-            DIALOG_KEY, DISMISS_ON_CLICK_OUTSIDE_KEY, DISMISS_ON_ESCAPE_KEY);
+            DIALOG_KEY, DISMISS_ON_CLICK_OUTSIDE_KEY, DISMISS_ON_ESCAPE_KEY,
+            MainAppLayoutPlan.BACKGROUND_IMAGE_KEY, MainAppLayoutPlan.BACKGROUND_FIT_KEY,
+            MainAppLayoutPlan.BACKGROUND_TRANSPARENCY_KEY, MainAppLayoutPlan.BACKGROUND_COLOR_KEY,
+            MainAppLayoutPlan.STORY_SCREEN_ID_KEY, MainAppLayoutPlan.DIALOG_SCREEN_ID_KEY,
+            MainAppLayoutPlan.STORY_DIALOG_RATIO_KEY, MainAppLayoutPlan.ORIENTATION_KEY,
+            MainAppLayoutPlan.SHOW_FOOTER_KEY,
+            MainAppLayoutPlan.STORY_INSETS_KEY, MainAppLayoutPlan.DIALOG_INSETS_KEY);
     private static final Set<String> BLOCK_EXPOSED_METADATA_KEYS = Set.of(
             FONT_FAMILY_KEY, ITEM_FONT_SIZE_KEY, ITEM_FONT_STYLE_KEY, ITEM_COLOR_KEY,
             BACKGROUND_COLOR_KEY, TRANSPARENCY_KEY, BORDER_STYLE_KEY, BORDER_CORNER_KEY, BORDER_THICKNESS_KEY,
-            BORDER_COLOR_KEY, BACKGROUND_IMAGE_KEY, BACKGROUND_IMAGE_TRANSPARENCY_KEY, BACKGROUND_IMAGE_PLACEMENT_KEY);
+            BORDER_COLOR_KEY, BACKGROUND_IMAGE_KEY, BACKGROUND_IMAGE_TRANSPARENCY_KEY, BACKGROUND_IMAGE_PLACEMENT_KEY,
+            MainAppLayoutPlan.OVERLAY_SCREEN_ID_KEY, MainAppLayoutPlan.OVERLAY_PLACEMENT_KEY,
+            MainAppLayoutPlan.OVERLAY_ANCHOR_KEY, MainAppLayoutPlan.OVERLAY_ANCHOR_FIELD_KEY,
+            MainAppLayoutPlan.OVERLAY_OFFSET_X_KEY,
+            MainAppLayoutPlan.OVERLAY_OFFSET_Y_KEY, MainAppLayoutPlan.OVERLAY_WIDTH_KEY,
+            MainAppLayoutPlan.OVERLAY_HEIGHT_KEY, MainAppLayoutPlan.OVERLAY_TRANSPARENCY_KEY,
+            MainAppLayoutPlan.OVERLAY_VISIBLE_KEY);
     private static final Set<String> ITEM_EXPOSED_METADATA_KEYS = Set.of(
             DISPLAY_ROLE_KEY, FONT_FAMILY_KEY, ITEM_FONT_SIZE_KEY, ITEM_FONT_STYLE_KEY, ITEM_COLOR_KEY,
             BACKGROUND_COLOR_KEY, HOVER_BACKGROUND_COLOR_KEY, PRESSED_BACKGROUND_COLOR_KEY, TRANSPARENCY_KEY,
@@ -207,6 +230,17 @@ public final class ScreenDesignerApplication {
     private final JCheckBox screenDismissOnEscapeBox = new JCheckBox();
     private final JComboBox<String> screenDefaultColorThemeBox = new JComboBox<>(COLOR_THEME_OPTIONS);
     private final JCheckBox screenOverwriteColorThemeBox = new JCheckBox();
+    private final JTextField screenAppLayoutBackgroundImageField = new JTextField();
+    private final JComboBox<String> screenAppLayoutBackgroundFitBox = new JComboBox<>(APP_LAYOUT_BACKGROUND_FIT_OPTIONS);
+    private final JComboBox<String> screenAppLayoutBackgroundTransparencyBox = transparencyBox();
+    private final JTextField screenAppLayoutBackgroundColorField = new JTextField();
+    private final JTextField screenStoryScreenIdField = new JTextField();
+    private final JTextField screenDialogScreenIdField = new JTextField();
+    private final JTextField screenStoryDialogRatioField = new JTextField();
+    private final JComboBox<String> screenAppLayoutOrientationBox = new JComboBox<>(APP_LAYOUT_ORIENTATION_OPTIONS);
+    private final JCheckBox screenShowFooterBox = new JCheckBox();
+    private final JTextField screenStoryInsetsField = new JTextField();
+    private final JTextField screenDialogInsetsField = new JTextField();
     private final JTextArea screenMetadataArea = new JTextArea(4, 20);
     private final JTextField blockIdField = new JTextField();
     private final JTextField blockTitleField = new JTextField();
@@ -226,6 +260,16 @@ public final class ScreenDesignerApplication {
     private final JComboBox<String> blockBorderCornerBox = borderCornerBox();
     private final JComboBox<String> blockBorderThicknessBox = borderThicknessBox();
     private final JTextField blockBorderColorField = new JTextField();
+    private final JTextField blockOverlayScreenIdField = new JTextField();
+    private final JComboBox<String> blockOverlayPlacementBox = new JComboBox<>(OVERLAY_PLACEMENT_OPTIONS);
+    private final JComboBox<String> blockOverlayAnchorBox = new JComboBox<>(OVERLAY_ANCHOR_OPTIONS);
+    private final JComboBox<String> blockOverlayAnchorFieldBox = new JComboBox<>();
+    private final JTextField blockOverlayOffsetXField = new JTextField();
+    private final JTextField blockOverlayOffsetYField = new JTextField();
+    private final JTextField blockOverlayWidthField = new JTextField();
+    private final JTextField blockOverlayHeightField = new JTextField();
+    private final JComboBox<String> blockOverlayTransparencyBox = transparencyBox();
+    private final JCheckBox blockOverlayVisibleBox = new JCheckBox();
     private final JTextArea blockConditionsArea = new JTextArea(3, 20);
     private final JTextArea blockMetadataArea = new JTextArea(4, 20);
     private final JComboBox<String> itemBlockBox = new JComboBox<>();
@@ -1592,6 +1636,22 @@ public final class ScreenDesignerApplication {
         return selectedParent == null || SCREEN_PARENT_OPTION.equals(selectedParent) ? null : selectedParent;
     }
 
+    /**
+     * Builds the option list for the "Overlay anchor field" combo box: the current block is excluded
+     * (an overlay cannot anchor relative to itself) and a blank entry leads the list so the author
+     * can clear the selection when switching to a non-RELATIVE placement mode.
+     */
+    private String[] overlayAnchorFieldOptions(String currentBlockId) {
+        List<String> options = new ArrayList<>();
+        options.add(DEFAULT_OPTION);
+        for (ScreenDesignBlock block : design.blocks()) {
+            if (!block.id().equals(currentBlockId)) {
+                options.add(block.id());
+            }
+        }
+        return options.toArray(String[]::new);
+    }
+
     private JFileChooser jsonChooser() {
         JFileChooser chooser = new JFileChooser(currentFolder.toFile());
         chooser.setFileFilter(new FileNameExtensionFilter("Screen design JSON (*.json)", "json"));
@@ -1659,6 +1719,8 @@ public final class ScreenDesignerApplication {
             }
             dockedPreviewPanel.setScene(createPreviewScene(designSnapshot, defaultsSnapshot, workingDirectory));
         } catch (RuntimeException exception) {
+            System.err.println("Preview error while rendering docked preview:");
+            exception.printStackTrace(System.err);
             dockedPreviewPanel.setScene(messageScene("Preview error:\n" + exception.getMessage()));
         }
     }
@@ -1688,6 +1750,8 @@ public final class ScreenDesignerApplication {
             stage.show();
             stage.toFront();
         } catch (RuntimeException exception) {
+            System.err.println("Preview error while opening preview stage:");
+            exception.printStackTrace(System.err);
             SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(null,
                     exception.getMessage(),
                     "Preview Error",
@@ -2417,29 +2481,58 @@ public final class ScreenDesignerApplication {
         screenDismissOnEscapeBox.setSelected(booleanMetadataValue(design.metadata(), DISMISS_ON_ESCAPE_KEY));
         setComboValue(screenDefaultColorThemeBox, design.defaultColorTheme());
         screenOverwriteColorThemeBox.setSelected(design.overwriteColorTheme());
+        screenAppLayoutBackgroundImageField.setText(metadataValue(design.metadata(), MainAppLayoutPlan.BACKGROUND_IMAGE_KEY));
+        setComboValue(screenAppLayoutBackgroundFitBox, metadataValue(design.metadata(), MainAppLayoutPlan.BACKGROUND_FIT_KEY));
+        setComboValue(screenAppLayoutBackgroundTransparencyBox, metadataValue(design.metadata(), MainAppLayoutPlan.BACKGROUND_TRANSPARENCY_KEY));
+        screenAppLayoutBackgroundColorField.setText(metadataValue(design.metadata(), MainAppLayoutPlan.BACKGROUND_COLOR_KEY));
+        screenStoryScreenIdField.setText(metadataValue(design.metadata(), MainAppLayoutPlan.STORY_SCREEN_ID_KEY));
+        screenDialogScreenIdField.setText(metadataValue(design.metadata(), MainAppLayoutPlan.DIALOG_SCREEN_ID_KEY));
+        screenStoryDialogRatioField.setText(metadataValue(design.metadata(), MainAppLayoutPlan.STORY_DIALOG_RATIO_KEY));
+        setComboValue(screenAppLayoutOrientationBox, metadataValue(design.metadata(), MainAppLayoutPlan.ORIENTATION_KEY));
+        screenShowFooterBox.setSelected(
+                !design.metadata().containsKey(MainAppLayoutPlan.SHOW_FOOTER_KEY)
+                        || booleanMetadataValue(design.metadata(), MainAppLayoutPlan.SHOW_FOOTER_KEY));
+        screenStoryInsetsField.setText(metadataValue(design.metadata(), MainAppLayoutPlan.STORY_INSETS_KEY));
+        screenDialogInsetsField.setText(metadataValue(design.metadata(), MainAppLayoutPlan.DIALOG_INSETS_KEY));
         configureMetadataArea(screenMetadataArea, metadataText(design.metadata(), SCREEN_EXPOSED_METADATA_KEYS));
         List<ScreenDesignValidationProblem> problems = ScreenDesignValidator.validate(design);
-        JPanel fields = propertyGrid(propertyLabelsFor(NavigationNode.screen(design.id())).size());
-        addPropertyRow(fields, 0, "Screen id", screenIdField);
-        addPropertyRow(fields, 1, "Title", titleField);
-        addPropertyRow(fields, 2, "Layout type", layoutTypeBox);
-        addPropertyRow(fields, 3, "Font", screenFontFamilyBox);
-        addPropertyRow(fields, 4, "Font size", screenFontSizeBox);
-        addPropertyRow(fields, 5, "Font style", screenFontStyleBox);
-        addPropertyRow(fields, 6, "Color", colorSelector(screenColorField));
-        addPropertyRow(fields, 7, "Background color", colorSelector(screenBackgroundColorField));
-        addPropertyRow(fields, 8, "Border style", screenBorderStyleBox,
+        JPanel fields = propertyGrid(propertyLabelsFor(NavigationNode.screen(design.id()), design.layoutType()).size());
+        int row = 0;
+        addPropertyRow(fields, row++, "Screen id", screenIdField);
+        addPropertyRow(fields, row++, "Title", titleField);
+        addPropertyRow(fields, row++, "Layout type", layoutTypeBox);
+        addPropertyRow(fields, row++, "Font", screenFontFamilyBox);
+        addPropertyRow(fields, row++, "Font size", screenFontSizeBox);
+        addPropertyRow(fields, row++, "Font style", screenFontStyleBox);
+        addPropertyRow(fields, row++, "Color", colorSelector(screenColorField));
+        addPropertyRow(fields, row++, "Background color", colorSelector(screenBackgroundColorField));
+        addPropertyRow(fields, row++, "Border style", screenBorderStyleBox,
                 validationTextForField(problems, "metadata." + BORDER_STYLE_KEY));
-        addPropertyRow(fields, 9, "Border corner", screenBorderCornerBox,
+        addPropertyRow(fields, row++, "Border corner", screenBorderCornerBox,
                 validationTextForField(problems, "metadata." + BORDER_CORNER_KEY));
-        addPropertyRow(fields, 10, "Border thickness", screenBorderThicknessBox);
-        addPropertyRow(fields, 11, "Border color", colorSelector(screenBorderColorField));
-        addPropertyRow(fields, 12, "Dialog", screenDialogBox);
-        addPropertyRow(fields, 13, "Dismiss on click outside", screenDismissOnClickOutsideBox);
-        addPropertyRow(fields, 14, "Dismiss on Escape", screenDismissOnEscapeBox);
-        addPropertyRow(fields, 15, "Default color theme", screenDefaultColorThemeBox);
-        addPropertyRow(fields, 16, "Overwrite color theme", screenOverwriteColorThemeBox);
-        addPropertyRow(fields, 17, "Advanced metadata", advancedMetadataEditor(screenMetadataArea));
+        addPropertyRow(fields, row++, "Border thickness", screenBorderThicknessBox);
+        addPropertyRow(fields, row++, "Border color", colorSelector(screenBorderColorField));
+        addPropertyRow(fields, row++, "Dialog", screenDialogBox);
+        addPropertyRow(fields, row++, "Dismiss on click outside", screenDismissOnClickOutsideBox);
+        addPropertyRow(fields, row++, "Dismiss on Escape", screenDismissOnEscapeBox);
+        addPropertyRow(fields, row++, "Default color theme", screenDefaultColorThemeBox);
+        addPropertyRow(fields, row++, "Overwrite color theme", screenOverwriteColorThemeBox);
+        if (design.layoutType() == ScreenLayoutType.MAIN_APP_LAYOUT) {
+            addPropertyRow(fields, row++, "Story screen id", screenStoryScreenIdField);
+            addPropertyRow(fields, row++, "Dialog screen id", screenDialogScreenIdField);
+            addPropertyRow(fields, row++, "Story/dialog ratio", screenStoryDialogRatioField);
+            addPropertyRow(fields, row++, "App layout orientation", screenAppLayoutOrientationBox);
+            addPropertyRow(fields, row++, "Show footer", screenShowFooterBox);
+            addPropertyRow(fields, row++, "Story insets", screenStoryInsetsField);
+            addPropertyRow(fields, row++, "Dialog insets", screenDialogInsetsField);
+            addPropertyRow(fields, row++, "App layout background image",
+                    fileSelector(screenAppLayoutBackgroundImageField, "Choose...",
+                            () -> chooseImagePath(screenAppLayoutBackgroundImageField)));
+            addPropertyRow(fields, row++, "App layout background fit", screenAppLayoutBackgroundFitBox);
+            addPropertyRow(fields, row++, "App layout background transparency", screenAppLayoutBackgroundTransparencyBox);
+            addPropertyRow(fields, row++, "App layout background color", colorSelector(screenAppLayoutBackgroundColorField));
+        }
+        addPropertyRow(fields, row, "Advanced metadata", advancedMetadataEditor(screenMetadataArea));
         return fields;
     }
 
@@ -2464,40 +2557,66 @@ public final class ScreenDesignerApplication {
         setComboValue(blockBorderCornerBox, metadataValue(block.metadata(), BORDER_CORNER_KEY));
         setComboValue(blockBorderThicknessBox, metadataValue(block.metadata(), BORDER_THICKNESS_KEY));
         blockBorderColorField.setText(metadataValue(block.metadata(), BORDER_COLOR_KEY));
+        blockOverlayScreenIdField.setText(metadataValue(block.metadata(), MainAppLayoutPlan.OVERLAY_SCREEN_ID_KEY));
+        setComboValue(blockOverlayPlacementBox, metadataValue(block.metadata(), MainAppLayoutPlan.OVERLAY_PLACEMENT_KEY));
+        setComboValue(blockOverlayAnchorBox, metadataValue(block.metadata(), MainAppLayoutPlan.OVERLAY_ANCHOR_KEY));
+        replaceComboItems(blockOverlayAnchorFieldBox, overlayAnchorFieldOptions(block.id()));
+        setComboValue(blockOverlayAnchorFieldBox, metadataValue(block.metadata(), MainAppLayoutPlan.OVERLAY_ANCHOR_FIELD_KEY));
+        blockOverlayOffsetXField.setText(metadataValue(block.metadata(), MainAppLayoutPlan.OVERLAY_OFFSET_X_KEY));
+        blockOverlayOffsetYField.setText(metadataValue(block.metadata(), MainAppLayoutPlan.OVERLAY_OFFSET_Y_KEY));
+        blockOverlayWidthField.setText(metadataValue(block.metadata(), MainAppLayoutPlan.OVERLAY_WIDTH_KEY));
+        blockOverlayHeightField.setText(metadataValue(block.metadata(), MainAppLayoutPlan.OVERLAY_HEIGHT_KEY));
+        setComboValue(blockOverlayTransparencyBox, metadataValue(block.metadata(), MainAppLayoutPlan.OVERLAY_TRANSPARENCY_KEY));
+        blockOverlayVisibleBox.setSelected(
+                !block.metadata().containsKey(MainAppLayoutPlan.OVERLAY_VISIBLE_KEY)
+                        || booleanMetadataValue(block.metadata(), MainAppLayoutPlan.OVERLAY_VISIBLE_KEY));
         blockConditionsArea.setText(conditionsText(block.conditions()));
         blockConditionsArea.setLineWrap(true);
         blockConditionsArea.setWrapStyleWord(true);
         configureMetadataArea(blockMetadataArea, metadataText(block.metadata(), BLOCK_EXPOSED_METADATA_KEYS));
         List<ScreenDesignValidationProblem> problems = ScreenDesignValidator.validate(design);
         String metadataPath = "blocks." + blockId + ".metadata.";
-        JPanel fields = propertyGrid(propertyLabelsFor(NavigationNode.block(blockId)).size());
-        addPropertyRow(fields, 0, "Block id", blockIdField);
-        addPropertyRow(fields, 1, "Title", blockTitleField);
-        addPropertyRow(fields, 2, "Layout type", blockLayoutTypeBox);
-        addPropertyRow(fields, 3, "Parent block", parentBlockBox);
-        addPropertyRow(fields, 4, "Style class", blockStyleClassField);
-        addPropertyRow(fields, 5, "Conditions", new JScrollPane(blockConditionsArea),
+        JPanel fields = propertyGrid(propertyLabelsFor(NavigationNode.block(blockId), design.layoutType()).size());
+        int row = 0;
+        addPropertyRow(fields, row++, "Block id", blockIdField);
+        addPropertyRow(fields, row++, "Title", blockTitleField);
+        addPropertyRow(fields, row++, "Layout type", blockLayoutTypeBox);
+        addPropertyRow(fields, row++, "Parent block", parentBlockBox);
+        addPropertyRow(fields, row++, "Style class", blockStyleClassField);
+        addPropertyRow(fields, row++, "Conditions", new JScrollPane(blockConditionsArea),
                 validationTextForField(problems, "blocks." + blockId + ".conditions"));
-        addPropertyRow(fields, 6, "Font", blockFontFamilyBox);
-        addPropertyRow(fields, 7, "Font size", blockFontSizeBox);
-        addPropertyRow(fields, 8, "Font style", blockFontStyleBox);
-        addPropertyRow(fields, 9, "Color", colorSelector(blockColorField));
-        addPropertyRow(fields, 10, "Background color", colorSelector(blockBackgroundColorField));
-        addPropertyRow(fields, 11, "Background image", fileSelector(blockBackgroundImageField, "Choose...", () -> chooseImagePath(blockBackgroundImageField)),
+        addPropertyRow(fields, row++, "Font", blockFontFamilyBox);
+        addPropertyRow(fields, row++, "Font size", blockFontSizeBox);
+        addPropertyRow(fields, row++, "Font style", blockFontStyleBox);
+        addPropertyRow(fields, row++, "Color", colorSelector(blockColorField));
+        addPropertyRow(fields, row++, "Background color", colorSelector(blockBackgroundColorField));
+        addPropertyRow(fields, row++, "Background image", fileSelector(blockBackgroundImageField, "Choose...", () -> chooseImagePath(blockBackgroundImageField)),
                 validationTextForField(problems, metadataPath + BACKGROUND_IMAGE_KEY));
-        addPropertyRow(fields, 12, "Background image transparency", blockBackgroundImageTransparencyBox,
+        addPropertyRow(fields, row++, "Background image transparency", blockBackgroundImageTransparencyBox,
                 validationTextForField(problems, metadataPath + BACKGROUND_IMAGE_TRANSPARENCY_KEY));
-        addPropertyRow(fields, 13, "Background image placement", blockBackgroundImagePlacementBox,
+        addPropertyRow(fields, row++, "Background image placement", blockBackgroundImagePlacementBox,
                 validationTextForField(problems, metadataPath + BACKGROUND_IMAGE_PLACEMENT_KEY));
-        addPropertyRow(fields, 14, "Transparency", blockTransparencyBox,
+        addPropertyRow(fields, row++, "Transparency", blockTransparencyBox,
                 validationTextForField(problems, metadataPath + TRANSPARENCY_KEY));
-        addPropertyRow(fields, 15, "Border style", blockBorderStyleBox,
+        addPropertyRow(fields, row++, "Border style", blockBorderStyleBox,
                 validationTextForField(problems, metadataPath + BORDER_STYLE_KEY));
-        addPropertyRow(fields, 16, "Border corner", blockBorderCornerBox,
+        addPropertyRow(fields, row++, "Border corner", blockBorderCornerBox,
                 validationTextForField(problems, metadataPath + BORDER_CORNER_KEY));
-        addPropertyRow(fields, 17, "Border thickness", blockBorderThicknessBox);
-        addPropertyRow(fields, 18, "Border color", colorSelector(blockBorderColorField));
-        addPropertyRow(fields, 19, "Advanced metadata", advancedMetadataEditor(blockMetadataArea));
+        addPropertyRow(fields, row++, "Border thickness", blockBorderThicknessBox);
+        addPropertyRow(fields, row++, "Border color", colorSelector(blockBorderColorField));
+        if (design.layoutType() == ScreenLayoutType.MAIN_APP_LAYOUT) {
+            addPropertyRow(fields, row++, "Overlay screen id", blockOverlayScreenIdField);
+            addPropertyRow(fields, row++, "Overlay placement", blockOverlayPlacementBox);
+            addPropertyRow(fields, row++, "Overlay anchor", blockOverlayAnchorBox);
+            addPropertyRow(fields, row++, "Overlay anchor field", blockOverlayAnchorFieldBox);
+            addPropertyRow(fields, row++, "Overlay offset X", blockOverlayOffsetXField);
+            addPropertyRow(fields, row++, "Overlay offset Y", blockOverlayOffsetYField);
+            addPropertyRow(fields, row++, "Overlay width", blockOverlayWidthField);
+            addPropertyRow(fields, row++, "Overlay height", blockOverlayHeightField);
+            addPropertyRow(fields, row++, "Overlay transparency", blockOverlayTransparencyBox);
+            addPropertyRow(fields, row++, "Overlay visible", blockOverlayVisibleBox);
+        }
+        addPropertyRow(fields, row, "Advanced metadata", advancedMetadataEditor(blockMetadataArea));
         return fields;
     }
 
@@ -2878,6 +2997,35 @@ public final class ScreenDesignerApplication {
         putBooleanMetadata(metadata, DIALOG_KEY, screenDialogBox.isSelected());
         putBooleanMetadata(metadata, DISMISS_ON_CLICK_OUTSIDE_KEY, screenDismissOnClickOutsideBox.isSelected());
         putBooleanMetadata(metadata, DISMISS_ON_ESCAPE_KEY, screenDismissOnEscapeBox.isSelected());
+        ScreenLayoutType selectedLayoutType = layoutTypeOrDefault((ScreenLayoutType) layoutTypeBox.getSelectedItem());
+        if (selectedLayoutType == ScreenLayoutType.MAIN_APP_LAYOUT) {
+            putOptionalMetadata(metadata, MainAppLayoutPlan.BACKGROUND_IMAGE_KEY,
+                    screenAppLayoutBackgroundImageField.getText());
+            putOptionalMetadata(metadata, MainAppLayoutPlan.BACKGROUND_FIT_KEY,
+                    selectedComboValue(screenAppLayoutBackgroundFitBox));
+            putOptionalMetadata(metadata, MainAppLayoutPlan.BACKGROUND_TRANSPARENCY_KEY,
+                    selectedComboValue(screenAppLayoutBackgroundTransparencyBox));
+            putOptionalMetadata(metadata, MainAppLayoutPlan.BACKGROUND_COLOR_KEY,
+                    screenAppLayoutBackgroundColorField.getText());
+            putOptionalMetadata(metadata, MainAppLayoutPlan.STORY_SCREEN_ID_KEY,
+                    screenStoryScreenIdField.getText());
+            putOptionalMetadata(metadata, MainAppLayoutPlan.DIALOG_SCREEN_ID_KEY,
+                    screenDialogScreenIdField.getText());
+            putOptionalMetadata(metadata, MainAppLayoutPlan.STORY_DIALOG_RATIO_KEY,
+                    screenStoryDialogRatioField.getText());
+            putOptionalMetadata(metadata, MainAppLayoutPlan.ORIENTATION_KEY,
+                    selectedComboValue(screenAppLayoutOrientationBox));
+            // Show-footer defaults to true; only persist the metadata key when the author opted out.
+            if (screenShowFooterBox.isSelected()) {
+                metadata.remove(MainAppLayoutPlan.SHOW_FOOTER_KEY);
+            } else {
+                metadata.put(MainAppLayoutPlan.SHOW_FOOTER_KEY, "false");
+            }
+            putOptionalMetadata(metadata, MainAppLayoutPlan.STORY_INSETS_KEY,
+                    screenStoryInsetsField.getText());
+            putOptionalMetadata(metadata, MainAppLayoutPlan.DIALOG_INSETS_KEY,
+                    screenDialogInsetsField.getText());
+        }
         return metadata;
     }
 
@@ -2893,6 +3041,32 @@ public final class ScreenDesignerApplication {
         putOptionalMetadata(metadata, BORDER_CORNER_KEY, selectedComboValue(blockBorderCornerBox));
         putOptionalMetadata(metadata, BORDER_THICKNESS_KEY, selectedComboValue(blockBorderThicknessBox));
         putOptionalMetadata(metadata, BORDER_COLOR_KEY, blockBorderColorField.getText());
+        if (design.layoutType() == ScreenLayoutType.MAIN_APP_LAYOUT) {
+            putOptionalMetadata(metadata, MainAppLayoutPlan.OVERLAY_SCREEN_ID_KEY,
+                    blockOverlayScreenIdField.getText());
+            putOptionalMetadata(metadata, MainAppLayoutPlan.OVERLAY_PLACEMENT_KEY,
+                    selectedComboValue(blockOverlayPlacementBox));
+            putOptionalMetadata(metadata, MainAppLayoutPlan.OVERLAY_ANCHOR_KEY,
+                    selectedComboValue(blockOverlayAnchorBox));
+            putOptionalMetadata(metadata, MainAppLayoutPlan.OVERLAY_ANCHOR_FIELD_KEY,
+                    selectedComboValue(blockOverlayAnchorFieldBox));
+            putOptionalMetadata(metadata, MainAppLayoutPlan.OVERLAY_OFFSET_X_KEY,
+                    blockOverlayOffsetXField.getText());
+            putOptionalMetadata(metadata, MainAppLayoutPlan.OVERLAY_OFFSET_Y_KEY,
+                    blockOverlayOffsetYField.getText());
+            putOptionalMetadata(metadata, MainAppLayoutPlan.OVERLAY_WIDTH_KEY,
+                    blockOverlayWidthField.getText());
+            putOptionalMetadata(metadata, MainAppLayoutPlan.OVERLAY_HEIGHT_KEY,
+                    blockOverlayHeightField.getText());
+            putOptionalMetadata(metadata, MainAppLayoutPlan.OVERLAY_TRANSPARENCY_KEY,
+                    selectedComboValue(blockOverlayTransparencyBox));
+            // Overlay-visible defaults to true; only persist when the author opted out.
+            if (blockOverlayVisibleBox.isSelected()) {
+                metadata.remove(MainAppLayoutPlan.OVERLAY_VISIBLE_KEY);
+            } else {
+                metadata.put(MainAppLayoutPlan.OVERLAY_VISIBLE_KEY, "false");
+            }
+        }
         return metadata;
     }
 
@@ -3162,17 +3336,47 @@ public final class ScreenDesignerApplication {
     }
 
     static List<String> propertyLabelsFor(NavigationNode navigationNode) {
+        return propertyLabelsFor(navigationNode, null);
+    }
+
+    static List<String> propertyLabelsFor(NavigationNode navigationNode, ScreenLayoutType screenLayoutType) {
         return switch (navigationNode.type()) {
-            case SCREEN -> List.of("Screen id", "Title", "Layout type", "Font", "Font size", "Font style", "Color", "Background color",
-                    "Border style", "Border corner", "Border thickness", "Border color",
-                    "Dialog", "Dismiss on click outside", "Dismiss on Escape",
-                    "Default color theme", "Overwrite color theme", "Advanced metadata");
-            case BLOCK -> List.of("Block id", "Title", "Layout type", "Parent block", "Style class", "Conditions", "Font", "Font size", "Font style", "Color", "Background color",
-                    "Background image", "Background image transparency", "Background image placement", "Transparency", "Border style", "Border corner", "Border thickness", "Border color",
-                    "Advanced metadata");
+            case SCREEN -> {
+                List<String> base = List.of("Screen id", "Title", "Layout type", "Font", "Font size", "Font style", "Color", "Background color",
+                        "Border style", "Border corner", "Border thickness", "Border color",
+                        "Dialog", "Dismiss on click outside", "Dismiss on Escape",
+                        "Default color theme", "Overwrite color theme");
+                ArrayList<String> labels = new ArrayList<>(base);
+                if (screenLayoutType == ScreenLayoutType.MAIN_APP_LAYOUT) {
+                    labels.addAll(MAIN_APP_LAYOUT_SCREEN_LABELS);
+                }
+                labels.add("Advanced metadata");
+                yield List.copyOf(labels);
+            }
+            case BLOCK -> {
+                List<String> base = List.of("Block id", "Title", "Layout type", "Parent block", "Style class", "Conditions", "Font", "Font size", "Font style", "Color", "Background color",
+                        "Background image", "Background image transparency", "Background image placement", "Transparency", "Border style", "Border corner", "Border thickness", "Border color");
+                ArrayList<String> labels = new ArrayList<>(base);
+                if (screenLayoutType == ScreenLayoutType.MAIN_APP_LAYOUT) {
+                    labels.addAll(MAIN_APP_LAYOUT_BLOCK_LABELS);
+                }
+                labels.add("Advanced metadata");
+                yield List.copyOf(labels);
+            }
             case ITEM, TEMPORARY_ITEM -> itemPropertyLabelsFor(ScreenDesignItemType.FIELD);
         };
     }
+
+    static final List<String> MAIN_APP_LAYOUT_SCREEN_LABELS = List.of(
+            "Story screen id", "Dialog screen id", "Story/dialog ratio", "App layout orientation",
+            "Show footer", "Story insets", "Dialog insets",
+            "App layout background image", "App layout background fit",
+            "App layout background transparency", "App layout background color");
+
+    static final List<String> MAIN_APP_LAYOUT_BLOCK_LABELS = List.of(
+            "Overlay screen id", "Overlay placement", "Overlay anchor", "Overlay anchor field",
+            "Overlay offset X", "Overlay offset Y", "Overlay width", "Overlay height",
+            "Overlay transparency", "Overlay visible");
 
     static List<String> itemPropertyLabelsFor(ScreenDesignItemType type) {
         ArrayList<String> labels = new ArrayList<>(List.of("Target block", "Item id", "Style class", "Type", "Sequence"));

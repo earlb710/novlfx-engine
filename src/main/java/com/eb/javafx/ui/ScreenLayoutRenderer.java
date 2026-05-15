@@ -104,6 +104,13 @@ public final class ScreenLayoutRenderer {
      * @return preview root, optionally wrapped in a configured background container
      */
     public static Parent createScrollablePreviewRoot(ScreenLayoutModel model, Path resourceRoot) {
+        Validation.requireNonNull(model, "Screen layout model is required.");
+        if (model.type() == ScreenLayoutType.MAIN_APP_LAYOUT) {
+            // The main-app layout manages its own scrolling (story area scrolls; dialog and footer
+            // stay pinned), so it must not be wrapped in an outer ScrollPane that would scroll the
+            // whole composition together.
+            return mainAppLayoutPreviewRoot(model, resourceRoot);
+        }
         BorderPane root = createRoot(model, resourceRoot);
         // Wrap only the center panel so the title and footer bar stay fixed outside the scroll area.
         javafx.scene.Node center = root.getCenter();
@@ -126,6 +133,12 @@ public final class ScreenLayoutRenderer {
     }
 
     public static Parent createPreviewRoot(ScreenLayoutModel model, Path resourceRoot) {
+        Validation.requireNonNull(model, "Screen layout model is required.");
+        if (model.type() == ScreenLayoutType.MAIN_APP_LAYOUT) {
+            // See createScrollablePreviewRoot — bypass the standard frame so the main-app layout's
+            // own dialog/footer stay pinned and the story area is the only thing that scrolls.
+            return mainAppLayoutPreviewRoot(model, resourceRoot);
+        }
         BorderPane root = createRoot(model, resourceRoot);
         if (!hasScreenBackground(model.metadata())) {
             return root;
@@ -141,6 +154,28 @@ public final class ScreenLayoutRenderer {
                 model.metadata().get("backgroundColor"),
                 model.metadata().get(SCREEN_BACKGROUND_IMAGE_KEY),
                 model.metadata().get(SCREEN_BACKGROUND_IMAGE_TRANSPARENCY_KEY));
+    }
+
+    /**
+     * Builds a designer preview for {@link ScreenLayoutType#MAIN_APP_LAYOUT} models that bypasses
+     * the standard title + outer-scroll frame.
+     *
+     * <p>The main-app layout owns its own footer and central frame (story area scrolls, dialog and
+     * footer stay pinned). Wrapping it inside the standard frame would either add a second footer
+     * or scroll the whole composition together, so this entry point hands the layout off directly
+     * to {@link MainAppLayoutRenderer} with a labelled-placeholder resolver.</p>
+     */
+    private static Parent mainAppLayoutPreviewRoot(ScreenLayoutModel model, Path resourceRoot) {
+        MainAppLayoutPlan plan;
+        try {
+            plan = MainAppLayoutPlan.fromLayoutModel(model);
+        } catch (IllegalArgumentException exception) {
+            Label notice = new Label("Main app layout preview unavailable:\n" + exception.getMessage());
+            notice.setWrapText(true);
+            notice.getStyleClass().add(ScreenShell.LAYOUT_SUBTITLE_STYLE_CLASS);
+            return new StackPane(notice);
+        }
+        return MainAppLayoutRenderer.render(plan, ScreenLayoutRenderer::previewPlaceholder, resourceRoot);
     }
 
     public static BorderPane createRoot(RouteContext context, ScreenLayoutModel model) {
@@ -248,7 +283,51 @@ public final class ScreenLayoutRenderer {
             case MENU_ACTION_LIST -> sectionList(model, ScreenShell.LAYOUT_MENU_STYLE_CLASS, eventBus, resourceRoot);
             case FORM -> sectionList(model, ScreenShell.LAYOUT_FORM_STYLE_CLASS, eventBus, resourceRoot);
             case PREVIEW_GRID -> previewGrid(model, eventBus, resourceRoot);
+            case MAIN_APP_LAYOUT -> mainAppLayoutPreview(model, resourceRoot);
         };
+    }
+
+    /**
+     * Builds a structural preview for {@link ScreenLayoutType#MAIN_APP_LAYOUT} models.
+     *
+     * <p>Applications render the real composed layout through {@code MainAppLayoutRenderer}, which
+     * needs a {@code MainAppScreenResolver} to load the referenced story/dialog/HUD screens. The
+     * designer preview path doesn't have such a resolver, so this method renders a labelled
+     * placeholder for each slot through the same {@code MainAppLayoutRenderer} pipeline — giving
+     * authors a visible mockup of the proportions and overlay placements without needing to wire
+     * the surrounding screen factory.</p>
+     */
+    private static Node mainAppLayoutPreview(ScreenLayoutModel model, Path resourceRoot) {
+        MainAppLayoutPlan plan;
+        try {
+            plan = MainAppLayoutPlan.fromLayoutModel(model);
+        } catch (IllegalArgumentException exception) {
+            Label notice = new Label("Main app layout preview unavailable:\n" + exception.getMessage());
+            notice.setWrapText(true);
+            notice.getStyleClass().add(ScreenShell.LAYOUT_SUBTITLE_STYLE_CLASS);
+            return notice;
+        }
+        return MainAppLayoutRenderer.render(plan, ScreenLayoutRenderer::previewPlaceholder, resourceRoot);
+    }
+
+    private static Node previewPlaceholder(String screenId) {
+        Label label = new Label(screenId);
+        label.setWrapText(true);
+        label.setAlignment(Pos.CENTER);
+        label.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
+        StackPane placeholder = new StackPane(label);
+        placeholder.getStyleClass().add("layout-main-app-placeholder");
+        placeholder.setStyle(
+                "-fx-background-color: rgba(255, 255, 255, 0.06);"
+                        + " -fx-border-color: rgba(255, 255, 255, 0.35);"
+                        + " -fx-border-width: 1;"
+                        + " -fx-border-style: dashed;"
+                        + " -fx-padding: 8;");
+        placeholder.setMinSize(40, 40);
+        // Allow the placeholder to stretch when its slot (e.g. the story area inside a fit-to-height
+        // ScrollPane) wants to give it more space than the label's natural pref height.
+        placeholder.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
+        return placeholder;
     }
 
     private static Node titledPanel(ScreenLayoutModel model, GameEventBus eventBus, Path resourceRoot) {

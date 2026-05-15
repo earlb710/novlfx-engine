@@ -1,0 +1,90 @@
+{
+  "id": "test.main-app-layout",
+  "title": "screen.title",
+  "layoutType": "MAIN_APP_LAYOUT",
+  "metadata": {
+    "description": "Manual test design for the main app layout scaffolding. Demonstrates a background image, a vertical story/dialog split at the default 0.875 ratio (story area is scrollable, dialog stays pinned at the bottom of the central frame), the standard footer, and four HUD overlay blocks placed by alignment, pixels, and percent respectively.",
+    "appLayoutBackgroundImage": "/com/eb/javafx/images/svg/background-gradient-rectangle.svg",
+    "appLayoutBackgroundFit": "STRETCH",
+    "appLayoutBackgroundTransparency": "0.2",
+    "appLayoutBackgroundColor": "#0d1b2d",
+    "storyScreenId": "story",
+    "dialogScreenId": "dialog",
+    "appLayoutOrientation": "vertical",
+    "showFooter": "true"
+  },
+  "blocks": [
+    {
+      "id": "hud.status",
+      "title": "block.hud.status.title",
+      "layoutType": "HUD_STATUS_OVERLAY",
+      "parentBlockId": null,
+      "conditions": [],
+      "styleClass": null,
+      "metadata": {
+        "overlayScreenId": "hud-status",
+        "overlayPlacement": "alignment",
+        "overlayAnchor": "TOP_LEFT",
+        "overlayOffsetX": "16",
+        "overlayOffsetY": "16",
+        "overlayWidth": "260",
+        "overlayTransparency": "0.1",
+        "overlayVisible": "true"
+      }
+    },
+    {
+      "id": "hud.log",
+      "title": "block.hud.log.title",
+      "layoutType": "HUD_STATUS_OVERLAY",
+      "parentBlockId": null,
+      "conditions": [],
+      "styleClass": null,
+      "metadata": {
+        "overlayScreenId": "hud-log",
+        "overlayPlacement": "alignment",
+        "overlayAnchor": "TOP_RIGHT",
+        "overlayOffsetX": "16",
+        "overlayOffsetY": "16",
+        "overlayWidth": "320",
+        "overlayHeight": "200",
+        "overlayTransparency": "0.1",
+        "overlayVisible": "true"
+      }
+    },
+    {
+      "id": "hud.minimap",
+      "title": "block.hud.minimap.title",
+      "layoutType": "HUD_STATUS_OVERLAY",
+      "parentBlockId": null,
+      "conditions": [],
+      "styleClass": null,
+      "metadata": {
+        "overlayScreenId": "hud-minimap",
+        "overlayPlacement": "percent",
+        "overlayOffsetX": "0.82",
+        "overlayOffsetY": "0.06",
+        "overlayWidth": "180",
+        "overlayHeight": "180",
+        "overlayTransparency": "0.0",
+        "overlayVisible": "true"
+      }
+    },
+    {
+      "id": "hud.toast",
+      "title": "block.hud.toast.title",
+      "layoutType": "HUD_STATUS_OVERLAY",
+      "parentBlockId": null,
+      "conditions": [],
+      "styleClass": null,
+      "metadata": {
+        "overlayScreenId": "hud-toast",
+        "overlayPlacement": "pixels",
+        "overlayOffsetX": "320",
+        "overlayOffsetY": "24",
+        "overlayWidth": "240",
+        "overlayTransparency": "0.0",
+        "overlayVisible": "true"
+      }
+    }
+  ]
+}

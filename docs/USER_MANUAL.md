@@ -467,7 +467,7 @@ The `ui` package provides reusable JavaFX surfaces and helpers:
 - `MainMenuEntry` is the content-neutral contract for one main-menu route/action entry, and `InformationalScreenModels.backToMainMenu(...)` builds simple placeholder or error screen models with a standard main-menu action.
 - `DisplayPreviewBinding` carries image id, source path, layer, and asset-resolution state for display diagnostics and app-owned previews.
 - `ScreenBackgroundFit` names reusable background sizing modes: stretch or center-crop.
-- `ScreenLayoutType`, `ScreenLayoutModel`, and `ScreenLayoutSection` define reusable screen layout intent without JavaFX control state. Use them when a screen needs a stable general structure such as a titled panel, two-column layout, sidebar/content layout, HUD/status overlay, dialogue surface, menu/action list, form, or preview/card grid.
+- `ScreenLayoutType`, `ScreenLayoutModel`, and `ScreenLayoutSection` define reusable screen layout intent without JavaFX control state. Use them when a screen needs a stable general structure such as a titled panel, two-column layout, sidebar/content layout, HUD/status overlay, dialogue surface, menu/action list, form, preview/card grid, or main app layout. The `MAIN_APP_LAYOUT` value names the app-frame composition described under "Main app layout"; it is rendered through `MainAppLayoutRenderer` rather than the standard `ScreenLayoutRenderer`.
 - `ScreenDesignModel`, `ScreenDesignBlock`, and `ScreenDesignItem` define editable JSON-backed screen designs with stable screen, block, and item ids. Use `ScreenDesignService.addItemToBlock(...)` or `addTemporaryItemToBlock(...)` when code needs to target a block id directly; temporary items render in preview/test mode but `ScreenDesignJson.save(...)` excludes them from persisted JSON. `ScreenDesignJson` saves/loads documents with top-level `id`, `title`, `layoutType`, `metadata`, and ordered `blocks`. Each block carries `id`, optional `title`, optional block-level `layoutType`, optional `parentBlockId`, optional `styleClass`, `metadata`, and an inline `items` array containing the items that belong to that block. Each item carries `id`, `type`, optional `label`, `text`, `value`, `defaultValue`, `styleClass`, and `metadata`; `blockId` is derived from the containing block and is not required in the JSON wire format. Known boolean metadata keys (`dialog`, `dismissOnClickOutside`, `dismissOnEscape`, `showTicks`, `showLabels`, `editable`) and numeric keys (`borderThickness`, `transparency`, `min`, `max`, `step`) are serialized as JSON primitives rather than quoted strings. The parser also accepts older flat-format files that carry a top-level `items` array with explicit `blockId` fields, quoted numbers, and comma-separated `options` strings, so existing documents continue to load without conversion.
 - `ConversationDefinition`, `ConversationDefinitionJson`, and `JsonConversationContentModule` define JSON-backed conversation documents for authored visual-novel content using the AltLife exported shape. A conversation file has top-level `name`, `language`, and ordered `conversations`; each conversation carries `id`, `description`, and typed `lines`. Line `type` supports `say` by default, `shout` for uppercase bold text, `whisper` for lowercase italic text, and `choice` for player-selectable variants with per-choice values and conditions. `JsonConversationContentModule` projects that document into reusable content definitions and scene definitions when runtime registration is needed.
 - `ScreenLayoutContract` loads the machine-readable layout contract from `src/main/resources/com/eb/javafx/ui/layout-contract.json`, which lists engine-provided layout types, the default stylesheet, and stable CSS style hooks applications can target.
@@ -544,6 +544,155 @@ Blocks and items are stable editable records:
 - `RADIO_GROUP` renders a group of mutually exclusive radio buttons; put choices as a JSON string array in `options`, e.g. `["Red", "Green", "Blue"]`; `metadata.orientation` of `horizontal` or `vertical` (default) controls layout; `editable: true` makes the buttons clickable
 
 `ScreenDesignLayoutAdapter` converts a `ScreenDesignModel` into a `ScreenLayoutModel` for preview or runtime rendering. It preserves stable block/item ids, converts `parentBlockId` relationships into nested layout sections, maps field-style items to `label: value/defaultValue` lines, carries field metadata needed for JavaFX preview/runtime input controls (including editable state), sorts block items by optional `sequence` before falling back to authored JSON order, and carries item/block metadata into the layout so renderer-supported visual metadata can be applied consistently. Block `conditions` are preserved in section metadata as a JSON string array, and applications can call the binding overload with a string map so authored text such as `$playerName` or `${playerName}` is resolved during scaffolding. Complex or application-specific controls can still be added programmatically by targeting stable block ids after the JSON scaffold is loaded.
+
+### Main app layout
+
+The engine ships a higher-level scaffolding for the typical visual-novel app frame: a background layer, a central frame split between a story area and a smaller dialog area with the standard footer below it, and any number of HUD overlay screens layered on top of the story area. The scaffolding is authored as a `ScreenDesignModel` whose `layoutType` is `MAIN_APP_LAYOUT`; the structural parts are pulled from the screen metadata, and each HUD overlay maps to one block on that screen.
+
+#### Frame structure
+
+```
++-------------------------------------------+
+|  background (image + colour)              |
+|  +-------------------------------------+  |
+|  |  story area (scrolls when overflow) |  |  <- HUD overlays live here
+|  |  +-------+   +---------+            |  |
+|  |  |status |   | log     |            |  |
+|  |  +-------+   +---------+            |  |
+|  |                                     |  |
+|  +-------------------------------------+  |
+|  |  dialog area (pinned, fixed height) |  |
+|  +-------------------------------------+  |
+|  |  footer (ScreenShell.footerBar)     |  |
+|  +-------------------------------------+  |
++-------------------------------------------+
+```
+
+- The **story area** fills the available height and grows a vertical scrollbar when its content is taller than the slot. HUD overlays are parented into the story area, so anchors like `BOTTOM_RIGHT` or `100%`-height placements land on the story slot's edge — overlays never overlap the dialog or footer.
+- The **dialog area** is pinned at the bottom (vertical orientation) or right (horizontal orientation). Its size is `(1 − storyDialogRatio) × frame.size`. Dialog and footer remain visible even when the story area is too short to show all its content.
+- The **footer** is the standard `ScreenShell.footerBar()`; turn it off with `showFooter: false`.
+
+#### Screen metadata
+
+`MainAppLayoutPlan.from(ScreenDesignModel)` parses a design into a UI-neutral plan. Supported screen-level metadata keys:
+
+- `storyScreenId` (required) — id of the screen rendered in the story area
+- `dialogScreenId` (optional) — id of the screen rendered in the dialog area; when omitted the story area fills the entire central frame
+- `storyDialogRatio` (default `0.875`) — story-area share of the central frame, `0.0`–`1.0`
+- `appLayoutOrientation` (default `vertical`) — `vertical` (story on top, dialog on bottom) or `horizontal` (side-by-side)
+- `showFooter` (default `true`) — render the standard `ScreenShell` footer below the central frame
+- `storyInsets` / `dialogInsets` (default `0`) — CSS-style shorthand padding inside the corresponding slot. Accepts 1, 2, or 4 comma-separated numbers (`"10"`, `"8, 12"`, `"4, 12, 4, 12"`)
+- `appLayoutBackgroundImage`, `appLayoutBackgroundFit` (`STRETCH` or `CROP_CENTER`), `appLayoutBackgroundTransparency`, `appLayoutBackgroundColor` — background layer configuration
+
+#### HUD overlay metadata
+
+Each block in a `MAIN_APP_LAYOUT` design represents one HUD overlay. Supported block-level metadata keys:
+
+- `overlayScreenId` (required) — id of the screen rendered inside the overlay
+- `overlayPlacement` (default `alignment`) — `alignment`, `pixels`, `percent`, or `relative`
+- `overlayAnchor` — for `alignment` (default `TOP_LEFT`), accepts JavaFX-style anchors (`TOP_RIGHT`, `BOTTOM_CENTER`, `CENTER`, …; short aliases `TOP` / `BOTTOM` are accepted). For `relative` (default `RIGHT`), accepts `ABOVE`, `BELOW`, `LEFT`, or `RIGHT`
+- `overlayAnchorField` — required for `relative`: id of the sibling overlay block this one is anchored to (for example `"status"` to place "left of the status block"); ignored otherwise
+- `overlayOffsetX`, `overlayOffsetY` — pixel offsets from the anchor (`alignment` / `relative`), absolute pixel coordinates (`pixels`), or fractional `0.0`–`1.0` coordinates (`percent`)
+- `overlayWidth`, `overlayHeight` (optional) — preferred overlay size in pixels
+- `overlayTransparency` (default `0.0`) — overlay transparency, `0.0` (opaque) to `1.0` (invisible)
+- `overlayVisible` (default `true`) — hides the overlay when `false` (the wrapper is still parsed but excluded from the JavaFX tree)
+
+#### Placement modes
+
+| Mode | When to use | What `overlayOffsetX` / `overlayOffsetY` mean |
+|---|---|---|
+| `alignment` | Anchor the overlay to one of the story slot's nine grid positions | Pixel offsets *from* the anchor (positive offsetX pushes the overlay away from the anchored edge) |
+| `pixels` | Absolute coordinates inside the story slot | Pixel coordinates from the story slot's top-left |
+| `percent` | Coordinates that scale with the story slot's size | Fractions of story-slot width / height (0.0 = left/top, 1.0 = right/bottom) |
+| `relative` | Anchor against *another overlay block* — for example "left of the status block" | Pixel offsets added on top of the relative anchor position |
+
+For `relative` mode the renderer wires the overlay's position to its anchor sibling's `boundsInParent`, so the position keeps following the anchor when the window resizes, the anchor moves, or the anchor changes size. If the referenced anchor block is missing or hidden, the dependent overlay falls back to the story-slot top-left rather than failing.
+
+#### Rendering and the screen resolver
+
+`MainAppLayoutRenderer.render(plan, resolver, resourceRoot)` turns the plan into a JavaFX `StackPane`. The renderer never resolves screens itself; the supplied `MainAppScreenResolver` is asked once per slot — story, dialog, and each HUD overlay — to return a `Node` for the requested id. Applications typically back the resolver with their `ScreenInventory`, `ScreenDesignService`, or another screen factory. Returning `null` from the resolver leaves the corresponding slot empty rather than failing.
+
+The screen designer's live preview short-circuits to `MainAppLayoutRenderer` with a labelled-placeholder resolver, so authors see the proportions and overlay placements without wiring real story / dialog / HUD screens.
+
+#### Example
+
+A minimal main-app-layout design with a background image, a story / dialog split at the default ratio, and three overlays demonstrating `alignment`, `percent`, and `relative` placement:
+
+```json
+{
+  "id": "test.main-app-layout",
+  "title": "screen.title",
+  "layoutType": "MAIN_APP_LAYOUT",
+  "metadata": {
+    "appLayoutBackgroundImage": "/com/eb/javafx/images/svg/background-gradient-rectangle.svg",
+    "appLayoutBackgroundFit": "STRETCH",
+    "appLayoutBackgroundTransparency": "0.2",
+    "appLayoutBackgroundColor": "#0d1b2d",
+    "storyScreenId": "story",
+    "dialogScreenId": "dialog",
+    "storyInsets": "8",
+    "dialogInsets": "12, 16, 12, 16"
+  },
+  "blocks": [
+    {
+      "id": "hud.status",
+      "title": "block.hud.status.title",
+      "metadata": {
+        "overlayScreenId": "hud-status",
+        "overlayPlacement": "alignment",
+        "overlayAnchor": "TOP_LEFT",
+        "overlayOffsetX": "16",
+        "overlayOffsetY": "16",
+        "overlayWidth": "260"
+      }
+    },
+    {
+      "id": "hud.minimap",
+      "title": "block.hud.minimap.title",
+      "metadata": {
+        "overlayScreenId": "hud-minimap",
+        "overlayPlacement": "percent",
+        "overlayOffsetX": "0.82",
+        "overlayOffsetY": "0.06",
+        "overlayWidth": "180",
+        "overlayHeight": "180"
+      }
+    },
+    {
+      "id": "hud.tooltip",
+      "title": "block.hud.tooltip.title",
+      "metadata": {
+        "overlayScreenId": "hud-tooltip",
+        "overlayPlacement": "relative",
+        "overlayAnchor": "RIGHT",
+        "overlayAnchorField": "hud.status",
+        "overlayOffsetX": "8"
+      }
+    }
+  ]
+}
+```
+
+Wiring it up at runtime is the responsibility of the application; the resolver hands the engine a `Node` for each id used in the design (story, dialog, and the three HUD screen ids):
+
+```java
+ScreenDesignModel design = ScreenDesignJson.load(designPath);
+MainAppLayoutPlan plan = MainAppLayoutPlan.from(design);
+
+MainAppScreenResolver resolver = screenId -> switch (screenId) {
+    case "story"        -> storyFactory.createNode();
+    case "dialog"       -> dialogFactory.createNode();
+    case "hud-status"   -> hudStatusFactory.createNode();
+    case "hud-minimap"  -> hudMinimapFactory.createNode();
+    case "hud-tooltip"  -> hudTooltipFactory.createNode();
+    default             -> null; // unknown id; slot stays empty
+};
+
+StackPane root = MainAppLayoutRenderer.render(plan, resolver, designPath.getParent());
+Scene scene = new Scene(root, 1280, 720);
+```
+
+The packaged design at [`examples/resources/json/screens/main-app-layout-test-screen.json`](../examples/resources/json/screens/main-app-layout-test-screen.json) exercises every supported screen metadata key and all four overlay placement modes; its `_text.json` sidecar holds the localized titles. Load it in the screen designer to see the live preview.
 
 ### Editing a screen manually in JSON
 
