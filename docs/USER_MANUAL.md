@@ -478,6 +478,7 @@ The `ui` package provides reusable JavaFX surfaces and helpers:
 - `ScreenNavigation` centralizes navigation callbacks.
 - `PreviewSummaryView` creates simple titled preview panels for display, scene, and snapshot summaries.
 - `MainMenuScreen`, `SceneFlowScreen`, `DisplayBindingsScreen`, `HudSummaryScreen`, `SaveLoadSummaryScreen`, `PreferencesSummaryScreen`, and `ConversationHistoryScreen` provide generic reusable screens or screen models.
+- `DialogEntriesView` is the reusable widget for the `MAIN_APP_LAYOUT` dialog slot. It owns a `DialogHistory`, renders rich text via `TextFlow`, and exposes `addEntry`, `setEntries`, `say`, `shout`, `whisper`, `startConversation`, `endConversation`, `clear`, `goBack`, `goForward`, `bindToFooter`, and `installKeyboardShortcuts`. The cursor decides which entry sits at the bottom of the panel at full opacity; earlier entries are faded to `0.5` opacity. Public sealed `Entry` permits — `PlainEntry`, `SpokenEntry`, `ConversationStart`, `ConversationEnd` — model the four visible row kinds. See "Main app layout → Dialog entries widget" below.
 - `CaptureTestScreen` supports test/manual capture workflows; its `CaptureFormModel` stores validated capture form values.
 - `UiTheme` loads the reusable stylesheet from `src/main/resources/com/eb/javafx/ui/default.css`.
 - `StartupErrorReporter`, `StartupFailureException`, and `StartupFailureCategory` provide structured startup diagnostics.
@@ -693,6 +694,91 @@ Scene scene = new Scene(root, 1280, 720);
 ```
 
 The packaged design at [`examples/resources/json/screens/main-app-layout-test-screen.json`](../examples/resources/json/screens/main-app-layout-test-screen.json) exercises every supported screen metadata key and all four overlay placement modes; its `_text.json` sidecar holds the localized titles. Load it in the screen designer to see the live preview.
+
+#### Dialog entries widget
+
+`DialogEntriesView` is the engine's reusable widget for the dialog slot. It owns a sealed
+`Entry` model and a `DialogHistory`, renders rich text via `TextFlow`, and offers say / shout /
+whisper / start-conversation / end-conversation helpers that mirror writes into both the visible
+stack and the history.
+
+The current entry sits at the bottom of the panel at full opacity; earlier entries are stacked
+above it at `0.5` opacity so the player sees recent context fading away.
+
+Entry kinds (the sealed `DialogEntriesView.Entry` hierarchy):
+
+- `PlainEntry` — bare narration string, rendered as a `Label`.
+- `SpokenEntry` — `LineType.SAY` / `SHOUT` / `WHISPER` line with optional speaker, rendered as a
+  `TextFlow`: speaker prefix uses `DialogSpeaker.textColor()` when supplied; shout body is bold +
+  uppercase; whisper body is italic + lowercase; say body is plain.
+- `ConversationStart` — divider listing the conversation's participants (and the start timestamp
+  when supplied). Rendered as `── Conversation: Alice, Bob ──` with horizontal lines on either
+  side.
+- `ConversationEnd` — closing divider, also rendered as a horizontal band.
+
+API in `com.eb.javafx.ui`:
+
+| Method | Purpose |
+|---|---|
+| `addEntry(String)` | Append a `PlainEntry` and move the cursor to it. |
+| `setEntries(Collection<String>)` | Replace history with plain narration entries. |
+| `say(speaker, text)` / `say(text)` | Append a `SAY` `SpokenEntry`; mirrors into `DialogHistory` if a conversation is open. |
+| `shout(speaker, text)` / `shout(text)` | Append a `SHOUT` `SpokenEntry` (bold + uppercase body). |
+| `whisper(speaker, text)` / `whisper(text)` | Append a `WHISPER` `SpokenEntry` (italic + lowercase body). |
+| `startConversation(participants...)` | Append a `ConversationStart` divider and call `history.beginDialog(...)` with an auto-generated id + default timestamp. Overloads accept a `GameClock` or an explicit `(dialogId, GameDateTime, participants...)`. |
+| `endConversation()` / `endConversation(GameClock)` / `endConversation(GameDateTime)` | Append a `ConversationEnd` divider and call `history.endDialog(...)`. No-op when no conversation is open. |
+| `clear()` | Clear the visible stack (the `DialogHistory` keeps its accumulated entries). |
+| `goBack()` / `goForward()` | Move the cursor one entry; both clamp at the ends. |
+| `setMaxVisibleEntries(int)` | Cap how many entries (current + previous) render at once. |
+| `entries()` | Plain-text representation of each entry (useful for tests / serialization). |
+| `dialogEntries()` | The structured `Entry` list. |
+| `history()` | The owned (or caller-supplied via `new DialogEntriesView(history)`) `DialogHistory`. |
+| `canGoBackProperty()` / `canGoForwardProperty()` | `ReadOnlyBooleanProperty` signals for greying out footer affordances. |
+| `bindToFooter(Node)` | Wire the standard `ScreenShell.footerBar()` back / forward labels to drive `goBack()` / `goForward()`. Accepts either the footer `HBox` itself or any ancestor that contains it. |
+| `installKeyboardShortcuts(Scene)` | Install `Backspace` / `Space` event filters that mirror the default footer back / forward shortcuts. |
+
+A typical wiring in the main app layout's dialog slot:
+
+```java
+DialogEntriesView dialog = new DialogEntriesView();
+DialogSpeaker alice = DialogSpeaker.iconText("alice", "Alice", "alice-portrait", "#ffaaff");
+DialogSpeaker bob   = DialogSpeaker.text("bob", "Bob");
+
+dialog.startConversation(alice, bob);   // divider + history.beginDialog
+dialog.say(alice, "Hello, Bob!");        // "Alice: Hello, Bob!"
+dialog.shout(bob, "Stop!");              // "Bob: STOP!" (bold)
+dialog.whisper(alice, "Don't tell anyone."); // "Alice: don't tell anyone." (italic)
+dialog.endConversation();                // divider + history.endDialog
+
+MainAppScreenResolver resolver = screenId -> switch (screenId) {
+    case "story"  -> storyFactory.createNode();
+    case "dialog" -> dialog;
+    default       -> null;
+};
+
+StackPane root = MainAppLayoutRenderer.render(plan, resolver, resourceRoot);
+dialog.bindToFooter(root);                  // footer back/forward → dialog navigation
+Scene scene = new Scene(root, 1280, 720);
+dialog.installKeyboardShortcuts(scene);     // Backspace / Space mirror the footer
+```
+
+Note: `say`/`shout`/`whisper` only persist into `DialogHistory` while a conversation is open
+(between `startConversation` and `endConversation`). Calling them without an open conversation
+still updates the visible widget; the history side is just skipped.
+
+Style hooks (overridable in application stylesheets):
+
+| Style class | Applied to |
+|---|---|
+| `.dialog-entries-view` | The `VBox` container |
+| `.dialog-entry` | Every entry node (label / text-flow / divider) |
+| `.dialog-entry-current` | The newest visible (bottom) entry |
+| `.dialog-entry-previous` | Earlier entries (fading) |
+| `.dialog-entry-speaker` | The speaker prefix inside a `SpokenEntry` |
+| `.dialog-entry-say` / `.dialog-entry-shout` / `.dialog-entry-whisper` | The body `Text` inside the matching `SpokenEntry` |
+| `.dialog-entry-divider` | The `HBox` for a `ConversationStart` / `ConversationEnd` |
+| `.dialog-entry-divider-line` | The thin horizontal lines on either side of a divider |
+| `.dialog-entry-divider-label` | The participants / "End" label in the middle of a divider |
 
 ### Editing a screen manually in JSON
 
