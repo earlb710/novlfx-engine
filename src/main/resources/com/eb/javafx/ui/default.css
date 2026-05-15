@@ -60,6 +60,50 @@
     -fx-vgap: 6px;
 }
 
+.dialog-entries-view {
+    -fx-alignment: bottom-left;
+    -fx-spacing: 4px;
+}
+
+.dialog-entry {
+    -fx-text-fill: #dbeafe;
+    -fx-font-size: 14px;
+    -fx-wrap-text: true;
+}
+
+.dialog-entry-current {
+    -fx-font-weight: bold;
+}
+
+.dialog-entry-speaker {
+    -fx-fill: #66c1e0;
+    -fx-font-weight: bold;
+}
+
+.dialog-entry-shout {
+    -fx-fill: #ffcc66;
+}
+
+.dialog-entry-whisper {
+    -fx-fill: #a0b0c0;
+}
+
+.dialog-entry-divider {
+    -fx-alignment: center;
+    -fx-padding: 4px 0;
+}
+
+.dialog-entry-divider-line {
+    -fx-background-color: #66c1e0;
+    -fx-opacity: 0.5;
+}
+
+.dialog-entry-divider-label {
+    -fx-text-fill: #66c1e0;
+    -fx-font-size: 12px;
+    -fx-font-style: italic;
+}
+
 .conversation-history-speaker {
     -fx-alignment: top-right;
 }
