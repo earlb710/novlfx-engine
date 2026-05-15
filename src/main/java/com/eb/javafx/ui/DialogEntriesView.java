@@ -14,6 +14,7 @@ import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
+import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
@@ -67,6 +68,10 @@ import java.util.stream.Collectors;
  * view with {@link #bindToFooter(Node)} so the footer drives dialog navigation. Use
  * {@link #installKeyboardShortcuts(javafx.scene.Scene)} to additionally enable the footer back /
  * forward shortcuts (Backspace and Space) on a scene.</p>
+ *
+ * <p>The view itself also handles mouse clicks: a primary (left) click advances with
+ * {@link #goForward()} and a secondary (right) click rewinds with {@link #goBack()}. The handler
+ * is installed in the constructor so the dialog window is click-driven out of the box.</p>
  */
 public final class DialogEntriesView extends VBox {
     /** Opacity applied to entries above the current cursor. */
@@ -164,7 +169,23 @@ public final class DialogEntriesView extends VBox {
         setSpacing(DEFAULT_SPACING);
         setAlignment(Pos.BOTTOM_LEFT);
         setMinSize(0, 0);
+        setPickOnBounds(true);
+        addEventHandler(MouseEvent.MOUSE_CLICKED, this::handleMouseClick);
         rebuild();
+    }
+
+    private void handleMouseClick(MouseEvent event) {
+        if (event.getButton() == MouseButton.PRIMARY) {
+            if (canGoForward()) {
+                goForward();
+            }
+            event.consume();
+        } else if (event.getButton() == MouseButton.SECONDARY) {
+            if (canGoBack()) {
+                goBack();
+            }
+            event.consume();
+        }
     }
 
     /** Returns the {@link DialogHistory} the helpers mirror writes into. */

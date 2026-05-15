@@ -220,6 +220,52 @@ final class DialogEntriesViewTest {
     }
 
     @Test
+    void leftClickOnViewAdvancesAndRightClickRewinds() {
+        DialogEntriesView view = new DialogEntriesView();
+        view.addEntry("Line 1.");
+        view.addEntry("Line 2.");
+        view.addEntry("Line 3.");
+        view.goBack();
+        view.goBack();
+        assertEquals(0, view.currentIndex());
+
+        view.fireEvent(syntheticClick(view, MouseButton.PRIMARY));
+        assertEquals(1, view.currentIndex());
+
+        view.fireEvent(syntheticClick(view, MouseButton.PRIMARY));
+        assertEquals(2, view.currentIndex());
+
+        view.fireEvent(syntheticClick(view, MouseButton.SECONDARY));
+        assertEquals(1, view.currentIndex());
+
+        view.fireEvent(syntheticClick(view, MouseButton.SECONDARY));
+        assertEquals(0, view.currentIndex());
+    }
+
+    @Test
+    void leftClickAtNewestEntryDoesNotMoveCursor() {
+        DialogEntriesView view = new DialogEntriesView();
+        view.addEntry("Only line.");
+
+        view.fireEvent(syntheticClick(view, MouseButton.PRIMARY));
+
+        assertEquals(0, view.currentIndex());
+    }
+
+    @Test
+    void rightClickAtOldestEntryDoesNotMoveCursor() {
+        DialogEntriesView view = new DialogEntriesView();
+        view.addEntry("Line 1.");
+        view.addEntry("Line 2.");
+        view.goBack();
+        assertEquals(0, view.currentIndex());
+
+        view.fireEvent(syntheticClick(view, MouseButton.SECONDARY));
+
+        assertEquals(0, view.currentIndex());
+    }
+
+    @Test
     void bindToFooterAcceptsAncestorContainingFooter() {
         DialogEntriesView view = new DialogEntriesView();
         view.addEntry("Line 1.");
@@ -434,15 +480,19 @@ final class DialogEntriesViewTest {
     }
 
     private static MouseEvent syntheticClick(Node target) {
+        return syntheticClick(target, MouseButton.PRIMARY);
+    }
+
+    private static MouseEvent syntheticClick(Node target, MouseButton button) {
         return new MouseEvent(
                 target,
                 target,
                 MouseEvent.MOUSE_CLICKED,
                 0, 0, 0, 0,
-                MouseButton.PRIMARY,
+                button,
                 1,
                 false, false, false, false,
-                true, false, false, false, false, false,
+                button == MouseButton.PRIMARY, false, button == MouseButton.SECONDARY, false, false, false,
                 null);
     }
 }
