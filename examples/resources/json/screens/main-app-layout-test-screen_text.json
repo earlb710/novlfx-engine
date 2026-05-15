@@ -1,0 +1,10 @@
+{
+  "language": "en",
+  "texts": {
+    "screen.title": "Main App Layout Test",
+    "block.hud.status.title": "Status",
+    "block.hud.log.title": "Log",
+    "block.hud.minimap.title": "Minimap",
+    "block.hud.toast.title": "Toast"
+  }
+}

@@ -8,7 +8,8 @@
     "dialogue",
     "menu-action-list",
     "form",
-    "preview-grid"
+    "preview-grid",
+    "main-app-layout"
   ],
   "stableStyleClasses": [
     "screen-root",
@@ -35,6 +36,12 @@
     "layout-section-row",
     "layout-action-row",
     "layout-primary-action",
-    "layout-secondary-action"
+    "layout-secondary-action",
+    "layout-main-app",
+    "layout-main-app-background",
+    "layout-main-app-frame",
+    "layout-main-app-story",
+    "layout-main-app-dialog",
+    "layout-main-app-overlay"
   ]
 }

@@ -317,6 +317,38 @@ final class ScreenDesignerApplicationTest {
     }
 
     @Test
+    void mainAppLayoutScreenPanelExposesAppFrameAndOverlayFields() {
+        List<String> screenLabels = ScreenDesignerApplication.propertyLabelsFor(
+                ScreenDesignerApplication.NavigationNode.screen("main"),
+                com.eb.javafx.ui.ScreenLayoutType.MAIN_APP_LAYOUT);
+        assertEquals(
+                List.of("Screen id", "Title", "Layout type", "Font", "Font size", "Font style", "Color", "Background color",
+                        "Border style", "Border corner", "Border thickness", "Border color",
+                        "Dialog", "Dismiss on click outside", "Dismiss on Escape",
+                        "Default color theme", "Overwrite color theme",
+                        "Story screen id", "Dialog screen id", "Story/dialog ratio", "App layout orientation",
+                        "Show footer", "Story insets", "Dialog insets",
+                        "App layout background image", "App layout background fit",
+                        "App layout background transparency", "App layout background color",
+                        "Advanced metadata"),
+                screenLabels);
+
+        List<String> blockLabels = ScreenDesignerApplication.propertyLabelsFor(
+                ScreenDesignerApplication.NavigationNode.block("hud.status"),
+                com.eb.javafx.ui.ScreenLayoutType.MAIN_APP_LAYOUT);
+        assertEquals(
+                List.of("Block id", "Title", "Layout type", "Parent block", "Style class", "Conditions",
+                        "Font", "Font size", "Font style", "Color", "Background color",
+                        "Background image", "Background image transparency", "Background image placement", "Transparency", "Border style",
+                        "Border corner", "Border thickness", "Border color",
+                        "Overlay screen id", "Overlay placement", "Overlay anchor", "Overlay anchor field",
+                        "Overlay offset X", "Overlay offset Y", "Overlay width", "Overlay height",
+                        "Overlay transparency", "Overlay visible",
+                        "Advanced metadata"),
+                blockLabels);
+    }
+
+    @Test
     void metadataTextRoundTripsExtraMetadataAndSkipsExposedKeys() {
         Map<String, String> metadata = new LinkedHashMap<>();
         metadata.put("backgroundColor", "#112233");
