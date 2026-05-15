@@ -11,6 +11,7 @@ import javafx.application.Platform;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.scene.Scene;
+import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ComboBox;
@@ -116,13 +117,78 @@ final class PreferencesSummaryScreenTest {
                     .findFirst()
                     .orElseThrow();
 
+            javafx.scene.Parent initialSceneRoot = initialScene.getRoot();
             preferencesLabel.getOnMouseClicked().handle(null);
 
-            assertTrue(stage.getScene() != null && stage.getScene() != initialScene,
-                    "Preferences footer action should replace the scene.");
+            assertTrue(stage.getScene() != null && stage.getScene().getRoot() != initialSceneRoot,
+                    "Preferences footer action should replace the scene root.");
             BorderPane mainMenuRoot = ScreenShell.shellRoot(stage.getScene().getRoot());
             assertEquals("Main Menu", ((Label) mainMenuRoot.getTop()).getText());
             stage.close();
+        });
+    }
+
+    @Test
+    void mainMenuButtonStaysOnPreferencesWhenConfirmationDeclined() throws Exception {
+        assumeTrue(!GraphicsEnvironment.isHeadless(), "JavaFX route navigation test requires a display.");
+        runOnJavaFxThread(() -> {
+            PreferencesService preferencesService = new PreferencesService();
+            preferencesService.load();
+
+            UiTheme uiTheme = new UiTheme();
+            uiTheme.initialize(preferencesService);
+
+            Stage stage = new Stage();
+            SceneRouter router = createManualRouter(stage, preferencesService, uiTheme);
+            Scene initialScene = router.open(SceneRouter.PREFERENCES_ROUTE);
+            stage.setScene(initialScene);
+
+            javafx.scene.Parent initialSceneRoot = initialScene.getRoot();
+            BorderPane root = ScreenShell.shellRoot(initialScene.getRoot());
+            Button mainMenuButton = findButton(root, "Main Menu");
+
+            PreferencesSummaryScreen.setMainMenuConfirmation(() -> false);
+            try {
+                mainMenuButton.getOnAction().handle(new ActionEvent());
+                assertTrue(stage.getScene().getRoot() == initialSceneRoot,
+                        "Declining the confirmation should keep the preferences scene in place.");
+            } finally {
+                PreferencesSummaryScreen.clearMainMenuConfirmation();
+                stage.close();
+            }
+        });
+    }
+
+    @Test
+    void mainMenuButtonNavigatesToMainMenuWhenConfirmed() throws Exception {
+        assumeTrue(!GraphicsEnvironment.isHeadless(), "JavaFX route navigation test requires a display.");
+        runOnJavaFxThread(() -> {
+            PreferencesService preferencesService = new PreferencesService();
+            preferencesService.load();
+
+            UiTheme uiTheme = new UiTheme();
+            uiTheme.initialize(preferencesService);
+
+            Stage stage = new Stage();
+            SceneRouter router = createManualRouter(stage, preferencesService, uiTheme);
+            Scene initialScene = router.open(SceneRouter.PREFERENCES_ROUTE);
+            stage.setScene(initialScene);
+
+            javafx.scene.Parent initialSceneRoot = initialScene.getRoot();
+            BorderPane root = ScreenShell.shellRoot(initialScene.getRoot());
+            Button mainMenuButton = findButton(root, "Main Menu");
+
+            PreferencesSummaryScreen.setMainMenuConfirmation(() -> true);
+            try {
+                mainMenuButton.getOnAction().handle(new ActionEvent());
+                assertTrue(stage.getScene().getRoot() != initialSceneRoot,
+                        "Confirming should replace the preferences scene with the main menu.");
+                BorderPane mainMenuRoot = ScreenShell.shellRoot(stage.getScene().getRoot());
+                assertEquals("Main Menu", ((Label) mainMenuRoot.getTop()).getText());
+            } finally {
+                PreferencesSummaryScreen.clearMainMenuConfirmation();
+                stage.close();
+            }
         });
     }
 
@@ -229,6 +295,35 @@ final class PreferencesSummaryScreenTest {
                 stage.close();
             }
         });
+    }
+
+    private static Button findButton(Pane pane, String text) {
+        Button found = findButtonRecursive(pane, text);
+        if (found == null) {
+            throw new AssertionError("Missing button: " + text);
+        }
+        return found;
+    }
+
+    private static Button findButtonRecursive(Pane pane, String text) {
+        for (Node child : pane.getChildren()) {
+            if (child instanceof Button button && text.equals(button.getText())) {
+                return button;
+            }
+            if (child instanceof ScrollPane scrollPane && scrollPane.getContent() instanceof Pane inner) {
+                Button found = findButtonRecursive(inner, text);
+                if (found != null) {
+                    return found;
+                }
+            }
+            if (child instanceof Pane childPane) {
+                Button found = findButtonRecursive(childPane, text);
+                if (found != null) {
+                    return found;
+                }
+            }
+        }
+        return null;
     }
 
     private static CheckBox findCheckBox(Pane pane, String labelText) {

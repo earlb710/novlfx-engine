@@ -193,9 +193,20 @@ public final class RouteContext {
 
     /** Opens a route and attaches it to the primary stage. */
     public void navigateTo(String routeId) {
-        Scene scene = sceneRouter.open(routeId);
-        primaryStage.setScene(scene);
-        DebugScreenInspector.attach(scene, routeId, resourceConfig.debug(), uiTheme);
+        Scene newScene = sceneRouter.open(routeId);
+        Scene currentScene = primaryStage == null ? null : primaryStage.getScene();
+        Scene activeScene;
+        if (currentScene != null && newScene != null && newScene.getRoot() != null) {
+            Parent newRoot = newScene.getRoot();
+            newScene.setRoot(new javafx.scene.layout.Pane());
+            currentScene.setRoot(newRoot);
+            currentScene.getStylesheets().setAll(newScene.getStylesheets());
+            activeScene = currentScene;
+        } else {
+            primaryStage.setScene(newScene);
+            activeScene = newScene;
+        }
+        DebugScreenInspector.attach(activeScene, routeId, resourceConfig.debug(), uiTheme);
     }
 
     /** Creates a consistently sized and themed scene for a screen shell root. */

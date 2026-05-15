@@ -16,6 +16,10 @@
     "item.footer-icon-display.label": "Footer icons",
     "item.footer-display.label": "Footer display",
     "item.close.label": "Close",
+    "item.main-menu.label": "Main Menu",
+    "dialog.main-menu-confirm.title": "Return to main menu",
+    "dialog.main-menu-confirm.header": "Return to main menu?",
+    "dialog.main-menu-confirm.content": "Are you sure you want to leave preferences and return to the main menu?",
     "footer.preferences.close.tooltip": "Close preferences."
   }
 }
