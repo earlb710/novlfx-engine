@@ -136,3 +136,25 @@ JPEG output composites the alpha channel on white before encoding since JPEG has
 - **`CLAUDE.md`** — `runScreenSnapshot` added to the manual-tools table.
 - **`docs/USER_MANUAL.md`** — new "Screen snapshot tool" subsection with parameter table and examples.
 - **`docs/PORT_JAVAFX_PLAN.md`** — `ScreenSnapshotApplication` noted in the current reusable scope section.
+
+---
+
+## Preferences screen "Main Menu" button with confirmation
+
+Added an explicit **Main Menu** button to the bottom action bar of the preferences screen, alongside the existing **Close** button. Clicking it shows a JavaFX `CONFIRMATION` alert ("Are you sure you want to leave preferences and return to the main menu?"); confirming navigates to `SceneRouter.MAIN_MENU_ROUTE`, declining keeps the user on the preferences screen.
+
+Because the library navigates via the well-known route id `SceneRouter.MAIN_MENU_ROUTE`, applications using the engine effectively "pass in" their main menu screen by registering a route factory under that id (already the convention, e.g. via `DefaultRouteModule` or an application-specific replacement).
+
+### Files changed
+
+- **`PreferencesSummaryScreen.java`** — imports `Alert`, `Alert.AlertType`, `ButtonType`, and `Optional`; new `MainMenuConfirmation` functional interface with `setMainMenuConfirmation` / `clearMainMenuConfirmation` hooks for tests; new package-private `confirmReturnToMainMenu()` that shows a `CONFIRMATION` `Alert` (or invokes the test override); bottom action bar now has both `mainMenuButton` (new) and `closeButton`, laid out in a single centered `HBox` with 12px spacing.
+- **`preferences_text.json`** — new keys `item.main-menu.label` ("Main Menu"), `dialog.main-menu-confirm.title`, `dialog.main-menu-confirm.header`, and `dialog.main-menu-confirm.content` for the confirmation dialog.
+- **`PreferencesSummaryScreenTest.java`** — new tests `mainMenuButtonStaysOnPreferencesWhenConfirmationDeclined` and `mainMenuButtonNavigatesToMainMenuWhenConfirmed` use the confirmation override hook to verify both branches without invoking a real modal dialog; added `findButton` recursive helper.
+
+### Drive-by compile fixes
+
+The test sources had pre-existing duplicate-variable compile errors blocking the whole `compileTestJava` task. Renamed the inner `initialRoot` local to `initialSceneRoot` so tests compile:
+
+- **`PreferencesSummaryScreenTest.preferencesFooterClosesBackToMainMenu`**
+- **`PreferencesFooterTestScreenTest.footerPreferencesLabelNavigatesToPreferencesRouteFromTestScreen`**
+

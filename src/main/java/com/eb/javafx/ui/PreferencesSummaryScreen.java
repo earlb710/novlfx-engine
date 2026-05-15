@@ -15,7 +15,10 @@ import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
@@ -32,6 +35,7 @@ import javafx.scene.input.KeyEvent;
 import javafx.util.StringConverter;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -42,7 +46,25 @@ public final class PreferencesSummaryScreen {
     private static final Set<String> ENABLED_FOOTER_IDS = Set.of(PREFERENCES_ID);
     private static final double VOLUME_PERCENT_SCALE = 100.0;
 
+    private static MainMenuConfirmation mainMenuConfirmationOverride;
+
     private PreferencesSummaryScreen() {
+    }
+
+    /**
+     * Confirmation hook for the Main Menu button. Tests override this to bypass the modal dialog.
+     */
+    @FunctionalInterface
+    public interface MainMenuConfirmation {
+        boolean confirm();
+    }
+
+    public static void setMainMenuConfirmation(MainMenuConfirmation override) {
+        mainMenuConfirmationOverride = override;
+    }
+
+    public static void clearMainMenuConfirmation() {
+        mainMenuConfirmationOverride = null;
     }
 
     public static Scene createScene(RouteContext context) {
@@ -78,9 +100,16 @@ public final class PreferencesSummaryScreen {
         scrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
         scrollPane.setStyle("-fx-background: transparent; -fx-background-color: transparent;");
 
+        Button mainMenuButton = ButtonVisuals.applySvgArtwork(new Button(screenText("item.main-menu.label")));
+        mainMenuButton.setMinWidth(220);
+        mainMenuButton.setOnAction(event -> {
+            if (confirmReturnToMainMenu()) {
+                context.navigateTo(SceneRouter.MAIN_MENU_ROUTE);
+            }
+        });
         Button closeButton = ScreenNavigation.button(context, screenText("item.close.label"), SceneRouter.MAIN_MENU_ROUTE);
         closeButton.setMinWidth(220);
-        HBox closeBox = new HBox(closeButton);
+        HBox closeBox = new HBox(12, mainMenuButton, closeButton);
         closeBox.setAlignment(Pos.CENTER);
         closeBox.setPadding(new Insets(12, 0, 12, 0));
 
@@ -153,6 +182,18 @@ public final class PreferencesSummaryScreen {
 
     static boolean isCloseShortcut(KeyCode keyCode, boolean shortcutDown) {
         return shortcutDown && keyCode == KeyCode.P;
+    }
+
+    static boolean confirmReturnToMainMenu() {
+        if (mainMenuConfirmationOverride != null) {
+            return mainMenuConfirmationOverride.confirm();
+        }
+        Alert alert = new Alert(AlertType.CONFIRMATION);
+        alert.setTitle(screenText("dialog.main-menu-confirm.title"));
+        alert.setHeaderText(screenText("dialog.main-menu-confirm.header"));
+        alert.setContentText(screenText("dialog.main-menu-confirm.content"));
+        Optional<ButtonType> result = alert.showAndWait();
+        return result.isPresent() && result.get() == ButtonType.OK;
     }
 
     static VBox settingsBlock(String title, Node... rows) {
