@@ -90,6 +90,12 @@ public final class MainAppLayoutRenderer {
         BorderPane frame = mainFrame(plan, resolver, overlayWrappersById.values());
         root.getChildren().add(frame);
 
+        // Auto-wire any DialogEntriesView in the dialog slot to the standard footer back/forward
+        // labels, the history (◷) toggle, and the story slot — so applications never have to
+        // repeat the same plumbing in every entry point. Idempotent: if the application also calls
+        // bindToFooter / bindHistoryToggle manually, the second invocation is a no-op.
+        autoWireDialogEntriesView(plan, frame, root);
+
         // Second pass: wire RELATIVE overlays now that all sibling wrappers exist in the story area.
         for (MainAppLayoutOverlay overlay : overlayPlansById.values()) {
             if (overlay.mode() != MainAppLayoutPlacementMode.RELATIVE) {
@@ -105,6 +111,67 @@ public final class MainAppLayoutRenderer {
             bindRelativePlacement(wrapper, anchor, overlay.anchor(), overlay.offsetX(), overlay.offsetY());
         }
         return root;
+    }
+
+    /**
+     * Auto-wires a {@link DialogEntriesView} sitting in the dialog slot to the layout's footer and
+     * story area, so applications using {@code MAIN_APP_LAYOUT} + {@code DialogEntriesView} get the
+     * full interaction model (footer back/forward, history toggle, scene keyboard shortcuts)
+     * for free — no per-app plumbing required.
+     *
+     * <p>The keyboard shortcut wiring is owned by {@link DialogEntriesView} itself (via its
+     * {@code sceneProperty()} listener); this method handles the layout-level wiring: footer
+     * back/forward labels and the {@code ◷} history toggle that collapses the story slot.</p>
+     *
+     * <p>No-op when the plan has no dialog slot, the dialog slot does not contain a
+     * {@code DialogEntriesView}, or the footer is disabled. All wiring helpers on the view are
+     * idempotent, so an application calling {@code bindToFooter} / {@code bindHistoryToggle}
+     * manually after render is harmless.</p>
+     */
+    private static void autoWireDialogEntriesView(MainAppLayoutPlan plan, BorderPane frame, StackPane root) {
+        if (plan.dialogScreenId() == null || !plan.showFooter()) {
+            return;
+        }
+        DialogEntriesView dialog = findDialogEntriesView(frame);
+        if (dialog == null) {
+            return;
+        }
+        dialog.bindToFooter(root);
+        Node storyArea = findStyledNode(frame, "layout-main-app-story-area");
+        if (storyArea != null) {
+            double dialogHeightShare = 1.0 - plan.storyDialogRatio();
+            dialog.bindHistoryToggle(root, storyArea, dialogHeightShare);
+        }
+    }
+
+    private static DialogEntriesView findDialogEntriesView(Node node) {
+        if (node instanceof DialogEntriesView view) {
+            return view;
+        }
+        if (node instanceof javafx.scene.Parent parent) {
+            for (Node child : parent.getChildrenUnmodifiable()) {
+                DialogEntriesView found = findDialogEntriesView(child);
+                if (found != null) {
+                    return found;
+                }
+            }
+        }
+        return null;
+    }
+
+    private static Node findStyledNode(Node node, String styleClass) {
+        if (node.getStyleClass().contains(styleClass)) {
+            return node;
+        }
+        if (node instanceof javafx.scene.Parent parent) {
+            for (Node child : parent.getChildrenUnmodifiable()) {
+                Node found = findStyledNode(child, styleClass);
+                if (found != null) {
+                    return found;
+                }
+            }
+        }
+        return null;
     }
 
     private static Region backgroundLayer(MainAppLayoutPlan plan, Path resourceRoot) {

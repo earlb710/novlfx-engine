@@ -109,8 +109,8 @@ public final class DialogEntriesView extends ScrollPane {
      *  full history. Callers can still set a positive cap via {@link #setMaxVisibleEntries(int)} to
      *  trim render work for very long histories. */
     private static final int DEFAULT_MAX_VISIBLE_ENTRIES = Integer.MAX_VALUE;
-    /** Fixed-width speaker column so message bodies line up across entries with different speaker name lengths. */
-    private static final double SPEAKER_COLUMN_WIDTH = 160;
+    /** Default fixed-width speaker column so message bodies line up across entries with different speaker name lengths. */
+    public static final double DEFAULT_SPEAKER_COLUMN_WIDTH = 160;
 
     /** Top-level sealed type for one row in the dialog panel. */
     public sealed interface Entry permits PlainEntry, SpokenEntry, ConversationStart, ConversationEnd {
@@ -180,6 +180,7 @@ public final class DialogEntriesView extends ScrollPane {
     private final VBox entriesContainer = new VBox(DEFAULT_SPACING);
     private int currentIndex = -1;
     private int maxVisibleEntries = DEFAULT_MAX_VISIBLE_ENTRIES;
+    private double speakerColumnWidth = DEFAULT_SPEAKER_COLUMN_WIDTH;
     /**
      * When {@code true} the view renders every entry in the full list (not just up to the cursor)
      * so the player can scroll through the complete conversation record. Toggled by
@@ -188,6 +189,12 @@ public final class DialogEntriesView extends ScrollPane {
     private boolean historyMode = false;
     /** Saved ratio used to restore the height binding when leaving history mode. */
     private double savedDialogHeightShare = 0;
+    /** Tracks which footer the view is already wired to so {@link #bindToFooter(Node)} is idempotent. */
+    private HBox wiredFooter;
+    /** Tracks which footer the history toggle is already wired to so {@link #bindHistoryToggle(Node, Node, double)} is idempotent. */
+    private HBox wiredHistoryFooter;
+    /** Tracks scenes that already have the keyboard shortcut filter installed so installation is idempotent. */
+    private final java.util.Set<javafx.scene.Scene> wiredScenes = new java.util.HashSet<>();
 
     public DialogEntriesView() {
         this(new DialogHistory());
@@ -215,6 +222,15 @@ public final class DialogEntriesView extends ScrollPane {
         setMinSize(0, 0);
         setPickOnBounds(true);
         addEventHandler(MouseEvent.MOUSE_CLICKED, this::handleMouseClick);
+        // Auto-install Backspace / Space shortcuts as soon as the view is added to a scene, so
+        // applications never have to wire them by hand. The installation is idempotent — a manual
+        // {@link #installKeyboardShortcuts(javafx.scene.Scene)} call before the view is attached
+        // still works and the auto-listener will skip the already-wired scene.
+        sceneProperty().addListener((obs, oldScene, newScene) -> {
+            if (newScene != null) {
+                installKeyboardShortcuts(newScene);
+            }
+        });
         rebuild();
     }
 
@@ -254,6 +270,28 @@ public final class DialogEntriesView extends ScrollPane {
 
     public int maxVisibleEntries() {
         return maxVisibleEntries;
+    }
+
+    /**
+     * Sets the fixed width of the speaker column in pixels. The column applies to every
+     * {@link SpokenEntry} that has a speaker, so message bodies stay aligned across rows even when
+     * speaker labels vary in length. Defaults to {@link #DEFAULT_SPEAKER_COLUMN_WIDTH} (160px) — bump
+     * it up for apps with longer speaker names, or drop it for compact layouts. Triggers an
+     * immediate {@link #rebuild()} so existing entries pick up the new width.
+     *
+     * @param speakerColumnWidth column width in pixels; must be positive
+     */
+    public void setSpeakerColumnWidth(double speakerColumnWidth) {
+        if (speakerColumnWidth <= 0.0) {
+            throw new IllegalArgumentException("speakerColumnWidth must be positive, was: " + speakerColumnWidth);
+        }
+        this.speakerColumnWidth = speakerColumnWidth;
+        rebuild();
+    }
+
+    /** Returns the current speaker column width in pixels. */
+    public double speakerColumnWidth() {
+        return speakerColumnWidth;
     }
 
     // ----- Plain entry API ----------------------------------------------------------------------
@@ -487,6 +525,13 @@ public final class DialogEntriesView extends ScrollPane {
         if (footer == null) {
             return;
         }
+        if (footer == wiredFooter) {
+            // Already wired to this footer (e.g. MainAppLayoutRenderer auto-wired and the
+            // application called bindToFooter again, or a test invokes it twice). Skip so we
+            // don't stack duplicate listeners on the back / forward labels.
+            return;
+        }
+        wiredFooter = footer;
         for (Node child : footer.getChildren()) {
             if (!(child instanceof Label label)) {
                 continue;
@@ -539,6 +584,12 @@ public final class DialogEntriesView extends ScrollPane {
 
     public void installKeyboardShortcuts(javafx.scene.Scene scene) {
         Validation.requireNonNull(scene, "Scene is required.");
+        if (!wiredScenes.add(scene)) {
+            // Already installed on this scene — most likely the sceneProperty listener auto-wired
+            // it and the application is also calling this helper directly. Skip so we don't
+            // double-handle every key press.
+            return;
+        }
         scene.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
             if (event.getCode() == KeyCode.BACK_SPACE && !event.isShortcutDown() && !event.isShiftDown() && !event.isAltDown()) {
                 if (canGoBack()) {
@@ -606,6 +657,13 @@ public final class DialogEntriesView extends ScrollPane {
         if (footer == null) {
             return;
         }
+        if (footer == wiredHistoryFooter) {
+            // Already wired to this footer's history button (e.g. MainAppLayoutRenderer auto-wired
+            // and the application is also calling this helper directly). Skip so we don't stack
+            // duplicate handlers that would toggle the mode twice per click.
+            return;
+        }
+        wiredHistoryFooter = footer;
         for (Node child : footer.getChildren()) {
             if (child instanceof Label label
                     && label.getUserData() instanceof ScreenShell.FooterOption option
@@ -735,7 +793,7 @@ public final class DialogEntriesView extends ScrollPane {
         Platform.runLater(() -> setVvalue(getVmax()));
     }
 
-    private static Node renderEntry(Entry entry, boolean previous) {
+    private Node renderEntry(Entry entry, boolean previous) {
         Node node;
         if (entry instanceof PlainEntry plain) {
             node = renderPlain(plain);
@@ -758,7 +816,7 @@ public final class DialogEntriesView extends ScrollPane {
         return label;
     }
 
-    private static HBox renderSpoken(SpokenEntry entry) {
+    private HBox renderSpoken(SpokenEntry entry) {
         HBox row = new HBox(8);
         row.getStyleClass().addAll(ENTRY_STYLE_CLASS, lineTypeStyleClass(entry.type()));
         row.setMaxWidth(Double.MAX_VALUE);
@@ -771,9 +829,9 @@ public final class DialogEntriesView extends ScrollPane {
         if (entry.speaker() != null) {
             Label speakerLabel = new Label(entry.speaker().label() + ":");
             speakerLabel.getStyleClass().add(SPEAKER_STYLE_CLASS);
-            speakerLabel.setMinWidth(SPEAKER_COLUMN_WIDTH);
-            speakerLabel.setPrefWidth(SPEAKER_COLUMN_WIDTH);
-            speakerLabel.setMaxWidth(SPEAKER_COLUMN_WIDTH);
+            speakerLabel.setMinWidth(speakerColumnWidth);
+            speakerLabel.setPrefWidth(speakerColumnWidth);
+            speakerLabel.setMaxWidth(speakerColumnWidth);
             speakerLabel.setAlignment(Pos.TOP_RIGHT);
             applyInlineColor(speakerLabel, speakerColor);
             row.getChildren().add(speakerLabel);
