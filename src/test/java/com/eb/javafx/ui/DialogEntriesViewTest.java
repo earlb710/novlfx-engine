@@ -525,6 +525,77 @@ final class DialogEntriesViewTest {
     }
 
     @Test
+    void setSpeakerColumnWidthAppliesToExistingAndNewEntries() {
+        DialogEntriesView view = new DialogEntriesView();
+        DialogSpeaker alice = DialogSpeaker.text("alice", "Alice");
+        view.say(alice, "first");
+        // Default speaker column width is 160px and is applied to the existing row.
+        Label firstSpeaker = (Label) ((HBox) view.entryNodes().get(0)).getChildren().get(0);
+        assertEquals(DialogEntriesView.DEFAULT_SPEAKER_COLUMN_WIDTH, firstSpeaker.getPrefWidth(), 1e-9);
+
+        view.setSpeakerColumnWidth(240);
+
+        // After the setter both the existing rebuilt row and a newly-added row pick up the new width.
+        firstSpeaker = (Label) ((HBox) view.entryNodes().get(0)).getChildren().get(0);
+        assertEquals(240.0, firstSpeaker.getPrefWidth(), 1e-9);
+        assertEquals(240.0, firstSpeaker.getMinWidth(), 1e-9);
+        assertEquals(240.0, firstSpeaker.getMaxWidth(), 1e-9);
+        view.say(alice, "second");
+        Label secondSpeaker = (Label) ((HBox) view.entryNodes().get(1)).getChildren().get(0);
+        assertEquals(240.0, secondSpeaker.getPrefWidth(), 1e-9);
+        assertEquals(240.0, view.speakerColumnWidth(), 1e-9);
+    }
+
+    @Test
+    void setSpeakerColumnWidthRejectsNonPositive() {
+        DialogEntriesView view = new DialogEntriesView();
+        assertThrows(IllegalArgumentException.class, () -> view.setSpeakerColumnWidth(0));
+        assertThrows(IllegalArgumentException.class, () -> view.setSpeakerColumnWidth(-10));
+    }
+
+    @Test
+    void installKeyboardShortcutsIsIdempotent() {
+        DialogEntriesView view = new DialogEntriesView();
+        view.addEntry("Line 1.");
+        view.addEntry("Line 2.");
+
+        javafx.scene.layout.StackPane host = new javafx.scene.layout.StackPane(view);
+        javafx.scene.Scene scene = new javafx.scene.Scene(host);
+
+        // Adding the view to a Scene auto-installs the shortcut filter once. Calling the public
+        // helper again must not double-install, otherwise Space would advance twice per press.
+        view.installKeyboardShortcuts(scene);
+        view.installKeyboardShortcuts(scene);
+        assertEquals(1, view.currentIndex());
+
+        javafx.event.Event.fireEvent(scene, new javafx.scene.input.KeyEvent(
+                javafx.scene.input.KeyEvent.KEY_PRESSED, "", "", javafx.scene.input.KeyCode.BACK_SPACE,
+                false, false, false, false));
+
+        // Exactly one back-step.
+        assertEquals(0, view.currentIndex());
+    }
+
+    @Test
+    void bindToFooterIsIdempotent() {
+        DialogEntriesView view = new DialogEntriesView();
+        view.addEntry("Line 1.");
+        view.addEntry("Line 2.");
+        view.addEntry("Line 3.");
+
+        HBox footer = ScreenShell.footerBar();
+        // Wire the same footer twice — must not stack listeners.
+        view.bindToFooter(footer);
+        view.bindToFooter(footer);
+
+        Label backLabel = footerLabelById(footer, "back");
+        backLabel.fireEvent(syntheticClick(backLabel));
+
+        // A single click goes back exactly one entry, not two.
+        assertEquals(1, view.currentIndex());
+    }
+
+    @Test
     void spokenEntryExposesStructuredEntryThroughDialogEntries() {
         DialogEntriesView view = new DialogEntriesView();
         DialogSpeaker alice = DialogSpeaker.text("alice", "Alice");

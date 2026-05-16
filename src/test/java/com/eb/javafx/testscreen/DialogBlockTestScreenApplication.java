@@ -102,17 +102,11 @@ public final class DialogBlockTestScreenApplication extends Application {
             default -> null;
         };
 
+        // MainAppLayoutRenderer auto-wires the dialog block: footer back/forward labels, the ◷
+        // history toggle (collapsing the story slot for full-height history), and the Space /
+        // Backspace keyboard shortcuts (installed by the view itself when added to a scene). The
+        // demo only needs to build the speakers, seed conversations, and render.
         StackPane root = MainAppLayoutRenderer.render(plan, resolver, null);
-        // Wire the footer back (‹) / forward (›) labels to drive dialog navigation.
-        // bindToFooter also immediately applies the correct greyed-out state and keeps it in
-        // sync as the cursor moves — forward starts greyed out because the cursor opens on the
-        // last entry, back starts active because there is a full conversation history above it.
-        dialog.bindToFooter(root);
-        // Wire the footer history (◷) button to toggle the full-height expanded view.
-        // dialogHeightShare = 1.0 - storyDialogRatio: the fraction of centre height the dialog
-        // block occupies in normal split mode.
-        double dialogHeightShare = 1.0 - MainAppLayoutPlan.DEFAULT_STORY_DIALOG_RATIO;
-        dialog.bindHistoryToggle(root, storyArea, dialogHeightShare);
 
         PreferencesService preferences = new PreferencesService();
         preferences.load();
@@ -123,9 +117,6 @@ public final class DialogBlockTestScreenApplication extends Application {
         int height = TestUiScreenSize.sceneHeight(preferences);
         Scene scene = new Scene(root, width, height);
         scene.getStylesheets().add(theme.stylesheet());
-
-        // Backspace / Space mirror left/right click on the dialog block.
-        dialog.installKeyboardShortcuts(scene);
 
         primaryStage.setTitle("Dialog Block Test — 10 conversations");
         primaryStage.setScene(scene);

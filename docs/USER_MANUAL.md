@@ -797,10 +797,14 @@ API in `com.eb.javafx.ui`:
 | `dialogEntries()` | The structured `Entry` list. |
 | `history()` | The owned (or caller-supplied via `new DialogEntriesView(history)`) `DialogHistory`. |
 | `canGoBackProperty()` / `canGoForwardProperty()` | `ReadOnlyBooleanProperty` signals for greying out footer affordances. |
-| `bindToFooter(Node)` | Wire the standard `ScreenShell.footerBar()` back / forward labels to drive `goBack()` / `goForward()`. Accepts either the footer `HBox` itself or any ancestor that contains it. |
-| `installKeyboardShortcuts(Scene)` | Install `Backspace` / `Space` event filters that mirror the default footer back / forward shortcuts. |
+| `setSpeakerColumnWidth(double)` / `speakerColumnWidth()` | Configure / read the fixed speaker column width (default `DEFAULT_SPEAKER_COLUMN_WIDTH` = 160px). Bump it up for apps with longer speaker names; shrink it for compact layouts. |
+| `bindToFooter(Node)` | Wire the standard `ScreenShell.footerBar()` back / forward labels to drive `goBack()` / `goForward()`. Accepts either the footer `HBox` itself or any ancestor that contains it. **Auto-called by `MainAppLayoutRenderer`** when the dialog slot is a `DialogEntriesView`; idempotent on repeat calls. |
+| `bindHistoryToggle(Node, Node, double)` | Wire the footer history (◷) button so clicking it collapses the story slot and expands the dialog to full height. **Auto-called by `MainAppLayoutRenderer`** using `1.0 - plan.storyDialogRatio()`; idempotent on repeat calls. |
+| `installKeyboardShortcuts(Scene)` | Install `Backspace` / `Space` event filters that mirror the default footer back / forward shortcuts. **Auto-installed** as soon as the view is added to a scene; idempotent on repeat calls. |
 
-A typical wiring in the main app layout's dialog slot:
+A typical wiring in the main app layout's dialog slot — the renderer auto-wires the footer
+back/forward labels, the history (◷) toggle, and the Space/Backspace keyboard shortcuts, so the
+application only has to build speakers, seed conversations, and hand the view to the resolver:
 
 ```java
 DialogEntriesView dialog = new DialogEntriesView();
@@ -811,7 +815,7 @@ dialog.startConversation(alice, bob);   // divider + history.beginDialog
 dialog.say(alice, "Hello, Bob!");        // "Alice: Hello, Bob!"
 dialog.shout(bob, "Stop!");              // "Bob: STOP!" (bold)
 dialog.whisper(alice, "Don't tell anyone."); // "Alice: don't tell anyone." (italic)
-dialog.endConversation();                // divider + history.endDialog
+dialog.endConversation();                // closes history; no visible end-divider
 
 MainAppScreenResolver resolver = screenId -> switch (screenId) {
     case "story"  -> storyFactory.createNode();
@@ -820,9 +824,52 @@ MainAppScreenResolver resolver = screenId -> switch (screenId) {
 };
 
 StackPane root = MainAppLayoutRenderer.render(plan, resolver, resourceRoot);
-dialog.bindToFooter(root);                  // footer back/forward → dialog navigation
+// No need for bindToFooter / bindHistoryToggle / installKeyboardShortcuts — render() detects
+// the DialogEntriesView in the dialog slot and wires all three automatically.
 Scene scene = new Scene(root, 1280, 720);
-dialog.installKeyboardShortcuts(scene);     // Backspace / Space mirror the footer
+```
+
+Multi-line messages — both styles work out of the box. The body label has `wrapText` enabled, so
+long single-line messages wrap naturally inside the dialog block; embedded `\n` characters render
+as hard line breaks:
+
+```java
+// Hard line breaks (poem / multi-paragraph stanza):
+dialog.say(narrator,
+        "Sarah was already there.\n"
+        + "Same chair, same window.\n"
+        + "Half-hidden behind a tower of books.");
+
+// Natural wrap (long sentence that will wrap to multiple lines based on the dialog width):
+dialog.say(narrator,
+        "It was a cold morning at the old library — the kind of morning where the radiators "
+        + "clanked twice an hour and the dust in the slanted light moved like slow snow, "
+        + "undisturbed by anyone who had not yet learned to be careful with quiet rooms.");
+```
+
+Speaker column width — the column is fixed-width so message bodies align across rows. The default
+(`DEFAULT_SPEAKER_COLUMN_WIDTH` = 160px) suits most names; configure it when your cast has
+unusually long labels (e.g. job titles, full names) or when you want a compact layout:
+
+```java
+DialogEntriesView dialog = new DialogEntriesView();
+dialog.setSpeakerColumnWidth(220);   // wider column for "Old Mentor From Beyond the Hills"
+// ...or for one-letter speaker tags:
+dialog.setSpeakerColumnWidth(48);    // tight column when names are very short
+```
+
+History expansion (◷) — the footer's history button collapses the story slot and lets the dialog
+block fill the entire centre, so the player can scroll through the full conversation record in one
+panel. The renderer wires this automatically when the dialog slot is a `DialogEntriesView`. For
+headless tests or non-`MAIN_APP_LAYOUT` containers you can drive it directly:
+
+```java
+// Programmatic: jump straight into the full-height history view.
+dialog.setHistoryMode(true);
+assert dialog.isHistoryMode();
+
+// Manual wiring (skip when MainAppLayoutRenderer renders the dialog — already wired):
+dialog.bindHistoryToggle(footerOrAncestor, storyNode, 1.0 - plan.storyDialogRatio());
 ```
 
 Note: `say`/`shout`/`whisper` only persist into `DialogHistory` while a conversation is open
