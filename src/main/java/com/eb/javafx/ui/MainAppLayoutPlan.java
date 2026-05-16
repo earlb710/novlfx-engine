@@ -69,7 +69,7 @@ public record MainAppLayoutPlan(
     public static final String OVERLAY_TRANSPARENCY_KEY = "overlayTransparency";
     public static final String OVERLAY_VISIBLE_KEY = "overlayVisible";
 
-    public static final double DEFAULT_STORY_DIALOG_RATIO = 0.875;
+    public static final double DEFAULT_STORY_DIALOG_RATIO = 0.5;
 
     public MainAppLayoutPlan {
         title = Validation.requireNonBlank(title, "Main app layout title is required.");

@@ -70,6 +70,41 @@ final class UiThemeTest {
     }
 
     @Test
+    void generatedStylesheetIncludesDialogBlockRulesWithOpaqueBlackBackground() {
+        // The runtime stylesheet (UiTheme.stylesheet()) is what every consumer of the engine
+        // theme — including the manual dialog-block demo — actually loads. The bundled
+        // default.css is only the *contract* reference; it isn't fetched at runtime. This test
+        // locks in that the generated theme carries the dialog block rules so the widget shows
+        // an opaque black background and a readable bright-white current entry regardless of
+        // which palette the player has selected.
+        PreferencesService preferencesService = new PreferencesService();
+        preferencesService.load();
+
+        UiTheme theme = new UiTheme();
+        theme.initialize(preferencesService);
+
+        String css = theme.stylesheetContent();
+        assertTrue(css.contains(".dialog-entries-view"),
+                "Generated stylesheet should style the dialog block (.dialog-entries-view).");
+        assertTrue(css.contains(".layout-main-app-dialog"),
+                "Generated stylesheet should style the main-app-layout dialog slot.");
+        assertTrue(css.contains(".dialog-entries-view {")
+                        && css.substring(css.indexOf(".dialog-entries-view {"))
+                                .contains("-fx-background-color: #000000;"),
+                "Dialog block background should be opaque black (#000000).");
+        assertTrue(css.contains(".layout-main-app-dialog {")
+                        && css.substring(css.indexOf(".layout-main-app-dialog {"))
+                                .contains("-fx-background-color: #000000;"),
+                "Main app layout dialog slot background should be opaque black (#000000).");
+        assertTrue(css.contains(".dialog-entries-view > .viewport"),
+                "ScrollPane viewport must be transparent so the dialog block's own black surfaces.");
+        assertTrue(css.contains(".dialog-entry-current")
+                        && css.substring(css.indexOf(".dialog-entry-current"))
+                                .contains("-fx-text-fill: #ffffff;"),
+                "Current dialog entry should be bright white on the opaque black background.");
+    }
+
+    @Test
     void everyThemeSelectionBuildsSemanticStylesheetContent() {
         for (ThemeFamily family : ThemeFamily.values()) {
             for (ThemeVariant variant : ThemeVariant.values()) {

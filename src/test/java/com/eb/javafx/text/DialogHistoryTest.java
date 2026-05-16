@@ -122,4 +122,49 @@ final class DialogHistoryTest {
         assertThrows(IllegalArgumentException.class, () -> new DialogColumn("", List.of(TextToken.text("x", TextStyle.plain()))));
         assertThrows(IllegalArgumentException.class, () -> DialogMessage.columns(List.of()));
     }
+
+    @Test
+    void beginDialogTrimsOldestConversationWhenOverMaxLimit() {
+        DialogHistory history = new DialogHistory();
+        GameDateTime ts = new GameDateTime(1, "default");
+
+        // Seed exactly MAX_CONVERSATIONS entries.
+        for (int i = 0; i < DialogHistory.MAX_CONVERSATIONS; i++) {
+            history.beginDialog("dialog-" + i, ts);
+            history.endDialog(ts);
+        }
+        assertEquals(DialogHistory.MAX_CONVERSATIONS, history.entries().size());
+        assertEquals("dialog-0", history.entries().get(0).dialogId());
+
+        // One more conversation should drop the oldest.
+        history.beginDialog("dialog-overflow", ts);
+        history.endDialog(ts);
+
+        assertEquals(DialogHistory.MAX_CONVERSATIONS, history.entries().size());
+        // "dialog-0" should have been evicted; "dialog-1" is now the oldest.
+        assertEquals("dialog-1", history.entries().get(0).dialogId());
+        assertEquals("dialog-overflow", history.entries().get(DialogHistory.MAX_CONVERSATIONS - 1).dialogId());
+        assertFalse(history.openDialog().isPresent());
+    }
+
+    @Test
+    void beginDialogCanContinueAfterTrimWithoutCorruptingIndex() {
+        DialogHistory history = new DialogHistory();
+        GameDateTime ts = new GameDateTime(1, "default");
+
+        // Fill to max + 5, exercising five trims.
+        for (int i = 0; i < DialogHistory.MAX_CONVERSATIONS + 5; i++) {
+            history.beginDialog("d-" + i, ts);
+            history.endDialog(ts);
+        }
+
+        // The open/close cycle after trimming must still work normally.
+        history.beginDialog("final", ts);
+        history.addMessage(DialogSpeaker.text("s", "Speaker"), "last line");
+        DialogHistoryEntry ended = history.endDialog(ts);
+
+        assertEquals(DialogHistory.MAX_CONVERSATIONS, history.entries().size());
+        assertEquals("final", ended.dialogId());
+        assertEquals(1, ended.messages().size());
+    }
 }

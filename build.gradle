@@ -100,3 +100,19 @@ tasks.register('runCodeTableManager', JavaExec) {
     mainClass = 'com.eb.javafx.testscreen.CodeTableManagementApplication'
     workingDir = file("$projectDir/examples/resources/json/code-tables")
 }
+
+tasks.register('runDialogBlockTestScreen', JavaExec) {
+    group = 'application'
+    description = 'Launches the manual dialog block demo with 10 pre-seeded conversations.'
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.eb.javafx.testscreen.DialogBlockTestScreenApplication'
+    systemProperty 'eb.application.version', project.version.toString()
+}
+
+tasks.register('runErrorScreenTestScreen', JavaExec) {
+    group = 'application'
+    description = 'Launches the manual ErrorScreen demo with a synthetic exception (dark-red theme).'
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.eb.javafx.testscreen.ErrorScreenTestApplication'
+    systemProperty 'eb.application.version', project.version.toString()
+}

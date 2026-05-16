@@ -3,7 +3,7 @@
   "title": "screen.title",
   "layoutType": "MAIN_APP_LAYOUT",
   "metadata": {
-    "description": "Manual test design for the main app layout scaffolding. Demonstrates a background image, a vertical story/dialog split at the default 0.875 ratio (story area is scrollable, dialog stays pinned at the bottom of the central frame), the standard footer, and four HUD overlay blocks placed by alignment, pixels, and percent respectively.",
+    "description": "Manual test design for the main app layout scaffolding. Demonstrates a background image, a vertical story/dialog split at the default 0.5 ratio (story area is scrollable, dialog stays pinned at the bottom of the central frame at half the frame height), the standard footer, and four HUD overlay blocks placed by alignment, pixels, and percent respectively.",
     "appLayoutBackgroundImage": "/com/eb/javafx/images/svg/background-gradient-rectangle.svg",
     "appLayoutBackgroundFit": "STRETCH",
     "appLayoutBackgroundTransparency": "0.2",

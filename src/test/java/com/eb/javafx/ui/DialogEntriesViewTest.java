@@ -6,14 +6,14 @@ import com.eb.javafx.text.DialogHistory;
 import com.eb.javafx.text.DialogHistoryEntry;
 import com.eb.javafx.text.DialogSpeaker;
 import javafx.application.Platform;
+import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
-import javafx.scene.text.Text;
-import javafx.scene.text.TextFlow;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -57,7 +57,7 @@ final class DialogEntriesViewTest {
     void emptyViewHasNoChildrenAndNoNavigation() {
         DialogEntriesView view = new DialogEntriesView();
 
-        assertEquals(0, view.getChildren().size());
+        assertEquals(0, view.entryNodes().size());
         assertEquals(-1, view.currentIndex());
         assertFalse(view.canGoBack());
         assertFalse(view.canGoForward());
@@ -84,7 +84,7 @@ final class DialogEntriesViewTest {
         view.addEntry("Line 2.");
         view.addEntry("Line 3.");
 
-        List<Node> children = view.getChildren();
+        List<Node> children = view.entryNodes();
         assertEquals(3, children.size());
 
         Label firstShown = (Label) children.get(0);
@@ -113,9 +113,9 @@ final class DialogEntriesViewTest {
         view.goBack();
 
         assertEquals(1, view.currentIndex());
-        assertEquals(2, view.getChildren().size());
-        Label previous = (Label) view.getChildren().get(0);
-        Label current = (Label) view.getChildren().get(1);
+        assertEquals(2, view.entryNodes().size());
+        Label previous = (Label) view.entryNodes().get(0);
+        Label current = (Label) view.entryNodes().get(1);
         assertEquals("Line 1.", previous.getText());
         assertEquals("Line 2.", current.getText());
         assertEquals(DialogEntriesView.PREVIOUS_ENTRY_OPACITY, previous.getOpacity(), 1e-9);
@@ -160,9 +160,9 @@ final class DialogEntriesViewTest {
         view.addEntry("Line 3.");
         view.addEntry("Line 4.");
 
-        assertEquals(2, view.getChildren().size());
-        Label previous = (Label) view.getChildren().get(0);
-        Label current = (Label) view.getChildren().get(1);
+        assertEquals(2, view.entryNodes().size());
+        Label previous = (Label) view.entryNodes().get(0);
+        Label current = (Label) view.entryNodes().get(1);
         assertEquals("Line 3.", previous.getText());
         assertEquals("Line 4.", current.getText());
     }
@@ -188,7 +188,7 @@ final class DialogEntriesViewTest {
 
         assertTrue(view.entries().isEmpty());
         assertEquals(-1, view.currentIndex());
-        assertEquals(0, view.getChildren().size());
+        assertEquals(0, view.entryNodes().size());
     }
 
     @Test
@@ -284,20 +284,157 @@ final class DialogEntriesViewTest {
     }
 
     @Test
-    void sayRendersTextFlowWithSpeakerAndPlainBody() {
+    void bindToFooterSyncsEnabledStateImmediatelyAndOnNavigation() {
+        DialogEntriesView view = new DialogEntriesView();
+        view.addEntry("Line 1.");
+        view.addEntry("Line 2.");
+        view.addEntry("Line 3.");
+        // Cursor starts on the last entry: back is possible, forward is not.
+
+        HBox footer = ScreenShell.footerBar();
+        view.bindToFooter(footer);
+
+        Label backLabel = footerLabelById(footer, "back");
+        Label forwardLabel = footerLabelById(footer, "forward");
+
+        // Initial state: back enabled, forward disabled.
+        assertTrue(ScreenShell.isFooterOptionEnabled(backLabel),
+                "back label should be enabled when cursor is not at first entry");
+        assertFalse(backLabel.getStyleClass().contains(ScreenShell.SCREEN_FOOTER_OPTION_DISABLED_STYLE_CLASS));
+        assertFalse(ScreenShell.isFooterOptionEnabled(forwardLabel),
+                "forward label should be disabled when cursor is at last entry");
+        assertTrue(forwardLabel.getStyleClass().contains(ScreenShell.SCREEN_FOOTER_OPTION_DISABLED_STYLE_CLASS));
+
+        // Navigate back to the first entry — back becomes disabled, forward becomes enabled.
+        view.goBack();
+        view.goBack();
+        assertFalse(ScreenShell.isFooterOptionEnabled(backLabel),
+                "back label should be disabled at first entry");
+        assertTrue(backLabel.getStyleClass().contains(ScreenShell.SCREEN_FOOTER_OPTION_DISABLED_STYLE_CLASS));
+        assertTrue(ScreenShell.isFooterOptionEnabled(forwardLabel),
+                "forward label should be enabled when not at last entry");
+        assertFalse(forwardLabel.getStyleClass().contains(ScreenShell.SCREEN_FOOTER_OPTION_DISABLED_STYLE_CLASS));
+    }
+
+    @Test
+    void historyModeShowsAllEntriesIncludingThoseAfterCursor() {
+        DialogEntriesView view = new DialogEntriesView();
+        view.addEntry("Line 1.");
+        view.addEntry("Line 2.");
+        view.addEntry("Line 3.");
+        // Navigate back so cursor is at entry 1 (index 1); entry 2 (index 2) is after cursor.
+        view.goBack();
+        assertEquals(1, view.currentIndex());
+        // Normal mode: only entries 0 and 1 visible (up to cursor).
+        assertEquals(2, view.entryNodes().size());
+
+        view.setHistoryMode(true);
+
+        // History mode: all 3 entries visible.
+        assertEquals(3, view.entryNodes().size());
+        // Entry at currentIndex is "current"; others are "previous".
+        assertTrue(view.entryNodes().get(1).getStyleClass().contains(DialogEntriesView.CURRENT_ENTRY_STYLE_CLASS));
+        assertTrue(view.entryNodes().get(0).getStyleClass().contains(DialogEntriesView.PREVIOUS_ENTRY_STYLE_CLASS));
+        assertTrue(view.entryNodes().get(2).getStyleClass().contains(DialogEntriesView.PREVIOUS_ENTRY_STYLE_CLASS));
+    }
+
+    @Test
+    void historyModeOffRestoresNormalCursorBoundRendering() {
+        DialogEntriesView view = new DialogEntriesView();
+        view.addEntry("Line 1.");
+        view.addEntry("Line 2.");
+        view.addEntry("Line 3.");
+        view.goBack(); // cursor at index 1
+
+        view.setHistoryMode(true);
+        assertEquals(3, view.entryNodes().size());
+
+        view.setHistoryMode(false);
+        // Back to normal: only lines 0 and 1 rendered (cursor at 1).
+        assertEquals(2, view.entryNodes().size());
+    }
+
+    @Test
+    void bindHistoryToggleWiresHistoryButtonToToggleMode() {
+        DialogEntriesView view = new DialogEntriesView();
+        view.addEntry("Line 1.");
+        view.addEntry("Line 2.");
+
+        HBox footer = ScreenShell.footerBar();
+        // Dummy story node — no real layout in a headless test; toggleHistoryLayout skips the
+        // layout branch when the parent is not a BorderPane, but the mode flag still flips.
+        javafx.scene.layout.StackPane storyNode = new javafx.scene.layout.StackPane();
+        view.bindHistoryToggle(footer, storyNode, 0.5);
+
+        assertFalse(view.isHistoryMode());
+
+        Label historyLabel = footerLabelById(footer, "history");
+        assertNotNull(historyLabel, "history footer label should exist");
+        historyLabel.fireEvent(syntheticClick(historyLabel));
+
+        assertTrue(view.isHistoryMode(), "history mode should be active after first click");
+
+        historyLabel.fireEvent(syntheticClick(historyLabel));
+
+        assertFalse(view.isHistoryMode(), "history mode should be off after second click");
+    }
+
+    @Test
+    void bindHistoryToggleHidesAndRestoresStoryNodeWhenEmbeddedInBorderPane() {
+        DialogEntriesView view = new DialogEntriesView();
+        view.addEntry("Line 1.");
+
+        javafx.scene.layout.StackPane storyNode = new javafx.scene.layout.StackPane();
+        // Set up the same parent structure that MainAppLayoutRenderer produces: a BorderPane
+        // whose center is the story slot and whose bottom is the dialog view.
+        BorderPane centre = new BorderPane();
+        centre.setCenter(storyNode);
+        centre.setBottom(view);
+
+        HBox footer = ScreenShell.footerBar();
+        view.bindHistoryToggle(footer, storyNode, 0.5);
+
+        Label historyLabel = footerLabelById(footer, "history");
+
+        // Story node starts visible and managed.
+        assertTrue(storyNode.isManaged());
+        assertTrue(storyNode.isVisible());
+
+        historyLabel.fireEvent(syntheticClick(historyLabel));
+
+        // In history mode the story slot collapses.
+        assertFalse(storyNode.isManaged(), "story node must be unmanaged in history mode");
+        assertFalse(storyNode.isVisible(), "story node must be hidden in history mode");
+        assertTrue(view.isHistoryMode());
+
+        historyLabel.fireEvent(syntheticClick(historyLabel));
+
+        // On exit the story slot is fully restored.
+        assertTrue(storyNode.isManaged(), "story node must be managed after history mode exits");
+        assertTrue(storyNode.isVisible(), "story node must be visible after history mode exits");
+        assertFalse(view.isHistoryMode());
+        // The dialog must still be in the centre pane (not removed or lost).
+        assertSame(centre, view.getParent(), "dialog must still be a child of the centre pane");
+    }
+
+    @Test
+    void sayRendersHBoxWithSpeakerAndPlainBody() {
         DialogEntriesView view = new DialogEntriesView();
         DialogSpeaker alice = DialogSpeaker.text("alice", "Alice");
 
         view.say(alice, "Hello, Bob!");
 
-        assertEquals(1, view.getChildren().size());
-        TextFlow flow = assertInstanceOf(TextFlow.class, view.getChildren().get(0));
-        assertTrue(flow.getStyleClass().contains(DialogEntriesView.SAY_STYLE_CLASS));
-        assertEquals(2, flow.getChildren().size());
-        Text speaker = (Text) flow.getChildren().get(0);
-        Text body = (Text) flow.getChildren().get(1);
-        assertEquals("Alice: ", speaker.getText());
+        assertEquals(1, view.entryNodes().size());
+        HBox row = assertInstanceOf(HBox.class, view.entryNodes().get(0));
+        assertTrue(row.getStyleClass().contains(DialogEntriesView.SAY_STYLE_CLASS));
+        assertEquals(2, row.getChildren().size());
+        Label speaker = (Label) row.getChildren().get(0);
+        Label body = (Label) row.getChildren().get(1);
+        assertEquals("Alice:", speaker.getText());
+        assertTrue(speaker.getStyleClass().contains(DialogEntriesView.SPEAKER_STYLE_CLASS));
         assertEquals("Hello, Bob!", body.getText());
+        assertTrue(body.getStyleClass().contains(DialogEntriesView.BODY_STYLE_CLASS));
+        assertTrue(body.isWrapText());
     }
 
     @Test
@@ -307,9 +444,9 @@ final class DialogEntriesViewTest {
 
         view.shout(bob, "Stop!");
 
-        TextFlow flow = (TextFlow) view.getChildren().get(0);
-        assertTrue(flow.getStyleClass().contains(DialogEntriesView.SHOUT_STYLE_CLASS));
-        Text body = (Text) flow.getChildren().get(1);
+        HBox row = (HBox) view.entryNodes().get(0);
+        assertTrue(row.getStyleClass().contains(DialogEntriesView.SHOUT_STYLE_CLASS));
+        Label body = (Label) row.getChildren().get(1);
         assertEquals("STOP!", body.getText());
         assertTrue(body.getStyleClass().contains(DialogEntriesView.SHOUT_STYLE_CLASS));
     }
@@ -321,9 +458,9 @@ final class DialogEntriesViewTest {
 
         view.whisper(alice, "Don't TELL anyone");
 
-        TextFlow flow = (TextFlow) view.getChildren().get(0);
-        assertTrue(flow.getStyleClass().contains(DialogEntriesView.WHISPER_STYLE_CLASS));
-        Text body = (Text) flow.getChildren().get(1);
+        HBox row = (HBox) view.entryNodes().get(0);
+        assertTrue(row.getStyleClass().contains(DialogEntriesView.WHISPER_STYLE_CLASS));
+        Label body = (Label) row.getChildren().get(1);
         assertEquals("don't tell anyone", body.getText());
     }
 
@@ -333,10 +470,58 @@ final class DialogEntriesViewTest {
 
         view.say("The room is dark.");
 
-        TextFlow flow = (TextFlow) view.getChildren().get(0);
-        assertEquals(1, flow.getChildren().size());
-        Text body = (Text) flow.getChildren().get(0);
+        HBox row = (HBox) view.entryNodes().get(0);
+        assertEquals(1, row.getChildren().size());
+        Label body = (Label) row.getChildren().get(0);
         assertEquals("The room is dark.", body.getText());
+    }
+
+    @Test
+    void speakerWithTextColorTintsBothSpeakerAndBody() {
+        DialogEntriesView view = new DialogEntriesView();
+        DialogSpeaker mc = new DialogSpeaker("mc", "Hero", null, "#88ddff");
+
+        view.say(mc, "Let's go.");
+
+        HBox row = (HBox) view.entryNodes().get(0);
+        Label speaker = (Label) row.getChildren().get(0);
+        Label body = (Label) row.getChildren().get(1);
+        assertTrue(speaker.getStyle().contains("#88ddff"),
+                "speaker inline style should carry the role colour, was: " + speaker.getStyle());
+        assertTrue(body.getStyle().contains("#88ddff"),
+                "body inline style should carry the role colour, was: " + body.getStyle());
+    }
+
+    @Test
+    void speakerWithoutTextColorLeavesInlineStyleEmpty() {
+        DialogEntriesView view = new DialogEntriesView();
+        DialogSpeaker plain = DialogSpeaker.text("plain", "Plain");
+
+        view.say(plain, "Hi.");
+
+        HBox row = (HBox) view.entryNodes().get(0);
+        Label speaker = (Label) row.getChildren().get(0);
+        Label body = (Label) row.getChildren().get(1);
+        assertEquals("", speaker.getStyle());
+        assertEquals("", body.getStyle());
+    }
+
+    @Test
+    void speakerColumnHasFixedWidthSoMessagesAlign() {
+        DialogEntriesView view = new DialogEntriesView();
+        DialogSpeaker shortName = DialogSpeaker.text("a", "A");
+        DialogSpeaker longName = DialogSpeaker.text("verbose", "VeryLongName");
+
+        view.say(shortName, "first");
+        view.say(longName, "second");
+
+        Label firstSpeaker = (Label) ((HBox) view.entryNodes().get(0)).getChildren().get(0);
+        Label secondSpeaker = (Label) ((HBox) view.entryNodes().get(1)).getChildren().get(0);
+        assertEquals(firstSpeaker.getPrefWidth(), secondSpeaker.getPrefWidth(), 1e-9);
+        assertEquals(firstSpeaker.getMinWidth(), secondSpeaker.getMinWidth(), 1e-9);
+        // Speaker column is right-aligned so text hugs the body column for a cleaner read.
+        assertEquals(Pos.TOP_RIGHT, firstSpeaker.getAlignment());
+        assertEquals(Pos.TOP_RIGHT, secondSpeaker.getAlignment());
     }
 
     @Test
@@ -406,20 +591,28 @@ final class DialogEntriesViewTest {
     }
 
     @Test
-    void endConversationClosesHistoryAndAppendsEndDivider() {
+    void endConversationClosesHistoryWithoutAppendingEndDivider() {
         DialogEntriesView view = new DialogEntriesView();
         DialogSpeaker alice = DialogSpeaker.text("alice", "Alice");
 
         view.startConversation(alice);
         view.say(alice, "Hi.");
+        int sizeBeforeEnd = view.dialogEntries().size();
+
         view.endConversation(new GameDateTime(1, "noon"));
 
+        // History still closes — only the visible ConversationEnd divider is suppressed.
         assertTrue(view.history().openDialog().isEmpty());
-        List<DialogEntriesView.Entry> raw = view.dialogEntries();
-        DialogEntriesView.ConversationEnd endDivider = assertInstanceOf(
-                DialogEntriesView.ConversationEnd.class, raw.get(raw.size() - 1));
-        assertEquals(1, endDivider.endedAt().day());
-        assertEquals("noon", endDivider.endedAt().timeSlotId());
+        assertEquals(sizeBeforeEnd, view.dialogEntries().size(),
+                "endConversation should NOT append a ConversationEnd visible entry — only the "
+                        + "start divider is kept as the visual separator between conversations.");
+        assertTrue(view.dialogEntries().stream()
+                        .noneMatch(e -> e instanceof DialogEntriesView.ConversationEnd),
+                "ConversationEnd entries should never be appended by endConversation.");
+        // The cursor still sits on the last spoken line, not on a vanished divider.
+        assertTrue(view.dialogEntries().get(view.currentIndex())
+                        instanceof DialogEntriesView.SpokenEntry,
+                "Cursor should remain on the last spoken entry after endConversation.");
     }
 
     @Test
@@ -440,7 +633,7 @@ final class DialogEntriesViewTest {
 
         view.startConversation(alice);
 
-        HBox divider = assertInstanceOf(HBox.class, view.getChildren().get(0));
+        HBox divider = assertInstanceOf(HBox.class, view.entryNodes().get(0));
         assertTrue(divider.getStyleClass().contains(DialogEntriesView.DIVIDER_STYLE_CLASS));
     }
 
@@ -453,7 +646,54 @@ final class DialogEntriesViewTest {
     }
 
     @Test
-    void dialogEntriesReturnsAllEntryKindsIncludingDividers() {
+    void viewIsAScrollPaneWithRightHandVerticalScrollbar() {
+        DialogEntriesView view = new DialogEntriesView();
+
+        assertTrue(view instanceof ScrollPane,
+                "DialogEntriesView should extend ScrollPane to provide the scrollbar.");
+        assertEquals(ScrollPane.ScrollBarPolicy.AS_NEEDED, view.getVbarPolicy(),
+                "Vertical scrollbar should appear as needed so previous conversations can be scrolled.");
+        assertEquals(ScrollPane.ScrollBarPolicy.NEVER, view.getHbarPolicy(),
+                "Horizontal scrollbar should never appear — long messages wrap inside the dialog block.");
+        assertTrue(view.isFitToWidth(),
+                "Content should fit the viewport width so message bodies wrap to the dialog width.");
+    }
+
+    @Test
+    void unboundedDefaultLetsAllEntriesRenderIntoTheScrollableContainer() {
+        DialogEntriesView view = new DialogEntriesView();
+        for (int i = 0; i < 50; i++) {
+            view.addEntry("Line " + i);
+        }
+
+        assertEquals(50, view.entryNodes().size(),
+                "Default render should include every entry; the ScrollPane provides the viewport.");
+    }
+
+    @Test
+    void rebuildScrollsViewportToBottomToKeepCurrentEntryVisible() throws Exception {
+        DialogEntriesView view = new DialogEntriesView();
+        for (int i = 0; i < 10; i++) {
+            view.addEntry("Line " + i);
+        }
+
+        // Scroll to the top, then add a new entry — rebuild() should snap back to the bottom so
+        // the newest line is visible without manual scrolling.
+        view.setVvalue(view.getVmin());
+        view.addEntry("Newest line");
+
+        // The scroll is deferred via Platform.runLater so the JavaFX layout pass can calculate
+        // the new content height before we pin the vvalue. Flush the FX event queue by enqueueing
+        // a sentinel task after the scroll task and waiting for it to complete.
+        CountDownLatch fxFlushed = new CountDownLatch(1);
+        Platform.runLater(fxFlushed::countDown);
+        fxFlushed.await(5, TimeUnit.SECONDS);
+
+        assertEquals(view.getVmax(), view.getVvalue(), 1e-9);
+    }
+
+    @Test
+    void dialogEntriesReturnsStartDividerAndSpokenButNoEndDivider() {
         DialogEntriesView view = new DialogEntriesView();
         DialogSpeaker alice = DialogSpeaker.text("alice", "Alice");
 
@@ -462,10 +702,65 @@ final class DialogEntriesViewTest {
         view.endConversation();
 
         List<DialogEntriesView.Entry> raw = view.dialogEntries();
-        assertEquals(3, raw.size());
+        assertEquals(2, raw.size(),
+                "After the no-end-divider change, only the start divider + spoken entry should remain.");
         assertInstanceOf(DialogEntriesView.ConversationStart.class, raw.get(0));
         assertInstanceOf(DialogEntriesView.SpokenEntry.class, raw.get(1));
-        assertInstanceOf(DialogEntriesView.ConversationEnd.class, raw.get(2));
+    }
+
+    @Test
+    void goBackSkipsConversationStartDividerToLandOnPreviousSpokenEntry() {
+        DialogEntriesView view = new DialogEntriesView();
+        DialogSpeaker alice = DialogSpeaker.text("alice", "Alice");
+
+        view.addEntry("Line A");
+        view.startConversation(alice);
+        view.say(alice, "Line B");
+        // entries = [PlainEntry("Line A"), ConversationStart, SpokenEntry("Line B")]
+        // currentIndex = 2 (on Line B).
+        assertEquals(2, view.currentIndex());
+
+        view.goBack();
+
+        // Should jump straight over the ConversationStart divider to Line A.
+        assertEquals(0, view.currentIndex(),
+                "goBack should auto-skip the ConversationStart divider and land on Line A.");
+        assertInstanceOf(DialogEntriesView.PlainEntry.class,
+                view.dialogEntries().get(view.currentIndex()));
+    }
+
+    @Test
+    void goForwardSkipsConversationStartDividerToLandOnNextSpokenEntry() {
+        DialogEntriesView view = new DialogEntriesView();
+        DialogSpeaker alice = DialogSpeaker.text("alice", "Alice");
+
+        view.addEntry("Line A");
+        view.startConversation(alice);
+        view.say(alice, "Line B");
+        view.goBack();
+        assertEquals(0, view.currentIndex(), "Sanity: cursor is on Line A after goBack.");
+
+        view.goForward();
+
+        // Should skip the ConversationStart at index 1 and land on the SpokenEntry at index 2.
+        assertEquals(2, view.currentIndex(),
+                "goForward should auto-skip the ConversationStart divider and land on Line B.");
+        assertInstanceOf(DialogEntriesView.SpokenEntry.class,
+                view.dialogEntries().get(view.currentIndex()));
+    }
+
+    @Test
+    void canGoBackAndCanGoForwardIgnoreLeadingTrailingDividers() {
+        DialogEntriesView view = new DialogEntriesView();
+        DialogSpeaker alice = DialogSpeaker.text("alice", "Alice");
+
+        view.startConversation(alice);
+        view.say(alice, "Only line.");
+        // entries = [ConversationStart, SpokenEntry]; currentIndex = 1.
+        // Nothing non-divider before the cursor → canGoBack should be false even though raw index > 0.
+        assertFalse(view.canGoBack(),
+                "Only entry before the cursor is a divider — canGoBack should report false.");
+        assertFalse(view.canGoForward());
     }
 
     private static Label footerLabelById(HBox footer, String id) {
