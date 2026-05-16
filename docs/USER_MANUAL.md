@@ -54,6 +54,41 @@ Launch the management app with:
 
 The management app includes a shared **Working Directory** picker above the launcher buttons and remembers the last chosen folder between launches. That working directory is passed into the manual authoring and diagnostic screens so file pickers, relative screen resources, and related browsing actions start from the same folder, including the screen designer, reloadable JSON screen, conversation editor, code table manager, and file catalog. The **Default App Values** screen also includes a **Locations** tab for reviewing and formatting bundled location JSON examples while comparing them with other startup defaults.
 
+Launch the dialog block demo with:
+
+```bash
+./gradlew --no-daemon runDialogBlockTestScreen
+```
+
+The dialog block demo opens a `MAIN_APP_LAYOUT` window where the dialog slot is a
+`DialogEntriesView` pre-seeded with **ten short conversations** between five distinct characters
+(narrator, MC, book girl, random girl, and an old mentor). Each character has its own role colour,
+so the demo exercises the column-aligned speaker layout, per-role text tinting, the 50% black
+dialog background, and the right-hand scrollbar. Left-click the dialog block to advance the
+cursor (fading one more line); right-click to rewind; <kbd>Space</kbd> / <kbd>Backspace</kbd>
+mirror the same actions. Use the scrollbar or mouse wheel to browse the full conversation history.
+
+The same demo is also discoverable from the manual **Test Screen** (`runTestScreen`) as a
+standalone example: open the test screen and look for
+`06-ui-screens-and-themes/DialogBlockDemo.java` under the example tree, then hit **Run** to launch
+it in a child JVM. The shim at
+[`examples/user-manual/06-ui-screens-and-themes/DialogBlockDemo.java`](../examples/user-manual/06-ui-screens-and-themes/DialogBlockDemo.java)
+delegates to `DialogBlockTestScreenApplication.main(...)` so the discoverable example and the
+Gradle task share one implementation.
+
+Launch the reusable error screen demo with:
+
+```bash
+./gradlew --no-daemon runErrorScreenTestScreen
+```
+
+The demo seeds an `IllegalStateException` and renders it through the reusable
+[`ErrorScreen`](#error-screen-error-and-exception-surface) — the heading shows the exception
+class name, the read-only monospace text area below shows the full stack trace (selectable for
+`Ctrl+C` or one-click via **Copy details**), and the button row exposes both **Continue**
+(recoverable-failure flow) and **Exit**. The same demo is discoverable from the manual test
+screen as `06-ui-screens-and-themes/ErrorScreenDemo.java`.
+
 Launch the manual conversation editor with:
 
 ```bash
@@ -579,7 +614,7 @@ The engine ships a higher-level scaffolding for the typical visual-novel app fra
 
 - `storyScreenId` (required) — id of the screen rendered in the story area
 - `dialogScreenId` (optional) — id of the screen rendered in the dialog area; when omitted the story area fills the entire central frame
-- `storyDialogRatio` (default `0.875`) — story-area share of the central frame, `0.0`–`1.0`
+- `storyDialogRatio` (default `0.5`) — story-area share of the central frame, `0.0`–`1.0` (so the dialog occupies the remaining half by default)
 - `appLayoutOrientation` (default `vertical`) — `vertical` (story on top, dialog on bottom) or `horizontal` (side-by-side)
 - `showFooter` (default `true`) — render the standard `ScreenShell` footer below the central frame
 - `storyInsets` / `dialogInsets` (default `0`) — CSS-style shorthand padding inside the corresponding slot. Accepts 1, 2, or 4 comma-separated numbers (`"10"`, `"8, 12"`, `"4, 12, 4, 12"`)
@@ -697,24 +732,52 @@ The packaged design at [`examples/resources/json/screens/main-app-layout-test-sc
 
 #### Dialog entries widget
 
-`DialogEntriesView` is the engine's reusable widget for the dialog slot. It owns a sealed
-`Entry` model and a `DialogHistory`, renders rich text via `TextFlow`, and offers say / shout /
-whisper / start-conversation / end-conversation helpers that mirror writes into both the visible
-stack and the history.
+`DialogEntriesView` is the engine's reusable widget for the dialog slot. It extends `ScrollPane`
+(with a right-hand vertical scrollbar that appears as soon as the rendered entries exceed the
+viewport height), owns a sealed `Entry` model and a `DialogHistory`, renders entries as wrapping
+labels in a column-aligned `HBox` inside the scroll content, and offers say / shout / whisper /
+start-conversation / end-conversation helpers that mirror writes into both the visible stack and
+the history.
 
-The current entry sits at the bottom of the panel at full opacity; earlier entries are stacked
-above it at `0.5` opacity so the player sees recent context fading away.
+The current entry sits at the bottom of the panel at full opacity, in the larger default font and
+bright white; earlier entries are stacked above it at `0.5` opacity and a smaller font so the
+player sees recent context fading away. Long messages wrap to multiple lines automatically. After
+every append the viewport auto-scrolls to the bottom so the newest entry stays visible — the
+player can still scroll up through the full backlog via the right-hand scrollbar (or mouse
+wheel) without changing the cursor.
+
+Because the widget is a `ScrollPane`, callers that need the rendered entry node list should call
+`entryNodes()` rather than `getChildren()` (which now returns the ScrollPane skin's children, not
+the entries). `entryNodes()` returns the inner `VBox`'s children in stacking order — the topmost
+entry first, the current entry last.
 
 Entry kinds (the sealed `DialogEntriesView.Entry` hierarchy):
 
-- `PlainEntry` — bare narration string, rendered as a `Label`.
-- `SpokenEntry` — `LineType.SAY` / `SHOUT` / `WHISPER` line with optional speaker, rendered as a
-  `TextFlow`: speaker prefix uses `DialogSpeaker.textColor()` when supplied; shout body is bold +
-  uppercase; whisper body is italic + lowercase; say body is plain.
+- `PlainEntry` — bare narration string, rendered as a wrapping `Label`.
+- `SpokenEntry` — `LineType.SAY` / `SHOUT` / `WHISPER` line with optional speaker, rendered as an
+  `HBox` with a fixed-width speaker column (so message bodies align across entries) plus a
+  wrapping body `Label`. The speaker label is **right-aligned** within its column so the name
+  and colon sit flush against the body text, giving each row a clean left edge for reading.
+  When `DialogSpeaker.textColor()` is set, that colour is applied as an inline style to *both*
+  the speaker label and the message body, so a different role colour can be used for narrator,
+  MC, book girl, random girl, etc. by simply constructing each `DialogSpeaker` with the
+  appropriate colour. Shout uppercases its body and applies bold via the `.dialog-entry-shout`
+  rule; whisper lowercases and italicises via `.dialog-entry-whisper`.
 - `ConversationStart` — divider listing the conversation's participants (and the start timestamp
   when supplied). Rendered as `── Conversation: Alice, Bob ──` with horizontal lines on either
-  side.
-- `ConversationEnd` — closing divider, also rendered as a horizontal band.
+  side. Only the *start* divider acts as the visual separator between conversations — the start
+  of a new conversation already implies the previous one has ended.
+- `ConversationEnd` — model record kept for backward compatibility, but `endConversation(...)` no
+  longer appends one to the visible entries (the underlying `DialogHistory` still records the
+  end timestamp). Callers that need a custom closing marker can still construct a
+  `ConversationEnd` and append it manually if desired.
+
+Cursor navigation (`goBack()` / `goForward()`, the primary/secondary mouse clicks, and the
+Space/Backspace shortcuts) **auto-skips divider entries** so the cursor only ever lands on a
+spoken or plain line. Dividers remain visible above the cursor as section markers, but they are
+not "click-through positions". The `canGoBackProperty()` / `canGoForwardProperty()` flags reflect
+the same skip-aware rule, so the footer back/forward affordances grey out correctly when only
+dividers stand between the cursor and an end of the entry list.
 
 API in `com.eb.javafx.ui`:
 
@@ -766,19 +829,97 @@ Note: `say`/`shout`/`whisper` only persist into `DialogHistory` while a conversa
 (between `startConversation` and `endConversation`). Calling them without an open conversation
 still updates the visible widget; the history side is just skipped.
 
+To tint each role differently — for example narrator / MC / book girl / random girl — construct
+`DialogSpeaker`s with role-specific colours; the view will use that colour for both the speaker
+label and the message body:
+
+```java
+DialogSpeaker narrator   = new DialogSpeaker("narrator",    "Narrator",   null, "#a0b0c0");
+DialogSpeaker mc         = new DialogSpeaker("mc",          "Hero",       null, "#88ddff");
+DialogSpeaker bookGirl   = new DialogSpeaker("book-girl",   "Sarah",      null, "#ffaaff");
+DialogSpeaker randomGirl = new DialogSpeaker("random-girl", "Stranger",   null, "#aaffaa");
+```
+
 Style hooks (overridable in application stylesheets):
 
 | Style class | Applied to |
 |---|---|
-| `.dialog-entries-view` | The `VBox` container |
-| `.dialog-entry` | Every entry node (label / text-flow / divider) |
-| `.dialog-entry-current` | The newest visible (bottom) entry |
-| `.dialog-entry-previous` | Earlier entries (fading) |
-| `.dialog-entry-speaker` | The speaker prefix inside a `SpokenEntry` |
-| `.dialog-entry-say` / `.dialog-entry-shout` / `.dialog-entry-whisper` | The body `Text` inside the matching `SpokenEntry` |
+| `.dialog-entries-view` | The outer `ScrollPane` — carries the 50% black background and the right-hand scrollbar styling |
+| `.dialog-entries-container` | The inner `VBox` that actually holds the rendered entry nodes |
+| `.dialog-entry` | Every entry node (label / row / divider) |
+| `.dialog-entry-current` | The newest visible (bottom) entry — bright white, large font |
+| `.dialog-entry-previous` | Earlier entries (faded to `0.5` opacity, smaller font) |
+| `.dialog-entry-speaker` | The fixed-width speaker `Label` column inside a `SpokenEntry` — right-aligned so the name+colon sit flush against the body |
+| `.dialog-entry-body` | The wrapping body `Label` inside a `SpokenEntry` |
+| `.dialog-entry-say` / `.dialog-entry-shout` / `.dialog-entry-whisper` | Applied to the `SpokenEntry` row and to its body label — used for bold (shout) and italic (whisper) declarations |
+| `.layout-main-app-dialog` | The dialog slot wrapper produced by the main app layout renderer; carries the default 50% black background |
 | `.dialog-entry-divider` | The `HBox` for a `ConversationStart` / `ConversationEnd` |
 | `.dialog-entry-divider-line` | The thin horizontal lines on either side of a divider |
 | `.dialog-entry-divider-label` | The participants / "End" label in the middle of a divider |
+
+#### Error screen (error and exception surface) <a id="error-screen-error-and-exception-surface"></a>
+
+`com.eb.javafx.ui.ErrorScreen` is the engine's reusable screen for surfacing an exception or
+non-fatal failure. It is styled in a dark-red theme so the player immediately recognises that
+something has gone wrong, and it ships with a copyable details block plus distinct
+**Continue** / **Exit** buttons.
+
+The screen is built from an `ErrorScreen.Options` record:
+
+| Field | Purpose |
+|---|---|
+| `title` | Heading shown at the top — typically the exception class name or a category string. Null or blank falls back to `ErrorScreen.DEFAULT_TITLE` ("Something went wrong"). |
+| `message` | Optional short user-facing description; rendered as a single label above the details area. Null or blank hides the label. |
+| `details` | The long technical body — full stack trace, validation report, etc. Rendered into a read-only, selectable monospace `TextArea` so the player can `Ctrl+A` / `Ctrl+C` the content. Null is normalised to the empty string. |
+| `continueAction` | Invoked when the player clicks **Continue**. When `null`, the Continue button is hidden — signalling that the failure is fatal. |
+| `exitAction` | Invoked when the player clicks **Exit**. Required — an error screen without an exit path would trap the player. |
+
+API entry points (all in `com.eb.javafx.ui`):
+
+| Method | Purpose |
+|---|---|
+| `ErrorScreen.createScene(Options, width, height)` | Build a `Scene` hosting the error screen at the requested dimensions. |
+| `ErrorScreen.buildRoot(Options)` | Build only the `Parent` node so the caller can swap it into an existing `Scene`. |
+| `ErrorScreen.Options.ofException(Throwable, exitAction)` | Convenience factory — populates `title` from the exception class name, `message` from `getMessage()`, and `details` from the full stack trace. Produces a fatal error (no Continue). |
+| `ErrorScreen.Options.ofException(Throwable, continueAction, exitAction)` | Same as above with a Continue path — use for recoverable failures. |
+| `ErrorScreen.stackTraceText(Throwable)` | Returns the throwable's stack trace as a single string. |
+
+A typical fatal-error wiring at startup:
+
+```java
+try {
+    bootstrap.run();
+} catch (RuntimeException error) {
+    ErrorScreen.Options options = ErrorScreen.Options.ofException(error, Platform::exit);
+    Scene scene = ErrorScreen.createScene(options, 800, 600);
+    scene.getStylesheets().add(uiTheme.stylesheet());
+    primaryStage.setScene(scene);
+    primaryStage.show();
+}
+```
+
+For a recoverable failure (e.g. a save-slot read error), pass both actions:
+
+```java
+ErrorScreen.Options options = ErrorScreen.Options.ofException(
+        error,
+        () -> sceneRouter.open(SceneRouter.MAIN_MENU_ROUTE),
+        Platform::exit);
+```
+
+Style hooks (all carried in the runtime theme generated by `UiTheme.stylesheet()` and in the
+contract `default.css`):
+
+| Style class | Applied to |
+|---|---|
+| `.error-screen` | The outer `BorderPane` — dark-red panel + 2px dark-red border |
+| `.error-screen-title` | The heading `Label` (large bold light-red text) |
+| `.error-screen-message` | The optional short message `Label` |
+| `.error-screen-details` | The read-only monospace `TextArea` with the long technical body |
+| `.error-screen-actions` | The `HBox` button row at the bottom |
+| `.error-screen-copy-button` | The **Copy details** button (transparent + dark-red border) |
+| `.error-screen-continue-button` | The **Continue** button (light-red outline, no fill) |
+| `.error-screen-exit-button` | The **Exit** button (filled dark-red with white text) |
 
 ### Editing a screen manually in JSON
 

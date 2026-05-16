@@ -15,6 +15,13 @@ import java.util.Optional;
  * dialog, append formatted content rows, then end it with a closing date stamp.</p>
  */
 public final class DialogHistory {
+    /**
+     * Maximum number of conversation entries retained in memory. Once this limit is reached,
+     * the oldest entry is dropped each time a new conversation begins, so the history acts as a
+     * sliding window of the most recent 1 000 conversations.
+     */
+    public static final int MAX_CONVERSATIONS = 1000;
+
     private final List<DialogHistoryEntry> entries = new ArrayList<>();
     private int openEntryIndex = -1;
 
@@ -24,6 +31,11 @@ public final class DialogHistory {
         }
         DialogHistoryEntry entry = DialogHistoryEntry.started(dialogId, startedAt);
         entries.add(entry);
+        // Trim the oldest conversation once the sliding window is full. openEntryIndex always
+        // points at the last element, so the index stays valid after the remove.
+        if (entries.size() > MAX_CONVERSATIONS) {
+            entries.remove(0);
+        }
         openEntryIndex = entries.size() - 1;
         return entry;
     }

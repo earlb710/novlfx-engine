@@ -7,25 +7,24 @@ import com.eb.javafx.text.DialogHistory;
 import com.eb.javafx.text.DialogMessage;
 import com.eb.javafx.text.DialogSpeaker;
 import com.eb.javafx.util.Validation;
+import javafx.application.Platform;
+import javafx.beans.binding.Bindings;
+import javafx.beans.binding.DoubleBinding;
 import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanWrapper;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
-import javafx.scene.paint.Color;
-import javafx.scene.text.Font;
-import javafx.scene.text.FontPosture;
-import javafx.scene.text.FontWeight;
-import javafx.scene.text.Text;
-import javafx.scene.text.TextFlow;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -48,8 +47,13 @@ import java.util.stream.Collectors;
  *   <li>{@link PlainEntry} — a single narration string, rendered as a {@link Label}.</li>
  *   <li>{@link SpokenEntry} — a {@link LineType#SAY say} / {@link LineType#SHOUT shout} /
  *       {@link LineType#WHISPER whisper} line with an optional {@link DialogSpeaker}, rendered as
- *       a {@link TextFlow} so shout shows bold uppercase and whisper shows italic lowercase
- *       inline. The speaker label uses {@link DialogSpeaker#textColor()} when supplied.</li>
+ *       an {@link HBox} with a fixed-width speaker column (so message bodies align across entries)
+ *       plus a wrapping body {@link Label}. Shout uppercases its body and applies a bold
+ *       declaration via the {@code .dialog-entry-shout} CSS rule; whisper lowercases and italicises
+ *       via {@code .dialog-entry-whisper}. When {@link DialogSpeaker#textColor()} is set, that
+ *       colour is applied as an inline style to <em>both</em> the speaker label and the message
+ *       body so the whole line is tinted (e.g. one colour per role: narrator, MC, book girl,
+ *       random girl).</li>
  *   <li>{@link ConversationStart} — a divider entry marking the start of a conversation with one
  *       or more participants. Rendered as a {@code ── Conversation: Alice, Bob ──} horizontal
  *       band.</li>
@@ -72,8 +76,16 @@ import java.util.stream.Collectors;
  * <p>The view itself also handles mouse clicks: a primary (left) click advances with
  * {@link #goForward()} and a secondary (right) click rewinds with {@link #goBack()}. The handler
  * is installed in the constructor so the dialog window is click-driven out of the box.</p>
+ *
+ * <p>The view extends {@link ScrollPane} and renders entries into an inner {@link VBox}. A
+ * vertical scrollbar appears on the right as soon as the rendered entries exceed the viewport
+ * height, so the player can scroll back through previous conversations without having to use the
+ * cursor navigation. After every append the view automatically scrolls to the bottom so the
+ * newest entry stays in view. Tests and renderers that need the actual entry node list should use
+ * {@link #entryNodes()} rather than {@code getChildren()} (which now returns the {@code
+ * ScrollPane}'s skin children, not the entry list).</p>
  */
-public final class DialogEntriesView extends VBox {
+public final class DialogEntriesView extends ScrollPane {
     /** Opacity applied to entries above the current cursor. */
     public static final double PREVIOUS_ENTRY_OPACITY = 0.5;
     public static final String STYLE_CLASS = "dialog-entries-view";
@@ -81,6 +93,7 @@ public final class DialogEntriesView extends VBox {
     public static final String CURRENT_ENTRY_STYLE_CLASS = "dialog-entry-current";
     public static final String PREVIOUS_ENTRY_STYLE_CLASS = "dialog-entry-previous";
     public static final String SPEAKER_STYLE_CLASS = "dialog-entry-speaker";
+    public static final String BODY_STYLE_CLASS = "dialog-entry-body";
     public static final String SAY_STYLE_CLASS = "dialog-entry-say";
     public static final String SHOUT_STYLE_CLASS = "dialog-entry-shout";
     public static final String WHISPER_STYLE_CLASS = "dialog-entry-whisper";
@@ -91,8 +104,13 @@ public final class DialogEntriesView extends VBox {
     /** Default {@link GameDateTime} used when callers omit a clock; gives the history a valid timestamp. */
     private static final GameDateTime DEFAULT_TIMESTAMP = new GameDateTime(1, "default");
     private static final AtomicInteger AUTO_DIALOG_SEQ = new AtomicInteger();
-    private static final double DEFAULT_SPACING = 4;
-    private static final int DEFAULT_MAX_VISIBLE_ENTRIES = 5;
+    private static final double DEFAULT_SPACING = 6;
+    /** No cap by default — the {@link ScrollPane} viewport plus the right-hand scrollbar reveal the
+     *  full history. Callers can still set a positive cap via {@link #setMaxVisibleEntries(int)} to
+     *  trim render work for very long histories. */
+    private static final int DEFAULT_MAX_VISIBLE_ENTRIES = Integer.MAX_VALUE;
+    /** Fixed-width speaker column so message bodies line up across entries with different speaker name lengths. */
+    private static final double SPEAKER_COLUMN_WIDTH = 160;
 
     /** Top-level sealed type for one row in the dialog panel. */
     public sealed interface Entry permits PlainEntry, SpokenEntry, ConversationStart, ConversationEnd {
@@ -148,12 +166,28 @@ public final class DialogEntriesView extends VBox {
         }
     }
 
+    public static final String ENTRIES_CONTAINER_STYLE_CLASS = "dialog-entries-container";
+
     private final List<Entry> entries = new ArrayList<>();
     private final DialogHistory history;
     private final ReadOnlyBooleanWrapper canGoBack = new ReadOnlyBooleanWrapper(this, "canGoBack", false);
     private final ReadOnlyBooleanWrapper canGoForward = new ReadOnlyBooleanWrapper(this, "canGoForward", false);
+    /**
+     * Inner column that actually holds rendered entry nodes. Wrapping it in a {@link ScrollPane}
+     * (this class) is what produces the right-hand scrollbar so the player can scroll back through
+     * previous conversations.
+     */
+    private final VBox entriesContainer = new VBox(DEFAULT_SPACING);
     private int currentIndex = -1;
     private int maxVisibleEntries = DEFAULT_MAX_VISIBLE_ENTRIES;
+    /**
+     * When {@code true} the view renders every entry in the full list (not just up to the cursor)
+     * so the player can scroll through the complete conversation record. Toggled by
+     * {@link #bindHistoryToggle}.
+     */
+    private boolean historyMode = false;
+    /** Saved ratio used to restore the height binding when leaving history mode. */
+    private double savedDialogHeightShare = 0;
 
     public DialogEntriesView() {
         this(new DialogHistory());
@@ -166,12 +200,31 @@ public final class DialogEntriesView extends VBox {
     public DialogEntriesView(DialogHistory history) {
         this.history = Validation.requireNonNull(history, "Dialog history is required.");
         getStyleClass().add(STYLE_CLASS);
-        setSpacing(DEFAULT_SPACING);
-        setAlignment(Pos.BOTTOM_LEFT);
+        entriesContainer.getStyleClass().add(ENTRIES_CONTAINER_STYLE_CLASS);
+        entriesContainer.setAlignment(Pos.BOTTOM_LEFT);
+        entriesContainer.setMinSize(0, 0);
+        entriesContainer.setPickOnBounds(true);
+        setContent(entriesContainer);
+        setFitToWidth(true);
+        // Don't stretch the content vertically — when entries are short the container should sit at
+        // its natural height (so the BOTTOM_LEFT alignment pins them to the bottom of the viewport);
+        // when entries are long the container grows past the viewport and the vbar appears.
+        setFitToHeight(false);
+        setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
         setMinSize(0, 0);
         setPickOnBounds(true);
         addEventHandler(MouseEvent.MOUSE_CLICKED, this::handleMouseClick);
         rebuild();
+    }
+
+    /**
+     * Returns an unmodifiable view of the rendered entry nodes (one per visible entry, in stacking
+     * order). Use this in tests and renderers instead of {@link #getChildren()} — the latter now
+     * returns the {@link ScrollPane}'s skin children, not the entry list.
+     */
+    public List<Node> entryNodes() {
+        return entriesContainer.getChildrenUnmodifiable();
     }
 
     private void handleMouseClick(MouseEvent event) {
@@ -302,14 +355,24 @@ public final class DialogEntriesView extends VBox {
         endConversation(clock.currentTime());
     }
 
-    /** Ends the currently open conversation with the supplied end timestamp. */
+    /**
+     * Ends the currently open conversation with the supplied end timestamp.
+     *
+     * <p>The widget no longer appends a {@link ConversationEnd} divider entry — only the
+     * {@link ConversationStart} divider acts as the visual separator between conversations, since
+     * the start of a new conversation already implies that the previous one has ended. The
+     * underlying {@link DialogHistory} still records {@code endedAt} so persistence and the
+     * conversation-history screens keep their full lifecycle metadata.</p>
+     */
     public void endConversation(GameDateTime endedAt) {
         Validation.requireNonNull(endedAt, "Conversation end time is required.");
         if (history.openDialog().isEmpty()) {
             return;
         }
         history.endDialog(endedAt);
-        appendEntry(new ConversationEnd(endedAt));
+        // Intentionally no appendEntry(new ConversationEnd(...)) — see Javadoc above. Callers
+        // that still need a closing visual marker can construct one explicitly via
+        // dialogEntries() / a custom renderer, but the standard flow no longer produces one.
     }
 
     // ----- Navigation ---------------------------------------------------------------------------
@@ -320,18 +383,56 @@ public final class DialogEntriesView extends VBox {
         rebuild();
     }
 
+    /**
+     * Moves the cursor to the previous non-divider entry.
+     *
+     * <p>Divider entries ({@link ConversationStart} / {@link ConversationEnd}) are auto-skipped
+     * so the cursor always lands on a spoken or plain line — the dividers are visual section
+     * markers, not "clickable" reading positions. No-op when there is no earlier non-divider
+     * entry.</p>
+     */
     public void goBack() {
-        if (currentIndex > 0) {
-            currentIndex--;
+        int target = previousNonDividerIndex(currentIndex);
+        if (target >= 0 && target != currentIndex) {
+            currentIndex = target;
             rebuild();
         }
     }
 
+    /**
+     * Moves the cursor to the next non-divider entry.
+     *
+     * <p>Divider entries are auto-skipped (see {@link #goBack()}). No-op when there is no later
+     * non-divider entry.</p>
+     */
     public void goForward() {
-        if (currentIndex >= 0 && currentIndex < entries.size() - 1) {
-            currentIndex++;
+        int target = nextNonDividerIndex(currentIndex);
+        if (target >= 0 && target != currentIndex) {
+            currentIndex = target;
             rebuild();
         }
+    }
+
+    private int previousNonDividerIndex(int fromIndex) {
+        for (int i = fromIndex - 1; i >= 0; i--) {
+            if (!isDivider(entries.get(i))) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    private int nextNonDividerIndex(int fromIndex) {
+        for (int i = fromIndex + 1; i < entries.size(); i++) {
+            if (!isDivider(entries.get(i))) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    private static boolean isDivider(Entry entry) {
+        return entry instanceof ConversationStart || entry instanceof ConversationEnd;
     }
 
     public int currentIndex() {
@@ -366,6 +467,20 @@ public final class DialogEntriesView extends VBox {
 
     // ----- Footer wiring ------------------------------------------------------------------------
 
+    /**
+     * Wires the standard {@link ScreenShell#footerBar() footer bar} back / forward labels to drive
+     * {@link #goBack()} / {@link #goForward()} on this view.
+     *
+     * <p>In addition to installing click handlers, this method immediately applies the correct
+     * enabled / disabled visual state to the back and forward labels and keeps them in sync with
+     * {@link #canGoBackProperty()} / {@link #canGoForwardProperty()} via property listeners.
+     * That means the back label greys out automatically when the cursor is at the first entry and
+     * the forward label greys out when it is at the last, without any extra wiring by the caller.</p>
+     *
+     * @param footerOrAncestor the footer {@link HBox} itself, or any ancestor node that contains it
+     *        (e.g. the {@link StackPane} root returned by
+     *        {@link MainAppLayoutRenderer#render MainAppLayoutRenderer.render(...)})
+     */
     public void bindToFooter(Node footerOrAncestor) {
         Validation.requireNonNull(footerOrAncestor, "Footer node is required.");
         HBox footer = findFooter(footerOrAncestor);
@@ -380,22 +495,45 @@ public final class DialogEntriesView extends VBox {
                 continue;
             }
             switch (option.id()) {
-                case "back" -> label.addEventHandler(MouseEvent.MOUSE_CLICKED, event -> {
-                    if (ScreenShell.isFooterOptionEnabled(label)) {
-                        goBack();
-                        event.consume();
-                    }
-                });
-                case "forward" -> label.addEventHandler(MouseEvent.MOUSE_CLICKED, event -> {
-                    if (ScreenShell.isFooterOptionEnabled(label)) {
-                        goForward();
-                        event.consume();
-                    }
-                });
+                case "back" -> {
+                    applyFooterLabelEnabled(label, canGoBack());
+                    canGoBack.addListener((obs, oldVal, newVal) -> applyFooterLabelEnabled(label, newVal));
+                    label.addEventHandler(MouseEvent.MOUSE_CLICKED, event -> {
+                        if (ScreenShell.isFooterOptionEnabled(label)) {
+                            goBack();
+                            event.consume();
+                        }
+                    });
+                }
+                case "forward" -> {
+                    applyFooterLabelEnabled(label, canGoForward());
+                    canGoForward.addListener((obs, oldVal, newVal) -> applyFooterLabelEnabled(label, newVal));
+                    label.addEventHandler(MouseEvent.MOUSE_CLICKED, event -> {
+                        if (ScreenShell.isFooterOptionEnabled(label)) {
+                            goForward();
+                            event.consume();
+                        }
+                    });
+                }
                 default -> {
                     // Other footer labels stay under application control.
                 }
             }
+        }
+    }
+
+    /**
+     * Updates a footer label's enabled / disabled visual state and its stored {@link ScreenShell.FooterOption}
+     * user data so that {@link ScreenShell#isFooterOptionEnabled(Label)} stays consistent.
+     */
+    private static void applyFooterLabelEnabled(Label label, boolean enabled) {
+        if (label.getUserData() instanceof ScreenShell.FooterOption option) {
+            label.setUserData(option.withEnabled(enabled));
+        }
+        if (enabled) {
+            label.getStyleClass().remove(ScreenShell.SCREEN_FOOTER_OPTION_DISABLED_STYLE_CLASS);
+        } else if (!label.getStyleClass().contains(ScreenShell.SCREEN_FOOTER_OPTION_DISABLED_STYLE_CLASS)) {
+            label.getStyleClass().add(ScreenShell.SCREEN_FOOTER_OPTION_DISABLED_STYLE_CLASS);
         }
     }
 
@@ -414,6 +552,138 @@ public final class DialogEntriesView extends VBox {
                 }
             }
         });
+    }
+
+    // ----- History-mode (expanded full-height view) ---------------------------------------------
+
+    /**
+     * Returns {@code true} while the view is in history mode.
+     *
+     * <p>History mode renders every entry (not just up to the cursor) and expands the dialog slot
+     * to fill the full layout height so the player can scroll through the complete conversation
+     * record. Wire the toggle via {@link #bindHistoryToggle}.</p>
+     */
+    public boolean isHistoryMode() {
+        return historyMode;
+    }
+
+    /**
+     * Sets history mode directly (without layout-expand side effects). Prefer
+     * {@link #bindHistoryToggle} when the view is embedded in a {@code MAIN_APP_LAYOUT} so the
+     * layout expansion also fires. This setter is mainly useful for tests.
+     */
+    public void setHistoryMode(boolean historyMode) {
+        this.historyMode = historyMode;
+        rebuild();
+    }
+
+    /**
+     * Wires the standard {@link ScreenShell#footerBar() footer} history (◷) button so that
+     * clicking it toggles the dialog block between its normal split-view height and a full-height
+     * expanded view that covers the story slot.
+     *
+     * <p>The expansion works by hiding the story node ({@code setManaged/setVisible false}) so
+     * the layout's centre slot collapses, then rebinding this view's height to
+     * {@code min(renderedContentHeight, centreHeight)}. Short histories stay compact; long ones
+     * fill the viewport. On the second click the story node is restored and the normal
+     * proportional height binding is re-applied.</p>
+     *
+     * <p>In history mode {@link #rebuild()} renders <em>all</em> entries (including any beyond the
+     * current cursor) so the player gets a complete scrollable record.</p>
+     *
+     * @param footerOrAncestor the footer {@link HBox} itself or any ancestor that contains it
+     * @param storyNode the story-slot node that will be hidden when history mode is active
+     *        (its parent must be the same {@link BorderPane} as this view's parent)
+     * @param dialogHeightShare the fraction of the centre pane height allocated to this dialog
+     *        in normal mode, e.g. {@code 1.0 - MainAppLayoutPlan.DEFAULT_STORY_DIALOG_RATIO}.
+     *        Used to recreate the height binding when history mode is deactivated.
+     */
+    public void bindHistoryToggle(Node footerOrAncestor, Node storyNode, double dialogHeightShare) {
+        Validation.requireNonNull(footerOrAncestor, "Footer ancestor is required.");
+        Validation.requireNonNull(storyNode, "Story node is required.");
+        this.savedDialogHeightShare = dialogHeightShare;
+        HBox footer = findFooter(footerOrAncestor);
+        if (footer == null) {
+            return;
+        }
+        for (Node child : footer.getChildren()) {
+            if (child instanceof Label label
+                    && label.getUserData() instanceof ScreenShell.FooterOption option
+                    && "history".equals(option.id())) {
+                label.addEventHandler(MouseEvent.MOUSE_CLICKED, event -> {
+                    toggleHistoryLayout(storyNode);
+                    event.consume();
+                });
+                break;
+            }
+        }
+    }
+
+    /**
+     * Performs the layout toggle when the history button is clicked.
+     *
+     * <p>The dialog node stays in {@code BorderPane.bottom} throughout — no node-moving is needed.
+     * Instead the story slot is hidden/shown and the dialog's height binding is swapped:</p>
+     *
+     * <p><b>Entering history mode</b></p>
+     * <ul>
+     *   <li>The story node is hidden ({@code setManaged(false); setVisible(false)}) so the
+     *       {@code BorderPane} collapses the center slot and the full centre height is free.</li>
+     *   <li>The dialog's height is bound to
+     *       {@code min(entriesContainer.height, centre.height)} so it only grows as far as the
+     *       rendered content requires, capped at the full available window height. Short histories
+     *       stay compact; long ones fill the viewport and let the scrollbar do the rest.</li>
+     * </ul>
+     *
+     * <p><b>Leaving history mode</b></p>
+     * <ul>
+     *   <li>The story node is restored ({@code setManaged(true); setVisible(true)}).</li>
+     *   <li>The height binding is re-applied as
+     *       {@code centre.height × savedDialogHeightShare}.</li>
+     * </ul>
+     *
+     * <p>If the view's parent is not a {@link BorderPane} (e.g. in a test without a layout),
+     * the mode flag still flips and {@link #rebuild()} still fires; only the layout side-effects
+     * are skipped.</p>
+     */
+    private void toggleHistoryLayout(Node storyNode) {
+        historyMode = !historyMode;
+        if (!(getParent() instanceof BorderPane centre)) {
+            // Not embedded in the expected layout — toggle entry rendering only.
+            rebuild();
+            return;
+        }
+        prefHeightProperty().unbind();
+        minHeightProperty().unbind();
+        maxHeightProperty().unbind();
+        if (historyMode) {
+            // Collapse the story slot so the full centre height is free for the dialog.
+            storyNode.setManaged(false);
+            storyNode.setVisible(false);
+            // Bind to the smaller of: content's natural height vs full available height.
+            // entriesContainer.heightProperty() is live — it updates after the layout pass
+            // as entries are rendered, so the dialog expands smoothly to exactly the size
+            // it needs rather than always claiming the full window height.
+            // createDoubleBinding is used because Bindings.min returns NumberBinding (not
+            // DoubleBinding) in JavaFX 17, and prefHeightProperty().bind() requires a
+            // DoubleBinding-compatible type.
+            DoubleBinding expandedHeight = Bindings.createDoubleBinding(
+                    () -> Math.min(entriesContainer.getHeight(), centre.getHeight()),
+                    entriesContainer.heightProperty(),
+                    centre.heightProperty());
+            prefHeightProperty().bind(expandedHeight);
+            minHeightProperty().bind(expandedHeight);
+            maxHeightProperty().bind(expandedHeight);
+        } else {
+            // Restore the story slot and reinstate the normal proportional height binding.
+            storyNode.setManaged(true);
+            storyNode.setVisible(true);
+            DoubleBinding normalHeight = centre.heightProperty().multiply(savedDialogHeightShare);
+            prefHeightProperty().bind(normalHeight);
+            minHeightProperty().bind(normalHeight);
+            maxHeightProperty().bind(normalHeight);
+        }
+        rebuild();
     }
 
     // ----- Internals ----------------------------------------------------------------------------
@@ -435,16 +705,34 @@ public final class DialogEntriesView extends VBox {
     }
 
     private void rebuild() {
-        getChildren().clear();
-        if (currentIndex >= 0 && !entries.isEmpty()) {
-            int firstVisible = Math.max(0, currentIndex - (maxVisibleEntries - 1));
-            for (int i = firstVisible; i < currentIndex; i++) {
-                getChildren().add(renderEntry(entries.get(i), true));
+        entriesContainer.getChildren().clear();
+        if (!entries.isEmpty()) {
+            if (historyMode) {
+                // History mode: render ALL entries (including any after the cursor) so the player
+                // can scroll through the complete conversation record in the expanded viewport.
+                // The cursor entry is still highlighted as "current"; everything else is "previous".
+                for (int i = 0; i < entries.size(); i++) {
+                    entriesContainer.getChildren().add(renderEntry(entries.get(i), i != currentIndex));
+                }
+            } else if (currentIndex >= 0) {
+                int firstVisible = Math.max(0, currentIndex - (maxVisibleEntries - 1));
+                for (int i = firstVisible; i < currentIndex; i++) {
+                    entriesContainer.getChildren().add(renderEntry(entries.get(i), true));
+                }
+                entriesContainer.getChildren().add(renderEntry(entries.get(currentIndex), false));
             }
-            getChildren().add(renderEntry(entries.get(currentIndex), false));
         }
-        canGoBack.set(currentIndex > 0);
-        canGoForward.set(currentIndex >= 0 && currentIndex < entries.size() - 1);
+        // Navigation booleans reflect "is there a non-divider entry in that direction" so the
+        // footer back/forward affordances stay greyed out when only dividers separate the cursor
+        // from the ends — clicking them would otherwise feel like a no-op.
+        canGoBack.set(currentIndex >= 0 && previousNonDividerIndex(currentIndex) >= 0);
+        canGoForward.set(currentIndex >= 0 && nextNonDividerIndex(currentIndex) >= 0);
+        // Defer the scroll-to-bottom until after the JavaFX layout pass. The content VBox changes
+        // size when entries are added/removed; calling setVvalue(getVmax()) synchronously would
+        // read the stale Vmax from the previous layout, so the pin would fall short. The deferred
+        // call fires once the new heights are committed, guaranteeing the bottom entry stays visible
+        // after every append and every cursor navigation.
+        Platform.runLater(() -> setVvalue(getVmax()));
     }
 
     private static Node renderEntry(Entry entry, boolean previous) {
@@ -470,28 +758,45 @@ public final class DialogEntriesView extends VBox {
         return label;
     }
 
-    private static TextFlow renderSpoken(SpokenEntry entry) {
-        TextFlow flow = new TextFlow();
-        flow.getStyleClass().addAll(ENTRY_STYLE_CLASS, lineTypeStyleClass(entry.type()));
-        flow.setMaxWidth(Double.MAX_VALUE);
+    private static HBox renderSpoken(SpokenEntry entry) {
+        HBox row = new HBox(8);
+        row.getStyleClass().addAll(ENTRY_STYLE_CLASS, lineTypeStyleClass(entry.type()));
+        row.setMaxWidth(Double.MAX_VALUE);
+        row.setAlignment(Pos.TOP_LEFT);
+
+        String speakerColor = entry.speaker() != null && entry.speaker().hasTextColor()
+                ? entry.speaker().textColor()
+                : null;
+
         if (entry.speaker() != null) {
-            Text speakerText = new Text(entry.speaker().label() + ": ");
-            speakerText.getStyleClass().add(SPEAKER_STYLE_CLASS);
-            speakerText.setFont(Font.font(Font.getDefault().getFamily(), FontWeight.BOLD, Font.getDefault().getSize()));
-            if (entry.speaker().hasTextColor()) {
-                try {
-                    speakerText.setFill(Color.web(entry.speaker().textColor()));
-                } catch (IllegalArgumentException ignored) {
-                    // Unparseable color from authored data — leave the default fill.
-                }
-            }
-            flow.getChildren().add(speakerText);
+            Label speakerLabel = new Label(entry.speaker().label() + ":");
+            speakerLabel.getStyleClass().add(SPEAKER_STYLE_CLASS);
+            speakerLabel.setMinWidth(SPEAKER_COLUMN_WIDTH);
+            speakerLabel.setPrefWidth(SPEAKER_COLUMN_WIDTH);
+            speakerLabel.setMaxWidth(SPEAKER_COLUMN_WIDTH);
+            speakerLabel.setAlignment(Pos.TOP_RIGHT);
+            applyInlineColor(speakerLabel, speakerColor);
+            row.getChildren().add(speakerLabel);
         }
-        Text body = new Text(entry.formattedBody());
-        body.getStyleClass().add(lineTypeStyleClass(entry.type()));
-        applyLineTypeFont(body, entry.type());
-        flow.getChildren().add(body);
-        return flow;
+
+        Label bodyLabel = new Label(entry.formattedBody());
+        bodyLabel.getStyleClass().addAll(BODY_STYLE_CLASS, lineTypeStyleClass(entry.type()));
+        bodyLabel.setWrapText(true);
+        bodyLabel.setMaxWidth(Double.MAX_VALUE);
+        HBox.setHgrow(bodyLabel, Priority.ALWAYS);
+        applyInlineColor(bodyLabel, speakerColor);
+        row.getChildren().add(bodyLabel);
+        return row;
+    }
+
+    private static void applyInlineColor(Label label, String webColor) {
+        if (webColor == null) {
+            return;
+        }
+        // Inline style overrides class-based -fx-text-fill so the speaker's color survives the
+        // .dialog-entry-current / .dialog-entry-previous default white. An invalid colour is left
+        // unparsed — JavaFX CSS will simply ignore an unparseable declaration.
+        label.setStyle("-fx-text-fill: " + webColor + ";");
     }
 
     private static HBox renderDivider(String label) {
@@ -515,15 +820,6 @@ public final class DialogEntriesView extends VBox {
         line.setPrefHeight(1);
         line.setMaxHeight(1);
         return line;
-    }
-
-    private static void applyLineTypeFont(Text body, LineType type) {
-        Font baseFont = Font.getDefault();
-        switch (type) {
-            case SHOUT -> body.setFont(Font.font(baseFont.getFamily(), FontWeight.BOLD, FontPosture.REGULAR, baseFont.getSize()));
-            case WHISPER -> body.setFont(Font.font(baseFont.getFamily(), FontWeight.NORMAL, FontPosture.ITALIC, baseFont.getSize()));
-            case SAY, CHOICE -> body.setFont(baseFont);
-        }
     }
 
     private static String lineTypeStyleClass(LineType type) {

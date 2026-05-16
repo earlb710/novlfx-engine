@@ -40,6 +40,8 @@ Manual launchers are Gradle `JavaExec` tasks in `build.gradle`:
 | `runScreenSnapshot` | Headless screen-to-image renderer (`-Pscreen=<json> -Pout=<image> [-Pwidth=N] [-Pheight=N]`) |
 | `runConversationEditor` | Conversation editor (starts in `examples/conversations`) |
 | `runCodeTableManager` | Code table manager |
+| `runDialogBlockTestScreen` | `MAIN_APP_LAYOUT` demo with 10 conversations across 5 characters in the dialog block |
+| `runErrorScreenTestScreen` | Reusable `ErrorScreen` demo with a synthetic exception (dark-red theme, copyable details) |
 
 These are for human/manual checks and authoring diagnostics, not automated validation.
 

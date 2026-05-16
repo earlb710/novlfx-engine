@@ -262,6 +262,231 @@ public final class UiTheme {
             .svg-button:pressed .svg-button-artwork-text {
                 -fx-fill: %s;
             }
+
+            /* === Dialog block (DialogEntriesView + MAIN_APP_LAYOUT dialog slot) ===
+               These rules use literal colours rather than palette placeholders so the dialog
+               block is always readable regardless of the active palette. Background is opaque
+               black; current entry is bright white at the full font size; previous entries
+               keep their half opacity (applied programmatically) and a smaller font. */
+            .layout-main-app-dialog {
+                -fx-background-color: #000000;
+            }
+
+            .dialog-entries-view {
+                -fx-background: transparent;
+                -fx-background-color: #000000;
+                -fx-padding: 0;
+                -fx-border-color: transparent;
+            }
+
+            .dialog-entries-view > .viewport {
+                -fx-background-color: transparent;
+            }
+
+            .dialog-entries-view > .corner {
+                -fx-background-color: transparent;
+            }
+
+            .dialog-entries-container {
+                -fx-alignment: bottom-left;
+                -fx-spacing: 6px;
+                -fx-padding: 8px 12px 8px 12px;
+                -fx-background-color: transparent;
+            }
+
+            .dialog-entry {
+                -fx-text-fill: #ffffff;
+                -fx-font-size: 20px;
+                -fx-wrap-text: true;
+            }
+
+            .dialog-entry .label {
+                -fx-text-fill: #ffffff;
+                -fx-font-size: 20px;
+            }
+
+            .dialog-entry-current,
+            .dialog-entry-current .label {
+                -fx-text-fill: #ffffff;
+                -fx-font-size: 20px;
+                -fx-font-weight: bold;
+            }
+
+            .dialog-entry-previous,
+            .dialog-entry-previous .label {
+                -fx-font-size: 14px;
+            }
+
+            .dialog-entry-speaker {
+                -fx-text-fill: #ffffff;
+                -fx-font-weight: bold;
+                -fx-text-alignment: right;
+                -fx-alignment: top-right;
+            }
+
+            .dialog-entry-body {
+                -fx-text-fill: inherit;
+            }
+
+            .dialog-entry-shout .dialog-entry-body {
+                -fx-font-weight: bold;
+            }
+
+            .dialog-entry-whisper .dialog-entry-body {
+                -fx-font-style: italic;
+            }
+
+            .dialog-entry-divider {
+                -fx-alignment: center;
+                -fx-padding: 4px 0;
+            }
+
+            .dialog-entry-divider-line {
+                -fx-background-color: #66c1e0;
+                -fx-opacity: 0.5;
+            }
+
+            .dialog-entry-divider-label {
+                -fx-text-fill: #66c1e0;
+                -fx-font-size: 12px;
+                -fx-font-style: italic;
+            }
+
+            .dialog-entries-view > .scroll-bar:vertical {
+                -fx-background-color: transparent;
+                -fx-pref-width: 10px;
+            }
+
+            .dialog-entries-view > .scroll-bar:vertical > .track {
+                -fx-background-color: rgba(255, 255, 255, 0.05);
+                -fx-background-radius: 5px;
+            }
+
+            .dialog-entries-view > .scroll-bar:vertical > .thumb {
+                -fx-background-color: rgba(102, 193, 224, 0.5);
+                -fx-background-insets: 1px;
+                -fx-background-radius: 5px;
+            }
+
+            .dialog-entries-view > .scroll-bar:vertical > .thumb:hover,
+            .dialog-entries-view > .scroll-bar:vertical > .thumb:pressed {
+                -fx-background-color: rgba(102, 193, 224, 0.8);
+            }
+
+            .dialog-entries-view > .scroll-bar:vertical > .increment-button,
+            .dialog-entries-view > .scroll-bar:vertical > .decrement-button {
+                -fx-background-color: transparent;
+                -fx-padding: 0;
+            }
+
+            .dialog-entries-view > .scroll-bar:vertical > .increment-button > .increment-arrow,
+            .dialog-entries-view > .scroll-bar:vertical > .decrement-button > .decrement-arrow {
+                -fx-shape: " ";
+                -fx-padding: 0;
+            }
+
+            /* === ErrorScreen (reusable dark-red error/exception surface) ===
+               Distinct from the normal palette so the player immediately reads "something has
+               gone wrong". Uses literal colours rather than palette tokens so the screen looks
+               the same on every theme variant — the whole point is to break out of the normal
+               theme. */
+            .error-screen {
+                -fx-background-color: #1a0a0a;
+                -fx-border-color: #7f1d1d;
+                -fx-border-width: 2px;
+                -fx-border-radius: 8px;
+                -fx-background-radius: 8px;
+            }
+
+            .error-screen-title {
+                -fx-text-fill: #ff6b6b;
+                -fx-font-size: 28px;
+                -fx-font-weight: bold;
+                -fx-padding: 4px 0 0 0;
+            }
+
+            .error-screen-message {
+                -fx-text-fill: #fecaca;
+                -fx-font-size: 14px;
+            }
+
+            .error-screen-details {
+                -fx-control-inner-background: #2a1212;
+                -fx-font-family: "Consolas", "Menlo", "Courier New", monospace;
+                -fx-font-size: 12px;
+                -fx-text-fill: #fecaca;
+                -fx-border-color: #7f1d1d;
+                -fx-border-radius: 4px;
+                -fx-background-radius: 4px;
+            }
+
+            .error-screen-details .content {
+                -fx-background-color: #2a1212;
+            }
+
+            .error-screen-details .scroll-pane,
+            .error-screen-details .scroll-pane > .viewport {
+                -fx-background-color: transparent;
+            }
+
+            .error-screen-actions {
+                -fx-alignment: center-right;
+                -fx-spacing: 8px;
+                -fx-padding: 4px 0 0 0;
+            }
+
+            .error-screen-copy-button,
+            .error-screen-continue-button,
+            .error-screen-exit-button {
+                -fx-font-size: 14px;
+                -fx-font-weight: bold;
+                -fx-padding: 6px 16px;
+                -fx-border-width: 1px;
+                -fx-border-radius: 4px;
+                -fx-background-radius: 4px;
+            }
+
+            .error-screen-copy-button {
+                -fx-background-color: transparent;
+                -fx-text-fill: #fecaca;
+                -fx-border-color: #7f1d1d;
+            }
+
+            .error-screen-copy-button:hover {
+                -fx-background-color: #2a1212;
+                -fx-text-fill: #ffffff;
+                -fx-border-color: #ff6b6b;
+            }
+
+            .error-screen-continue-button {
+                -fx-background-color: transparent;
+                -fx-text-fill: #fecaca;
+                -fx-border-color: #fecaca;
+            }
+
+            .error-screen-continue-button:hover {
+                -fx-background-color: #fecaca;
+                -fx-text-fill: #1a0a0a;
+                -fx-border-color: #ffffff;
+            }
+
+            .error-screen-exit-button {
+                -fx-background-color: #7f1d1d;
+                -fx-text-fill: #ffffff;
+                -fx-border-color: #c41e3a;
+            }
+
+            .error-screen-exit-button:hover {
+                -fx-background-color: #c41e3a;
+                -fx-text-fill: #ffffff;
+                -fx-border-color: #ff6b6b;
+            }
+
+            .error-screen-exit-button:pressed {
+                -fx-background-color: #ff6b6b;
+                -fx-text-fill: #1a0a0a;
+                -fx-border-color: #ffffff;
+            }
             """;
 
     private String fontFamily;
