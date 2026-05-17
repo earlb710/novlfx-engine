@@ -128,12 +128,31 @@ public final class MainAppLayoutRenderer {
      * idempotent, so an application calling {@code bindToFooter} / {@code bindHistoryToggle}
      * manually after render is harmless.</p>
      */
+    /**
+     * Default cap on dialog-block expansion when auto-fit takes over. The dialog grows up to this
+     * share of the centre region to fit a tall message; the story area is guaranteed to keep at
+     * least {@code 1 - this} of the centre.
+     */
+    private static final double DEFAULT_AUTO_FIT_MAX_SHARE = 0.60;
+
     private static void autoWireDialogEntriesView(MainAppLayoutPlan plan, BorderPane frame, StackPane root) {
-        if (plan.dialogScreenId() == null || !plan.showFooter()) {
+        if (plan.dialogScreenId() == null) {
             return;
         }
         DialogEntriesView dialog = findDialogEntriesView(frame);
         if (dialog == null) {
+            return;
+        }
+        // Content-driven height: enabled for ANY MAIN_APP_LAYOUT with a dialog slot, regardless of
+        // whether the footer is shown. The dialog's parent in the engine's vertical/horizontal
+        // layout is the centre Region the height-share math runs against.
+        if (dialog.getParent() instanceof Region centreRegion) {
+            double normalShare = 1.0 - plan.storyDialogRatio();
+            double maxShare = Math.min(1.0, Math.max(normalShare, DEFAULT_AUTO_FIT_MAX_SHARE));
+            dialog.enableAutoFitDialogHeight(centreRegion, normalShare, maxShare);
+        }
+        // Footer-driven helpers only apply when the footer is shown.
+        if (!plan.showFooter()) {
             return;
         }
         dialog.bindToFooter(root);

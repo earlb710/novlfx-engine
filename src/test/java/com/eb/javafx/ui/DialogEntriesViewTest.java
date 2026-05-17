@@ -753,11 +753,12 @@ final class DialogEntriesViewTest {
         view.setVvalue(view.getVmin());
         view.addEntry("Newest line");
 
-        // The scroll is deferred via Platform.runLater so the JavaFX layout pass can calculate
-        // the new content height before we pin the vvalue. Flush the FX event queue by enqueueing
-        // a sentinel task after the scroll task and waiting for it to complete.
+        // The scroll is deferred via a NESTED Platform.runLater so the first tick lets the JavaFX
+        // layout pass commit the new content height before the second tick reads getVmax() and
+        // pins the vvalue. Flushing once isn't enough — drain two pulses by chaining a sentinel
+        // through another runLater so it lands on the tick after the nested scroll fires.
         CountDownLatch fxFlushed = new CountDownLatch(1);
-        Platform.runLater(fxFlushed::countDown);
+        Platform.runLater(() -> Platform.runLater(fxFlushed::countDown));
         fxFlushed.await(5, TimeUnit.SECONDS);
 
         assertEquals(view.getVmax(), view.getVvalue(), 1e-9);

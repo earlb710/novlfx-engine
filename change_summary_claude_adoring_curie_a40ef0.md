@@ -51,7 +51,15 @@ the dialog's internal cursor).
    `MainAppLayoutRenderer.pinSlotSize`). Coordinates with `bindHistoryToggle`:
    history mode still pins to full centre height while active, and on exit
    the binding is restored to the auto-fit clamp (not the simple
-   proportional fallback).
+   proportional fallback). The method is idempotent — calling it with the
+   same parameters skips re-binding so manual host calls don't conflict
+   with the renderer auto-wire (next item).
+6. **`MainAppLayoutRenderer.autoWireDialogEntriesView` now enables auto-fit
+   for every `MAIN_APP_LAYOUT` with a dialog slot** (regardless of
+   `showFooter`). Uses a default cap of 60 % of the centre, so any host —
+   demo, AltLife, future apps — gets growth-on-tall-message + snap-back
+   behaviour for free without an explicit setup call. Footer-driven helpers
+   (`bindToFooter`, `bindHistoryToggle`) still gate on `showFooter`.
 
 ## Engine tests (`DialogEntriesViewTest`)
 

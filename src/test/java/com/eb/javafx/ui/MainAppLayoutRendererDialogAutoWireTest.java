@@ -4,7 +4,9 @@ import javafx.application.Platform;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -138,6 +140,76 @@ final class MainAppLayoutRendererDialogAutoWireTest {
         // we don't accidentally start producing a footer for showFooter=false plans.
         assertEquals(null, findFooter(root),
                 "Footer must remain absent when plan.showFooter() is false.");
+    }
+
+    @Test
+    void rendererAutoWiresAutoFitDialogHeightForAnyVerticalLayoutWithDialogSlot() {
+        DialogEntriesView dialog = new DialogEntriesView();
+        dialog.addEntry("Tiny");
+        StackPane storyArea = new StackPane();
+        MainAppLayoutPlan plan = new MainAppLayoutPlan(
+                "auto-fit-on",
+                null,
+                ScreenBackgroundFit.STRETCH,
+                1.0,
+                "#000000",
+                "story",
+                "dialog",
+                /* storyDialogRatio */ 0.80,
+                MainAppLayoutOrientation.VERTICAL,
+                /* showFooter — auto-fit must wire regardless */ false,
+                MainAppLayoutInsets.EMPTY,
+                MainAppLayoutInsets.EMPTY,
+                List.of());
+
+        MainAppScreenResolver resolver = id -> switch (id) {
+            case "story" -> storyArea;
+            case "dialog" -> dialog;
+            default -> null;
+        };
+
+        StackPane root = MainAppLayoutRenderer.render(plan, resolver, null);
+
+        // Auto-fit binds prefHeight to the centre region; assert the property is bound (auto-wire
+        // ran) rather than left at the unbound default.
+        assertTrue(dialog.prefHeightProperty().isBound(),
+                "Renderer should bind the dialog's prefHeight via enableAutoFitDialogHeight.");
+
+        // Drive the centre to a known size and check the resting share is honoured for tiny
+        // content. Walk the tree to find the centre BorderPane that wraps story+dialog.
+        Region centre = findDialogParent(root, dialog);
+        assertNotNull(centre, "Renderer should produce a centre region containing the dialog.");
+        centre.resize(800, 1000);
+        centre.layout();
+        // Resting share = 1 - storyDialogRatio = 0.20, so dialog should clamp at 200.
+        assertEquals(200.0, dialog.getPrefHeight(), 0.001,
+                "Tiny content should clamp the dialog at centre × (1 - storyDialogRatio).");
+
+        // Grow the entriesContainer past the resting share but below the cap (60% × 1000 = 600).
+        VBox container = (VBox) dialog.getContent();
+        container.resize(800, 350);
+        assertEquals(350.0, dialog.getPrefHeight(), 0.001,
+                "Mid-range content should drive the dialog height.");
+
+        // Push past the cap; height clamps at 600.
+        container.resize(800, 900);
+        assertEquals(600.0, dialog.getPrefHeight(), 0.001,
+                "Content past the cap should clamp at centre × 0.60.");
+    }
+
+    private static Region findDialogParent(Node root, Node dialog) {
+        if (root instanceof javafx.scene.Parent parent) {
+            for (Node child : parent.getChildrenUnmodifiable()) {
+                if (child == dialog && parent instanceof Region region) {
+                    return region;
+                }
+                Region nested = findDialogParent(child, dialog);
+                if (nested != null) {
+                    return nested;
+                }
+            }
+        }
+        return null;
     }
 
     private static HBox findFooter(Node node) {

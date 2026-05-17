@@ -805,6 +805,14 @@ public final class DialogEntriesView extends ScrollPane {
             throw new IllegalArgumentException(
                     "Auto-fit maxShare (" + maxShare + ") must be >= normalShare (" + normalShare + ").");
         }
+        // Idempotent: skip if already wired with the same parameters. Lets hosts call this
+        // manually after MainAppLayoutRenderer auto-wires it without double-binding.
+        if (autoFitCenterRegion == centerRegion
+                && autoFitNormalShare == normalShare
+                && autoFitMaxShare == maxShare
+                && normalHeightBinding != null) {
+            return;
+        }
         this.autoFitCenterRegion = centerRegion;
         this.autoFitNormalShare = normalShare;
         this.autoFitMaxShare = maxShare;
