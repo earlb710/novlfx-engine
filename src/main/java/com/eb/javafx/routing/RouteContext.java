@@ -45,6 +45,15 @@ public final class RouteContext {
     private final SceneRouter sceneRouter;
     private final Path applicationRoot;
     private final ApplicationResourceConfig resourceConfig;
+    /**
+     * Back-stack of saved scene roots for navigations explicitly marked as "returnable" via
+     * {@link #pushAndNavigateTo(String)}. Used by transient overlays like the preferences screen
+     * to restore the previous view (with its state intact) on close, instead of navigating to a
+     * fresh main-menu scene.
+     */
+    private final java.util.Deque<SavedRoute> backStack = new java.util.ArrayDeque<>();
+    /** Tracks the active route id so {@link #pushAndNavigateTo(String)} can record it. */
+    private String activeRouteId;
 
     public RouteContext(
             Stage primaryStage,
@@ -206,7 +215,77 @@ public final class RouteContext {
             primaryStage.setScene(newScene);
             activeScene = newScene;
         }
+        this.activeRouteId = routeId;
         DebugScreenInspector.attach(activeScene, routeId, resourceConfig.debug(), uiTheme);
+    }
+
+    /**
+     * Opens {@code routeId} after saving the current scene root onto the back-stack so a later
+     * {@link #navigateBack()} call can restore the caller's view — with its in-flight state
+     * (scrollbars, scene-flow stepHistory, dialog cursor, ...) intact.
+     *
+     * <p>Use for transient overlays the user expects to dismiss back to where they were: the
+     * Preferences screen, save/load picker, settings popovers, in-game help, etc. Plain
+     * {@link #navigateTo(String)} is still right for "go to a fresh screen" navigations such as
+     * starting a new game or returning to the main menu.</p>
+     *
+     * <p>If there is no current scene (first navigation of the application), the back-stack entry
+     * is skipped and this degrades to {@link #navigateTo(String)}.</p>
+     */
+    public void pushAndNavigateTo(String routeId) {
+        Scene currentScene = primaryStage == null ? null : primaryStage.getScene();
+        if (currentScene != null && currentScene.getRoot() != null) {
+            backStack.push(new SavedRoute(
+                    activeRouteId,
+                    currentScene.getRoot(),
+                    java.util.List.copyOf(currentScene.getStylesheets())));
+        }
+        navigateTo(routeId);
+    }
+
+    /**
+     * Pops the back-stack and restores the previously-saved scene root. Returns {@code true} when
+     * a saved entry was restored; {@code false} when the stack was empty so the caller can fall
+     * back (typically to the main menu).
+     *
+     * <p>Restoration swaps the saved {@link Parent} back into the primary stage's existing
+     * {@link Scene} (same scene instance that {@link #navigateTo(String)} reuses for its root
+     * swap), so node identity and listener subscriptions on both the saved tree and any other
+     * scene-level handlers carry over.</p>
+     */
+    public boolean navigateBack() {
+        if (backStack.isEmpty()) {
+            return false;
+        }
+        Scene currentScene = primaryStage == null ? null : primaryStage.getScene();
+        if (currentScene == null) {
+            return false;
+        }
+        SavedRoute saved = backStack.pop();
+        currentScene.setRoot(saved.root());
+        currentScene.getStylesheets().setAll(saved.stylesheets());
+        this.activeRouteId = saved.routeId();
+        if (saved.routeId() != null) {
+            DebugScreenInspector.attach(currentScene, saved.routeId(), resourceConfig.debug(), uiTheme);
+        }
+        return true;
+    }
+
+    /**
+     * Returns {@code true} if {@link #navigateBack()} would succeed. Useful for hosts that want
+     * to choose between "restore previous" and a fallback before calling either.
+     */
+    public boolean canNavigateBack() {
+        return !backStack.isEmpty();
+    }
+
+    /** Returns the most recently opened route id, or {@code null} if no route has been opened yet. */
+    public String activeRouteId() {
+        return activeRouteId;
+    }
+
+    /** One saved scene root plus the stylesheet list at the moment of {@link #pushAndNavigateTo(String)}. */
+    private record SavedRoute(String routeId, Parent root, java.util.List<String> stylesheets) {
     }
 
     /** Creates a consistently sized and themed scene for a screen shell root. */

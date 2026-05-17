@@ -124,7 +124,10 @@ public final class DefaultRouteModule implements RouteModule {
                         context.contentRegistry().definition("ui.preferencesFooterTest.title"),
                         context.preferencesService(),
                         context.uiTheme(),
-                        () -> context.navigateTo(SceneRouter.PREFERENCES_ROUTE),
+                        // pushAndNavigateTo so the Preferences close button returns to this test
+                        // screen (with its state intact) instead of bouncing the user to the main
+                        // menu — same UX contract documented for any host opening preferences.
+                        () -> context.pushAndNavigateTo(SceneRouter.PREFERENCES_ROUTE),
                         () -> context.navigateTo(SceneRouter.MAIN_MENU_ROUTE)));
     }
 }
