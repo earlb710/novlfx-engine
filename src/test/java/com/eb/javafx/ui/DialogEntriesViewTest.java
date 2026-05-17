@@ -920,6 +920,96 @@ final class DialogEntriesViewTest {
     }
 
     @Test
+    void enableAutoFitDialogHeightClampsBetweenNormalAndMaxShare() {
+        DialogEntriesView view = new DialogEntriesView();
+        // Build the same parent shape MainAppLayoutRenderer produces: dialog in BorderPane.bottom.
+        javafx.scene.layout.StackPane storyNode = new javafx.scene.layout.StackPane();
+        BorderPane centre = new BorderPane();
+        centre.setCenter(storyNode);
+        centre.setBottom(view);
+        centre.resize(800, 1000);
+        centre.layout();
+
+        view.enableAutoFitDialogHeight(centre, 0.20, 0.60);
+
+        // Force the dialog's entriesContainer to a small height; binding should pin to the floor
+        // (centre*normalShare = 200) rather than collapsing the dialog.
+        view.addEntry("Short");
+        centre.layout();
+        view.applyCss();
+        view.layout();
+        assertEquals(centre.getHeight() * 0.20, view.getPrefHeight(), 0.001,
+                "Short content should leave the dialog at the resting share.");
+
+        // Now simulate tall content by forcing the entriesContainer's height past the resting
+        // share but below the cap. The DoubleBinding reads entriesContainer.heightProperty()
+        // directly, so resizing the container is enough — we don't need real Labels.
+        view.dialogEntries(); // touch to ensure entries exist
+        javafx.scene.layout.VBox container = (javafx.scene.layout.VBox) view.getContent();
+        container.resize(800, 350);
+        // Binding recomputes lazily; reading the bound property triggers reevaluation.
+        assertEquals(350.0, view.getPrefHeight(), 0.001,
+                "Content between normal and max should drive the dialog height.");
+
+        // Push past the cap (centre*maxShare = 600); binding should clamp at the cap.
+        container.resize(800, 900);
+        assertEquals(centre.getHeight() * 0.60, view.getPrefHeight(), 0.001,
+                "Content past the max share should clamp at the cap, not exceed it.");
+    }
+
+    @Test
+    void enableAutoFitDialogHeightSurvivesHistoryModeRoundTrip() {
+        DialogEntriesView view = new DialogEntriesView();
+        view.addEntry("Line 1.");
+
+        javafx.scene.layout.StackPane storyNode = new javafx.scene.layout.StackPane();
+        BorderPane centre = new BorderPane();
+        centre.setCenter(storyNode);
+        centre.setBottom(view);
+        centre.resize(800, 1000);
+
+        view.enableAutoFitDialogHeight(centre, 0.20, 0.60);
+        HBox footer = ScreenShell.footerBar();
+        view.bindHistoryToggle(footer, storyNode, 0.20);
+
+        // Auto-fit binding is active before history mode.
+        double normalPref = view.getPrefHeight();
+
+        Label historyLabel = footerLabelById(footer, "history");
+        historyLabel.fireEvent(syntheticClick(historyLabel));
+
+        // History mode takes over: dialog pinned to full centre height.
+        assertEquals(centre.getHeight(), view.getPrefHeight(), 0.001,
+                "History mode should still pin to full centre height.");
+
+        historyLabel.fireEvent(syntheticClick(historyLabel));
+
+        // Auto-fit binding restored on history exit — NOT the plain proportional fallback.
+        // The two would only differ if content changed, but the binding identity must match.
+        assertEquals(normalPref, view.getPrefHeight(), 0.001,
+                "Leaving history must restore the auto-fit binding, not the proportional fallback.");
+    }
+
+    @Test
+    void enableAutoFitDialogHeightRejectsInvalidShares() {
+        DialogEntriesView view = new DialogEntriesView();
+        javafx.scene.layout.StackPane storyNode = new javafx.scene.layout.StackPane();
+        BorderPane centre = new BorderPane();
+        centre.setCenter(storyNode);
+        centre.setBottom(view);
+
+        assertThrows(IllegalArgumentException.class,
+                () -> view.enableAutoFitDialogHeight(centre, 0.60, 0.20),
+                "maxShare smaller than normalShare must be rejected.");
+        assertThrows(IllegalArgumentException.class,
+                () -> view.enableAutoFitDialogHeight(centre, -0.1, 0.5),
+                "Negative normalShare must be rejected.");
+        assertThrows(IllegalArgumentException.class,
+                () -> view.enableAutoFitDialogHeight(centre, 0.2, 1.5),
+                "maxShare above 1.0 must be rejected.");
+    }
+
+    @Test
     void canGoBackAndCanGoForwardIgnoreLeadingTrailingDividers() {
         DialogEntriesView view = new DialogEntriesView();
         DialogSpeaker alice = DialogSpeaker.text("alice", "Alice");

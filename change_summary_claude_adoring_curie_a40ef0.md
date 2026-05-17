@@ -42,17 +42,29 @@ the dialog's internal cursor).
    scrolled by hand. Wrapped in a second `runLater` so the pin happens on the
    tick after layout completes, when `getVmax()` reflects the new content
    size.
-5. Dropped the now-unused `Bindings` import.
+5. **`enableAutoFitDialogHeight(centerRegion, normalShare, maxShare)`** —
+   content-driven dialog height. The dialog's `pref/min/maxHeight` are bound
+   to `clamp(content.height, centre × normalShare, centre × maxShare)`. Short
+   messages keep the dialog at its resting share; long paragraphs grow it up
+   to the cap; the next rebuild snaps it back when content shrinks again.
+   Takes precedence over any external pinned-share binding (e.g.
+   `MainAppLayoutRenderer.pinSlotSize`). Coordinates with `bindHistoryToggle`:
+   history mode still pins to full centre height while active, and on exit
+   the binding is restored to the auto-fit clamp (not the simple
+   proportional fallback).
 
 ## Engine tests (`DialogEntriesViewTest`)
 
-Four new headless tests:
+New headless tests:
 
 - `disablingInternalNavigationMakesLeftRightClicksNoOps`
 - `reenablingInternalNavigationRestoresClickHandling`
 - `historyClipsAtCursorRendersOnlyEntriesUpToAndIncludingCursor`
 - `historyClipsAtCursorFlagTakesEffectMidHistoryMode`
 - `historyModeHeightBindsToCentreHeightNotContentHeight`
+- `enableAutoFitDialogHeightClampsBetweenNormalAndMaxShare`
+- `enableAutoFitDialogHeightSurvivesHistoryModeRoundTrip`
+- `enableAutoFitDialogHeightRejectsInvalidShares`
 
 ## AltLife changes
 
