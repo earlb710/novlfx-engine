@@ -73,7 +73,15 @@ public final class PreferencesSummaryScreen {
 
     static Scene createScene(RouteContext context, double width, double height) {
         PreferencesSummaryViewModel viewModel = viewModel(context);
-        Runnable closeAction = () -> context.navigateTo(SceneRouter.MAIN_MENU_ROUTE);
+        // Close returns to the screen that opened preferences when that opener used
+        // RouteContext.pushAndNavigateTo (the back-stack will have a saved scene root); otherwise
+        // — e.g. when reached from the main menu, or via a direct navigateTo from older callers —
+        // fall back to the main menu so the user is never stranded.
+        Runnable closeAction = () -> {
+            if (!context.navigateBack()) {
+                context.navigateTo(SceneRouter.MAIN_MENU_ROUTE);
+            }
+        };
         VBox content = new VBox(10);
         content.getChildren().add(settingsBlock(
                 screenText("block.audio.title"),
@@ -107,7 +115,11 @@ public final class PreferencesSummaryScreen {
                 context.navigateTo(SceneRouter.MAIN_MENU_ROUTE);
             }
         });
-        Button closeButton = ScreenNavigation.button(context, screenText("item.close.label"), SceneRouter.MAIN_MENU_ROUTE);
+        // Wired directly to closeAction (instead of ScreenNavigation.button(..., MAIN_MENU_ROUTE))
+        // so the button honours the back-stack-aware navigation set up above — same behaviour as
+        // the footer close icon and the Ctrl+P shortcut.
+        Button closeButton = ButtonVisuals.applySvgArtwork(new Button(screenText("item.close.label")));
+        closeButton.setOnAction(event -> closeAction.run());
         closeButton.setMinWidth(220);
         HBox closeBox = new HBox(12, mainMenuButton, closeButton);
         closeBox.setAlignment(Pos.CENTER);
