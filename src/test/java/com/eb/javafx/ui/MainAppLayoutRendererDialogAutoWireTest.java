@@ -185,16 +185,20 @@ final class MainAppLayoutRendererDialogAutoWireTest {
         assertEquals(200.0, dialog.getPrefHeight(), 0.001,
                 "Tiny content should clamp the dialog at centre × (1 - storyDialogRatio).");
 
-        // Grow the entriesContainer past the resting share but below the cap (60% × 1000 = 600).
+        // Grow the current entry past the resting share but below the cap (60% × 1000 = 600).
+        // The renderer-installed binding tracks the cursor entry's height, not the container's
+        // total — so we resize the LAST child (the current entry node) directly.
         VBox container = (VBox) dialog.getContent();
-        container.resize(800, 350);
+        javafx.scene.Node currentEntryNode =
+                container.getChildren().get(container.getChildren().size() - 1);
+        currentEntryNode.resize(800, 350);
         assertEquals(350.0, dialog.getPrefHeight(), 0.001,
-                "Mid-range content should drive the dialog height.");
+                "Mid-range current entry should drive the dialog height.");
 
-        // Push past the cap; height clamps at 600.
-        container.resize(800, 900);
+        // Push the current entry past the cap; the dialog clamps at centre × 0.60 = 600.
+        currentEntryNode.resize(800, 900);
         assertEquals(600.0, dialog.getPrefHeight(), 0.001,
-                "Content past the cap should clamp at centre × 0.60.");
+                "Current entry past the cap should clamp the dialog at centre × 0.60.");
     }
 
     private static Region findDialogParent(Node root, Node dialog) {

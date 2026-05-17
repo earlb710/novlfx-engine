@@ -933,29 +933,62 @@ final class DialogEntriesViewTest {
 
         view.enableAutoFitDialogHeight(centre, 0.20, 0.60);
 
-        // Force the dialog's entriesContainer to a small height; binding should pin to the floor
-        // (centre*normalShare = 200) rather than collapsing the dialog.
+        // Add one entry then drive the CURRENT-ENTRY node's size (not the container's). The new
+        // binding tracks just the cursor entry's height so the dialog grows only as much as the
+        // active line needs — earlier the binding watched entriesContainer.height which summed
+        // every previous-entry fade above the cursor and over-expanded by ~2×.
         view.addEntry("Short");
-        centre.layout();
-        view.applyCss();
-        view.layout();
-        assertEquals(centre.getHeight() * 0.20, view.getPrefHeight(), 0.001,
-                "Short content should leave the dialog at the resting share.");
-
-        // Now simulate tall content by forcing the entriesContainer's height past the resting
-        // share but below the cap. The DoubleBinding reads entriesContainer.heightProperty()
-        // directly, so resizing the container is enough — we don't need real Labels.
-        view.dialogEntries(); // touch to ensure entries exist
         javafx.scene.layout.VBox container = (javafx.scene.layout.VBox) view.getContent();
-        container.resize(800, 350);
-        // Binding recomputes lazily; reading the bound property triggers reevaluation.
-        assertEquals(350.0, view.getPrefHeight(), 0.001,
-                "Content between normal and max should drive the dialog height.");
+        javafx.scene.Node currentEntryNode = container.getChildren().get(container.getChildren().size() - 1);
 
-        // Push past the cap (centre*maxShare = 600); binding should clamp at the cap.
-        container.resize(800, 900);
-        assertEquals(centre.getHeight() * 0.60, view.getPrefHeight(), 0.001,
-                "Content past the max share should clamp at the cap, not exceed it.");
+        // Tiny current entry → dialog clamps at the resting share (centre × 0.20 = 200).
+        currentEntryNode.resize(800, 50);
+        assertEquals(200.0, view.getPrefHeight(), 0.001,
+                "Tiny current entry should leave the dialog at the resting share.");
+
+        // Mid-range current entry → dialog tracks the entry's height directly (chrome ~= 0 in a
+        // stylesheet-less test where no CSS padding is applied).
+        currentEntryNode.resize(800, 350);
+        assertEquals(350.0, view.getPrefHeight(), 0.001,
+                "Mid-range current entry should drive the dialog height.");
+
+        // Push past the cap (centre × 0.60 = 600); dialog clamps at the cap.
+        currentEntryNode.resize(800, 900);
+        assertEquals(600.0, view.getPrefHeight(), 0.001,
+                "Current entry past the max share should clamp the dialog at the cap.");
+    }
+
+    @Test
+    void enableAutoFitDialogHeightIgnoresHeightOfPreviousEntriesAboveTheCursor() {
+        DialogEntriesView view = new DialogEntriesView();
+        javafx.scene.layout.StackPane storyNode = new javafx.scene.layout.StackPane();
+        BorderPane centre = new BorderPane();
+        centre.setCenter(storyNode);
+        centre.setBottom(view);
+        centre.resize(800, 1000);
+        centre.layout();
+
+        view.enableAutoFitDialogHeight(centre, 0.20, 0.60);
+
+        // Two previous entries plus a current one. Resize the previous entries to be tall; the
+        // dialog must IGNORE them and size only against the current entry. This is the regression
+        // the original (entriesContainer-based) binding caused — summing previous + current made
+        // the dialog grow to almost twice what the active line needed.
+        view.addEntry("Previous 1");
+        view.addEntry("Previous 2");
+        view.addEntry("Current");
+        javafx.scene.layout.VBox container = (javafx.scene.layout.VBox) view.getContent();
+        javafx.scene.Node prev1 = container.getChildren().get(0);
+        javafx.scene.Node prev2 = container.getChildren().get(1);
+        javafx.scene.Node current = container.getChildren().get(2);
+        prev1.resize(800, 300);
+        prev2.resize(800, 300);
+        current.resize(800, 80);
+
+        // Current entry is tiny (80) — under the resting share (200), so the dialog stays at base.
+        // If the binding were still summing the whole container we'd see something around 680.
+        assertEquals(200.0, view.getPrefHeight(), 0.001,
+                "Tall previous entries above the cursor must NOT inflate the dialog height.");
     }
 
     @Test

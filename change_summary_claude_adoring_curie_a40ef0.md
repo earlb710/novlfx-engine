@@ -44,9 +44,14 @@ the dialog's internal cursor).
    size.
 5. **`enableAutoFitDialogHeight(centerRegion, normalShare, maxShare)`** —
    content-driven dialog height. The dialog's `pref/min/maxHeight` are bound
-   to `clamp(content.height, centre × normalShare, centre × maxShare)`. Short
-   messages keep the dialog at its resting share; long paragraphs grow it up
-   to the cap; the next rebuild snaps it back when content shrinks again.
+   to `clamp(currentEntry.height + chrome, centre × normalShare, centre ×
+   maxShare)` where `currentEntry` is the cursor's rendered node only —
+   NOT the whole `entriesContainer.height` (which sums every faded previous
+   entry above the cursor and made the dialog grow to roughly 2× what the
+   active line actually needed). A per-rebuild tracker swaps the height
+   listener onto the new current-entry node. Short messages keep the dialog
+   at its resting share; long paragraphs grow it up to the cap; the next
+   rebuild snaps it back when content shrinks again.
    Takes precedence over any external pinned-share binding (e.g.
    `MainAppLayoutRenderer.pinSlotSize`). Coordinates with `bindHistoryToggle`:
    history mode still pins to full centre height while active, and on exit

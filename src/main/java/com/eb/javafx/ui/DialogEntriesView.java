@@ -214,6 +214,14 @@ public final class DialogEntriesView extends ScrollPane {
     private double autoFitNormalShare;
     /** Maximum share of the centre region when auto-fit expands to fit a tall current entry. */
     private double autoFitMaxShare;
+    /**
+     * Tracks the current entry node so the auto-fit binding can react to JUST that node's measured
+     * height — not the whole {@code entriesContainer.height}, which sums every previously-faded
+     * entry above it and made the dialog expand to nearly twice the size actually needed.
+     */
+    private javafx.beans.property.DoubleProperty currentEntryHeight = new javafx.beans.property.SimpleDoubleProperty(this, "currentEntryHeight", 0);
+    private Node trackedCurrentEntry;
+    private javafx.beans.value.ChangeListener<javafx.geometry.Bounds> trackedCurrentEntryListener;
     /** Tracks which footer the view is already wired to so {@link #bindToFooter(Node)} is idempotent. */
     private HBox wiredFooter;
     /** Tracks which footer the history toggle is already wired to so {@link #bindHistoryToggle(Node, Node, double)} is idempotent. */
@@ -816,23 +824,79 @@ public final class DialogEntriesView extends ScrollPane {
         this.autoFitCenterRegion = centerRegion;
         this.autoFitNormalShare = normalShare;
         this.autoFitMaxShare = maxShare;
-        // Bind to the rendered content height (entriesContainer) clamped between
-        // centre*normalShare and centre*maxShare. createDoubleBinding because Bindings.min/max
-        // return NumberBinding in JavaFX 17, not DoubleBinding.
+        // Bind to the CURRENT entry's height alone — NOT the total entriesContainer height. The
+        // container sums every faded previous entry stacked above the cursor, which previously made
+        // the dialog grow to nearly twice the size the active line actually needed (especially in
+        // hosts like AltLife that accumulate every step in stepHistory). Tracking just the current
+        // entry plus the surrounding chrome (container + dialog vertical padding) sizes the dialog
+        // to "exactly fit the active message," letting the previous entries scroll off the top.
+        // createDoubleBinding because Bindings.min/max return NumberBinding in JavaFX 17.
         DoubleBinding fitBinding = Bindings.createDoubleBinding(
                 () -> {
-                    double contentH = entriesContainer.getHeight();
+                    double curr = currentEntryHeight.get();
                     double centreH = centerRegion.getHeight();
                     double base = centreH * normalShare;
                     double cap = centreH * maxShare;
-                    return Math.min(Math.max(base, contentH), cap);
+                    if (curr <= 0) {
+                        // Layout hasn't committed yet — fall back to the resting share so the dialog
+                        // isn't collapsed on the very first frame. The listener installed in
+                        // refreshAutoFitTracker() will update currentEntryHeight as soon as the
+                        // pulse measures the new entry, and the binding will recompute.
+                        return base;
+                    }
+                    double pad = entriesContainer.getInsets().getTop()
+                            + entriesContainer.getInsets().getBottom()
+                            + getInsets().getTop()
+                            + getInsets().getBottom();
+                    return Math.min(Math.max(base, curr + pad), cap);
                 },
-                entriesContainer.heightProperty(),
-                centerRegion.heightProperty());
+                currentEntryHeight,
+                centerRegion.heightProperty(),
+                entriesContainer.insetsProperty(),
+                insetsProperty());
         this.normalHeightBinding = fitBinding;
         if (!historyMode) {
             applyHeightBinding(fitBinding);
         }
+        // Pick up whatever the most recent rebuild left in the container so the binding has a real
+        // height to clamp against without waiting for the next rebuild.
+        refreshAutoFitTracker();
+    }
+
+    /**
+     * Re-attaches the current-entry height listener after a rebuild. The "current entry" is the
+     * last non-divider child of the entriesContainer; in normal mode that's the cursor entry; in
+     * history mode it's the cursor entry too (still rendered with the current-entry style). When
+     * found, its {@code boundsInLocalProperty} drives {@link #currentEntryHeight}, which the
+     * auto-fit binding reads.
+     */
+    private void refreshAutoFitTracker() {
+        if (autoFitCenterRegion == null) {
+            return;
+        }
+        if (trackedCurrentEntry != null && trackedCurrentEntryListener != null) {
+            trackedCurrentEntry.boundsInLocalProperty().removeListener(trackedCurrentEntryListener);
+            trackedCurrentEntry = null;
+        }
+        Node target = null;
+        for (int i = entriesContainer.getChildren().size() - 1; i >= 0; i--) {
+            Node child = entriesContainer.getChildren().get(i);
+            // Skip the conversation-start / -end divider rows so we measure a real spoken or plain
+            // entry — the divider has a different shape and isn't what the cursor lands on.
+            if (!child.getStyleClass().contains(DIVIDER_STYLE_CLASS)) {
+                target = child;
+                break;
+            }
+        }
+        if (target == null) {
+            currentEntryHeight.set(0);
+            return;
+        }
+        trackedCurrentEntry = target;
+        trackedCurrentEntryListener = (obs, oldB, newB) ->
+                currentEntryHeight.set(newB.getHeight());
+        target.boundsInLocalProperty().addListener(trackedCurrentEntryListener);
+        currentEntryHeight.set(target.getBoundsInLocal().getHeight());
     }
 
     /** Unbinds the three height properties and re-binds them all to {@code binding}. */
@@ -932,6 +996,9 @@ public final class DialogEntriesView extends ScrollPane {
         // from the ends — clicking them would otherwise feel like a no-op.
         canGoBack.set(currentIndex >= 0 && previousNonDividerIndex(currentIndex) >= 0);
         canGoForward.set(currentIndex >= 0 && nextNonDividerIndex(currentIndex) >= 0);
+        // Re-bind the auto-fit tracker to the new current-entry node (the last non-divider child
+        // of entriesContainer). Cheap no-op when auto-fit is disabled.
+        refreshAutoFitTracker();
         // Defer the scroll-to-bottom across TWO JavaFX pulses. The content VBox changes size when
         // entries are added/removed; calling setVvalue(getVmax()) on the first deferred tick still
         // sees the old layout — the pulse hasn't committed the new heights yet — so the pin falls
