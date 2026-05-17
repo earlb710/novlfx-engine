@@ -828,31 +828,66 @@ public final class DialogEntriesView extends ScrollPane {
         // container sums every faded previous entry stacked above the cursor, which previously made
         // the dialog grow to nearly twice the size the active line actually needed (especially in
         // hosts like AltLife that accumulate every step in stepHistory). Tracking just the current
-        // entry plus the surrounding chrome (container + dialog vertical padding) sizes the dialog
-        // to "exactly fit the active message," letting the previous entries scroll off the top.
+        // entry plus the surrounding chrome (container + dialog chrome) sizes the dialog to fit
+        // exactly the active message, letting previous entries scroll off the top.
+        //
+        // Measurement: we use Node.prefHeight(contentWidth) — the canonical "how tall does this
+        // node need to be at this width" — instead of boundsInLocal.height, which lags one layout
+        // pulse and historically underestimated by up to ~10% on multi-line wrapped Labels.
+        //
+        // Chrome: viewportBounds gives the live (dialog height - all ScrollPane overhead) figure,
+        // which captures padding + border + any skin-side reservations getInsets() can miss. We
+        // then add the entriesContainer's own vertical padding (the gap between the VBox edge
+        // and its content).
+        //
         // createDoubleBinding because Bindings.min/max return NumberBinding in JavaFX 17.
         DoubleBinding fitBinding = Bindings.createDoubleBinding(
                 () -> {
-                    double curr = currentEntryHeight.get();
                     double centreH = centerRegion.getHeight();
                     double base = centreH * normalShare;
                     double cap = centreH * maxShare;
-                    if (curr <= 0) {
-                        // Layout hasn't committed yet — fall back to the resting share so the dialog
-                        // isn't collapsed on the very first frame. The listener installed in
-                        // refreshAutoFitTracker() will update currentEntryHeight as soon as the
-                        // pulse measures the new entry, and the binding will recompute.
+                    Node trackedEntry = trackedCurrentEntry;
+                    if (trackedEntry == null) {
                         return base;
                     }
-                    double pad = entriesContainer.getInsets().getTop()
-                            + entriesContainer.getInsets().getBottom()
-                            + getInsets().getTop()
-                            + getInsets().getBottom();
-                    return Math.min(Math.max(base, curr + pad), cap);
+                    double containerWidth = entriesContainer.getWidth();
+                    double containerHPad = entriesContainer.getInsets().getLeft()
+                            + entriesContainer.getInsets().getRight();
+                    double contentWidth = containerWidth - containerHPad;
+                    if (contentWidth <= 0) {
+                        // Pre-first-layout — fall back to the cached bounds height + a generous
+                        // chrome estimate so the dialog isn't collapsed on the first frame. The
+                        // viewport / width listeners will trigger a recompute as soon as layout
+                        // commits real measurements.
+                        double cachedBoundsH = currentEntryHeight.get();
+                        if (cachedBoundsH <= 0) {
+                            return base;
+                        }
+                        double fallbackPad = entriesContainer.getInsets().getTop()
+                                + entriesContainer.getInsets().getBottom()
+                                + getInsets().getTop() + getInsets().getBottom();
+                        return Math.min(Math.max(base, cachedBoundsH + fallbackPad), cap);
+                    }
+                    double currentPrefH = trackedEntry.prefHeight(contentWidth);
+                    double containerVPad = entriesContainer.getInsets().getTop()
+                            + entriesContainer.getInsets().getBottom();
+                    // Measure the actual ScrollPane chrome from runtime layout: dialog total minus
+                    // viewport. Stable for a given ScrollPane config (= padding + border) and
+                    // doesn't undercount the way summing only getInsets() can.
+                    double dialogChrome;
+                    javafx.geometry.Bounds viewport = getViewportBounds();
+                    if (viewport != null && getHeight() > viewport.getHeight()) {
+                        dialogChrome = getHeight() - viewport.getHeight();
+                    } else {
+                        dialogChrome = getInsets().getTop() + getInsets().getBottom();
+                    }
+                    return Math.min(Math.max(base, currentPrefH + containerVPad + dialogChrome), cap);
                 },
                 currentEntryHeight,
                 centerRegion.heightProperty(),
                 entriesContainer.insetsProperty(),
+                entriesContainer.widthProperty(),
+                viewportBoundsProperty(),
                 insetsProperty());
         this.normalHeightBinding = fitBinding;
         if (!historyMode) {
