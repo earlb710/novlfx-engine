@@ -821,6 +821,105 @@ final class DialogEntriesViewTest {
     }
 
     @Test
+    void disablingInternalNavigationMakesLeftRightClicksNoOps() {
+        DialogEntriesView view = new DialogEntriesView();
+        view.addEntry("Line 1.");
+        view.addEntry("Line 2.");
+        view.addEntry("Line 3.");
+        view.goBack();
+        view.goBack();
+        assertEquals(0, view.currentIndex());
+
+        view.setInternalNavigationEnabled(false);
+
+        view.fireEvent(syntheticClick(view, MouseButton.PRIMARY));
+        view.fireEvent(syntheticClick(view, MouseButton.SECONDARY));
+
+        assertEquals(0, view.currentIndex(),
+                "Internal-navigation flag should suppress the built-in cursor walks on clicks.");
+    }
+
+    @Test
+    void reenablingInternalNavigationRestoresClickHandling() {
+        DialogEntriesView view = new DialogEntriesView();
+        view.addEntry("Line 1.");
+        view.addEntry("Line 2.");
+        view.goBack();
+        assertEquals(0, view.currentIndex());
+
+        view.setInternalNavigationEnabled(false);
+        view.fireEvent(syntheticClick(view, MouseButton.PRIMARY));
+        assertEquals(0, view.currentIndex(), "Sanity: click is ignored while disabled.");
+
+        view.setInternalNavigationEnabled(true);
+        view.fireEvent(syntheticClick(view, MouseButton.PRIMARY));
+
+        assertEquals(1, view.currentIndex(),
+                "Re-enabling internal navigation should resume cursor walks on click.");
+    }
+
+    @Test
+    void historyClipsAtCursorRendersOnlyEntriesUpToAndIncludingCursor() {
+        DialogEntriesView view = new DialogEntriesView();
+        view.addEntry("Line 1.");
+        view.addEntry("Line 2.");
+        view.addEntry("Line 3.");
+        view.goBack(); // cursor at index 1
+
+        view.setHistoryClipsAtCursor(true);
+        view.setHistoryMode(true);
+
+        assertEquals(2, view.entryNodes().size(),
+                "Clipped history mode should render only entries [0..currentIndex].");
+        assertTrue(view.entryNodes().get(1).getStyleClass().contains(DialogEntriesView.CURRENT_ENTRY_STYLE_CLASS));
+        assertTrue(view.entryNodes().get(0).getStyleClass().contains(DialogEntriesView.PREVIOUS_ENTRY_STYLE_CLASS));
+    }
+
+    @Test
+    void historyClipsAtCursorFlagTakesEffectMidHistoryMode() {
+        DialogEntriesView view = new DialogEntriesView();
+        view.addEntry("Line 1.");
+        view.addEntry("Line 2.");
+        view.addEntry("Line 3.");
+        view.goBack(); // cursor at index 1
+
+        view.setHistoryMode(true);
+        assertEquals(3, view.entryNodes().size(), "Sanity: unclipped history renders all entries.");
+
+        view.setHistoryClipsAtCursor(true);
+
+        assertEquals(2, view.entryNodes().size(),
+                "Flipping the clip flag while in history mode must rebuild and drop entries past the cursor.");
+    }
+
+    @Test
+    void historyModeHeightBindsToCentreHeightNotContentHeight() {
+        DialogEntriesView view = new DialogEntriesView();
+        view.addEntry("Just one short line.");
+
+        javafx.scene.layout.StackPane storyNode = new javafx.scene.layout.StackPane();
+        BorderPane centre = new BorderPane();
+        centre.setCenter(storyNode);
+        centre.setBottom(view);
+        centre.resize(800, 600);
+        centre.layout();
+
+        HBox footer = ScreenShell.footerBar();
+        view.bindHistoryToggle(footer, storyNode, 0.5);
+
+        Label historyLabel = footerLabelById(footer, "history");
+        historyLabel.fireEvent(syntheticClick(historyLabel));
+
+        // In history mode the dialog must claim the full centre height — not collapse to the
+        // content's tiny natural height. Binding to content.height previously created a feedback
+        // loop that oscillated the dialog between two sizes; we now pin to centre.height.
+        assertEquals(centre.getHeight(), view.getPrefHeight(), 0.001,
+                "History mode should pin the dialog pref height to the centre height.");
+        assertEquals(centre.getHeight(), view.getMinHeight(), 0.001);
+        assertEquals(centre.getHeight(), view.getMaxHeight(), 0.001);
+    }
+
+    @Test
     void canGoBackAndCanGoForwardIgnoreLeadingTrailingDividers() {
         DialogEntriesView view = new DialogEntriesView();
         DialogSpeaker alice = DialogSpeaker.text("alice", "Alice");
