@@ -8,6 +8,7 @@ import com.eb.javafx.text.DialogMessage;
 import com.eb.javafx.text.DialogSpeaker;
 import com.eb.javafx.util.Validation;
 import javafx.application.Platform;
+import javafx.beans.binding.Bindings;
 import javafx.beans.binding.DoubleBinding;
 import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanWrapper;
@@ -201,6 +202,18 @@ public final class DialogEntriesView extends ScrollPane {
     private boolean historyClipsAtCursor = false;
     /** Saved ratio used to restore the height binding when leaving history mode. */
     private double savedDialogHeightShare = 0;
+    /**
+     * Optional binding that produces the "normal" (non-history) target height. Set by
+     * {@link #enableAutoFitDialogHeight}; takes precedence over the simple
+     * {@code centre.height × savedDialogHeightShare} fallback when leaving history mode.
+     */
+    private DoubleBinding normalHeightBinding;
+    /** Centre region recorded by {@link #enableAutoFitDialogHeight} for height-share math. */
+    private Region autoFitCenterRegion;
+    /** Resting share of the centre region when auto-fit is enabled and content fits in normal share. */
+    private double autoFitNormalShare;
+    /** Maximum share of the centre region when auto-fit expands to fit a tall current entry. */
+    private double autoFitMaxShare;
     /** Tracks which footer the view is already wired to so {@link #bindToFooter(Node)} is idempotent. */
     private HBox wiredFooter;
     /** Tracks which footer the history toggle is already wired to so {@link #bindHistoryToggle(Node, Node, double)} is idempotent. */
@@ -759,6 +772,79 @@ public final class DialogEntriesView extends ScrollPane {
      * the mode flag still flips and {@link #rebuild()} still fires; only the layout side-effects
      * are skipped.</p>
      */
+    /**
+     * Enables content-driven height for the dialog so a single long entry temporarily expands the
+     * dialog block, then contracts again when the next (shorter) entry becomes current.
+     *
+     * <p>Once called, the dialog's {@code prefHeight}/{@code minHeight}/{@code maxHeight} are
+     * bound to {@code clamp(contentHeight, centerRegion.height × normalShare, centerRegion.height
+     * × maxShare)} — short messages keep the dialog at its resting share, long paragraphs grow it
+     * up to the cap, and the very next rebuild snaps it back when content shrinks. {@code maxShare}
+     * guarantees the surrounding layout (e.g. a story area) always retains at least
+     * {@code 1 - maxShare} of {@code centerRegion}.</p>
+     *
+     * <p>Takes precedence over any external height binding installed by a layout renderer
+     * (e.g. {@code MainAppLayoutRenderer}'s pinned-share binding) — those constraints are unbound.
+     * Coordinates with {@link #bindHistoryToggle}: while history mode is active, the
+     * full-centre-height binding wins; on history exit, the auto-fit binding is restored instead
+     * of the simple proportional fallback.</p>
+     *
+     * @param centerRegion the centre region whose height drives the share calculation (typically
+     *        the dialog's parent in a {@code MAIN_APP_LAYOUT} centre BorderPane)
+     * @param normalShare resting share of {@code centerRegion}'s height, e.g. {@code 0.20}
+     * @param maxShare maximum share when expanded for a tall current entry, e.g. {@code 0.60};
+     *        must be {@code >= normalShare} and {@code <= 1.0}
+     */
+    public void enableAutoFitDialogHeight(Region centerRegion, double normalShare, double maxShare) {
+        Validation.requireNonNull(centerRegion, "Centre region is required.");
+        Validation.requireBetween(normalShare, 0.0, 1.0,
+                "Auto-fit normalShare must be between 0.0 and 1.0.");
+        Validation.requireBetween(maxShare, 0.0, 1.0,
+                "Auto-fit maxShare must be between 0.0 and 1.0.");
+        if (maxShare < normalShare) {
+            throw new IllegalArgumentException(
+                    "Auto-fit maxShare (" + maxShare + ") must be >= normalShare (" + normalShare + ").");
+        }
+        // Idempotent: skip if already wired with the same parameters. Lets hosts call this
+        // manually after MainAppLayoutRenderer auto-wires it without double-binding.
+        if (autoFitCenterRegion == centerRegion
+                && autoFitNormalShare == normalShare
+                && autoFitMaxShare == maxShare
+                && normalHeightBinding != null) {
+            return;
+        }
+        this.autoFitCenterRegion = centerRegion;
+        this.autoFitNormalShare = normalShare;
+        this.autoFitMaxShare = maxShare;
+        // Bind to the rendered content height (entriesContainer) clamped between
+        // centre*normalShare and centre*maxShare. createDoubleBinding because Bindings.min/max
+        // return NumberBinding in JavaFX 17, not DoubleBinding.
+        DoubleBinding fitBinding = Bindings.createDoubleBinding(
+                () -> {
+                    double contentH = entriesContainer.getHeight();
+                    double centreH = centerRegion.getHeight();
+                    double base = centreH * normalShare;
+                    double cap = centreH * maxShare;
+                    return Math.min(Math.max(base, contentH), cap);
+                },
+                entriesContainer.heightProperty(),
+                centerRegion.heightProperty());
+        this.normalHeightBinding = fitBinding;
+        if (!historyMode) {
+            applyHeightBinding(fitBinding);
+        }
+    }
+
+    /** Unbinds the three height properties and re-binds them all to {@code binding}. */
+    private void applyHeightBinding(DoubleBinding binding) {
+        prefHeightProperty().unbind();
+        minHeightProperty().unbind();
+        maxHeightProperty().unbind();
+        prefHeightProperty().bind(binding);
+        minHeightProperty().bind(binding);
+        maxHeightProperty().bind(binding);
+    }
+
     private void toggleHistoryLayout(Node storyNode) {
         historyMode = !historyMode;
         if (!(getParent() instanceof BorderPane centre)) {
@@ -784,10 +870,15 @@ public final class DialogEntriesView extends ScrollPane {
             minHeightProperty().bind(centre.heightProperty());
             maxHeightProperty().bind(centre.heightProperty());
         } else {
-            // Restore the story slot and reinstate the normal proportional height binding.
+            // Restore the story slot and reinstate the normal height binding. If auto-fit was
+            // enabled, restore its content-clamped binding instead of the simple proportional
+            // share — otherwise leaving history mode would clobber the auto-fit and pin the
+            // dialog at a fixed share again.
             storyNode.setManaged(true);
             storyNode.setVisible(true);
-            DoubleBinding normalHeight = centre.heightProperty().multiply(savedDialogHeightShare);
+            DoubleBinding normalHeight = normalHeightBinding != null
+                    ? normalHeightBinding
+                    : centre.heightProperty().multiply(savedDialogHeightShare);
             prefHeightProperty().bind(normalHeight);
             minHeightProperty().bind(normalHeight);
             maxHeightProperty().bind(normalHeight);
