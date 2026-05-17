@@ -8,7 +8,6 @@ import com.eb.javafx.text.DialogMessage;
 import com.eb.javafx.text.DialogSpeaker;
 import com.eb.javafx.util.Validation;
 import javafx.application.Platform;
-import javafx.beans.binding.Bindings;
 import javafx.beans.binding.DoubleBinding;
 import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanWrapper;
@@ -187,6 +186,19 @@ public final class DialogEntriesView extends ScrollPane {
      * {@link #bindHistoryToggle}.
      */
     private boolean historyMode = false;
+    /**
+     * When {@code true} (default) the view advances/rewinds its own cursor on left/right clicks and
+     * Space/Backspace keys. Set to {@code false} when the embedding application drives navigation
+     * itself (e.g. AltLife routes back/forward through its scene-flow state machine) so the engine's
+     * internal cursor walks don't compete with the host's state changes.
+     */
+    private boolean internalNavigationEnabled = true;
+    /**
+     * When {@code true}, history mode only renders entries up to and including the current cursor
+     * instead of every entry in the list. Lets hosts that walk the cursor through scene state show a
+     * history that matches "the conversation so far," not "everything that will eventually be said."
+     */
+    private boolean historyClipsAtCursor = false;
     /** Saved ratio used to restore the height binding when leaving history mode. */
     private double savedDialogHeightShare = 0;
     /** Tracks which footer the view is already wired to so {@link #bindToFooter(Node)} is idempotent. */
@@ -244,6 +256,9 @@ public final class DialogEntriesView extends ScrollPane {
     }
 
     private void handleMouseClick(MouseEvent event) {
+        if (!internalNavigationEnabled) {
+            return;
+        }
         if (event.getButton() == MouseButton.PRIMARY) {
             if (canGoForward()) {
                 goForward();
@@ -503,6 +518,43 @@ public final class DialogEntriesView extends ScrollPane {
         return canGoForward.get();
     }
 
+    /**
+     * Enables or disables the view's built-in mouse and keyboard navigation.
+     *
+     * <p>When {@code true} (default) a primary click / Space advances the cursor and a secondary
+     * click / Backspace rewinds it. Set to {@code false} when the embedding application drives
+     * back/forward through its own state (e.g. a scene-flow engine), so input events fall through to
+     * the host instead of being intercepted by the dialog widget.</p>
+     */
+    public void setInternalNavigationEnabled(boolean enabled) {
+        this.internalNavigationEnabled = enabled;
+    }
+
+    /** @see #setInternalNavigationEnabled(boolean) */
+    public boolean isInternalNavigationEnabled() {
+        return internalNavigationEnabled;
+    }
+
+    /**
+     * Controls whether {@link #isHistoryMode() history mode} renders every entry in the list, or
+     * only the entries up to and including the current cursor.
+     *
+     * <p>Default is {@code false} — history shows the full conversation record. Set to {@code true}
+     * for hosts where the cursor reflects "the player's reading position": the expanded history will
+     * stop at the current line so it never reveals dialog the player hasn't reached yet.</p>
+     */
+    public void setHistoryClipsAtCursor(boolean historyClipsAtCursor) {
+        this.historyClipsAtCursor = historyClipsAtCursor;
+        if (historyMode) {
+            rebuild();
+        }
+    }
+
+    /** @see #setHistoryClipsAtCursor(boolean) */
+    public boolean isHistoryClipsAtCursor() {
+        return historyClipsAtCursor;
+    }
+
     // ----- Footer wiring ------------------------------------------------------------------------
 
     /**
@@ -591,6 +643,9 @@ public final class DialogEntriesView extends ScrollPane {
             return;
         }
         scene.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
+            if (!internalNavigationEnabled) {
+                return;
+            }
             if (event.getCode() == KeyCode.BACK_SPACE && !event.isShortcutDown() && !event.isShiftDown() && !event.isAltDown()) {
                 if (canGoBack()) {
                     goBack();
@@ -718,20 +773,16 @@ public final class DialogEntriesView extends ScrollPane {
             // Collapse the story slot so the full centre height is free for the dialog.
             storyNode.setManaged(false);
             storyNode.setVisible(false);
-            // Bind to the smaller of: content's natural height vs full available height.
-            // entriesContainer.heightProperty() is live — it updates after the layout pass
-            // as entries are rendered, so the dialog expands smoothly to exactly the size
-            // it needs rather than always claiming the full window height.
-            // createDoubleBinding is used because Bindings.min returns NumberBinding (not
-            // DoubleBinding) in JavaFX 17, and prefHeightProperty().bind() requires a
-            // DoubleBinding-compatible type.
-            DoubleBinding expandedHeight = Bindings.createDoubleBinding(
-                    () -> Math.min(entriesContainer.getHeight(), centre.getHeight()),
-                    entriesContainer.heightProperty(),
-                    centre.heightProperty());
-            prefHeightProperty().bind(expandedHeight);
-            minHeightProperty().bind(expandedHeight);
-            maxHeightProperty().bind(expandedHeight);
+            // Bind directly to the centre height so the dialog always fills the full available
+            // space in history mode. Earlier revisions used min(content.height, centre.height) to
+            // let short histories stay compact, but that created a layout feedback loop: the dialog
+            // height drove the ScrollPane width (the vbar appears/disappears), the new width
+            // re-wrapped Labels and changed the content's natural height, which fed back through
+            // the binding — the dialog visibly oscillated between two heights. Pinning to centre
+            // height eliminates the loop and matches the "history covers everything" UX.
+            prefHeightProperty().bind(centre.heightProperty());
+            minHeightProperty().bind(centre.heightProperty());
+            maxHeightProperty().bind(centre.heightProperty());
         } else {
             // Restore the story slot and reinstate the normal proportional height binding.
             storyNode.setManaged(true);
@@ -766,10 +817,15 @@ public final class DialogEntriesView extends ScrollPane {
         entriesContainer.getChildren().clear();
         if (!entries.isEmpty()) {
             if (historyMode) {
-                // History mode: render ALL entries (including any after the cursor) so the player
-                // can scroll through the complete conversation record in the expanded viewport.
-                // The cursor entry is still highlighted as "current"; everything else is "previous".
-                for (int i = 0; i < entries.size(); i++) {
+                // History mode: by default render ALL entries (including any after the cursor) so
+                // the player can scroll through the complete conversation record. When
+                // historyClipsAtCursor is set, stop at the cursor — the expanded history then
+                // matches "the conversation so far," never revealing dialog the player hasn't
+                // reached. The cursor entry is still highlighted as "current".
+                int upperBound = historyClipsAtCursor && currentIndex >= 0
+                        ? currentIndex + 1
+                        : entries.size();
+                for (int i = 0; i < upperBound; i++) {
                     entriesContainer.getChildren().add(renderEntry(entries.get(i), i != currentIndex));
                 }
             } else if (currentIndex >= 0) {
@@ -785,12 +841,15 @@ public final class DialogEntriesView extends ScrollPane {
         // from the ends — clicking them would otherwise feel like a no-op.
         canGoBack.set(currentIndex >= 0 && previousNonDividerIndex(currentIndex) >= 0);
         canGoForward.set(currentIndex >= 0 && nextNonDividerIndex(currentIndex) >= 0);
-        // Defer the scroll-to-bottom until after the JavaFX layout pass. The content VBox changes
-        // size when entries are added/removed; calling setVvalue(getVmax()) synchronously would
-        // read the stale Vmax from the previous layout, so the pin would fall short. The deferred
-        // call fires once the new heights are committed, guaranteeing the bottom entry stays visible
-        // after every append and every cursor navigation.
-        Platform.runLater(() -> setVvalue(getVmax()));
+        // Defer the scroll-to-bottom across TWO JavaFX pulses. The content VBox changes size when
+        // entries are added/removed; calling setVvalue(getVmax()) on the first deferred tick still
+        // sees the old layout — the pulse hasn't committed the new heights yet — so the pin falls
+        // short and the newest entry shows only half-visible until the user scrolls by hand. The
+        // first runLater lets the pulse process the children change and run layout; the nested
+        // runLater fires on the following tick, after the ScrollPane viewport has caught up to the
+        // new content height, so setVvalue(getVmax()) actually lands at the bottom of the newest
+        // entry. Cheap to chain — runLater itself only enqueues a Runnable.
+        Platform.runLater(() -> Platform.runLater(() -> setVvalue(getVmax())));
     }
 
     private Node renderEntry(Entry entry, boolean previous) {
