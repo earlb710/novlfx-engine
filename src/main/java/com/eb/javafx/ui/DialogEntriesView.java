@@ -7,6 +7,10 @@ import com.eb.javafx.text.DialogHistory;
 import com.eb.javafx.text.DialogMessage;
 import com.eb.javafx.text.DialogSpeaker;
 import com.eb.javafx.util.Validation;
+import javafx.animation.Interpolator;
+import javafx.animation.KeyFrame;
+import javafx.animation.KeyValue;
+import javafx.animation.Timeline;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.beans.binding.DoubleBinding;
@@ -25,6 +29,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
+import javafx.util.Duration;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -228,6 +233,16 @@ public final class DialogEntriesView extends ScrollPane {
     private HBox wiredHistoryFooter;
     /** Tracks scenes that already have the keyboard shortcut filter installed so installation is idempotent. */
     private final java.util.Set<javafx.scene.Scene> wiredScenes = new java.util.HashSet<>();
+    /**
+     * Duration of the animated scroll-to-bottom that fires after every {@link #rebuild()}. Defaults
+     * to {@link Duration#ZERO} so the scroll snaps immediately — keeping the legacy "drain two
+     * pulses and assert vvalue == vmax" expectation working for existing consumers and tests.
+     * Callers that want an eased scroll (e.g. a gameplay dialog block) opt in via
+     * {@link #setScrollAnimationDuration(Duration)}.
+     */
+    private Duration scrollAnimationDuration = Duration.ZERO;
+    /** Active scroll animation; replaced (and cancelled) every time a new rebuild fires. */
+    private Timeline activeScrollAnimation;
 
     public DialogEntriesView() {
         this(new DialogHistory());
@@ -1035,14 +1050,64 @@ public final class DialogEntriesView extends ScrollPane {
         // of entriesContainer). Cheap no-op when auto-fit is disabled.
         refreshAutoFitTracker();
         // Defer the scroll-to-bottom across TWO JavaFX pulses. The content VBox changes size when
-        // entries are added/removed; calling setVvalue(getVmax()) on the first deferred tick still
-        // sees the old layout — the pulse hasn't committed the new heights yet — so the pin falls
-        // short and the newest entry shows only half-visible until the user scrolls by hand. The
-        // first runLater lets the pulse process the children change and run layout; the nested
-        // runLater fires on the following tick, after the ScrollPane viewport has caught up to the
-        // new content height, so setVvalue(getVmax()) actually lands at the bottom of the newest
-        // entry. Cheap to chain — runLater itself only enqueues a Runnable.
-        Platform.runLater(() -> Platform.runLater(() -> setVvalue(getVmax())));
+        // entries are added/removed; reading getVmax() on the first deferred tick still sees the old
+        // layout — the pulse hasn't committed the new heights yet — so the pin falls short and the
+        // newest entry shows only half-visible until the user scrolls by hand. The first runLater
+        // lets the pulse process the children change and run layout; the nested runLater fires on
+        // the following tick, after the ScrollPane viewport has caught up to the new content
+        // height, so vvalue actually reaches the bottom of the newest entry. Cheap to chain —
+        // runLater itself only enqueues a Runnable. Inside the inner pulse we either snap (when
+        // scrollAnimationDuration is zero) or animate vvalue with an ease-out interpolator over
+        // {@link #scrollAnimationDuration} so the reader's eye can follow the dialog dropping down
+        // instead of jumping. Any previously-active animation is cancelled before the new one fires
+        // so rapid forward clicks don't queue overlapping tweens.
+        Platform.runLater(() -> Platform.runLater(this::scrollToBottomDeferred));
+    }
+
+    /**
+     * Snaps or animates the {@code vvalue} to the bottom of the content (the cursor entry).
+     * Cancels any previously-active scroll tween so rapid rebuilds don't stack animations.
+     */
+    private void scrollToBottomDeferred() {
+        double target = getVmax();
+        if (activeScrollAnimation != null) {
+            activeScrollAnimation.stop();
+            activeScrollAnimation = null;
+        }
+        if (scrollAnimationDuration == null || scrollAnimationDuration.lessThanOrEqualTo(Duration.ZERO)) {
+            setVvalue(target);
+            return;
+        }
+        double current = getVvalue();
+        if (Math.abs(target - current) < 1e-6) {
+            setVvalue(target);
+            return;
+        }
+        Timeline timeline = new Timeline(new KeyFrame(
+                scrollAnimationDuration,
+                new KeyValue(vvalueProperty(), target, Interpolator.EASE_OUT)));
+        timeline.setOnFinished(event -> {
+            if (activeScrollAnimation == timeline) {
+                activeScrollAnimation = null;
+            }
+        });
+        activeScrollAnimation = timeline;
+        timeline.play();
+    }
+
+    /**
+     * Sets the duration of the animated scroll-to-bottom that fires after every {@link #rebuild()}.
+     * Pass {@link Duration#ZERO} to disable the animation and snap immediately; the default is
+     * 500&nbsp;ms with an ease-out curve. Applies to subsequent rebuilds — any animation already in
+     * flight runs to completion at its original duration.
+     */
+    public void setScrollAnimationDuration(Duration scrollAnimationDuration) {
+        this.scrollAnimationDuration = scrollAnimationDuration == null ? Duration.ZERO : scrollAnimationDuration;
+    }
+
+    /** Returns the current scroll-to-bottom animation duration. */
+    public Duration scrollAnimationDuration() {
+        return scrollAnimationDuration;
     }
 
     private Node renderEntry(Entry entry, boolean previous) {
