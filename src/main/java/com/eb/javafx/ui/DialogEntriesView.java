@@ -243,6 +243,25 @@ public final class DialogEntriesView extends ScrollPane {
     private Duration scrollAnimationDuration = Duration.ZERO;
     /** Active scroll animation; replaced (and cancelled) every time a new rebuild fires. */
     private Timeline activeScrollAnimation;
+    /**
+     * Whether the dialog block should fade out when the pointer leaves its bounds. Disabled by
+     * default so the existing engine tests and consumers keep their fully-opaque widget; gameplay
+     * shells opt in via {@link #setHoverFadeEnabled(boolean)} to keep the background art visible
+     * between reads.
+     */
+    private boolean hoverFadeEnabled = false;
+    /** Opacity applied to this view when the pointer is inside the widget. Defaults to fully opaque. */
+    private double hoverFadeHoveredOpacity = 1.0;
+    /**
+     * Opacity applied to this view when the pointer is outside the widget. Defaults to {@code 0.2}
+     * — i.e. "80% more transparent than fully opaque" — to keep the background art legible while
+     * still hinting at the dialog block's presence.
+     */
+    private double hoverFadeUnhoveredOpacity = 0.2;
+    /** Duration of the fade between hovered and unhovered opacity. */
+    private Duration hoverFadeDuration = Duration.millis(200);
+    /** Active hover fade animation; replaced (and cancelled) when the hover state toggles again. */
+    private Timeline activeHoverFade;
 
     public DialogEntriesView() {
         this(new DialogHistory());
@@ -279,6 +298,10 @@ public final class DialogEntriesView extends ScrollPane {
                 installKeyboardShortcuts(newScene);
             }
         });
+        // Hover fade: when the pointer leaves the widget the dialog block fades to the configured
+        // unhovered opacity, and fades back to full opacity when it re-enters. Disabled by default
+        // (see {@link #hoverFadeEnabled}) so the change is opt-in for shells that want it.
+        hoverProperty().addListener((obs, was, hovering) -> applyHoverFade(hovering));
         rebuild();
     }
 
@@ -1108,6 +1131,109 @@ public final class DialogEntriesView extends ScrollPane {
     /** Returns the current scroll-to-bottom animation duration. */
     public Duration scrollAnimationDuration() {
         return scrollAnimationDuration;
+    }
+
+    /**
+     * Toggles the hover-fade behaviour. When enabled, the dialog block fades to
+     * {@link #setHoverFadeOpacities(double, double) hover-fade unhovered opacity} whenever the
+     * pointer leaves its bounds and fades back to the hovered opacity when it re-enters. The fade
+     * uses an ease-out curve over {@link #setHoverFadeDuration(Duration)}.
+     *
+     * <p>Switching this off restores the view to fully-opaque {@code opacity = 1.0}; switching it
+     * on immediately snaps the view to the appropriate opacity for the current hover state.</p>
+     */
+    public void setHoverFadeEnabled(boolean hoverFadeEnabled) {
+        this.hoverFadeEnabled = hoverFadeEnabled;
+        if (!hoverFadeEnabled) {
+            cancelActiveHoverFade();
+            setOpacity(1.0);
+            return;
+        }
+        applyHoverFade(isHover());
+    }
+
+    /** Returns whether the hover fade is currently enabled. */
+    public boolean hoverFadeEnabled() {
+        return hoverFadeEnabled;
+    }
+
+    /**
+     * Sets the opacities used by the hover fade. {@code hoveredOpacity} is applied when the
+     * pointer is inside the widget; {@code unhoveredOpacity} is applied when it's outside. Both
+     * values are clamped to {@code [0, 1]}. Defaults are {@code 1.0} and {@code 0.2} respectively.
+     */
+    public void setHoverFadeOpacities(double hoveredOpacity, double unhoveredOpacity) {
+        this.hoverFadeHoveredOpacity = clampOpacity(hoveredOpacity);
+        this.hoverFadeUnhoveredOpacity = clampOpacity(unhoveredOpacity);
+        if (hoverFadeEnabled) {
+            applyHoverFade(isHover());
+        }
+    }
+
+    /** Sets the duration of the hover fade transition. Pass {@link Duration#ZERO} to snap. */
+    public void setHoverFadeDuration(Duration hoverFadeDuration) {
+        this.hoverFadeDuration = hoverFadeDuration == null ? Duration.ZERO : hoverFadeDuration;
+    }
+
+    /** Returns the hover opacity (applied while the pointer is inside the widget). */
+    public double hoverFadeHoveredOpacity() {
+        return hoverFadeHoveredOpacity;
+    }
+
+    /** Returns the unhovered opacity (applied while the pointer is outside the widget). */
+    public double hoverFadeUnhoveredOpacity() {
+        return hoverFadeUnhoveredOpacity;
+    }
+
+    /** Returns the hover fade transition duration. */
+    public Duration hoverFadeDuration() {
+        return hoverFadeDuration;
+    }
+
+    /**
+     * Animates this view's opacity toward the appropriate hover-state target. No-op when
+     * hover fade is disabled — callers should use {@link #setHoverFadeEnabled(boolean)} for that.
+     */
+    private void applyHoverFade(boolean hovering) {
+        if (!hoverFadeEnabled) {
+            return;
+        }
+        double target = hovering ? hoverFadeHoveredOpacity : hoverFadeUnhoveredOpacity;
+        cancelActiveHoverFade();
+        if (hoverFadeDuration == null || hoverFadeDuration.lessThanOrEqualTo(Duration.ZERO)) {
+            setOpacity(target);
+            return;
+        }
+        if (Math.abs(getOpacity() - target) < 1e-6) {
+            return;
+        }
+        Timeline timeline = new Timeline(new KeyFrame(
+                hoverFadeDuration,
+                new KeyValue(opacityProperty(), target, Interpolator.EASE_OUT)));
+        timeline.setOnFinished(event -> {
+            if (activeHoverFade == timeline) {
+                activeHoverFade = null;
+            }
+        });
+        activeHoverFade = timeline;
+        timeline.play();
+    }
+
+    private void cancelActiveHoverFade() {
+        if (activeHoverFade != null) {
+            activeHoverFade.stop();
+            activeHoverFade = null;
+        }
+    }
+
+    private static double clampOpacity(double value) {
+        if (value < 0.0) {
+            return 0.0;
+        }
+        if (value > 1.0) {
+            return 1.0;
+        }
+        return value;
     }
 
     private Node renderEntry(Entry entry, boolean previous) {
