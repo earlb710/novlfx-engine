@@ -39,6 +39,7 @@ public final class PreferencesService {
     private static final String AUTO_ADVANCE_ON_VOICE_END_KEY = "audio.autoAdvanceOnVoiceEnd";
     private static final String FULLSCREEN_KEY = "window.fullscreen";
     private static final String LANGUAGE_KEY = "ui.language";
+    private static final String TEXT_SPEED_KEY = "ui.textSpeed";
 
     private final Preferences preferences = Preferences.userNodeForPackage(PreferencesService.class);
     private int windowWidth;
@@ -66,6 +67,7 @@ public final class PreferencesService {
     private boolean autoAdvanceOnVoiceEnd;
     private boolean fullscreen;
     private Language language;
+    private TextSpeed textSpeed;
 
     /**
      * Loads startup preferences with conservative defaults for the first shell.
@@ -100,6 +102,7 @@ public final class PreferencesService {
         autoAdvanceOnVoiceEnd = preferences.getBoolean(AUTO_ADVANCE_ON_VOICE_END_KEY, false);
         fullscreen = preferences.getBoolean(FULLSCREEN_KEY, false);
         language = validatedLanguage(preferences.get(LANGUAGE_KEY, Language.ENGLISH.preferenceValue()));
+        textSpeed = validatedTextSpeed(preferences.get(TEXT_SPEED_KEY, TextSpeed.NORMAL.preferenceValue()));
     }
 
     /** Returns the configured starting width for JavaFX scenes. */
@@ -235,6 +238,14 @@ public final class PreferencesService {
     /** Returns the preferred UI language. */
     public Language language() {
         return language;
+    }
+
+    /**
+     * Returns the configured text speed, which drives consumers like the dialog block's
+     * scroll-to-bottom animation duration. Defaults to {@link TextSpeed#NORMAL}.
+     */
+    public TextSpeed textSpeed() {
+        return textSpeed;
     }
 
     /** Persists a clamped window size separately from save-game state. */
@@ -405,6 +416,17 @@ public final class PreferencesService {
         saveLanguage(validatedLanguage(language));
     }
 
+    /** Persists the selected text speed, falling back to {@link TextSpeed#NORMAL} for null. */
+    public void saveTextSpeed(TextSpeed textSpeed) {
+        this.textSpeed = textSpeed == null ? TextSpeed.NORMAL : textSpeed;
+        preferences.put(TEXT_SPEED_KEY, this.textSpeed.preferenceValue());
+    }
+
+    /** Persists a validated text-speed identifier, falling back to {@link TextSpeed#NORMAL} for unknown values. */
+    public void saveTextSpeed(String textSpeed) {
+        saveTextSpeed(validatedTextSpeed(textSpeed));
+    }
+
     private int clamp(int value, int minimum, int maximum) {
         return Math.max(minimum, Math.min(maximum, value));
     }
@@ -459,6 +481,15 @@ public final class PreferencesService {
             }
         }
         return Language.ENGLISH;
+    }
+
+    private TextSpeed validatedTextSpeed(String value) {
+        for (TextSpeed candidate : TextSpeed.values()) {
+            if (candidate.preferenceValue().equals(value)) {
+                return candidate;
+            }
+        }
+        return TextSpeed.NORMAL;
     }
 
     private FooterShortcutDisplay validatedFooterShortcutDisplay(String value) {
@@ -571,6 +602,38 @@ public final class PreferencesService {
 
         public boolean enabled() {
             return enabled;
+        }
+    }
+
+    /**
+     * Text-speed preference. The {@link #durationMillis()} value is fed to the dialog block's
+     * scroll-to-bottom animation: slower speeds give the player more time to read a new line
+     * before the panel pins to the bottom; faster speeds snap the view down quickly.
+     */
+    public enum TextSpeed {
+        SLOW("slow", 800),
+        NORMAL("normal", 400),
+        FAST("fast", 200);
+
+        private final String preferenceValue;
+        private final int durationMillis;
+
+        TextSpeed(String preferenceValue, int durationMillis) {
+            this.preferenceValue = preferenceValue;
+            this.durationMillis = durationMillis;
+        }
+
+        public String preferenceValue() {
+            return preferenceValue;
+        }
+
+        /** Scroll-animation duration in milliseconds that consumers should use for this speed. */
+        public int durationMillis() {
+            return durationMillis;
+        }
+
+        public String label() {
+            return SystemCodeTables.defaultCodeTitle(SystemCodeTables.TEXT_SPEED_TABLE_ID, preferenceValue);
         }
     }
 

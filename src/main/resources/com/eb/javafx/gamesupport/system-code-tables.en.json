@@ -609,6 +609,39 @@
       ]
     },
     {
+      "id": "text-speed",
+      "title": "Text Speed",
+      "codes": [
+        {
+          "id": "slow",
+          "title": "Slow",
+          "sortOrder": 10,
+          "tags": [
+            "settings",
+            "ui"
+          ]
+        },
+        {
+          "id": "normal",
+          "title": "Normal",
+          "sortOrder": 20,
+          "tags": [
+            "settings",
+            "ui"
+          ]
+        },
+        {
+          "id": "fast",
+          "title": "Fast",
+          "sortOrder": 30,
+          "tags": [
+            "settings",
+            "ui"
+          ]
+        }
+      ]
+    },
+    {
       "id": "footer-icon-display",
       "title": "Footer Icon Display",
       "codes": [

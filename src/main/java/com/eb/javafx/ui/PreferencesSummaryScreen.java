@@ -6,6 +6,7 @@ import com.eb.javafx.prefs.PreferencesService.FooterIconDisplay;
 import com.eb.javafx.prefs.PreferencesService.FooterShortcutDisplay;
 import com.eb.javafx.prefs.PreferencesService;
 import com.eb.javafx.prefs.PreferencesService.Language;
+import com.eb.javafx.prefs.PreferencesService.TextSpeed;
 import com.eb.javafx.prefs.PreferencesService.ThemeFamily;
 import com.eb.javafx.prefs.PreferencesService.ThemeVariant;
 import com.eb.javafx.routing.RouteContext;
@@ -98,6 +99,9 @@ public final class PreferencesSummaryScreen {
                 footerIconDisplayRow(context),
                 footerDisplayRow(context),
                 fullscreenRow(context)));
+        content.getChildren().add(settingsBlock(
+                screenText("block.text.title"),
+                textSpeedRow(context)));
         content.getChildren().add(settingsBlock(
                 screenText("block.language.title"),
                 languageRow(context)));
@@ -382,6 +386,39 @@ public final class PreferencesSummaryScreen {
             }
         });
         HBox row = new HBox(8, checkBox);
+        row.getStyleClass().add(ScreenShell.LAYOUT_SECTION_ROW_STYLE_CLASS);
+        return row;
+    }
+
+    private static HBox textSpeedRow(RouteContext context) {
+        Label label = new Label(screenText("item.text-speed.label"));
+        label.getStyleClass().add(ScreenShell.SCREEN_TEXT_STYLE_CLASS);
+        ComboBox<TextSpeed> comboBox = new ComboBox<>();
+        comboBox.getItems().addAll(TextSpeed.values());
+        comboBox.setConverter(new StringConverter<>() {
+            @Override
+            public String toString(TextSpeed value) {
+                return value == null ? "" : value.label();
+            }
+
+            @Override
+            public TextSpeed fromString(String string) {
+                for (TextSpeed candidate : TextSpeed.values()) {
+                    if (candidate.label().equals(string)) {
+                        return candidate;
+                    }
+                }
+                return null;
+            }
+        });
+        comboBox.setValue(context.preferencesService().textSpeed());
+        comboBox.setOnAction(event -> {
+            TextSpeed selected = comboBox.getValue();
+            if (selected != null) {
+                context.preferencesService().saveTextSpeed(selected);
+            }
+        });
+        HBox row = new HBox(8, label, comboBox);
         row.getStyleClass().add(ScreenShell.LAYOUT_SECTION_ROW_STYLE_CLASS);
         return row;
     }

@@ -24,6 +24,7 @@ public final class SystemCodeTables {
     public static final String THEME_FAMILY_TABLE_ID = "theme-family";
     public static final String THEME_VARIANT_TABLE_ID = "theme-variant";
     public static final String VOLUME_LEVEL_TABLE_ID = "volume-level";
+    public static final String TEXT_SPEED_TABLE_ID = "text-speed";
 
     private SystemCodeTables() {
     }
