@@ -299,7 +299,7 @@ final class ScreenShellTest {
         assertEquals(List.of(
                 "‹ Back (Backspace)",
                 "◷ History (Ctrl+H)",
-                "⇥ Skip mode (Tab)",
+                "⇥ Auto Skip (Tab)",
                 "⇩ Load (Ctrl+L)",
                 "▣ Save (Ctrl+S)",
                 "⚡ Quick save (Ctrl+Q)",
@@ -310,7 +310,7 @@ final class ScreenShellTest {
         assertEquals(List.of(
                 "Back - Keyboard shortcut: Backspace",
                 "History - Keyboard shortcut: Ctrl+H",
-                "Skip mode - Keyboard shortcut: Tab",
+                "Auto Skip - Keyboard shortcut: Tab",
                 "Load - Keyboard shortcut: Ctrl+L",
                 "Save - Keyboard shortcut: Ctrl+S",
                 "Quick save - Keyboard shortcut: Ctrl+Q",

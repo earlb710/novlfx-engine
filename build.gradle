@@ -46,6 +46,15 @@ tasks.withType(Test).configureEach {
     useJUnitPlatform()
 }
 
+// Fast build that skips tests, javadoc, and the `check` chain. Depends only on `jar`, which in
+// turn pulls in `compileJava` + `processResources`. Use when you want a runnable artifact for
+// quick local iteration — call `gradle build` (or `check`) when you also want the test suite.
+tasks.register('quickBuild') {
+    group = 'build'
+    description = 'Quick build: compileJava + processResources + jar. Skips tests, check, javadoc.'
+    dependsOn tasks.named('jar')
+}
+
 tasks.register('runTestScreen', JavaExec) {
     group = 'application'
     description = 'Launches the manual test screen UI from the test source set.'

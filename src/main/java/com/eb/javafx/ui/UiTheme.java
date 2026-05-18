@@ -70,6 +70,14 @@ public final class UiTheme {
                 -fx-opacity: 0.45;
             }
 
+            .screen-footer-option-active {
+                -fx-text-fill: #ffffff;
+                -fx-font-weight: bold;
+                -fx-background-color: #ffcc00;
+                -fx-background-radius: 6px;
+                -fx-padding: 2px 8px 2px 8px;
+            }
+
             .conversation-history-rows {
                 -fx-hgap: 10px;
                 -fx-vgap: 6px;
@@ -314,7 +322,9 @@ public final class UiTheme {
 
             .dialog-entry-previous,
             .dialog-entry-previous .label {
-                -fx-font-size: 14px;
+                /* One size level smaller than the current entry (20px → 18px) so older lines
+                 * stay clearly readable while the cursor entry still reads as the focus. */
+                -fx-font-size: 18px;
             }
 
             .dialog-entry-speaker {

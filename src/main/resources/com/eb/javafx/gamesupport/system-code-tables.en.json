@@ -359,7 +359,7 @@
         },
         {
           "id": "footer.skip-mode.label",
-          "title": "Skip mode",
+          "title": "Auto Skip",
           "sortOrder": 60,
           "tags": [
             "ui",
@@ -368,7 +368,7 @@
         },
         {
           "id": "footer.skip-mode.tooltip",
-          "title": "Toggle skip mode.",
+          "title": "Toggle auto skip.",
           "sortOrder": 70,
           "tags": [
             "ui",

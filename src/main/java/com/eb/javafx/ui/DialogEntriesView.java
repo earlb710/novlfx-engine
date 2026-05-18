@@ -234,6 +234,19 @@ public final class DialogEntriesView extends ScrollPane {
     /** Tracks scenes that already have the keyboard shortcut filter installed so installation is idempotent. */
     private final java.util.Set<javafx.scene.Scene> wiredScenes = new java.util.HashSet<>();
     /**
+     * Sentinel value representing the dialog widget itself as a hover source — distinguishes
+     * self-hover from companion-node hover in {@link #activeHoverSources} so each source can be
+     * toggled independently.
+     */
+    private static final Object SELF_HOVER_SOURCE = new Object();
+    /**
+     * Set of hover sources currently reporting "the pointer is over me". The set always contains
+     * either zero entries (no hover anywhere) or one-plus entries (at least one source is hovered).
+     * The effective hover state is {@code !activeHoverSources.isEmpty()}; the fade only drops back
+     * to "unhovered" once every source has reported exit.
+     */
+    private final java.util.Set<Object> activeHoverSources = new java.util.HashSet<>();
+    /**
      * Duration of the animated scroll-to-bottom that fires after every {@link #rebuild()}. Defaults
      * to {@link Duration#ZERO} so the scroll snaps immediately — keeping the legacy "drain two
      * pulses and assert vvalue == vmax" expectation working for existing consumers and tests.
@@ -243,6 +256,13 @@ public final class DialogEntriesView extends ScrollPane {
     private Duration scrollAnimationDuration = Duration.ZERO;
     /** Active scroll animation; replaced (and cancelled) every time a new rebuild fires. */
     private Timeline activeScrollAnimation;
+    /**
+     * Content height (entries container's local bounds height) captured at the end of the previous
+     * scroll-to-bottom. Used to detect "content has grown" between rebuilds so we can push the
+     * scroll position back before animating — otherwise {@code vvalue} is already pinned at
+     * {@code vmax} after the last rebuild and animating to {@code vmax} produces no visible motion.
+     */
+    private double lastKnownContentHeight = -1;
     /**
      * Whether the dialog block should fade out when the pointer leaves its bounds. Disabled by
      * default so the existing engine tests and consumers keep their fully-opaque widget; gameplay
@@ -258,10 +278,6 @@ public final class DialogEntriesView extends ScrollPane {
      * still hinting at the dialog block's presence.
      */
     private double hoverFadeUnhoveredOpacity = 0.2;
-    /** Duration of the fade between hovered and unhovered opacity. */
-    private Duration hoverFadeDuration = Duration.millis(200);
-    /** Active hover fade animation; replaced (and cancelled) when the hover state toggles again. */
-    private Timeline activeHoverFade;
 
     public DialogEntriesView() {
         this(new DialogHistory());
@@ -301,8 +317,54 @@ public final class DialogEntriesView extends ScrollPane {
         // Hover fade: when the pointer leaves the widget the dialog block fades to the configured
         // unhovered opacity, and fades back to full opacity when it re-enters. Disabled by default
         // (see {@link #hoverFadeEnabled}) so the change is opt-in for shells that want it.
-        hoverProperty().addListener((obs, was, hovering) -> applyHoverFade(hovering));
+        //
+        // Wire both {@link Node#hoverProperty() hoverProperty} (cheap binding that fires on the
+        // pulse after the actual enter/exit) and explicit MOUSE_ENTERED / MOUSE_EXITED handlers
+        // (fire on the same tick as the event) as a safety net — some nested layouts can suppress
+        // hoverProperty change events for the parent until layout settles, which made the fade
+        // feel like it wasn't reacting at all. The non-{@code _TARGET} variants only fire when the
+        // pointer actually crosses the widget's outer bounds, so moving the mouse between entries
+        // inside the dialog does NOT toggle the fade on and off.
+        //
+        // Each enter/exit pair routes through {@link #updateHoverSource} so companion nodes
+        // registered via {@link #addHoverCompanion(Node)} can also keep the fade lifted while the
+        // pointer is over them (used by gameplay shells to extend hover-on to the footer bar).
+        hoverProperty().addListener((obs, was, hovering) -> updateHoverSource(SELF_HOVER_SOURCE, hovering));
+        addEventHandler(MouseEvent.MOUSE_ENTERED, event -> updateHoverSource(SELF_HOVER_SOURCE, true));
+        addEventHandler(MouseEvent.MOUSE_EXITED, event -> updateHoverSource(SELF_HOVER_SOURCE, false));
         rebuild();
+    }
+
+    /**
+     * Adds {@code companion} as an additional hover source — while the pointer is inside
+     * {@code companion}'s bounds (or any of its descendants, via {@code hoverProperty}), the
+     * dialog block treats itself as hovered too. This lets gameplay shells extend the hover-fade
+     * "lifted" state to nearby UI (typically the footer bar) so players can read the dialog
+     * clearly while clicking back/forward/auto-skip controls that sit outside the widget itself.
+     *
+     * <p>Idempotent registration isn't enforced — handing the same node to this method twice
+     * registers two listeners. Wire it once during layout assembly.</p>
+     */
+    public void addHoverCompanion(Node companion) {
+        Validation.requireNonNull(companion, "Hover companion is required.");
+        Object source = companion;
+        companion.hoverProperty().addListener((obs, was, hovering) -> updateHoverSource(source, hovering));
+        companion.addEventHandler(MouseEvent.MOUSE_ENTERED, event -> updateHoverSource(source, true));
+        companion.addEventHandler(MouseEvent.MOUSE_EXITED, event -> updateHoverSource(source, false));
+    }
+
+    /**
+     * Records a hover transition for {@code source} (the widget itself or a registered companion)
+     * and recomputes the effective hover state. The fade stays on as long as ANY source reports
+     * "hovered" — it only drops to the unhovered opacity once every source has reported exit.
+     */
+    private void updateHoverSource(Object source, boolean hovering) {
+        if (hovering) {
+            activeHoverSources.add(source);
+        } else {
+            activeHoverSources.remove(source);
+        }
+        applyHoverFade(!activeHoverSources.isEmpty());
     }
 
     /**
@@ -1090,6 +1152,16 @@ public final class DialogEntriesView extends ScrollPane {
     /**
      * Snaps or animates the {@code vvalue} to the bottom of the content (the cursor entry).
      * Cancels any previously-active scroll tween so rapid rebuilds don't stack animations.
+     *
+     * <p>When content has grown since the previous deferred scroll (the common case — each new
+     * entry added by {@link #appendEntry} extends the container), this method pushes {@code vvalue}
+     * back to a position that shows the <em>previous</em> bottom of the content before animating
+     * to the current bottom. Without that push the {@code vvalue} would already be at
+     * {@link #getVmax() vmax} from the previous rebuild and the animation from
+     * {@code vmax → vmax} would produce no visible motion — the new entry would just pop into
+     * view. The push amount is derived from the height delta between rebuilds so the animated
+     * scroll covers exactly the new entry's height, regardless of how tall the entry happens to
+     * be.</p>
      */
     private void scrollToBottomDeferred() {
         double target = getVmax();
@@ -1097,12 +1169,29 @@ public final class DialogEntriesView extends ScrollPane {
             activeScrollAnimation.stop();
             activeScrollAnimation = null;
         }
+        double currentContentHeight = entriesContainer.getBoundsInLocal().getHeight();
+        double viewportHeight = getViewportBounds() != null ? getViewportBounds().getHeight() : 0;
         if (scrollAnimationDuration == null || scrollAnimationDuration.lessThanOrEqualTo(Duration.ZERO)) {
             setVvalue(target);
+            lastKnownContentHeight = currentContentHeight;
             return;
         }
         double current = getVvalue();
-        if (Math.abs(target - current) < 1e-6) {
+        boolean alreadyAtTarget = Math.abs(target - current) < 1e-6;
+        if (alreadyAtTarget && lastKnownContentHeight > 0 && currentContentHeight > lastKnownContentHeight) {
+            // Content grew since last rebuild and we're already pinned to the bottom. Push the
+            // scroll back to where the previous bottom would now sit so the Timeline has visible
+            // distance to cover. scrollable = content - viewport; the previous bottom is
+            // `delta` pixels above the new bottom, which maps to (1 - delta/scrollable) in vvalue.
+            double scrollable = Math.max(1.0, currentContentHeight - viewportHeight);
+            double delta = currentContentHeight - lastKnownContentHeight;
+            double startVvalue = Math.max(0.0, target - delta / scrollable);
+            setVvalue(startVvalue);
+            current = startVvalue;
+            alreadyAtTarget = Math.abs(target - current) < 1e-6;
+        }
+        lastKnownContentHeight = currentContentHeight;
+        if (alreadyAtTarget) {
             setVvalue(target);
             return;
         }
@@ -1134,10 +1223,13 @@ public final class DialogEntriesView extends ScrollPane {
     }
 
     /**
-     * Toggles the hover-fade behaviour. When enabled, the dialog block fades to
+     * Toggles the hover-fade behaviour. When enabled, the dialog block snaps to
      * {@link #setHoverFadeOpacities(double, double) hover-fade unhovered opacity} whenever the
-     * pointer leaves its bounds and fades back to the hovered opacity when it re-enters. The fade
-     * uses an ease-out curve over {@link #setHoverFadeDuration(Duration)}.
+     * pointer leaves its bounds and back to the hovered opacity when it re-enters.
+     *
+     * <p>The change is applied instantly (no animation) — running a fade {@link Timeline} on
+     * {@code opacityProperty()} alongside the scroll Timeline on {@code vvalueProperty()} produced
+     * subtle interference that suppressed the smooth-scroll animation in the rendered output.</p>
      *
      * <p>Switching this off restores the view to fully-opaque {@code opacity = 1.0}; switching it
      * on immediately snaps the view to the appropriate opacity for the current hover state.</p>
@@ -1145,11 +1237,13 @@ public final class DialogEntriesView extends ScrollPane {
     public void setHoverFadeEnabled(boolean hoverFadeEnabled) {
         this.hoverFadeEnabled = hoverFadeEnabled;
         if (!hoverFadeEnabled) {
-            cancelActiveHoverFade();
             setOpacity(1.0);
             return;
         }
-        applyHoverFade(isHover());
+        // Read the combined hover state from the tracked sources rather than {@link #isHover()}
+        // alone so a companion that's already hovered when fade is switched on doesn't get
+        // overridden into an unhovered fade.
+        applyHoverFade(!activeHoverSources.isEmpty());
     }
 
     /** Returns whether the hover fade is currently enabled. */
@@ -1170,11 +1264,6 @@ public final class DialogEntriesView extends ScrollPane {
         }
     }
 
-    /** Sets the duration of the hover fade transition. Pass {@link Duration#ZERO} to snap. */
-    public void setHoverFadeDuration(Duration hoverFadeDuration) {
-        this.hoverFadeDuration = hoverFadeDuration == null ? Duration.ZERO : hoverFadeDuration;
-    }
-
     /** Returns the hover opacity (applied while the pointer is inside the widget). */
     public double hoverFadeHoveredOpacity() {
         return hoverFadeHoveredOpacity;
@@ -1185,45 +1274,21 @@ public final class DialogEntriesView extends ScrollPane {
         return hoverFadeUnhoveredOpacity;
     }
 
-    /** Returns the hover fade transition duration. */
-    public Duration hoverFadeDuration() {
-        return hoverFadeDuration;
-    }
-
     /**
-     * Animates this view's opacity toward the appropriate hover-state target. No-op when
-     * hover fade is disabled — callers should use {@link #setHoverFadeEnabled(boolean)} for that.
+     * Snaps this view's opacity to the appropriate hover-state target. No-op when hover fade is
+     * disabled — callers should use {@link #setHoverFadeEnabled(boolean)} for that.
+     *
+     * <p>The original implementation animated the opacity with a {@link Timeline}, but running a
+     * Timeline on {@code opacityProperty()} concurrently with the scroll Timeline on
+     * {@code vvalueProperty()} appeared to suppress the scroll Timeline in the rendered output —
+     * dropping the animation and snapping directly to the hover target avoids any chance of
+     * cross-Timeline interference while still delivering the user-visible transparency change.</p>
      */
     private void applyHoverFade(boolean hovering) {
         if (!hoverFadeEnabled) {
             return;
         }
-        double target = hovering ? hoverFadeHoveredOpacity : hoverFadeUnhoveredOpacity;
-        cancelActiveHoverFade();
-        if (hoverFadeDuration == null || hoverFadeDuration.lessThanOrEqualTo(Duration.ZERO)) {
-            setOpacity(target);
-            return;
-        }
-        if (Math.abs(getOpacity() - target) < 1e-6) {
-            return;
-        }
-        Timeline timeline = new Timeline(new KeyFrame(
-                hoverFadeDuration,
-                new KeyValue(opacityProperty(), target, Interpolator.EASE_OUT)));
-        timeline.setOnFinished(event -> {
-            if (activeHoverFade == timeline) {
-                activeHoverFade = null;
-            }
-        });
-        activeHoverFade = timeline;
-        timeline.play();
-    }
-
-    private void cancelActiveHoverFade() {
-        if (activeHoverFade != null) {
-            activeHoverFade.stop();
-            activeHoverFade = null;
-        }
+        setOpacity(hovering ? hoverFadeHoveredOpacity : hoverFadeUnhoveredOpacity);
     }
 
     private static double clampOpacity(double value) {

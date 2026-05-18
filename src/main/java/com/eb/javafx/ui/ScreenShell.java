@@ -72,6 +72,12 @@ public final class ScreenShell {
     public static final String SCREEN_FOOTER_BAR_STYLE_CLASS = "screen-footer-bar";
     public static final String SCREEN_FOOTER_OPTION_STYLE_CLASS = "screen-footer-option";
     public static final String SCREEN_FOOTER_OPTION_DISABLED_STYLE_CLASS = "screen-footer-option-disabled";
+    /**
+     * Applied to a footer-option label when its underlying mode is currently <em>active</em>
+     * (e.g. auto-skip is engaged). Distinct from disabled — the option is still clickable and
+     * should look prominent. The default stylesheet renders this as bright white + bold.
+     */
+    public static final String SCREEN_FOOTER_OPTION_ACTIVE_STYLE_CLASS = "screen-footer-option-active";
     public static final String SCREEN_FOOTER_COMPACT_STYLE_CLASS = "screen-footer-compact";
     public static final String DEFAULT_FOOTER_ICON_RESOURCE_DIRECTORY = "com/eb/javafx/images/icons";
     public static final String SCENE_STATUS_PANEL_STYLE_CLASS = "scene-status-panel";
@@ -1027,6 +1033,45 @@ public final class ScreenShell {
     public static boolean isFooterOptionEnabled(Label label) {
         Validation.requireNonNull(label, "Footer label is required.");
         return label.getUserData() instanceof FooterOption option && option.enabled();
+    }
+
+    /**
+     * Marks a footer-option label as <em>active</em> by adding (or removing) the
+     * {@link #SCREEN_FOOTER_OPTION_ACTIVE_STYLE_CLASS} style class. Active styling is independent
+     * of enabled/disabled — an active label is still clickable; the visual just tells the user
+     * the underlying mode is currently engaged (e.g. auto-skip is on).
+     *
+     * <p>The default stylesheet renders {@code .screen-footer-option-active} as bright white +
+     * bold so the active option stands out in the footer pill. Application themes can override
+     * by re-defining the same selector.</p>
+     */
+    public static void setFooterOptionActive(Label label, boolean active) {
+        Validation.requireNonNull(label, "Footer label is required.");
+        if (active) {
+            if (!label.getStyleClass().contains(SCREEN_FOOTER_OPTION_ACTIVE_STYLE_CLASS)) {
+                label.getStyleClass().add(SCREEN_FOOTER_OPTION_ACTIVE_STYLE_CLASS);
+            }
+            if (label.getUserData() instanceof FooterOption option) {
+                // White icon (matches the bold-white text from the active CSS rule) on the yellow
+                // pill background painted by {@code .screen-footer-option-active}. Distinct from
+                // the default gold-on-translucent footer look so the active option pops out.
+                ImageView activeIcon = footerGraphic(option, "#ffffff");
+                if (activeIcon != null) {
+                    label.setGraphic(activeIcon);
+                }
+            }
+        } else {
+            label.getStyleClass().remove(SCREEN_FOOTER_OPTION_ACTIVE_STYLE_CLASS);
+            if (label.getUserData() instanceof FooterOption option) {
+                label.setGraphic(footerGraphic(option));
+            }
+        }
+    }
+
+    /** Returns {@code true} when {@code label} carries the active style class. */
+    public static boolean isFooterOptionActive(Label label) {
+        Validation.requireNonNull(label, "Footer label is required.");
+        return label.getStyleClass().contains(SCREEN_FOOTER_OPTION_ACTIVE_STYLE_CLASS);
     }
 
     /** Creates a shared tooltip with a shorter delay so hover help appears promptly across reusable UI screens. */

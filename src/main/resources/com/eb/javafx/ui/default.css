@@ -55,6 +55,18 @@
     -fx-opacity: 0.45;
 }
 
+/* Applied to a footer-option label when its mode is currently active (e.g. auto-skip on).
+ * Yellow pill behind bold white text + icon so the active option pops out from the rest of the
+ * footer. The matching rule lives in {@code UiTheme.java}'s generated stylesheet — both copies
+ * are kept in sync so any path that loads {@code default.css} directly stays consistent. */
+.screen-footer-option-active {
+    -fx-text-fill: #ffffff;
+    -fx-font-weight: bold;
+    -fx-background-color: #ffcc00;
+    -fx-background-radius: 6px;
+    -fx-padding: 2px 8px 2px 8px;
+}
+
 .conversation-history-rows {
     -fx-hgap: 10px;
     -fx-vgap: 6px;
@@ -143,7 +155,9 @@
 
 .dialog-entry-previous,
 .dialog-entry-previous .label {
-    -fx-font-size: 14px;
+    /* One size level smaller than the current entry (20px → 18px) so older lines stay clearly
+     * readable while the cursor entry still reads as the focus. */
+    -fx-font-size: 18px;
 }
 
 .dialog-entry-speaker {
