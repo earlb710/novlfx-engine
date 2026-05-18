@@ -69,13 +69,33 @@ public final class ManagementApplication {
         SwingUtilities.invokeLater(() -> new ManagementApplication().show());
     }
 
+    /**
+     * Opens the management UI without owning the JVM lifecycle. The window uses {@code DISPOSE_ON_CLOSE}
+     * so closing it only disposes the frame, and is brought to the front + focused on display.
+     * Intended for embedded hosts (e.g. the AltLife admin app) that should keep running after the
+     * user dismisses the management window.
+     */
+    public static void launchEmbedded() {
+        SwingUtilities.invokeLater(() -> new ManagementApplication().showEmbedded());
+    }
+
     private void show() {
+        showFrame(JFrame.EXIT_ON_CLOSE);
+    }
+
+    private void showEmbedded() {
+        showFrame(JFrame.DISPOSE_ON_CLOSE);
+    }
+
+    private void showFrame(int defaultCloseOperation) {
         JFrame frame = new JFrame("NovlFX Management");
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setDefaultCloseOperation(defaultCloseOperation);
         frame.setContentPane(content());
         frame.setSize(420, 320);
         frame.setLocationByPlatform(true);
         frame.setVisible(true);
+        frame.toFront();
+        frame.requestFocus();
     }
 
     private JPanel content() {
