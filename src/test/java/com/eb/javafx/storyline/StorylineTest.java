@@ -236,4 +236,81 @@ final class StorylineTest {
         StorylineEvent b = StorylineEvent.builder("same", "text").build();
         assertThrows(IllegalArgumentException.class, () -> Storyline.builder().event(a).event(b).build());
     }
+
+    @Test
+    void dialogChainsByEventIdIndexesOnlyDialogChainTriggers() {
+        StorylineEvent dialog = StorylineEvent.builder("intro.meet", "t")
+                .trigger(EventTrigger.dialogChain("dialog.marsh.intro"))
+                .build();
+        StorylineEvent scene = StorylineEvent.builder("intro.scene", "t")
+                .trigger(EventTrigger.scene("scene.lab.enter"))
+                .build();
+        StorylineEvent none = StorylineEvent.builder("intro.none", "t").build();
+        Storyline storyline = Storyline.builder().events(dialog, scene, none).build();
+
+        var map = storyline.dialogChainsByEventId();
+        assertEquals(1, map.size());
+        assertEquals("dialog.marsh.intro", map.get("intro.meet"));
+        assertFalse(map.containsKey("intro.scene"));
+        assertFalse(map.containsKey("intro.none"));
+    }
+
+    @Test
+    void sceneTriggersIndexesOnlySceneTriggers() {
+        StorylineEvent dialog = StorylineEvent.builder("ev.dialog", "t")
+                .trigger(EventTrigger.dialogChain("chain.x"))
+                .build();
+        StorylineEvent scene1 = StorylineEvent.builder("ev.scene1", "t")
+                .trigger(EventTrigger.scene("scene.alpha"))
+                .build();
+        StorylineEvent scene2 = StorylineEvent.builder("ev.scene2", "t")
+                .trigger(EventTrigger.scene("scene.beta"))
+                .build();
+        Storyline storyline = Storyline.builder().events(dialog, scene1, scene2).build();
+
+        var map = storyline.sceneTriggers();
+        assertEquals(2, map.size());
+        assertEquals("scene.alpha", map.get("ev.scene1"));
+        assertEquals("scene.beta", map.get("ev.scene2"));
+        assertFalse(map.containsKey("ev.dialog"));
+    }
+
+    @Test
+    void childrenByParentGroupsEventStatusLinks() {
+        StorylineEvent parent = StorylineEvent.builder("root.event", "t")
+                .allowedStatuses("yes", "no")
+                .build();
+        StorylineEvent childYes = StorylineEvent.builder("child.yes", "t")
+                .requirement(EventRequirement.eventStatus("root.event", "yes"))
+                .build();
+        StorylineEvent childNo = StorylineEvent.builder("child.no", "t")
+                .requirement(EventRequirement.eventStatus("root.event", "no"))
+                .build();
+        StorylineEvent orphan = StorylineEvent.builder("orphan", "t").build();
+        Storyline storyline = Storyline.builder().events(parent, childYes, childNo, orphan).build();
+
+        var map = storyline.childrenByParent();
+        assertEquals(1, map.size(), "Only events with parent links produce a key.");
+        assertTrue(map.containsKey("root.event"));
+        assertEquals(2, map.get("root.event").size());
+        assertTrue(map.get("root.event").contains(childYes));
+        assertTrue(map.get("root.event").contains(childNo));
+        assertFalse(map.containsKey("orphan"));
+    }
+
+    @Test
+    void triggerForReturnsCorrectTriggerOrEmptyForUnknown() {
+        StorylineEvent dialog = StorylineEvent.builder("ev.dialog", "t")
+                .trigger(EventTrigger.dialogChain("chain.x"))
+                .build();
+        StorylineEvent plain = StorylineEvent.builder("ev.plain", "t").build();
+        Storyline storyline = Storyline.builder().events(dialog, plain).build();
+
+        assertTrue(storyline.triggerFor("ev.dialog").isPresent());
+        assertEquals("chain.x",
+                ((EventTrigger.DialogChain) storyline.triggerFor("ev.dialog").orElseThrow()).dialogChainId());
+        assertSame(EventTrigger.none(), storyline.triggerFor("ev.plain").orElseThrow());
+        assertTrue(storyline.triggerFor("does.not.exist").isEmpty());
+        assertTrue(storyline.triggerFor(null).isEmpty());
+    }
 }

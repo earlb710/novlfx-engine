@@ -145,6 +145,58 @@ public final class Storyline {
         return List.copyOf(out);
     }
 
+    /**
+     * Maps every event whose trigger is {@link EventTrigger.DialogChain} to its chain id.
+     * Events with other trigger types are excluded.
+     */
+    public Map<String, String> dialogChainsByEventId() {
+        LinkedHashMap<String, String> out = new LinkedHashMap<>();
+        for (StorylineEvent event : eventsById.values()) {
+            if (event.trigger() instanceof EventTrigger.DialogChain dc) {
+                out.put(event.id(), dc.dialogChainId());
+            }
+        }
+        return java.util.Collections.unmodifiableMap(out);
+    }
+
+    /**
+     * Maps every event whose trigger is {@link EventTrigger.Scene} to its scene id.
+     * Events with other trigger types are excluded.
+     */
+    public Map<String, String> sceneTriggers() {
+        LinkedHashMap<String, String> out = new LinkedHashMap<>();
+        for (StorylineEvent event : eventsById.values()) {
+            if (event.trigger() instanceof EventTrigger.Scene sc) {
+                out.put(event.id(), sc.sceneId());
+            }
+        }
+        return java.util.Collections.unmodifiableMap(out);
+    }
+
+    /**
+     * Groups every event that has at least one {@link EventRequirement.EventStatus} parent-link
+     * requirement by the parent event id it depends on. An event that links to multiple parents
+     * appears under each parent's key. The map only contains parents that have at least one child.
+     */
+    public Map<String, List<StorylineEvent>> childrenByParent() {
+        LinkedHashMap<String, List<StorylineEvent>> out = new LinkedHashMap<>();
+        for (StorylineEvent event : eventsById.values()) {
+            for (EventRequirement.EventStatus link : event.parentLinks()) {
+                out.computeIfAbsent(link.eventId(), k -> new ArrayList<>()).add(event);
+            }
+        }
+        LinkedHashMap<String, List<StorylineEvent>> frozen = new LinkedHashMap<>();
+        for (Map.Entry<String, List<StorylineEvent>> entry : out.entrySet()) {
+            frozen.put(entry.getKey(), List.copyOf(entry.getValue()));
+        }
+        return java.util.Collections.unmodifiableMap(frozen);
+    }
+
+    /** Returns the trigger for the named event, or empty if the event id is unknown. */
+    public Optional<EventTrigger> triggerFor(String eventId) {
+        return findEvent(eventId).map(StorylineEvent::trigger);
+    }
+
     public static Builder builder() {
         return new Builder();
     }
