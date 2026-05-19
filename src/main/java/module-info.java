@@ -43,5 +43,6 @@ module com.novlfx.engine {
     exports com.eb.javafx.util;
     exports com.eb.javafx.transitions;
     exports com.eb.javafx.gallery;
+    exports com.eb.javafx.storyline;
     exports com.eb.javafx.testscreen;
 }
