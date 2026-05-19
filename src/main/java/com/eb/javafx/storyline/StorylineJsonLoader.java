@@ -90,6 +90,9 @@ public final class StorylineJsonLoader {
 
         StorylineEvent.Builder event = StorylineEvent.builder(id, textKey).repeatable(repeatable);
 
+        JsonData.optionalString(obj, "description", path + ".description")
+                .ifPresent(event::description);
+
         JsonData.optionalObject(obj, "trigger", path + ".trigger")
                 .ifPresent(t -> event.trigger(parseTrigger(t, path + ".trigger")));
 

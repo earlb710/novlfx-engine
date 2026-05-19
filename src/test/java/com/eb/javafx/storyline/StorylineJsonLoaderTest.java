@@ -39,6 +39,24 @@ final class StorylineJsonLoaderTest {
     }
 
     @Test
+    void loadsDescription() {
+        String json = """
+                { "events": [
+                  { "id": "ev", "textKey": "t", "description": "Marsh arrives at the lab for the first time." }
+                ]}""";
+        StorylineEvent e = loader().load(json).events().get(0);
+        assertTrue(e.description().isPresent());
+        assertEquals("Marsh arrives at the lab for the first time.", e.description().get());
+    }
+
+    @Test
+    void descriptionIsEmptyWhenOmitted() {
+        assertFalse(loader().load("""
+                { "events": [{ "id": "ev", "textKey": "t" }] }""")
+                .events().get(0).description().isPresent());
+    }
+
+    @Test
     void loadsRepeatableFlag() {
         String json = """
                 { "events": [

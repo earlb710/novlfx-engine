@@ -39,6 +39,7 @@ import java.util.Set;
 public final class StorylineEvent {
     private final String id;
     private final String textKey;
+    private final String description;
     private final boolean repeatable;
     private final List<EventRequirement> requirements;
     private final EventTrigger trigger;
@@ -47,6 +48,7 @@ public final class StorylineEvent {
     private StorylineEvent(Builder builder) {
         this.id = Validation.requireNonBlank(builder.id, "Event id is required.");
         this.textKey = Validation.requireNonBlank(builder.textKey, "Event text key is required.");
+        this.description = builder.description;
         this.repeatable = builder.repeatable;
         this.requirements = List.copyOf(builder.requirements);
         this.trigger = Objects.requireNonNull(builder.trigger, "Event trigger is required (use EventTrigger.none()).");
@@ -63,6 +65,15 @@ public final class StorylineEvent {
 
     public String textKey() {
         return textKey;
+    }
+
+    /**
+     * Human-readable description of what this event represents in the story.
+     * Useful for authoring tools — explains context, timing, and narrative purpose.
+     * Empty when not set.
+     */
+    public java.util.Optional<String> description() {
+        return java.util.Optional.ofNullable(description);
     }
 
     public boolean repeatable() {
@@ -145,6 +156,7 @@ public final class StorylineEvent {
     public static final class Builder {
         private final String id;
         private final String textKey;
+        private String description;
         private boolean repeatable;
         private final List<EventRequirement> requirements = new ArrayList<>();
         private EventTrigger trigger = EventTrigger.none();
@@ -153,6 +165,11 @@ public final class StorylineEvent {
         private Builder(String id, String textKey) {
             this.id = id;
             this.textKey = textKey;
+        }
+
+        public Builder description(String description) {
+            this.description = description;
+            return this;
         }
 
         public Builder repeatable() {
