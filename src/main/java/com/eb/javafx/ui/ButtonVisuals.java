@@ -164,6 +164,21 @@ public final class ButtonVisuals {
         return SHAPE_PATH;
     }
 
+    /** Returns the top-stop colour of the active button gradient (e.g. the lightest shade). */
+    public static String gradientStartColor() {
+        return gradientStartColor;
+    }
+
+    /** Returns the middle-stop colour of the active button gradient. */
+    public static String gradientMidColor() {
+        return gradientMidColor;
+    }
+
+    /** Returns the bottom-stop colour of the active button gradient (e.g. the darkest shade). */
+    public static String gradientEndColor() {
+        return gradientEndColor;
+    }
+
     public static String buttonArtworkResourceUrl() {
         return longArtwork.url();
     }

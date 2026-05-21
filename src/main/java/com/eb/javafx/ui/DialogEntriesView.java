@@ -191,7 +191,17 @@ public final class DialogEntriesView extends ScrollPane {
      * so the player can scroll through the complete conversation record. Toggled by
      * {@link #bindHistoryToggle}.
      */
-    private boolean historyMode = false;
+    private final ReadOnlyBooleanWrapper historyModeProperty = new ReadOnlyBooleanWrapper(this, "historyMode", false);
+
+    /**
+     * HUD nodes registered via {@link #addHudNode} that are hidden while history is open and
+     * restored when it closes.  The same nodes are also toggled by a middle-mouse-button click
+     * (together with the dialog block itself).
+     */
+    private final List<Node> hudNodes = new ArrayList<>();
+
+    /** Tracks the visibility state driven by a middle-click "clean view" toggle. */
+    private boolean cleanViewActive = false;
     /**
      * When {@code true} (default) the view advances/rewinds its own cursor on left/right clicks and
      * Space/Backspace keys. Set to {@code false} when the embedding application drives navigation
@@ -377,6 +387,16 @@ public final class DialogEntriesView extends ScrollPane {
     }
 
     private void handleMouseClick(MouseEvent event) {
+        if (event.getButton() == MouseButton.MIDDLE) {
+            // Toggle "clean view": hide the dialog block and all registered HUD nodes so the
+            // player can see the background art unobstructed. A second middle-click restores them.
+            cleanViewActive = !cleanViewActive;
+            setVisible(!cleanViewActive);
+            setManaged(!cleanViewActive);
+            setHudNodesVisible(!cleanViewActive);
+            event.consume();
+            return;
+        }
         if (!internalNavigationEnabled) {
             return;
         }
@@ -666,7 +686,7 @@ public final class DialogEntriesView extends ScrollPane {
      */
     public void setHistoryClipsAtCursor(boolean historyClipsAtCursor) {
         this.historyClipsAtCursor = historyClipsAtCursor;
-        if (historyMode) {
+        if (historyModeProperty.get()) {
             rebuild();
         }
     }
@@ -791,7 +811,26 @@ public final class DialogEntriesView extends ScrollPane {
      * record. Wire the toggle via {@link #bindHistoryToggle}.</p>
      */
     public boolean isHistoryMode() {
-        return historyMode;
+        return historyModeProperty.get();
+    }
+
+    /**
+     * Observable for history mode. Fires whenever the view enters or leaves history mode so
+     * host applications can react (e.g. hide a HUD overlay while history is visible).
+     */
+    public ReadOnlyBooleanProperty historyModeProperty() {
+        return historyModeProperty.getReadOnlyProperty();
+    }
+
+    /**
+     * Registers a HUD node that should be hidden while history is open and restored when it
+     * closes. The same node is also hidden by a middle-mouse-button "clean view" toggle.
+     * Must be called after {@link #bindHistoryToggle} so the node list is stable at toggle time.
+     */
+    public void addHudNode(Node node) {
+        if (node != null && !hudNodes.contains(node)) {
+            hudNodes.add(node);
+        }
     }
 
     /**
@@ -799,8 +838,8 @@ public final class DialogEntriesView extends ScrollPane {
      * {@link #bindHistoryToggle} when the view is embedded in a {@code MAIN_APP_LAYOUT} so the
      * layout expansion also fires. This setter is mainly useful for tests.
      */
-    public void setHistoryMode(boolean historyMode) {
-        this.historyMode = historyMode;
+    public void setHistoryMode(boolean value) {
+        historyModeProperty.set(value);
         rebuild();
     }
 
@@ -990,7 +1029,7 @@ public final class DialogEntriesView extends ScrollPane {
                 viewportBoundsProperty(),
                 insetsProperty());
         this.normalHeightBinding = fitBinding;
-        if (!historyMode) {
+        if (!historyModeProperty.get()) {
             applyHeightBinding(fitBinding);
         }
         // Pick up whatever the most recent rebuild left in the container so the binding has a real
@@ -1045,19 +1084,23 @@ public final class DialogEntriesView extends ScrollPane {
     }
 
     private void toggleHistoryLayout(Node storyNode) {
-        historyMode = !historyMode;
+        boolean entering = !historyModeProperty.get();
+        historyModeProperty.set(entering);
         if (!(getParent() instanceof BorderPane centre)) {
             // Not embedded in the expected layout — toggle entry rendering only.
+            setHudNodesVisible(!entering);
             rebuild();
             return;
         }
         prefHeightProperty().unbind();
         minHeightProperty().unbind();
         maxHeightProperty().unbind();
-        if (historyMode) {
+        if (entering) {
             // Collapse the story slot so the full centre height is free for the dialog.
             storyNode.setManaged(false);
             storyNode.setVisible(false);
+            // Hide HUD overlays — they are meaningless while history fills the screen.
+            setHudNodesVisible(false);
             // Bind directly to the centre height so the dialog always fills the full available
             // space in history mode. Earlier revisions used min(content.height, centre.height) to
             // let short histories stay compact, but that created a layout feedback loop: the dialog
@@ -1075,6 +1118,8 @@ public final class DialogEntriesView extends ScrollPane {
             // dialog at a fixed share again.
             storyNode.setManaged(true);
             storyNode.setVisible(true);
+            // Restore HUD overlays now that history mode is closed.
+            setHudNodesVisible(true);
             DoubleBinding normalHeight = normalHeightBinding != null
                     ? normalHeightBinding
                     : centre.heightProperty().multiply(savedDialogHeightShare);
@@ -1083,6 +1128,13 @@ public final class DialogEntriesView extends ScrollPane {
             maxHeightProperty().bind(normalHeight);
         }
         rebuild();
+    }
+
+    private void setHudNodesVisible(boolean visible) {
+        for (Node node : hudNodes) {
+            node.setVisible(visible);
+            node.setManaged(visible);
+        }
     }
 
     // ----- Internals ----------------------------------------------------------------------------
@@ -1106,7 +1158,7 @@ public final class DialogEntriesView extends ScrollPane {
     private void rebuild() {
         entriesContainer.getChildren().clear();
         if (!entries.isEmpty()) {
-            if (historyMode) {
+            if (historyModeProperty.get()) {
                 // History mode: by default render ALL entries (including any after the cursor) so
                 // the player can scroll through the complete conversation record. When
                 // historyClipsAtCursor is set, stop at the cursor — the expanded history then
