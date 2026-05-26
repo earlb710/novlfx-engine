@@ -153,6 +153,21 @@
     -fx-font-weight: bold;
 }
 
+/* Comment / stage-direction entries — movement notes, environmental beats, posture
+ * cues.  Smaller and italic so they read as side commentary rather than dialog.  The
+ * .dialog-entry base gives the line its layout chrome (wrap, width); .dialog-entry-comment
+ * overrides the font.  Selector chain bumps specificity above .dialog-entry-current so
+ * a comment row stays small + italic even when it's the cursor entry. */
+.dialog-entry-comment,
+.dialog-entry-comment .label,
+.dialog-entry-current.dialog-entry-comment,
+.dialog-entry-current.dialog-entry-comment .label {
+    -fx-font-size: 14px;
+    -fx-font-style: italic;
+    -fx-font-weight: normal;
+    -fx-text-fill: rgba(255, 255, 255, 0.75);
+}
+
 .dialog-entry-previous,
 .dialog-entry-previous .label {
     /* One size level smaller than the current entry (20px → 18px) so older lines stay clearly

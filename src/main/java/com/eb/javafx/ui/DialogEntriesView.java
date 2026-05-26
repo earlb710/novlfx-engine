@@ -105,6 +105,10 @@ public final class DialogEntriesView extends ScrollPane {
     public static final String DIVIDER_STYLE_CLASS = "dialog-entry-divider";
     public static final String DIVIDER_LINE_STYLE_CLASS = "dialog-entry-divider-line";
     public static final String DIVIDER_LABEL_STYLE_CLASS = "dialog-entry-divider-label";
+    /** Style class applied to {@link CommentEntry} rows — small font, italic, dimmed by
+     *  default in the stylesheet so movement/action notes read as side commentary
+     *  alongside the regular dialog lines. */
+    public static final String COMMENT_STYLE_CLASS = "dialog-entry-comment";
 
     /** Default {@link GameDateTime} used when callers omit a clock; gives the history a valid timestamp. */
     private static final GameDateTime DEFAULT_TIMESTAMP = new GameDateTime(1, "default");
@@ -118,7 +122,7 @@ public final class DialogEntriesView extends ScrollPane {
     public static final double DEFAULT_SPEAKER_COLUMN_WIDTH = 160;
 
     /** Top-level sealed type for one row in the dialog panel. */
-    public sealed interface Entry permits PlainEntry, SpokenEntry, ConversationStart, ConversationEnd {
+    public sealed interface Entry permits PlainEntry, SpokenEntry, ConversationStart, ConversationEnd, CommentEntry {
         /** Plain text representation used by {@link #entries()} so callers can serialize the view. */
         String displayText();
     }
@@ -127,6 +131,20 @@ public final class DialogEntriesView extends ScrollPane {
     public record PlainEntry(String text) implements Entry {
         public PlainEntry {
             Validation.requireNonNull(text, "Dialog entry text is required.");
+        }
+        @Override public String displayText() { return text; }
+    }
+
+    /**
+     * Side-commentary entry — typically a brief stage direction such as a character's
+     * movement, posture, glance, or environmental note ({@code "She walks to the bar."},
+     * {@code "The lights dim."}).  Rendered in a smaller italic font through the
+     * {@link #COMMENT_STYLE_CLASS} CSS hook so it visually separates from the regular
+     * spoken / plain lines around it.  Use {@link #comment(String)} to append one.
+     */
+    public record CommentEntry(String text) implements Entry {
+        public CommentEntry {
+            Validation.requireNonNull(text, "Comment entry text is required.");
         }
         @Override public String displayText() { return text; }
     }
@@ -151,15 +169,20 @@ public final class DialogEntriesView extends ScrollPane {
         }
     }
 
-    /** Divider entry inserted at the start of a conversation, listing participants. */
+    /** Divider entry inserted at the start of a conversation, listing participants.
+     *  When the participants list is empty the divider drops the "Conversation:" prefix
+     *  entirely — hosts can use that to mark a section break (narrator-only block,
+     *  game-time transition, etc.) without the participant-list framing. */
     public record ConversationStart(List<DialogSpeaker> participants, GameDateTime startedAt) implements Entry {
         public ConversationStart {
             participants = List.copyOf(Validation.requireNonNull(participants, "Conversation participants are required."));
         }
         @Override public String displayText() {
-            String names = participants.isEmpty()
-                    ? "Conversation"
-                    : "Conversation: " + participants.stream().map(DialogSpeaker::label).collect(Collectors.joining(", "));
+            if (participants.isEmpty()) {
+                return startedAt == null ? "──" : "── (" + startedAt + ") ──";
+            }
+            String names = "Conversation: "
+                    + participants.stream().map(DialogSpeaker::label).collect(Collectors.joining(", "));
             return startedAt == null ? "── " + names + " ──" : "── " + names + " (" + startedAt + ") ──";
         }
     }
@@ -318,10 +341,14 @@ public final class DialogEntriesView extends ScrollPane {
         entriesContainer.setPickOnBounds(true);
         setContent(entriesContainer);
         setFitToWidth(true);
-        // Don't stretch the content vertically — when entries are short the container should sit at
-        // its natural height (so the BOTTOM_LEFT alignment pins them to the bottom of the viewport);
-        // when entries are long the container grows past the viewport and the vbar appears.
-        setFitToHeight(false);
+        // Stretch the content vertically to fill the viewport so the {@code BOTTOM_LEFT}
+        // alignment on {@link #entriesContainer} actually pins children to the bottom of
+        // the visible area (a {@code false} setting here would let the VBox shrink to its
+        // natural height and the alignment would only apply within that shrunken box —
+        // children would render top-aligned in the viewport, defeating the chat-style
+        // bottom-pin).  When entries grow past the viewport, the VBox overflows and the
+        // vbar appears as usual.
+        setFitToHeight(true);
         setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
         setMinSize(0, 0);
@@ -398,14 +425,25 @@ public final class DialogEntriesView extends ScrollPane {
         return entriesContainer.getChildrenUnmodifiable();
     }
 
+    /** Toggles "clean view": hide the dialog block and all registered HUD nodes so the
+     *  player can see the background art unobstructed.  A second call restores them.
+     *  Exposed publicly so hosts can wire scene-wide middle-click handlers that route
+     *  through here instead of duplicating the logic. */
+    public void toggleCleanView() {
+        cleanViewActive = !cleanViewActive;
+        setVisible(!cleanViewActive);
+        setManaged(!cleanViewActive);
+        setHudNodesVisible(!cleanViewActive);
+    }
+
+    /** True while the dialog widget + HUD nodes are hidden via {@link #toggleCleanView}. */
+    public boolean isCleanViewActive() {
+        return cleanViewActive;
+    }
+
     private void handleMouseClick(MouseEvent event) {
         if (event.getButton() == MouseButton.MIDDLE) {
-            // Toggle "clean view": hide the dialog block and all registered HUD nodes so the
-            // player can see the background art unobstructed. A second middle-click restores them.
-            cleanViewActive = !cleanViewActive;
-            setVisible(!cleanViewActive);
-            setManaged(!cleanViewActive);
-            setHudNodesVisible(!cleanViewActive);
+            toggleCleanView();
             event.consume();
             return;
         }
@@ -478,6 +516,14 @@ public final class DialogEntriesView extends ScrollPane {
     /** Appends a {@link PlainEntry} and moves the cursor to it (it becomes the newest visible). */
     public void addEntry(String text) {
         appendEntry(new PlainEntry(text));
+    }
+
+    /** Appends a {@link CommentEntry} — a small italic side-commentary line such as a
+     *  movement or stage direction ({@code "She walks to the bar."}).  Renders through the
+     *  {@link #COMMENT_STYLE_CLASS} style hook so the styling is theme-driven, and
+     *  advances the cursor to the new row like any other appendEntry call. */
+    public void comment(String text) {
+        appendEntry(new CommentEntry(text));
     }
 
     // ----- Spoken-entry helpers (the "say / shout / whisper" verbs) -----------------------------
@@ -590,6 +636,43 @@ public final class DialogEntriesView extends ScrollPane {
         currentIndex = -1;
         minVisibleIndex = 0;
         conversationOpenProperty.set(false);
+        rebuild();
+    }
+
+    /** Removes the most-recently-appended entry, if any.  The cursor and
+     *  {@link #minVisibleIndex} are adjusted so they stay valid (cursor backs up to the
+     *  new last entry; the floor is clamped to the new entries-size).  No-op when the
+     *  entries list is empty.  Use this to collapse rapid-fire same-type appends — e.g.
+     *  successive "go to:" room-change comments — into a single visible row. */
+    public void removeLastEntry() {
+        if (entries.isEmpty()) {
+            return;
+        }
+        entries.remove(entries.size() - 1);
+        if (currentIndex >= entries.size()) {
+            currentIndex = entries.size() - 1;
+        }
+        if (minVisibleIndex > entries.size()) {
+            minVisibleIndex = entries.size();
+        }
+        rebuild();
+    }
+
+    /** Prepends a snapshot of entries (e.g. taken from a previous scene's
+     *  {@link #dialogEntries()}) to the start of the entries list so the history view
+     *  walks the full transcript across scene transitions.  The cursor + visible-floor
+     *  bump by the prepended count so the live view continues to show the same logical
+     *  entry it was on before the prepend.  No-op for null or empty input. */
+    public void prependEntries(java.util.List<Entry> toPrepend) {
+        if (toPrepend == null || toPrepend.isEmpty()) {
+            return;
+        }
+        entries.addAll(0, toPrepend);
+        int shift = toPrepend.size();
+        if (currentIndex >= 0) {
+            currentIndex += shift;
+        }
+        minVisibleIndex += shift;
         rebuild();
     }
 
@@ -1409,6 +1492,8 @@ public final class DialogEntriesView extends ScrollPane {
         Node node;
         if (entry instanceof PlainEntry plain) {
             node = renderPlain(plain);
+        } else if (entry instanceof CommentEntry comment) {
+            node = renderComment(comment);
         } else if (entry instanceof SpokenEntry spoken) {
             node = renderSpoken(spoken);
         } else if (entry instanceof ConversationStart || entry instanceof ConversationEnd) {
@@ -1425,6 +1510,18 @@ public final class DialogEntriesView extends ScrollPane {
         label.setWrapText(true);
         label.setMaxWidth(Double.MAX_VALUE);
         label.getStyleClass().add(ENTRY_STYLE_CLASS);
+        return label;
+    }
+
+    /** Renders a {@link CommentEntry} as a small italic label.  The base
+     *  {@link #ENTRY_STYLE_CLASS} keeps it in the same column / wrap behavior as other
+     *  rows; the {@link #COMMENT_STYLE_CLASS} layered on top is the hook the stylesheet
+     *  uses to drop the font size and italicise the body — see the engine default.css. */
+    private static Label renderComment(CommentEntry entry) {
+        Label label = new Label(entry.text());
+        label.setWrapText(true);
+        label.setMaxWidth(Double.MAX_VALUE);
+        label.getStyleClass().addAll(ENTRY_STYLE_CLASS, COMMENT_STYLE_CLASS);
         return label;
     }
 
