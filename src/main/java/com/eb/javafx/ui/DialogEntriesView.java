@@ -185,6 +185,12 @@ public final class DialogEntriesView extends ScrollPane {
     private final VBox entriesContainer = new VBox(DEFAULT_SPACING);
     private int currentIndex = -1;
     private int maxVisibleEntries = DEFAULT_MAX_VISIBLE_ENTRIES;
+    /** Floor for the normal-mode visible window — entries before this index are kept in the
+     *  list (so history mode still walks them) but hidden from the live dialog block.  Used
+     *  by hosts that want to visually "clear" the dialog at a section boundary without
+     *  losing the prior conversation log.  Reset to 0 by {@link #clear()} and clamped to a
+     *  valid range by {@link #setMinVisibleIndex(int)}. */
+    private int minVisibleIndex = 0;
     private double speakerColumnWidth = DEFAULT_SPEAKER_COLUMN_WIDTH;
     /**
      * When {@code true} the view renders every entry in the full list (not just up to the cursor)
@@ -192,6 +198,12 @@ public final class DialogEntriesView extends ScrollPane {
      * {@link #bindHistoryToggle}.
      */
     private final ReadOnlyBooleanWrapper historyModeProperty = new ReadOnlyBooleanWrapper(this, "historyMode", false);
+    /** True while a conversation is open between {@link #startConversation} and the
+     *  matching {@link #endConversation}.  Exposed as a read-only property so host UIs
+     *  can bind chrome visibility (e.g. hide the gameplay action menu while the player
+     *  is reading dialog).  Reset to {@code false} by {@link #clear()}. */
+    private final ReadOnlyBooleanWrapper conversationOpenProperty =
+            new ReadOnlyBooleanWrapper(this, "conversationOpen", false);
 
     /**
      * HUD nodes registered via {@link #addHudNode} that are hidden while history is open and
@@ -533,6 +545,7 @@ public final class DialogEntriesView extends ScrollPane {
                 .toList();
         history.beginDialog(dialogId, startedAt);
         appendEntry(new ConversationStart(participantList, startedAt));
+        conversationOpenProperty.set(true);
     }
 
     /**
@@ -564,6 +577,7 @@ public final class DialogEntriesView extends ScrollPane {
             return;
         }
         history.endDialog(endedAt);
+        conversationOpenProperty.set(false);
         // Intentionally no appendEntry(new ConversationEnd(...)) — see Javadoc above. Callers
         // that still need a closing visual marker can construct one explicitly via
         // dialogEntries() / a custom renderer, but the standard flow no longer produces one.
@@ -574,7 +588,40 @@ public final class DialogEntriesView extends ScrollPane {
     public void clear() {
         entries.clear();
         currentIndex = -1;
+        minVisibleIndex = 0;
+        conversationOpenProperty.set(false);
         rebuild();
+    }
+
+    /** Read-only "is a conversation currently open" property — true between
+     *  {@link #startConversation} and {@link #endConversation}.  Bindable so host UIs
+     *  can react to it (e.g. hide an action menu while the player is reading dialog). */
+    public javafx.beans.property.ReadOnlyBooleanProperty conversationOpenProperty() {
+        return conversationOpenProperty.getReadOnlyProperty();
+    }
+
+    /** Convenience boolean for {@link #conversationOpenProperty()}. */
+    public boolean isConversationOpen() {
+        return conversationOpenProperty.get();
+    }
+
+    /**
+     * Hides every entry before {@code index} from the live dialog block (normal mode) while
+     * leaving them in {@link #dialogEntries()} so {@link #isHistoryMode() history mode} still
+     * renders them.  Use this at section boundaries (e.g. when the player walks into a new
+     * room) to "clear" the visible block without dropping the conversation log.
+     *
+     * <p>Clamped to {@code [0, entries.size()]}.  Calling with {@code 0} restores the default
+     * sliding-window behaviour.  Reset to {@code 0} by {@link #clear()}.</p>
+     */
+    public void setMinVisibleIndex(int index) {
+        this.minVisibleIndex = Math.max(0, Math.min(index, entries.size()));
+        rebuild();
+    }
+
+    /** @see #setMinVisibleIndex(int) */
+    public int minVisibleIndex() {
+        return minVisibleIndex;
     }
 
     /**
@@ -1171,7 +1218,12 @@ public final class DialogEntriesView extends ScrollPane {
                     entriesContainer.getChildren().add(renderEntry(entries.get(i), i != currentIndex));
                 }
             } else if (currentIndex >= 0) {
-                int firstVisible = Math.max(0, currentIndex - (maxVisibleEntries - 1));
+                // minVisibleIndex acts as a host-controlled floor — entries before it stay in
+                // the list (so history mode still walks them) but are hidden from the live
+                // view.  Default 0, so existing callers see the original sliding-window
+                // behaviour unchanged.
+                int floor = Math.max(0, Math.min(minVisibleIndex, currentIndex));
+                int firstVisible = Math.max(floor, currentIndex - (maxVisibleEntries - 1));
                 for (int i = firstVisible; i < currentIndex; i++) {
                     entriesContainer.getChildren().add(renderEntry(entries.get(i), true));
                 }
