@@ -660,19 +660,37 @@ public final class DialogEntriesView extends ScrollPane {
 
     /** Prepends a snapshot of entries (e.g. taken from a previous scene's
      *  {@link #dialogEntries()}) to the start of the entries list so the history view
-     *  walks the full transcript across scene transitions.  The cursor + visible-floor
-     *  bump by the prepended count so the live view continues to show the same logical
-     *  entry it was on before the prepend.  No-op for null or empty input. */
+     *  walks the full transcript across scene transitions.
+     *
+     *  <p>Two modes based on what was in the dialog before the prepend:</p>
+     *  <ul>
+     *    <li><b>Dialog had content</b> (cursor &ge; 0) — the prepend is "ancient
+     *        history".  Cursor and visible-floor both shift up by the prepended count so
+     *        the live view keeps showing the same logical entry it was on before, with
+     *        the prepended block hidden from normal mode but visible in history.</li>
+     *    <li><b>Dialog was empty</b> (cursor &lt; 0) — there is no later content to
+     *        "favor".  The cursor lands on the last prepended entry and the visible
+     *        floor stays at 0 so the carry-forward is fully visible in normal mode
+     *        too.  Without this branch the prepended entries would sit in the list
+     *        but render in neither normal nor history view (history-clip-at-cursor
+     *        caps at {@code -1 + 1 = 0}).</li>
+     *  </ul>
+     *  No-op for null or empty input. */
     public void prependEntries(java.util.List<Entry> toPrepend) {
         if (toPrepend == null || toPrepend.isEmpty()) {
             return;
         }
+        boolean wasEmpty = currentIndex < 0;
         entries.addAll(0, toPrepend);
         int shift = toPrepend.size();
-        if (currentIndex >= 0) {
+        if (wasEmpty) {
+            currentIndex = entries.size() - 1;
+            // Leave minVisibleIndex at 0 — no prior content to keep hidden, so the
+            // carry-forward should appear in normal view as well.
+        } else {
             currentIndex += shift;
+            minVisibleIndex += shift;
         }
-        minVisibleIndex += shift;
         rebuild();
     }
 
