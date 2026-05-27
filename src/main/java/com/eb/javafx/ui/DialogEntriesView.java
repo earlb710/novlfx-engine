@@ -735,7 +735,11 @@ public final class DialogEntriesView extends ScrollPane {
      */
     public void goBack() {
         int target = previousNonDividerIndex(currentIndex);
-        if (target >= 0 && target != currentIndex) {
+        // Respect the minVisibleIndex floor — entries before it belong to a previous
+        // section (e.g. a previous room's conversation that the host pinned out of view
+        // via setMinVisibleIndex) and shouldn't be reachable by normal back navigation.
+        // History mode is unaffected; it walks the full entries list regardless.
+        if (target >= 0 && target >= minVisibleIndex && target != currentIndex) {
             currentIndex = target;
             rebuild();
         }
@@ -774,7 +778,14 @@ public final class DialogEntriesView extends ScrollPane {
     }
 
     private static boolean isDivider(Entry entry) {
-        return entry instanceof ConversationStart || entry instanceof ConversationEnd;
+        // CommentEntry rows (stage directions / movement notes / "── go to: X ──"
+        // section markers from the AltLife host) act as section breaks for cursor
+        // navigation — back / forward skip over them just like ConversationStart /
+        // ConversationEnd dividers, so the cursor only ever lands on a real dialog
+        // line (PlainEntry or SpokenEntry).
+        return entry instanceof ConversationStart
+                || entry instanceof ConversationEnd
+                || entry instanceof CommentEntry;
     }
 
     public int currentIndex() {
@@ -1334,7 +1345,11 @@ public final class DialogEntriesView extends ScrollPane {
         // Navigation booleans reflect "is there a non-divider entry in that direction" so the
         // footer back/forward affordances stay greyed out when only dividers separate the cursor
         // from the ends — clicking them would otherwise feel like a no-op.
-        canGoBack.set(currentIndex >= 0 && previousNonDividerIndex(currentIndex) >= 0);
+        // canGoBack mirrors goBack's clamping: a target below the minVisibleIndex floor
+        // counts as "no reachable previous entry" so the footer back arrow greys out
+        // when the player is at the start of the current section.
+        canGoBack.set(currentIndex >= 0
+                && previousNonDividerIndex(currentIndex) >= Math.max(0, minVisibleIndex));
         canGoForward.set(currentIndex >= 0 && nextNonDividerIndex(currentIndex) >= 0);
         // Re-bind the auto-fit tracker to the new current-entry node (the last non-divider child
         // of entriesContainer). Cheap no-op when auto-fit is disabled.
