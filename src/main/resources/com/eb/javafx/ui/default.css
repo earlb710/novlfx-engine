@@ -496,3 +496,87 @@
     -fx-text-fill: #1a0a0a;
     -fx-border-color: #ffffff;
 }
+
+/* === StatusLogPanel — generic right-side status feed (stats, relationships, etc.) === */
+.status-log-panel {
+    -fx-background: transparent;
+    -fx-background-color: rgba(10, 20, 38, 0.65);
+    -fx-border-color: #143869;
+    -fx-border-width: 1px;
+    -fx-background-insets: 0;
+    -fx-border-insets: 0;
+    -fx-padding: 0;
+}
+
+.status-log-panel > .viewport {
+    -fx-background-color: transparent;
+}
+
+.status-log-panel > .corner {
+    -fx-background-color: transparent;
+}
+
+.status-log-panel > .scroll-bar:vertical {
+    -fx-background-color: transparent;
+    -fx-pref-width: 8px;
+}
+
+.status-log-panel > .scroll-bar:vertical > .track {
+    -fx-background-color: rgba(255, 255, 255, 0.05);
+    -fx-background-radius: 4px;
+}
+
+.status-log-panel > .scroll-bar:vertical > .thumb {
+    -fx-background-color: rgba(102, 193, 224, 0.55);
+    -fx-background-insets: 1px;
+    -fx-background-radius: 4px;
+}
+
+.status-log-panel > .scroll-bar:vertical > .thumb:hover,
+.status-log-panel > .scroll-bar:vertical > .thumb:pressed {
+    -fx-background-color: rgba(102, 193, 224, 0.85);
+}
+
+.status-log-panel > .scroll-bar:vertical > .increment-button,
+.status-log-panel > .scroll-bar:vertical > .decrement-button {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+}
+
+.status-log-panel > .scroll-bar:vertical > .increment-button > .increment-arrow,
+.status-log-panel > .scroll-bar:vertical > .decrement-button > .decrement-arrow {
+    -fx-shape: " ";
+    -fx-padding: 0;
+}
+
+.status-log-entries {
+    -fx-padding: 6px 8px;
+    -fx-spacing: 2px;
+}
+
+.status-log-entry {
+    -fx-padding: 1px 0;
+}
+
+.status-log-entry-timestamp {
+    -fx-text-fill: rgba(255, 255, 255, 0.45);
+    -fx-font-size: 10px;
+    -fx-font-style: italic;
+}
+
+.status-log-entry-subject {
+    -fx-text-fill: #66c1e0;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+}
+
+.status-log-entry-message {
+    -fx-text-fill: #dbeafe;
+    -fx-font-size: 11px;
+}
+
+.status-log-entry-category {
+    -fx-text-fill: rgba(255, 255, 255, 0.5);
+    -fx-font-size: 9px;
+    -fx-font-style: italic;
+}

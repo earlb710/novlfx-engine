@@ -45,4 +45,22 @@ module com.novlfx.engine {
     exports com.eb.javafx.gallery;
     exports com.eb.javafx.storyline;
     exports com.eb.javafx.testscreen;
+
+    // -------------------------------------------------------------------------------------
+    // `opens` for packages that ship BOTH .class files and resources.
+    //
+    // JPMS rules: a package containing .class files is part of the module's package set,
+    // and resources inside such packages are encapsulated unless the package is `opens`d.
+    // `exports` alone makes the package's public types accessible but doesn't unlock
+    // resources — Class.getResourceAsStream("/com/eb/javafx/<pkg>/file") would return null
+    // even when called from a class in the same module.
+    //
+    // Packages with .class files but resource-loading callsites:
+    //   - gamesupport: system-code-tables.en.json (loaded by SystemCodeTables.defaultDefinition)
+    //   - ui:          default.css, display-defaults.json, layout-contract.json, mesh files
+    //
+    // (Packages with resources but no .class files — e.g. com.eb.javafx.ui.screens — are
+    //  NOT module packages from JPMS's perspective and don't need opens.)
+    opens com.eb.javafx.gamesupport;
+    opens com.eb.javafx.ui;
 }

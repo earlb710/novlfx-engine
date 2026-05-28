@@ -337,8 +337,29 @@ public final class DialogEntriesView extends ScrollPane {
         getStyleClass().add(STYLE_CLASS);
         entriesContainer.getStyleClass().add(ENTRIES_CONTAINER_STYLE_CLASS);
         entriesContainer.setAlignment(Pos.BOTTOM_LEFT);
-        entriesContainer.setMinSize(0, 0);
+        // minWidth=0 keeps the column flexible (fitToWidth on the ScrollPane handles the
+        // horizontal stretch).  Leave minHeight at the VBox default (USE_PREF_SIZE = sum of
+        // children) — otherwise setFitToHeight(true) below combined with minHeight=0 lets
+        // the ScrollPane size the VBox to the viewport regardless of how many children
+        // overflow it: children render outside the VBox's visual extent but the AS_NEEDED
+        // vbar policy never engages (and mouse-wheel handlers reading getLayoutBounds()
+        // see scrollable=0).  With minHeight at USE_PREF_SIZE the VBox honestly reports its
+        // content needs, so the vbar shows the moment entries exceed the viewport.
+        entriesContainer.setMinWidth(0);
         entriesContainer.setPickOnBounds(true);
+        // Belt-and-braces scroll-to-bottom.  rebuild() already schedules scrollToBottomDeferred
+        // across two Platform.runLater pulses, but with auto-fit dialog-height bindings (see
+        // enableAutoFitDialogHeight) the dialog can resize itself in a layout pulse that lands
+        // AFTER the deferred call, leaving vvalue short of vmax.  This listener fires on every
+        // committed layout where the entries container's actual height grew — i.e. a new entry
+        // was added or an existing one expanded — and snaps vvalue back to vmax so the cursor
+        // entry stays anchored at the bottom of the viewport.  Shrink events (goBack moving the
+        // cursor up) don't trigger it because newH < oldH.
+        entriesContainer.heightProperty().addListener((obs, oldH, newH) -> {
+            if (newH.doubleValue() > oldH.doubleValue() && getVmax() > 0) {
+                setVvalue(getVmax());
+            }
+        });
         setContent(entriesContainer);
         setFitToWidth(true);
         // Stretch the content vertically to fill the viewport so the {@code BOTTOM_LEFT}
@@ -346,8 +367,9 @@ public final class DialogEntriesView extends ScrollPane {
         // the visible area (a {@code false} setting here would let the VBox shrink to its
         // natural height and the alignment would only apply within that shrunken box —
         // children would render top-aligned in the viewport, defeating the chat-style
-        // bottom-pin).  When entries grow past the viewport, the VBox overflows and the
-        // vbar appears as usual.
+        // bottom-pin).  When entries grow past the viewport, the VBox's natural height
+        // exceeds the viewport (because we left its minHeight at USE_PREF_SIZE above) and
+        // the AS_NEEDED vbar policy engages.
         setFitToHeight(true);
         setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
