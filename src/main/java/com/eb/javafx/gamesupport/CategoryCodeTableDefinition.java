@@ -53,19 +53,81 @@ public final class CategoryCodeTableDefinition {
         return fromJson(ResourceIo.readString(jsonUrl), jsonUrl.toString());
     }
 
-    /** Loads category code tables from a UTF-8 classpath resource. */
+    /** Loads category code tables from a UTF-8 classpath resource.
+     *
+     *  <p>Tries three resource-lookup paths in order so the load succeeds across the
+     *  range of launcher configurations the engine ships in (classpath-only IDE runs,
+     *  modular {@code --module-path} launches, gradle composite-build wiring, etc.):</p>
+     *
+     *  <ol>
+     *    <li>{@link Class#getResourceAsStream}: module-aware, honours {@code opens}
+     *        directives.  This is the primary path — it works whenever the calling
+     *        class's module has the resource's package opened (see this engine's
+     *        {@code module-info.java}).</li>
+     *    <li>{@link ClassLoader#getResourceAsStream} on the declaring class's loader:
+     *        broader search (parent loaders, all visible modules / classpath roots).
+     *        Some launchers — particularly mixed module/classpath setups — return
+     *        non-null streams here when the module-aware path returns null.</li>
+     *    <li>{@link Thread#getContextClassLoader()}: last-resort lookup against the
+     *        thread's context loader.  Catches cases where the calling class's loader
+     *        sees a stale/empty module layer but the FX thread's context loader can
+     *        still locate the resource.</li>
+     *  </ol>
+     *
+     *  <p>Each path is tried with a try-with-resources around the InputStream so a
+     *  read failure on one path doesn't prevent the next from being attempted.  If all
+     *  three fail, the error message includes the most recent failure's cause so the
+     *  failure mode is debuggable.</p> */
     public static CategoryCodeTableDefinition loadResource(String resourceName) {
         String checkedResourceName = Validation.requireNonBlank(
                 resourceName,
                 "Category code table resource name is required.");
-        try (InputStream inputStream = CategoryCodeTableDefinition.class.getResourceAsStream(checkedResourceName)) {
-            if (inputStream == null) {
-                throw new IllegalArgumentException("Missing category code table resource: " + checkedResourceName);
+        String absolutePath = checkedResourceName.startsWith("/")
+                ? checkedResourceName
+                : "/" + checkedResourceName;
+        String relativePath = absolutePath.substring(1);
+
+        Throwable lastFailure = null;
+
+        // Path 1: module-aware Class.getResourceAsStream.
+        try (InputStream inputStream = CategoryCodeTableDefinition.class.getResourceAsStream(absolutePath)) {
+            if (inputStream != null) {
+                return fromJson(new String(inputStream.readAllBytes(), StandardCharsets.UTF_8), checkedResourceName);
             }
-            return fromJson(new String(inputStream.readAllBytes(), StandardCharsets.UTF_8), checkedResourceName);
-        } catch (IOException exception) {
-            throw new IllegalArgumentException("Unable to read category code table resource: " + checkedResourceName, exception);
+        } catch (IOException | RuntimeException exception) {
+            lastFailure = exception;
         }
+
+        // Path 2: declaring class's ClassLoader (broader search across the module layer
+        // and any classpath roots that loaded this module).
+        ClassLoader declaringLoader = CategoryCodeTableDefinition.class.getClassLoader();
+        if (declaringLoader != null) {
+            try (InputStream inputStream = declaringLoader.getResourceAsStream(relativePath)) {
+                if (inputStream != null) {
+                    return fromJson(new String(inputStream.readAllBytes(), StandardCharsets.UTF_8), checkedResourceName);
+                }
+            } catch (IOException | RuntimeException exception) {
+                lastFailure = exception;
+            }
+        }
+
+        // Path 3: thread context ClassLoader (FX app thread's default).
+        ClassLoader contextLoader = Thread.currentThread().getContextClassLoader();
+        if (contextLoader != null && contextLoader != declaringLoader) {
+            try (InputStream inputStream = contextLoader.getResourceAsStream(relativePath)) {
+                if (inputStream != null) {
+                    return fromJson(new String(inputStream.readAllBytes(), StandardCharsets.UTF_8), checkedResourceName);
+                }
+            } catch (IOException | RuntimeException exception) {
+                lastFailure = exception;
+            }
+        }
+
+        if (lastFailure != null) {
+            throw new IllegalArgumentException(
+                    "Unable to read category code table resource: " + checkedResourceName, lastFailure);
+        }
+        throw new IllegalArgumentException("Missing category code table resource: " + checkedResourceName);
     }
 
     static CategoryCodeTableDefinition fromJson(String json, String sourceName) {

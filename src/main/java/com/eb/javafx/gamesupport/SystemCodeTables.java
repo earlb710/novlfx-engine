@@ -26,11 +26,30 @@ public final class SystemCodeTables {
     public static final String VOLUME_LEVEL_TABLE_ID = "volume-level";
     public static final String TEXT_SPEED_TABLE_ID = "text-speed";
 
+    /** Cache for the always-loaded system code tables.  The resource never changes for
+     *  the lifetime of a JVM (it ships baked into the engine jar), so loading it once
+     *  is sufficient.  Hosts that rebuild the footer / refresh tooltips dozens of times
+     *  per scene mount would otherwise re-load the JSON repeatedly — each load reads
+     *  the resource, allocates a string, and parses ~17 KB of JSON.  Caching avoids
+     *  that cost and, more importantly, dodges any transient resource-lookup failures
+     *  that might happen on later calls (stale Gradle daemon classloader state, module
+     *  layer races during a hot reload, etc.). */
+    private static volatile CategoryCodeTableDefinition cachedDefinition;
+
     private SystemCodeTables() {
     }
 
     public static CategoryCodeTableDefinition defaultDefinition() {
-        return CategoryCodeTableDefinition.loadResource(DEFAULT_RESOURCE);
+        CategoryCodeTableDefinition local = cachedDefinition;
+        if (local != null) {
+            return local;
+        }
+        synchronized (SystemCodeTables.class) {
+            if (cachedDefinition == null) {
+                cachedDefinition = CategoryCodeTableDefinition.loadResource(DEFAULT_RESOURCE);
+            }
+            return cachedDefinition;
+        }
     }
 
     public static CodeTableDefinition defaultTable(String tableId) {

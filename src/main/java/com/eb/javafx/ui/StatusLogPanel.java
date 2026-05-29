@@ -403,17 +403,53 @@ public final class StatusLogPanel extends ScrollPane {
             row.getChildren().add(messageLabel);
         }
 
-        if (!entry.category().isEmpty()) {
-            Label categoryLabel = new Label(entry.category());
-            categoryLabel.getStyleClass().add(CATEGORY_STYLE_CLASS);
-            categoryLabel.setMinWidth(Region.USE_PREF_SIZE);
-            row.getChildren().add(categoryLabel);
-        }
+        // Category is intentionally NOT rendered as a visible badge — it stays on the
+        // StatusLogEntry record so persistence / filtering / CSS hooks can still key off
+        // it, but the per-row visual tag is dropped because hosts found the small italic
+        // suffix on every row noisy ("stat", "day-divider", etc. trailing every entry).
 
         return row;
     }
 
     private static String formatTimestamp(GameDateTime timestamp) {
-        return "(d" + timestamp.day() + " " + timestamp.timeSlotId() + ")";
+        String slotLabel = prettyTimeSlot(timestamp.timeSlotId());
+        // Skip the "default" placeholder slot — most engines ship that as a fall-back
+        // when the host hasn't wired a real time-of-day code table yet, and it doesn't
+        // add information to the log row.  Falls through to a bare day stamp.
+        if (slotLabel.isEmpty() || "Default".equalsIgnoreCase(slotLabel)) {
+            return "(Day " + timestamp.day() + ")";
+        }
+        return "(Day " + timestamp.day() + " " + slotLabel + ")";
+    }
+
+    /** Converts a raw time-slot id ({@code "early-morning"}, {@code "afternoon"},
+     *  {@code "night"}, etc.) into a display label by capitalising each word and
+     *  replacing hyphens / underscores with spaces: {@code "early-morning"} →
+     *  {@code "Early Morning"}, {@code "after_noon"} → {@code "After Noon"}.  Returns
+     *  empty string for null / blank input.  Generic — the renderer can't assume which
+     *  time-of-day vocabulary the host uses, so we apply the same word-boundary rule
+     *  every game wants for log readability ("Morning", "Evening", "Late Night"). */
+    /** Pretty-formats a time-slot id like {@code "late-night"} into {@code "Late Night"}.
+     *  Exposed so hosts can format their own log lines / divider rows using the same
+     *  capitalisation rule the panel applies to per-entry timestamps. */
+    public static String prettyTimeSlot(String slotId) {
+        if (slotId == null || slotId.isBlank()) {
+            return "";
+        }
+        String[] words = slotId.split("[-_]");
+        StringBuilder sb = new StringBuilder(slotId.length());
+        for (String word : words) {
+            if (word.isEmpty()) {
+                continue;
+            }
+            if (sb.length() > 0) {
+                sb.append(' ');
+            }
+            sb.append(Character.toUpperCase(word.charAt(0)));
+            if (word.length() > 1) {
+                sb.append(word.substring(1));
+            }
+        }
+        return sb.toString();
     }
 }

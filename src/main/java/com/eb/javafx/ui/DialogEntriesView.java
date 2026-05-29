@@ -276,6 +276,10 @@ public final class DialogEntriesView extends ScrollPane {
     private HBox wiredFooter;
     /** Tracks which footer the history toggle is already wired to so {@link #bindHistoryToggle(Node, Node, double)} is idempotent. */
     private HBox wiredHistoryFooter;
+    /** Story node captured by {@link #bindHistoryToggle} so {@link #closeHistory()} can run the
+     *  same layout restoration as a second click on the history button (story slot un-hidden,
+     *  normal-share height binding restored).  Null until bindHistoryToggle is called. */
+    private Node wiredHistoryStoryNode;
     /** Tracks scenes that already have the keyboard shortcut filter installed so installation is idempotent. */
     private final java.util.Set<javafx.scene.Scene> wiredScenes = new java.util.HashSet<>();
     /**
@@ -356,7 +360,19 @@ public final class DialogEntriesView extends ScrollPane {
         // entry stays anchored at the bottom of the viewport.  Shrink events (goBack moving the
         // cursor up) don't trigger it because newH < oldH.
         entriesContainer.heightProperty().addListener((obs, oldH, newH) -> {
-            if (newH.doubleValue() > oldH.doubleValue() && getVmax() > 0) {
+            if (newH.doubleValue() <= oldH.doubleValue() || getVmax() <= 0) {
+                return;
+            }
+            // Belt-and-braces snap-to-bottom for the no-animation case.  When the host
+            // has configured a non-zero scrollAnimationDuration, leave the scroll
+            // alone — scrollToBottomDeferred (queued by rebuild() via two
+            // Platform.runLater pulses) will animate from the prior position to the
+            // new vmax.  Snapping here would short-circuit that animation, which
+            // hosts use to give players visual feedback that a new line has dropped
+            // in (especially useful during auto-skip where there's no click to anchor
+            // the eye).  For animation duration ZERO (default), continue to snap —
+            // matches the previous behaviour exactly.
+            if (scrollAnimationDuration == null || scrollAnimationDuration.lessThanOrEqualTo(Duration.ZERO)) {
                 setVvalue(getVmax());
             }
         });
@@ -1060,6 +1076,7 @@ public final class DialogEntriesView extends ScrollPane {
             return;
         }
         wiredHistoryFooter = footer;
+        wiredHistoryStoryNode = storyNode;
         for (Node child : footer.getChildren()) {
             if (child instanceof Label label
                     && label.getUserData() instanceof ScreenShell.FooterOption option
@@ -1071,6 +1088,29 @@ public final class DialogEntriesView extends ScrollPane {
                 break;
             }
         }
+    }
+
+    /**
+     * Closes history mode with the full layout restoration that a second click on the history
+     * button would trigger — story slot re-shown, HUD nodes restored, normal-share height binding
+     * re-applied.  No-op when not currently in history mode, or when {@link #bindHistoryToggle}
+     * has not yet captured a story node (e.g. test without a layout).
+     *
+     * <p>Hosts wiring "click anywhere to dismiss history" overlays should call this method
+     * instead of {@link #setHistoryMode}(false) — the property-only setter leaves the dialog
+     * stuck in its expanded form because the layout side effects (story un-hide, height re-bind)
+     * are owned by {@code toggleHistoryLayout}, not the property write.</p>
+     */
+    public void closeHistory() {
+        if (!historyModeProperty.get()) {
+            return;
+        }
+        if (wiredHistoryStoryNode == null) {
+            // No layout to restore — just flip the flag so rebuild() drops the cursor-clipping.
+            setHistoryMode(false);
+            return;
+        }
+        toggleHistoryLayout(wiredHistoryStoryNode);
     }
 
     /**
