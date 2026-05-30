@@ -1704,9 +1704,9 @@ public final class DialogEntriesView extends ScrollPane {
         return node;
     }
 
-    private static Label renderPlain(PlainEntry entry) {
+    private Label renderPlain(PlainEntry entry) {
         Label label = new Label(entry.text());
-        applyWrapping(label);
+        configureWrappingBoundToContainer(label);
         label.getStyleClass().add(ENTRY_STYLE_CLASS);
         return label;
     }
@@ -1715,11 +1715,42 @@ public final class DialogEntriesView extends ScrollPane {
      *  {@link #ENTRY_STYLE_CLASS} keeps it in the same column / wrap behavior as other
      *  rows; the {@link #COMMENT_STYLE_CLASS} layered on top is the hook the stylesheet
      *  uses to drop the font size and italicise the body — see the engine default.css. */
-    private static Label renderComment(CommentEntry entry) {
+    private Label renderComment(CommentEntry entry) {
         Label label = new Label(entry.text());
-        applyWrapping(label);
+        configureWrappingBoundToContainer(label);
         label.getStyleClass().addAll(ENTRY_STYLE_CLASS, COMMENT_STYLE_CLASS);
         return label;
+    }
+
+    /** Wires the label's width so wrap-text actually engages.  Binds
+     *  {@code maxWidthProperty} and {@code prefWidthProperty} to the entries
+     *  container's live width — that container's width is driven by
+     *  {@link #setFitToWidth setFitToWidth=true} on this ScrollPane, so it always
+     *  equals the viewport width.  With an explicit finite width-binding the Label
+     *  no longer falls through to its unwrapped natural pref width during HBox/VBox
+     *  layout, which is what was leaking past the viewport's right edge despite
+     *  {@code wrapText=true}, {@code minWidth=0}, and {@code maxWidth=MAX_VALUE}.
+     *  See {@link #configureSpokenBodyWrappingBoundToContainer} for the variant that
+     *  subtracts the speaker column for two-column rows. */
+    private void configureWrappingBoundToContainer(Label label) {
+        label.setWrapText(true);
+        label.setMinWidth(0);
+        label.maxWidthProperty().bind(entriesContainer.widthProperty());
+        label.prefWidthProperty().bind(entriesContainer.widthProperty());
+    }
+
+    /** Variant of {@link #configureWrappingBoundToContainer} for the spoken-entry
+     *  body label sitting next to a fixed-width speaker column.  Binds width to
+     *  (container width − speaker column − HBox spacing) so the body knows the
+     *  exact horizontal slot it should wrap inside. */
+    private void configureSpokenBodyWrappingBoundToContainer(Label label, double rowSpacing) {
+        double speakerOffset = speakerColumnWidth + rowSpacing;
+        label.setWrapText(true);
+        label.setMinWidth(0);
+        javafx.beans.binding.DoubleBinding bodyWidthBinding =
+                entriesContainer.widthProperty().subtract(speakerOffset);
+        label.maxWidthProperty().bind(bodyWidthBinding);
+        label.prefWidthProperty().bind(bodyWidthBinding);
     }
 
     private HBox renderSpoken(SpokenEntry entry) {
@@ -1755,7 +1786,15 @@ public final class DialogEntriesView extends ScrollPane {
 
         Label bodyLabel = new Label(entry.formattedBody());
         bodyLabel.getStyleClass().addAll(BODY_STYLE_CLASS, lineTypeStyleClass(entry.type()));
-        applyWrapping(bodyLabel);
+        // Bind to (entriesContainer.width − speaker column − HBox spacing) when a
+        // speaker column is present; bind to the full container width otherwise.
+        // Hgrow.ALWAYS stays as a fallback for when the binding can't engage
+        // (e.g. detached widget), but the binding is the primary constraint.
+        if (entry.speaker() != null) {
+            configureSpokenBodyWrappingBoundToContainer(bodyLabel, row.getSpacing());
+        } else {
+            configureWrappingBoundToContainer(bodyLabel);
+        }
         HBox.setHgrow(bodyLabel, Priority.ALWAYS);
         applyInlineColor(bodyLabel, speakerColor);
         row.getChildren().add(bodyLabel);
