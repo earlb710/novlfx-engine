@@ -64,7 +64,10 @@
     -fx-font-weight: bold;
     -fx-background-color: #ffcc00;
     -fx-background-radius: 6px;
-    -fx-padding: 2px 8px 2px 8px;
+    /* Top / bottom insets kept tight so the yellow pill hugs the label without
+     * inflating the footer row height — only the left/right padding adds the
+     * visible "block" framing around the active glyph + label. */
+    -fx-padding: 0 8px 0 8px;
 }
 
 .conversation-history-rows {
@@ -101,36 +104,84 @@
     -fx-padding: 8px 12px 8px 12px;
 }
 
-/* Slim, dark-theme scrollbar so it reads as part of the dialog block rather than a stock control. */
-.dialog-entries-view > .scroll-bar:vertical {
+/* Slim, dark-theme scrollbar so it reads as part of the dialog block rather than a stock control.
+ * The `.engine-slim-scrollbar` selector mirrors the look for any other ScrollPane the host wants
+ * to dress in the same scheme — see SaveScreen for the canonical reuse case. */
+/* SaveScreen tab strip — mirrors the AltLife startup-options-tabs look (transparent
+ * frame, dark tinted tabs with rounded top corners, brighter selected tab).  Selected
+ * tab background uses the theme's -fx-accent (the SaveScreen sets it inline). */
+.save-screen-tabs {
+    -fx-background-color: transparent;
+    -fx-background: transparent;
+    -fx-border-color: transparent;
+}
+
+.save-screen-tabs .tab-header-area,
+.save-screen-tabs .tab-header-background,
+.save-screen-tabs .headers-region,
+.save-screen-tabs .control-buttons-tab,
+.save-screen-tabs .control-buttons-tab .container,
+.save-screen-tabs .tab-down-button,
+.save-screen-tabs .tab-content-area {
+    -fx-background-color: transparent;
+    -fx-background: transparent;
+    -fx-border-color: transparent;
+}
+
+.save-screen-tabs .tab {
+    -fx-background-color: rgba(20, 30, 24, 0.85);
+    -fx-background-radius: 6 6 0 0;
+    -fx-padding: 5 14;
+}
+
+.save-screen-tabs .tab:selected {
+    -fx-background-color: rgba(40, 60, 48, 0.95);
+}
+
+.save-screen-tabs .tab .tab-label {
+    -fx-text-fill: #d6e8d9;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+}
+
+.dialog-entries-view > .scroll-bar:vertical,
+.engine-slim-scrollbar > .scroll-bar:vertical {
     -fx-background-color: transparent;
     -fx-pref-width: 10px;
 }
 
-.dialog-entries-view > .scroll-bar:vertical > .track {
+.dialog-entries-view > .scroll-bar:vertical > .track,
+.engine-slim-scrollbar > .scroll-bar:vertical > .track {
     -fx-background-color: rgba(255, 255, 255, 0.05);
     -fx-background-radius: 5px;
 }
 
-.dialog-entries-view > .scroll-bar:vertical > .thumb {
+.dialog-entries-view > .scroll-bar:vertical > .thumb,
+.engine-slim-scrollbar > .scroll-bar:vertical > .thumb {
     -fx-background-color: rgba(102, 193, 224, 0.5);
     -fx-background-insets: 1px;
     -fx-background-radius: 5px;
 }
 
 .dialog-entries-view > .scroll-bar:vertical > .thumb:hover,
-.dialog-entries-view > .scroll-bar:vertical > .thumb:pressed {
+.dialog-entries-view > .scroll-bar:vertical > .thumb:pressed,
+.engine-slim-scrollbar > .scroll-bar:vertical > .thumb:hover,
+.engine-slim-scrollbar > .scroll-bar:vertical > .thumb:pressed {
     -fx-background-color: rgba(102, 193, 224, 0.8);
 }
 
 .dialog-entries-view > .scroll-bar:vertical > .increment-button,
-.dialog-entries-view > .scroll-bar:vertical > .decrement-button {
+.dialog-entries-view > .scroll-bar:vertical > .decrement-button,
+.engine-slim-scrollbar > .scroll-bar:vertical > .increment-button,
+.engine-slim-scrollbar > .scroll-bar:vertical > .decrement-button {
     -fx-background-color: transparent;
     -fx-padding: 0;
 }
 
 .dialog-entries-view > .scroll-bar:vertical > .increment-button > .increment-arrow,
-.dialog-entries-view > .scroll-bar:vertical > .decrement-button > .decrement-arrow {
+.dialog-entries-view > .scroll-bar:vertical > .decrement-button > .decrement-arrow,
+.engine-slim-scrollbar > .scroll-bar:vertical > .increment-button > .increment-arrow,
+.engine-slim-scrollbar > .scroll-bar:vertical > .decrement-button > .decrement-arrow {
     -fx-shape: " ";
     -fx-padding: 0;
 }

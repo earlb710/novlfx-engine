@@ -114,11 +114,13 @@ public final class PreferencesSummaryScreen {
 
         Button mainMenuButton = ButtonVisuals.applySvgArtwork(new Button(screenText("item.main-menu.label")));
         mainMenuButton.setMinWidth(220);
-        mainMenuButton.setOnAction(event -> {
-            if (confirmReturnToMainMenu()) {
-                context.navigateTo(SceneRouter.MAIN_MENU_ROUTE);
-            }
-        });
+        // Async confirmation via the in-scene DialogMessages helper — works in fullscreen
+        // mode where stock Alert dialogs hide behind the primary stage.  Test escape
+        // hatch (mainMenuConfirmationOverride) still answers synchronously for tests that
+        // can't run the JFX event loop; see requestReturnToMainMenu below.
+        mainMenuButton.setOnAction(event -> requestReturnToMainMenu(
+                mainMenuButton.getScene(), context.uiTheme(),
+                () -> context.navigateTo(SceneRouter.MAIN_MENU_ROUTE)));
         // Wired directly to closeAction (instead of ScreenNavigation.button(..., MAIN_MENU_ROUTE))
         // so the button honours the back-stack-aware navigation set up above — same behaviour as
         // the footer close icon and the Ctrl+P shortcut.
@@ -200,6 +202,13 @@ public final class PreferencesSummaryScreen {
         return shortcutDown && keyCode == KeyCode.P;
     }
 
+    /**
+     * Synchronous confirmation hook kept for tests that inject a
+     * {@link MainMenuConfirmation} override — they can't pump the JFX event loop, so the
+     * async {@link DialogMessages#confirm} path doesn't fit.  Production code goes
+     * through {@link #requestReturnToMainMenu} instead, which surfaces the same prompt
+     * via the in-scene overlay so it works in fullscreen mode.
+     */
     static boolean confirmReturnToMainMenu() {
         if (mainMenuConfirmationOverride != null) {
             return mainMenuConfirmationOverride.confirm();
@@ -210,6 +219,35 @@ public final class PreferencesSummaryScreen {
         alert.setContentText(screenText("dialog.main-menu-confirm.content"));
         Optional<ButtonType> result = alert.showAndWait();
         return result.isPresent() && result.get() == ButtonType.OK;
+    }
+
+    /**
+     * Production confirmation flow — shows the "Return to main menu?" prompt via the
+     * in-scene {@link DialogMessages#confirm} overlay so it surfaces correctly under
+     * fullscreen mode (stock {@link Alert} dialogs frequently hide behind the fullscreen
+     * window).  Invokes {@code onConfirm} only when the player picks OK; cancels are no-ops.
+     *
+     * <p>Honours the {@link #setMainMenuConfirmation test override}: if set, the override's
+     * synchronous boolean answer is used directly so unit tests that can't pump the JFX
+     * event loop still work.  When no override is registered, the async DialogMessages
+     * path is used.</p>
+     */
+    static void requestReturnToMainMenu(Scene activeScene, UiTheme theme, Runnable onConfirm) {
+        if (mainMenuConfirmationOverride != null) {
+            if (mainMenuConfirmationOverride.confirm()) {
+                onConfirm.run();
+            }
+            return;
+        }
+        DialogMessages.confirm(activeScene, theme,
+                screenText("dialog.main-menu-confirm.title"),
+                screenText("dialog.main-menu-confirm.header"),
+                screenText("dialog.main-menu-confirm.content"),
+                result -> {
+                    if (result == DialogMessages.Result.OK) {
+                        onConfirm.run();
+                    }
+                });
     }
 
     static VBox settingsBlock(String title, Node... rows) {

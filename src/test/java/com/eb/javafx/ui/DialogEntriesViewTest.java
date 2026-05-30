@@ -15,6 +15,7 @@ import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -51,6 +52,24 @@ final class DialogEntriesViewTest {
             started.countDown();
         }
         assertTrue(started.await(5, TimeUnit.SECONDS), "JavaFX toolkit did not start.");
+    }
+
+    /** Fresh per-test {@link com.eb.javafx.text.DialogHistory} for the shared-instance
+     *  registry.  {@link com.eb.javafx.ui.DialogEntriesView}'s no-arg constructor uses
+     *  {@code DialogHistory.shared()}, which would otherwise return the SAME instance
+     *  across every test — and any test that left an open dialog open (via
+     *  {@code startConversation} without a matching {@code endConversation}) would
+     *  cause the next test's first dialog start to throw "A dialog history entry is
+     *  already open."  Installing a fresh instance per test gives each test the same
+     *  per-widget isolation it had before the singleton was introduced. */
+    @BeforeEach
+    void freshSharedDialogHistory() {
+        // Reset then install a fresh per-test instance.  The reset is required because
+        // installShared is first-wins in production — without the explicit null clear,
+        // subsequent test installs would be no-ops and tests would all share state from
+        // whichever install ran first.
+        com.eb.javafx.text.DialogHistory.installShared(null);
+        com.eb.javafx.text.DialogHistory.installShared(new com.eb.javafx.text.DialogHistory());
     }
 
     @Test

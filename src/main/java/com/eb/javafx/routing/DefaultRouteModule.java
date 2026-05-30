@@ -6,7 +6,7 @@ import com.eb.javafx.ui.HudSummaryScreen;
 import com.eb.javafx.ui.InformationalScreenModels;
 import com.eb.javafx.ui.MainMenuScreen;
 import com.eb.javafx.ui.PreferencesSummaryScreen;
-import com.eb.javafx.ui.SaveLoadSummaryScreen;
+import com.eb.javafx.ui.SaveScreen;
 import com.eb.javafx.ui.SceneFlowScreen;
 import com.eb.javafx.ui.ScreenTextResources;
 import com.eb.javafx.ui.ViewModelScreen;
@@ -34,11 +34,11 @@ public final class DefaultRouteModule implements RouteModule {
                 PreferencesSummaryScreen::createScene);
         router.registerRoute(new RouteDescriptor(
                         SceneRouter.SAVE_LOAD_ROUTE,
-                        "ui.saveLoad.title",
+                        "ui.save.title",
                         RouteCategory.SAVE_LOAD,
                         true,
-                        "Reusable view-model route showing explicit save schema metadata."),
-                SaveLoadSummaryScreen::createScene);
+                        "Save screen — grid / list of slot tiles with thumbnails + auto-save-daily toggle."),
+                SaveScreen::createScene);
         router.registerRoute(new RouteDescriptor(
                         SceneRouter.DIALOGUE_ROUTE,
                         "ui.dialogue.title",

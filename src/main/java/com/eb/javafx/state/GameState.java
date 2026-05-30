@@ -51,6 +51,14 @@ public final class GameState {
     public GameState(String startupRoute, DialogHistory conversationHistory) {
         this.startupRoute = startupRoute;
         this.conversationHistory = Validation.requireNonNull(conversationHistory, "Conversation history is required.");
+        // Install this GameState's history as the engine-shared instance so every
+        // DialogEntriesView constructed via its no-arg constructor (the common AltLife
+        // path) routes its writes through this same object — the one the snapshot
+        // codec reads when saving the dialog history section.  Without this pairing,
+        // the widget would create a private history per construction and the save
+        // section would persist an empty engine-instance history, with the widget's
+        // actual content lost across save/load.  See DialogHistory.installShared.
+        DialogHistory.installShared(this.conversationHistory);
     }
 
     /**
@@ -65,7 +73,20 @@ public final class GameState {
 
     /** Returns the per-save conversation history used by helper screens and authored UI. */
     public DialogHistory conversationHistory() {
-        return conversationHistory;
+        // Delegate to DialogHistory.shared() rather than returning the constructor-
+        // captured field directly.  These can be different instances when something
+        // (a widget constructed before this GameState, or another GameState
+        // construction that fired first) installed a different instance as shared:
+        // DialogEntriesView's no-arg constructor and the save-section supplier /
+        // consumer all route through DialogHistory.shared(), so returning the field
+        // here would diverge from those callers and the conversation-history screen
+        // (which reads conversationHistory()) would see the empty constructor field
+        // while widgets and the save codec write into the shared instance.
+        // installShared is first-wins, so in normal boot order this returns exactly
+        // the instance passed to this GameState's constructor — consistent with the
+        // legacy semantic AND consistent with shared() readers.
+        DialogHistory shared = DialogHistory.shared();
+        return shared == null ? conversationHistory : shared;
     }
 
     /** Returns reusable mutable progress variables for this save. */
@@ -109,10 +130,42 @@ public final class GameState {
             String sectionId,
             Supplier<SaveSnapshotSection> snapshotSupplier,
             Consumer<SaveSnapshotSection> restoreConsumer) {
+        registerRollbackSnapshotSection(sectionId, snapshotSupplier, restoreConsumer, () -> {});
+    }
+
+    /**
+     * Registers an application-owned state section with an explicit pre-load reset callback.
+     *
+     * <p>The reset is invoked by {@link #restore(GameplayStateSnapshot)} on EVERY registered
+     * section — including ones that aren't present in the loaded snapshot — BEFORE the
+     * restore consumers fire.  This guarantees that loading a save fully overwrites the
+     * current in-memory state instead of merging into it:
+     * <ul>
+     *   <li>For sections that ARE in the loaded snapshot, reset wipes them clean, then
+     *       the restore consumer applies the payload.  Idempotent with consumer-side
+     *       {@code .clear()} that hosts already commonly do — calling both is harmless.</li>
+     *   <li>For sections that are NOT in the loaded snapshot (rare — happens only when
+     *       the host's section set has changed across builds, or a partial save was
+     *       written), reset wipes them clean and they stay empty.  Without this, those
+     *       sections would silently retain their pre-load (boot-default or previous-
+     *       load) state and bleed into the new game.</li>
+     * </ul></p>
+     *
+     * <p>Pass a Runnable that resets the section's in-memory state to its empty/fresh
+     * baseline — typically {@code XClass::clear}.  Hosts registering via the 3-arg
+     * overload above get a no-op reset for back-compat; they remain responsible for
+     * consumer-side clearing.</p>
+     */
+    public void registerRollbackSnapshotSection(
+            String sectionId,
+            Supplier<SaveSnapshotSection> snapshotSupplier,
+            Consumer<SaveSnapshotSection> restoreConsumer,
+            Runnable resetCallback) {
         CustomRollbackSnapshotSection section = new CustomRollbackSnapshotSection(
                 sectionId,
                 snapshotSupplier,
-                restoreConsumer);
+                restoreConsumer,
+                resetCallback);
         customRollbackSections.put(section.sectionId(), section);
     }
 
@@ -144,7 +197,15 @@ public final class GameState {
         restore(checkedSnapshot);
     }
 
-    /** Restores reusable mutable gameplay state from a checkpoint/save snapshot. */
+    /** Restores reusable mutable gameplay state from a checkpoint/save snapshot.  Built-in
+     *  fields (progress, inventory, wardrobe, character states, journal, location
+     *  occupancy) are wholesale-replaced — the snapshot payload defines them entirely.
+     *  Custom rollback sections are RESET FIRST (every registered section, regardless of
+     *  whether it appears in the loaded snapshot), then restored from the snapshot's
+     *  per-section payloads.  This guarantees current game state is fully cleared before
+     *  the loaded data is applied; see {@link #registerRollbackSnapshotSection(String,
+     *  Supplier, Consumer, Runnable) the 4-arg register overload} for the reset
+     *  contract. */
     public void restore(GameplayStateSnapshot snapshot) {
         GameplayStateSnapshot checkedSnapshot =
                 Validation.requireNonNull(snapshot, "Gameplay state snapshot is required.");
@@ -156,6 +217,21 @@ public final class GameState {
         checkedSnapshot.characters().toStates().forEach(this::putCharacterState);
         journal = checkedSnapshot.journal().toState();
         locationOccupancy = checkedSnapshot.locationOccupancy().toState();
+        // Reset EVERY registered custom rollback section to its empty baseline BEFORE
+        // applying the loaded payloads.  Sections present in the snapshot will be
+        // overwritten by their restore-consumer (so the reset is harmless duplicate
+        // work).  Sections absent from the snapshot stay in their reset state — without
+        // this pass they'd silently retain whatever was in memory from a previous load
+        // or the boot default, bleeding into the loaded game.
+        for (CustomRollbackSnapshotSection section : customRollbackSections.values()) {
+            try {
+                section.resetCallback().run();
+            } catch (RuntimeException ex) {
+                System.err.println("[GameState] Reset callback threw for section "
+                        + section.sectionId() + " — load proceeds, but this section may"
+                        + " carry stale state if it isn't overwritten by the snapshot. " + ex);
+            }
+        }
         checkedSnapshot.customSections().forEach(section -> {
             CustomRollbackSnapshotSection customSection = customRollbackSections.get(section.sectionId());
             if (customSection != null) {
@@ -167,11 +243,13 @@ public final class GameState {
     private record CustomRollbackSnapshotSection(
             String sectionId,
             Supplier<SaveSnapshotSection> snapshotSupplier,
-            Consumer<SaveSnapshotSection> restoreConsumer) {
+            Consumer<SaveSnapshotSection> restoreConsumer,
+            Runnable resetCallback) {
         private CustomRollbackSnapshotSection {
             sectionId = Validation.requireNonBlank(sectionId, "Custom rollback snapshot section id is required.");
             snapshotSupplier = Validation.requireNonNull(snapshotSupplier, "Custom rollback snapshot supplier is required.");
             restoreConsumer = Validation.requireNonNull(restoreConsumer, "Custom rollback restore consumer is required.");
+            resetCallback = Validation.requireNonNull(resetCallback, "Custom rollback reset callback is required.");
         }
 
         private SaveSnapshotSection snapshot() {

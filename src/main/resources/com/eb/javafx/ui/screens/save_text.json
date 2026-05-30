@@ -1,0 +1,52 @@
+{
+  "language": "en",
+  "texts": {
+    "screen.title": "Save",
+
+    "item.show-as-list.label": "Show as list",
+    "item.auto-save-daily.label": "Auto save daily",
+    "item.back.label": "Back",
+
+    "mode.save": "Save",
+    "mode.load": "Load",
+
+    "tab.normal": "Normal",
+    "tab.quick":  "Quick",
+    "tab.auto":   "Auto",
+
+    "label.slot": "Slot",
+    "label.empty": "(empty)",
+    "label.unnamed-save": "(unnamed save)",
+
+    "label.empty-slot.normal": "Slot",
+    "label.empty-slot.quick":  "Quick",
+    "label.empty-slot.auto":   "Auto",
+
+    "column.slot": "Slot",
+    "column.description": "Name",
+    "column.saved-at": "Saved at",
+    "column.game-date": "Game date",
+    "column.size": "Size",
+    "column.preview": "Preview",
+
+    "dialog.overwrite.title": "Overwrite save?",
+    "dialog.overwrite.header": "Are you sure you want to overwrite slot %d?",
+    "dialog.overwrite.content": "The existing save will be replaced and cannot be recovered.",
+
+    "dialog.name.title": "Name your save",
+    "dialog.name.header": "Save game in slot %d",
+    "dialog.name.content": "Enter a name for this save (or accept the default).",
+
+    "dialog.delete.title": "Delete save?",
+    "dialog.delete.header": "Are you sure you want to delete slot %d?",
+    "dialog.delete.content": "The save will be removed from disk and cannot be recovered.",
+
+    "dialog.delete-error.title": "Delete failed",
+    "dialog.delete-error.header": "Could not delete slot %d.",
+
+    "dialog.save-error.title": "Save failed",
+    "dialog.save-error.header": "Could not write slot %d.",
+
+    "item.delete.tooltip": "Delete this save"
+  }
+}

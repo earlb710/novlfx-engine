@@ -37,10 +37,12 @@ import java.util.function.BooleanSupplier;
  * <p>The auto-skip delay equals {@code prefs.textSpeed().durationMillis()} — the
  * "Slow / Normal / Fast" setting players already configure in the Preferences screen.
  * The scroll animation runs for {@link #DEFAULT_SCROLL_DURATION_FRACTION} of that
- * delay (default 50%, clamped to at least {@link #MIN_SCROLL_DURATION_MS} ms so the
- * animation stays visible at FAST speed).  That keeps the animation finishing well
- * before the next tick fires, leaving the remaining half of the delay for the player
- * to read the new line before the next one drops in.</p>
+ * delay (default 50 %, clamped to at least {@link #MIN_SCROLL_DURATION_MS} ms so the
+ * animation stays visible at FAST speed).  The pump tick interval is then
+ * {@code scrollMs + 2 × (textSpeed − scrollMs)} — i.e. the animation duration plus
+ * twice the natural reading pause — so the reader gets twice as long to absorb each
+ * line after the scroll finishes before the next one drops in (NORMAL at 400 ms
+ * resolves to 200 ms animation + 400 ms reading pause = 600 ms per line).</p>
  *
  * <h2>Threading</h2>
  *
@@ -133,12 +135,25 @@ public final class AutoSkipController {
             throw new IllegalArgumentException("Advance callback is required.");
         }
         int delayMs = prefs.textSpeed().durationMillis();
+        double scrollMs = Math.max(MIN_SCROLL_DURATION_MS, delayMs * scrollDurationFraction);
         if (dialog != null) {
-            double scrollMs = Math.max(MIN_SCROLL_DURATION_MS, delayMs * scrollDurationFraction);
             dialog.setScrollAnimationDuration(Duration.millis(scrollMs));
         }
         if (session.mode() == ScenePlaybackMode.AUTO) {
-            session.startAutoAdvance(delayMs, advance);
+            // Pump cadence: scroll animation + 2× the natural reading pause.  The "natural"
+            // pause is the original (textSpeed − scrollMs) gap between the end of the
+            // animation and the next tick; doubling it gives the reader twice as long to
+            // absorb each line after the scroll finishes before the next one drops in.
+            //
+            // For NORMAL (textSpeed = 400 ms, scrollMs = 200 ms):
+            //   old tick interval = 400 ms  (200 ms anim + 200 ms pause)
+            //   new tick interval = 600 ms  (200 ms anim + 400 ms pause)
+            //
+            // The scroll animation duration itself is unchanged so the drop-in cue keeps
+            // tracking the text-speed preference — only the read-time pause stretches.
+            double readPauseMs = Math.max(0.0, delayMs - scrollMs) * 2.0;
+            int tickIntervalMs = (int) Math.round(scrollMs + readPauseMs);
+            session.startAutoAdvance(tickIntervalMs, advance);
         }
     }
 

@@ -18,7 +18,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-/** Registers an AltLife-compatible JSON conversation document as content definitions and scene definitions. */
+/** Registers an authored JSON conversation document as content definitions and scene definitions. */
 public final class JsonConversationContentModule implements StaticContentModule, SceneModule {
     private final ConversationDefinition document;
     private final ConversationConditionVariables conditionVariables;
@@ -197,7 +197,7 @@ public final class JsonConversationContentModule implements StaticContentModule,
     }
 
     private static String choiceValue(ConversationVariant variant, int variantIndex) {
-        // AltLife exports and draft editor rows may omit choice values; use the zero-based JSON variant index so every runtime choice still returns a stable authored value.
+        // Some authoring tools (e.g. draft editor rows, partial exports) may omit choice values; use the zero-based JSON variant index so every runtime choice still returns a stable authored value.
         return variant.value().isEmpty() ? Integer.toString(variantIndex) : variant.value();
     }
 

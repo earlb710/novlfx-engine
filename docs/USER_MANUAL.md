@@ -518,6 +518,63 @@ The `ui` package provides reusable JavaFX surfaces and helpers:
 - `UiTheme` loads the reusable stylesheet from `src/main/resources/com/eb/javafx/ui/default.css`.
 - `StartupErrorReporter`, `StartupFailureException`, and `StartupFailureCategory` provide structured startup diagnostics.
 
+### In-scene dialog messages
+
+`DialogMessages` is the engine's in-scene modal-dialog helper. It paints a themed
+overlay on top of the current scene's root instead of spawning a child `Stage` via
+`Alert`, so it works correctly under fullscreen mode where stock `Alert` dialogs
+frequently hide behind the fullscreen window or steal focus without surfacing.
+
+Four entry points, all on the JavaFX application thread:
+
+- `DialogMessages.confirm(Scene scene, UiTheme theme, String title, String header, String content, Consumer<Result> callback)` — yes/no confirmation. The callback receives `Result.OK` on accept, `Result.CANCEL` on dismiss (Cancel button / Escape / clicking the dim backdrop outside the card). Useful for destructive-action confirmations like overwrite-save or return-to-main-menu prompts.
+- `DialogMessages.confirm(Node anchor, UiTheme theme, ...)` — convenience overload that derives the `Scene` from `anchor.getScene()` so a click-handler that already has a `Button` reference doesn't need to look up the scene separately.
+- `DialogMessages.info(Scene scene, UiTheme theme, String title, String header, String content, Runnable onClose)` — single-button information toast. `onClose` (may be `null`) fires after the player dismisses via OK / Enter / Escape / backdrop click.
+- `DialogMessages.error(Scene scene, UiTheme theme, String title, String header, String content, Runnable onClose)` — single-button error toast. Visually identical to `info` today; kept as a separate entry point so future styling tweaks (red accent, exclamation icon, etc.) can target only error surfaces without touching info dialogs.
+- `DialogMessages.prompt(Scene scene, UiTheme theme, String title, String header, String content, String defaultValue, Consumer<String> callback)` — text-input prompt. Renders a `TextField` pre-populated with `defaultValue` (selected on focus so the player can either accept it with Enter or type to replace it). The callback receives the entered text on OK, or `null` on Cancel / Escape / backdrop click — `null` is the unambiguous "user dismissed without confirming" signal so callers don't need to track a separate cancel flag.
+
+All entry points share these behaviours:
+
+- **Theme integration** — the `UiTheme` parameter drives the card's border colour, primary-button background, and title text fill. When `theme` is `null` the helpers fall back to a neutral grey palette so error reporting in tests / headless paths still produces a usable surface.
+- **Card sizing** — `min/max` width pinned (default 360–520 px) and `maxHeight = USE_PREF_SIZE` so the card lays out at its content's preferred height rather than stretching floor-to-ceiling inside the full-screen backdrop.
+- **Backdrop** — translucent dark layer that covers the entire scene; consumes its own clicks so the dim area can be used as a click-to-cancel target (resolves as `Result.CANCEL` for `confirm`/`prompt`, as dismissal for `info`/`error`).
+- **Keyboard** — Enter = OK, Escape = Cancel/dismiss. The handler is installed as a scene-level event filter for the duration of the overlay and removed when it dismisses, so it doesn't leak across screens.
+- **Idempotent dismissal** — clicking OK or Cancel calls the callback once and removes the overlay; subsequent clicks on a stale reference are no-ops.
+- **Fallback path** — when the scene root isn't a `Pane` (rare; almost every novlfx-built shell wraps content in a `StackPane` via `ScreenShell.withConfiguredBackground`), the helpers fall back to stock `Alert` / `TextInputDialog` so the dialog still surfaces somehow, just without the in-scene benefits.
+
+Threading: JavaFX application thread only, same constraint as every other scene-graph manipulation.
+
+Result handling examples — destructive confirmations should branch on the result inside the callback rather than blocking on a synchronous boolean:
+
+```java
+DialogMessages.confirm(scene, theme,
+        "Delete save?",
+        "Are you sure you want to delete slot " + slot + "?",
+        "The save will be removed from disk and cannot be recovered.",
+        result -> {
+            if (result == DialogMessages.Result.OK) {
+                saveLoadService.deleteSlot(category, slot);
+                refreshSlotList();
+            }
+        });
+```
+
+Text input — pre-populate a sensible default so a quick Enter accepts it:
+
+```java
+DialogMessages.prompt(scene, theme,
+        "Name your save",
+        "Save game in slot " + slot,
+        "Enter a name for this save (or accept the default).",
+        defaultSaveName,
+        entered -> {
+            if (entered != null) {                       // null = cancel
+                String name = entered.isBlank() ? defaultSaveName : entered.trim();
+                saveLoadService.writeSlotSummary(category, slot, gameState, name, ...);
+            }
+        });
+```
+
 ### SVG button styles
 
 `ButtonVisuals` provides two reusable SVG-backed button styles:

@@ -131,14 +131,31 @@ public final class SceneRouter {
      * @return scene to attach to the primary stage
      */
     public Scene open(String routeId) {
+        if (routeContext == null) {
+            throw new IllegalStateException("JavaFX route context has not been registered.");
+        }
+        return open(routeId, routeContext);
+    }
+
+    /**
+     * Opens a route by ID using a caller-supplied {@link RouteContext} instead of the router's
+     * stored singleton.  Use this when navigations should target a stage other than the primary
+     * stage (e.g. an inspector window opened from the admin menu).  The route factory receives
+     * {@code callContext}, so any buttons / handlers wired inside the resulting scene capture
+     * that context — and their {@code navigateTo} calls drive {@code callContext.primaryStage()}
+     * rather than the stored context's primary stage.  This is the mechanism that makes
+     * {@link RouteContext#withPrimaryStage(javafx.stage.Stage) stage-scoped contexts} keep their
+     * navigations confined to the scoped stage.
+     */
+    public Scene open(String routeId, RouteContext callContext) {
+        if (callContext == null) {
+            throw new IllegalStateException("JavaFX route context is required.");
+        }
         RouteFactory route = routes.get(routeId);
         if (route == null) {
             throw new IllegalArgumentException("Unknown JavaFX route: " + routeId);
         }
-        if (routeContext == null) {
-            throw new IllegalStateException("JavaFX route context has not been registered.");
-        }
-        return route.createScene(routeContext);
+        return route.createScene(callContext);
     }
 
     /** Returns registered route IDs for diagnostics and the main menu shell. */

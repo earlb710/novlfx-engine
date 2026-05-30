@@ -40,6 +40,8 @@ public final class PreferencesService {
     private static final String FULLSCREEN_KEY = "window.fullscreen";
     private static final String LANGUAGE_KEY = "ui.language";
     private static final String TEXT_SPEED_KEY = "ui.textSpeed";
+    private static final String AUTO_SAVE_DAILY_KEY = "save.autoSaveDaily";
+    private static final String SAVE_SCREEN_VIEW_MODE_KEY = "save.viewMode";
 
     private final Preferences preferences = Preferences.userNodeForPackage(PreferencesService.class);
     private int windowWidth;
@@ -66,6 +68,8 @@ public final class PreferencesService {
     private boolean voiceEnabled;
     private boolean autoAdvanceOnVoiceEnd;
     private boolean fullscreen;
+    private boolean autoSaveDaily;
+    private SaveScreenViewMode saveScreenViewMode;
     private Language language;
     private TextSpeed textSpeed;
 
@@ -101,6 +105,9 @@ public final class PreferencesService {
         voiceEnabled = preferences.getBoolean(VOICE_ENABLED_KEY, true);
         autoAdvanceOnVoiceEnd = preferences.getBoolean(AUTO_ADVANCE_ON_VOICE_END_KEY, false);
         fullscreen = preferences.getBoolean(FULLSCREEN_KEY, false);
+        autoSaveDaily = preferences.getBoolean(AUTO_SAVE_DAILY_KEY, false);
+        saveScreenViewMode = SaveScreenViewMode.fromPreferenceValue(
+                preferences.get(SAVE_SCREEN_VIEW_MODE_KEY, SaveScreenViewMode.GRID.preferenceValue()));
         language = validatedLanguage(preferences.get(LANGUAGE_KEY, Language.ENGLISH.preferenceValue()));
         textSpeed = validatedTextSpeed(preferences.get(TEXT_SPEED_KEY, TextSpeed.NORMAL.preferenceValue()));
     }
@@ -233,6 +240,74 @@ public final class PreferencesService {
     /** Returns whether the primary window should be displayed in fullscreen mode. */
     public boolean fullscreen() {
         return fullscreen;
+    }
+
+    /** Returns whether the engine should auto-save once per in-game day. */
+    public boolean autoSaveDaily() {
+        return autoSaveDaily;
+    }
+
+    /** Persists the auto-save-daily flag and updates the loaded model. */
+    public void saveAutoSaveDaily(boolean autoSaveDaily) {
+        this.autoSaveDaily = autoSaveDaily;
+        preferences.putBoolean(AUTO_SAVE_DAILY_KEY, autoSaveDaily);
+        flushQuietly();
+    }
+
+    /** Returns the user's preferred presentation for the Save screen (grid or list). */
+    public SaveScreenViewMode saveScreenViewMode() {
+        return saveScreenViewMode;
+    }
+
+    /** Persists the Save-screen presentation mode and updates the loaded model. */
+    public void saveSaveScreenViewMode(SaveScreenViewMode mode) {
+        this.saveScreenViewMode = mode == null ? SaveScreenViewMode.GRID : mode;
+        preferences.put(SAVE_SCREEN_VIEW_MODE_KEY, this.saveScreenViewMode.preferenceValue());
+        flushQuietly();
+    }
+
+    /** Forces the backing store to commit pending puts now rather than waiting for the
+     *  JVM-exit shutdown hook.  Used by the save-screen checkboxes (Auto-save daily,
+     *  Show as list) where the player expects their toggle to survive a restart even if
+     *  the JVM is killed before the deferred preferences flush runs — common in
+     *  fullscreen apps on Windows where closing the window doesn't always cleanly
+     *  shut down the JVM.  Swallows {@link BackingStoreException} because a flush
+     *  failure shouldn't blow up the click handler — at worst the value persists at
+     *  the next clean exit instead of immediately. */
+    private void flushQuietly() {
+        try {
+            preferences.flush();
+        } catch (java.util.prefs.BackingStoreException ex) {
+            System.err.println("[PreferencesService] Failed to flush preferences: " + ex);
+        }
+    }
+
+    /** Save-screen presentation mode — grid (default, 5×4 tiled with thumbnails) or list (rows). */
+    public enum SaveScreenViewMode {
+        GRID("grid"),
+        LIST("list");
+
+        private final String preferenceValue;
+
+        SaveScreenViewMode(String preferenceValue) {
+            this.preferenceValue = preferenceValue;
+        }
+
+        public String preferenceValue() {
+            return preferenceValue;
+        }
+
+        public static SaveScreenViewMode fromPreferenceValue(String value) {
+            if (value == null) {
+                return GRID;
+            }
+            for (SaveScreenViewMode mode : values()) {
+                if (mode.preferenceValue.equals(value)) {
+                    return mode;
+                }
+            }
+            return GRID;
+        }
     }
 
     /** Returns the preferred UI language. */

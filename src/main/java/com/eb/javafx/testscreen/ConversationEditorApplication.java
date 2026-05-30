@@ -56,7 +56,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.stream.Stream;
 
-/** Manual Swing editor for AltLife-compatible JSON conversation documents. */
+/** Manual Swing editor for authored JSON conversation documents. */
 public final class ConversationEditorApplication {
     private static final int MAX_VISIBLE_CONDITION_ROWS = 3;
     private static final String CONDITION_TYPE_CONTEXT = SystemCodeTables.CONDITION_TYPE_CONTEXT;
@@ -844,7 +844,7 @@ public final class ConversationEditorApplication {
                 "en",
                 List.of(new ConversationBlock(
                         "sample.conversation.opening.block_0001",
-                        "Generic example conversation using the AltLife exported conversation JSON schema.",
+                        "Generic example conversation using the engine's authored conversation JSON schema.",
                         List.of(
                                 new ConversationLine("narrator", "", List.of(
                                         new ConversationVariant("A reusable conversation document can hold narration.", 1.0, List.of()))),

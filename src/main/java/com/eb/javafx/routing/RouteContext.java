@@ -200,9 +200,44 @@ public final class RouteContext {
         return resourceConfig;
     }
 
+    /**
+     * Returns a {@link RouteContext} that shares every service / registry / router with this
+     * context but drives navigations against {@code newPrimaryStage} rather than {@link #primaryStage()}.
+     *
+     * <p>Used when a host wants to open a screen in a non-primary window (e.g. the admin-menu
+     * "Test Status/HUD" inspector).  Build the new context with {@code withPrimaryStage(myStage)},
+     * pass it to the screen factory, and any button / handler wired with that context will keep
+     * its navigations confined to {@code myStage}'s scene — because {@link #navigateTo(String)}
+     * routes through {@link SceneRouter#open(String, RouteContext)} which propagates the calling
+     * context down to the next scene's factory.  Each instance has its own back-stack, so
+     * {@link #navigateBack()} also stays within the scoped stage's history.</p>
+     */
+    public RouteContext withPrimaryStage(Stage newPrimaryStage) {
+        return new RouteContext(
+                newPrimaryStage,
+                preferencesService,
+                contentRegistry,
+                imageDisplayRegistry,
+                saveLoadService,
+                randomService,
+                gameSupportService,
+                audioService,
+                gameState,
+                sceneRegistry,
+                sceneExecutor,
+                uiTheme,
+                sceneRouter,
+                applicationRoot,
+                resourceConfig);
+    }
+
     /** Opens a route and attaches it to the primary stage. */
     public void navigateTo(String routeId) {
-        Scene newScene = sceneRouter.open(routeId);
+        // Pass {@code this} so the route factory wires its scene with the CURRENT context.
+        // Buttons / handlers inside the new scene therefore capture this context's primaryStage,
+        // and a stage-scoped context (see {@link #withPrimaryStage}) keeps subsequent navigations
+        // confined to its scoped stage.
+        Scene newScene = sceneRouter.open(routeId, this);
         Scene currentScene = primaryStage == null ? null : primaryStage.getScene();
         Scene activeScene;
         if (currentScene != null && newScene != null && newScene.getRoot() != null) {

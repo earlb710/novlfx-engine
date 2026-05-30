@@ -17,7 +17,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 
-/** JSON import/export for AltLife-compatible conversation documents. */
+/** JSON import/export for authored {@link ConversationDefinition} documents. */
 public final class ConversationDefinitionJson {
     private ConversationDefinitionJson() {
     }

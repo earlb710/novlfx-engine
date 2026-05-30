@@ -41,7 +41,7 @@ public final class ManagementApplication {
                     JsonScreenDesignTestScreen::showAllItemsFromManagement),
             new ManagementAction(
                     "Conversation Editor",
-                    "Open the AltLife-compatible conversation JSON editor.",
+                    "Open the conversation JSON editor.",
                     ConversationEditorApplication::showFromManagement),
             new ManagementAction(
                     "Manage Code Tables",
@@ -72,7 +72,7 @@ public final class ManagementApplication {
     /**
      * Opens the management UI without owning the JVM lifecycle. The window uses {@code DISPOSE_ON_CLOSE}
      * so closing it only disposes the frame, and is brought to the front + focused on display.
-     * Intended for embedded hosts (e.g. the AltLife admin app) that should keep running after the
+     * Intended for embedded hosts (e.g. a host's admin app) that should keep running after the
      * user dismisses the management window.
      */
     public static void launchEmbedded() {

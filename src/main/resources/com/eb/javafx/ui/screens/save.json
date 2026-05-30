@@ -1,0 +1,19 @@
+{
+  "id": "save",
+  "title": "screen.title",
+  "layoutType": "FORM",
+  "metadata": {
+    "description": "Save screen — grid / list tiles + auto-save-daily toggle"
+  },
+  "blocks": [
+    {
+      "id": "content",
+      "title": null,
+      "layoutType": "FORM",
+      "parentBlockId": null,
+      "styleClass": null,
+      "metadata": {}
+    }
+  ],
+  "items": []
+}

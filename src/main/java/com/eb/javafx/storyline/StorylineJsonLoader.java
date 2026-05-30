@@ -21,10 +21,10 @@ import java.util.Objects;
  * <h3>Event format</h3>
  * <pre>{@code
  * {
- *   "id":              "marsh.intro",
- *   "textKey":         "text.marsh.intro",
+ *   "id":              "event.id",
+ *   "textKey":         "text.event.id",
  *   "repeatable":      false,
- *   "trigger":         { "type": "dialogChain", "dialogChainId": "dialog.marsh.intro" },
+ *   "trigger":         { "type": "dialogChain", "dialogChainId": "dialog.id" },
  *   "allowedStatuses": ["accept", "refuse"],
  *   "requirements":   [ <requirement>, ... ]
  * }

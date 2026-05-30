@@ -21,6 +21,8 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
+import javafx.scene.input.MouseButton;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.Background;
 import javafx.scene.layout.BackgroundFill;
 import javafx.scene.layout.BackgroundImage;
@@ -484,6 +486,9 @@ public final class ScreenShell {
         }
         Map<String, Runnable> bindings = Map.copyOf(handlersByShortcut);
         scene.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
+            if (event.isConsumed()) {
+                return;
+            }
             for (Map.Entry<String, Runnable> entry : bindings.entrySet()) {
                 if (matchesShortcut(event, entry.getKey())) {
                     entry.getValue().run();
@@ -492,6 +497,91 @@ public final class ScreenShell {
                 }
             }
         });
+    }
+
+    /**
+     * Recursively finds the live footer-bar {@link HBox} in {@code root}'s subtree by matching
+     * {@link #SCREEN_FOOTER_BAR_STYLE_CLASS}.  Returns {@code null} when no footer is present
+     * (e.g. a screen without a shell, or the footer hasn't been attached yet).
+     *
+     * <p>Exposed so hosts can locate the footer at fire time without re-implementing the
+     * style-class lookup — useful for "shortcut → synthesise click on current footer label"
+     * dispatch where the footer Label instances change across navigations.</p>
+     */
+    public static HBox findFooterBar(Node root) {
+        if (root instanceof HBox hbox && hbox.getStyleClass().contains(SCREEN_FOOTER_BAR_STYLE_CLASS)) {
+            return hbox;
+        }
+        if (root instanceof javafx.scene.Parent parent) {
+            for (Node child : parent.getChildrenUnmodifiable()) {
+                HBox found = findFooterBar(child);
+                if (found != null) {
+                    return found;
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * "Find the live footer, find the enabled Label whose footer-option shortcut matches the
+     * supplied key event, and synthesise a {@link MouseEvent#MOUSE_CLICKED} on it" — the dispatch
+     * routine hosts use to make footer-shortcut keystrokes behave as if the player clicked the
+     * matching footer button.  Returns {@code true} when an enabled match was found and the
+     * synthetic click was fired; {@code false} when no footer, no matching shortcut, or the
+     * matching option was disabled.
+     *
+     * <p>Does <em>not</em> consume {@code event} — the caller decides whether to call
+     * {@link KeyEvent#consume()} based on the return value.  Typical pattern:</p>
+     *
+     * <pre>{@code
+     * scene.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
+     *     if (event.isConsumed()) return;
+     *     if (ScreenShell.dispatchKeyToFooter(scene, event)) {
+     *         event.consume();
+     *     }
+     * });
+     * }</pre>
+     *
+     * <p>The synthetic click goes through the Label's normal MouseEvent dispatch chain, so any
+     * {@code setOnMouseClicked} handler the host wired plus any engine-side bindings (e.g.
+     * {@code DialogEntriesView.bindHistoryToggle}) fire as they would for a real click.</p>
+     */
+    public static boolean dispatchKeyToFooter(Scene scene, KeyEvent event) {
+        if (scene == null || event == null) {
+            return false;
+        }
+        HBox footer = findFooterBar(scene.getRoot());
+        if (footer == null) {
+            return false;
+        }
+        for (Node child : footer.getChildren()) {
+            if (!(child instanceof Label label)
+                    || !(label.getUserData() instanceof FooterOption option)) {
+                continue;
+            }
+            if (!isFooterOptionEnabled(label)) {
+                continue;
+            }
+            String shortcut = option.shortcut();
+            if (shortcut == null || shortcut.isBlank()) {
+                continue;
+            }
+            if (!matchesShortcut(event, shortcut)) {
+                continue;
+            }
+            label.fireEvent(new MouseEvent(
+                    MouseEvent.MOUSE_CLICKED,
+                    0, 0, 0, 0,
+                    MouseButton.PRIMARY,
+                    1,
+                    /*shiftDown*/ false, /*controlDown*/ false, /*altDown*/ false, /*metaDown*/ false,
+                    /*primaryButtonDown*/ true, /*middleButtonDown*/ false, /*secondaryButtonDown*/ false,
+                    /*synthesized*/ true, /*popupTrigger*/ false, /*stillSincePress*/ false,
+                    /*pickResult*/ null));
+            return true;
+        }
+        return false;
     }
 
     public static List<FooterOption> changeFooterIcon(List<FooterOption> options, String id, String icon) {
@@ -823,6 +913,70 @@ public final class ScreenShell {
     private static <T> T propertyValue(Node node, String key, Class<T> type, T defaultValue) {
         Object value = node.getProperties().get(key);
         return type.isInstance(value) ? type.cast(value) : defaultValue;
+    }
+
+    /**
+     * Re-applies a list of updated {@link FooterOption} values to a live footer bar — walks
+     * every {@link Label} child, matches its existing option id against {@code updates}, and
+     * re-renders the Label with the matching update's enabled / icon / label / tooltip /
+     * shortcut state.  Labels whose option id isn't in {@code updates} are left alone.
+     *
+     * <p>This is the loop hosts used to copy-paste — find the footer bar, iterate Labels,
+     * lookup by id, call {@link #applyFooterOption} — collapsed into one engine entry point so
+     * the host's footer-refresh code can shrink to "compute new options list, call this."
+     * Mirrors {@link #applyFooterPreferences} but takes an explicit options list rather than
+     * reading display values off the preferences service.</p>
+     *
+     * @param footer            footer bar produced by {@link #footerBar(List)} (or any HBox
+     *                          whose Label children carry {@link FooterOption} in
+     *                          {@code userData}).
+     * @param updates           updated options keyed by {@link FooterOption#id()}.
+     * @param shortcutDisplay   preference for shortcut visibility (visible / hidden /
+     *                          tooltip-only); pass null for {@link #DEFAULT_FOOTER_SHORTCUT_DISPLAY DEFAULT}.
+     * @param iconDisplay       preference for icon visibility; pass null for the default.
+     */
+    public static void applyFooterOptions(HBox footer, List<FooterOption> updates,
+            FooterShortcutDisplay shortcutDisplay, FooterIconDisplay iconDisplay) {
+        Validation.requireNonNull(footer, "Footer is required.");
+        Validation.requireNonNull(updates, "Footer updates list is required.");
+        for (Node child : footer.getChildren()) {
+            if (child instanceof Label label && label.getUserData() instanceof FooterOption option) {
+                FooterOption updated = findById(updates, option.id());
+                if (updated != null) {
+                    applyFooterOption(label, updated, shortcutDisplay, iconDisplay);
+                }
+            }
+        }
+    }
+
+    /**
+     * Sets the "active" highlight (yellow pill + bold white text — see
+     * {@link #setFooterOptionActive}) on the Label whose option id equals
+     * {@code activeOptionId}; clears the highlight on every other Label in the footer.  Pass
+     * {@code null} (or a non-matching id) to clear the highlight everywhere.
+     *
+     * <p>Hosts use this to toggle the auto-skip pill / history-mode pill / any future
+     * "this mode is engaged" indicator without standing up their own iteration loop.</p>
+     */
+    public static void setActiveFooterOption(HBox footer, String activeOptionId) {
+        Validation.requireNonNull(footer, "Footer is required.");
+        for (Node child : footer.getChildren()) {
+            if (child instanceof Label label && label.getUserData() instanceof FooterOption option) {
+                setFooterOptionActive(label, activeOptionId != null && activeOptionId.equals(option.id()));
+            }
+        }
+    }
+
+    private static FooterOption findById(List<FooterOption> options, String id) {
+        if (options == null || id == null) {
+            return null;
+        }
+        for (FooterOption option : options) {
+            if (id.equals(option.id())) {
+                return option;
+            }
+        }
+        return null;
     }
 
     public static void applyFooterOption(Label label, FooterOption option, FooterShortcutDisplay shortcutDisplay) {

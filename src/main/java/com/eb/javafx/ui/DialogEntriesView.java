@@ -240,8 +240,8 @@ public final class DialogEntriesView extends ScrollPane {
     /**
      * When {@code true} (default) the view advances/rewinds its own cursor on left/right clicks and
      * Space/Backspace keys. Set to {@code false} when the embedding application drives navigation
-     * itself (e.g. AltLife routes back/forward through its scene-flow state machine) so the engine's
-     * internal cursor walks don't compete with the host's state changes.
+     * itself (e.g. the host routes back/forward through its own scene-flow state machine) so the
+     * engine's internal cursor walks don't compete with the host's state changes.
      */
     private boolean internalNavigationEnabled = true;
     /**
@@ -312,6 +312,17 @@ public final class DialogEntriesView extends ScrollPane {
      * {@code vmax} after the last rebuild and animating to {@code vmax} produces no visible motion.
      */
     private double lastKnownContentHeight = -1;
+
+    /** True between the call to {@link #rebuild()} that grew the content and the
+     *  matching {@link #scrollToBottomDeferred()} call that drives the animated
+     *  scroll for it.  The synchronous height-change listener below checks this
+     *  before snapping vvalue to vmax — when a rebuild-queued animation is on its
+     *  way, snapping would render one frame at the new bottom (visible jump-down)
+     *  before the deferred call pushed vvalue back to {@code startVvalue} (visible
+     *  jump-up), producing a two-step flicker before the smooth scroll.  Skipping
+     *  the snap when the flag is set lets the deferred call own the entire
+     *  visible motion from old-bottom to new-bottom in one continuous animation. */
+    private boolean rebuildPendingScroll = false;
     /**
      * Whether the dialog block should fade out when the pointer leaves its bounds. Disabled by
      * default so the existing engine tests and consumers keep their fully-opaque widget; gameplay
@@ -329,7 +340,15 @@ public final class DialogEntriesView extends ScrollPane {
     private double hoverFadeUnhoveredOpacity = 0.2;
 
     public DialogEntriesView() {
-        this(new DialogHistory());
+        // Use the engine-shared DialogHistory instance — same one GameState owns and
+        // the save snapshot codec persists.  Previously this constructed a NEW
+        // per-widget DialogHistory, which meant the widget's history field and
+        // GameState.conversationHistory() were two independent objects: the widget
+        // accumulated rows into its private instance while the save section captured
+        // the engine instance (which nothing was ever writing into).  Routing both
+        // through DialogHistory.shared() unifies them so save / load actually
+        // round-trips the conversation log.
+        this(DialogHistory.shared());
     }
 
     /**
@@ -363,16 +382,34 @@ public final class DialogEntriesView extends ScrollPane {
             if (newH.doubleValue() <= oldH.doubleValue() || getVmax() <= 0) {
                 return;
             }
-            // Belt-and-braces snap-to-bottom for the no-animation case.  When the host
-            // has configured a non-zero scrollAnimationDuration, leave the scroll
-            // alone — scrollToBottomDeferred (queued by rebuild() via two
-            // Platform.runLater pulses) will animate from the prior position to the
-            // new vmax.  Snapping here would short-circuit that animation, which
-            // hosts use to give players visual feedback that a new line has dropped
-            // in (especially useful during auto-skip where there's no click to anchor
-            // the eye).  For animation duration ZERO (default), continue to snap —
-            // matches the previous behaviour exactly.
-            if (scrollAnimationDuration == null || scrollAnimationDuration.lessThanOrEqualTo(Duration.ZERO)) {
+            // No-animation case: snap immediately so the new entry is on screen.  When
+            // the host has configured a non-zero scrollAnimationDuration we normally
+            // leave the scroll alone here so scrollToBottomDeferred (queued by rebuild()
+            // via two Platform.runLater pulses) can animate from the prior position to
+            // the new vmax — that's the visible drop-in cue auto-skip / paced playback
+            // hosts rely on.
+            //
+            // CRITICAL: when a rebuild has already queued a deferred animated scroll
+            // (rebuildPendingScroll==true), we MUST NOT snap to vmax here.  Snapping
+            // would render one frame at the new bottom (visible jump-down) before the
+            // deferred call could push vvalue back to its startVvalue and animate down
+            // — producing a flicker (jump-down → jump-back-up → animated-scroll-down)
+            // every time content grew via rebuild().  Skipping the snap lets the
+            // deferred call own the entire visible motion in a single smooth tween.
+            //
+            // BUT: when content height grows OUTSIDE of a rebuild (auto-fit dialog
+            // resizing, dynamic image sizing landing on a later pulse, etc.) the
+            // rebuildPendingScroll flag is false and we DO snap — that's the original
+            // belt-and-braces purpose of this listener.  Same fallback for the
+            // no-animation path: ZERO duration means "no animation requested," and
+            // any height change should land the cursor entry on screen immediately.
+            boolean noAnimationConfigured = scrollAnimationDuration == null
+                    || scrollAnimationDuration.lessThanOrEqualTo(Duration.ZERO);
+            if (rebuildPendingScroll && !noAnimationConfigured) {
+                // Deferred animation will handle this rebuild's scroll — don't pre-snap.
+                return;
+            }
+            if (noAnimationConfigured || activeScrollAnimation == null) {
                 setVvalue(getVmax());
             }
         });
@@ -677,6 +714,51 @@ public final class DialogEntriesView extends ScrollPane {
         rebuild();
     }
 
+    /**
+     * Bulk-restores the dialog block's contents from a snapshot.  Used by the
+     * save/load path — see {@code DialogEntriesViewSnapshotJson} — to put the
+     * widget back to its write-time visible state after loading a save.
+     *
+     * <p>Clears existing rows, replaces with {@code restoredEntries} in order, sets the
+     * cursor to {@code restoredCurrentIndex} (or {@code -1} when empty), recomputes
+     * {@code conversationOpenProperty} based on whether any open {@code ConversationStart}
+     * sits on the active stack, and triggers a full {@link #rebuild()} so the renderer
+     * picks up the new state.  {@code minVisibleIndex} resets to 0 — there's no
+     * room-change floor to preserve across saves.</p>
+     */
+    public void restoreDialogEntries(java.util.List<Entry> restoredEntries, int restoredCurrentIndex) {
+        Validation.requireNonNull(restoredEntries, "Restored dialog entries are required.");
+        if (restoredCurrentIndex >= restoredEntries.size()) {
+            throw new IllegalArgumentException(
+                    "Restored cursor index " + restoredCurrentIndex
+                            + " is past the end of the restored entries (size = "
+                            + restoredEntries.size() + ").");
+        }
+        entries.clear();
+        for (Entry entry : restoredEntries) {
+            entries.add(Validation.requireNonNull(entry, "Restored dialog entry must be non-null."));
+        }
+        currentIndex = restoredEntries.isEmpty()
+                ? -1
+                : (restoredCurrentIndex < 0 ? restoredEntries.size() - 1 : restoredCurrentIndex);
+        minVisibleIndex = 0;
+        // Conversation-open status: true when any ConversationStart in the entries list
+        // doesn't have a matching ConversationEnd later.  Cheap pass — we just count
+        // unmatched starts as we walk.
+        int openStarts = 0;
+        for (Entry entry : entries) {
+            if (entry instanceof ConversationStart) {
+                openStarts++;
+            } else if (entry instanceof ConversationEnd && openStarts > 0) {
+                openStarts--;
+            }
+        }
+        conversationOpenProperty.set(openStarts > 0);
+        // History entries are owned by DialogHistory — restored separately by its own
+        // snapshot codec.  Don't double-write here.
+        rebuild();
+    }
+
     /** Removes the most-recently-appended entry, if any.  The cursor and
      *  {@link #minVisibleIndex} are adjusted so they stay valid (cursor backs up to the
      *  new last entry; the floor is clamped to the new entries-size).  No-op when the
@@ -816,8 +898,8 @@ public final class DialogEntriesView extends ScrollPane {
     }
 
     private static boolean isDivider(Entry entry) {
-        // CommentEntry rows (stage directions / movement notes / "── go to: X ──"
-        // section markers from the AltLife host) act as section breaks for cursor
+        // CommentEntry rows (stage directions / movement notes / host-pushed section
+        // markers like "── go to: X ──") act as section breaks for cursor
         // navigation — back / forward skip over them just like ConversationStart /
         // ConversationEnd dividers, so the cursor only ever lands on a real dialog
         // line (PlainEntry or SpokenEntry).
@@ -1187,7 +1269,7 @@ public final class DialogEntriesView extends ScrollPane {
         // Bind to the CURRENT entry's height alone — NOT the total entriesContainer height. The
         // container sums every faded previous entry stacked above the cursor, which previously made
         // the dialog grow to nearly twice the size the active line actually needed (especially in
-        // hosts like AltLife that accumulate every step in stepHistory). Tracking just the current
+        // hosts that accumulate every step in stepHistory). Tracking just the current
         // entry plus the surrounding chrome (container + dialog chrome) sizes the dialog to fit
         // exactly the active message, letting previous entries scroll off the top.
         //
@@ -1428,6 +1510,12 @@ public final class DialogEntriesView extends ScrollPane {
         // {@link #scrollAnimationDuration} so the reader's eye can follow the dialog dropping down
         // instead of jumping. Any previously-active animation is cancelled before the new one fires
         // so rapid forward clicks don't queue overlapping tweens.
+        // Mark before queueing so the height-change listener (which fires synchronously
+        // during the next layout pulse when content grows) knows the deferred animation
+        // owns this rebuild's scroll motion and skips its belt-and-braces snap.  Cleared
+        // inside scrollToBottomDeferred so subsequent ad-hoc height changes (auto-fit
+        // resizing, etc.) once again fall through to the snap fallback.
+        rebuildPendingScroll = true;
         Platform.runLater(() -> Platform.runLater(this::scrollToBottomDeferred));
     }
 
@@ -1446,6 +1534,11 @@ public final class DialogEntriesView extends ScrollPane {
      * be.</p>
      */
     private void scrollToBottomDeferred() {
+        // Clear the pending-scroll flag up front so any height-change events triggered
+        // by our own setVvalue calls below don't see the flag still set and skip their
+        // belt-and-braces snap.  By the time this method runs, the rebuild's height
+        // growth has already happened and the deferred animation is taking over.
+        rebuildPendingScroll = false;
         double target = getVmax();
         if (activeScrollAnimation != null) {
             activeScrollAnimation.stop();
@@ -1483,6 +1576,17 @@ public final class DialogEntriesView extends ScrollPane {
         timeline.setOnFinished(event -> {
             if (activeScrollAnimation == timeline) {
                 activeScrollAnimation = null;
+                // Safety net: vmax may have grown since target was captured (text
+                // wrapping landing on a later layout pass, async image measurement,
+                // a long paced-playback line that wraps to two lines after the
+                // initial bounds snapshot, ...).  If the animation finished short
+                // of the live bottom, snap to the live vmax so the newest entry is
+                // never left below the viewport.  Idempotent when the animation
+                // already landed at vmax.
+                double liveTarget = getVmax();
+                if (liveTarget > 0 && getVvalue() < liveTarget - 1e-6) {
+                    setVvalue(liveTarget);
+                }
             }
         });
         activeScrollAnimation = timeline;
@@ -1602,8 +1706,7 @@ public final class DialogEntriesView extends ScrollPane {
 
     private static Label renderPlain(PlainEntry entry) {
         Label label = new Label(entry.text());
-        label.setWrapText(true);
-        label.setMaxWidth(Double.MAX_VALUE);
+        applyWrapping(label);
         label.getStyleClass().add(ENTRY_STYLE_CLASS);
         return label;
     }
@@ -1614,8 +1717,7 @@ public final class DialogEntriesView extends ScrollPane {
      *  uses to drop the font size and italicise the body — see the engine default.css. */
     private static Label renderComment(CommentEntry entry) {
         Label label = new Label(entry.text());
-        label.setWrapText(true);
-        label.setMaxWidth(Double.MAX_VALUE);
+        applyWrapping(label);
         label.getStyleClass().addAll(ENTRY_STYLE_CLASS, COMMENT_STYLE_CLASS);
         return label;
     }
@@ -1624,6 +1726,16 @@ public final class DialogEntriesView extends ScrollPane {
         HBox row = new HBox(8);
         row.getStyleClass().addAll(ENTRY_STYLE_CLASS, lineTypeStyleClass(entry.type()));
         row.setMaxWidth(Double.MAX_VALUE);
+        // Critical for wrapping to engage: HBox by default refuses to size a child
+        // below the child's computed pref width.  For a Label whose pref width is the
+        // unwrapped single-line text width (which is what JFX returns even with
+        // wrapText=true when no width constraint is in effect), the HBox would
+        // therefore lay its bodyLabel out at the FULL single-line width — overflowing
+        // the viewport — instead of constraining the Label to the HBox's own width
+        // so the Label's wrap could kick in.  setMinWidth(0) on the row tells HBox
+        // the row itself can shrink, which transitively allows the bodyLabel's
+        // wrapping to function inside its Hgrow.ALWAYS slot below.
+        row.setMinWidth(0);
         row.setAlignment(Pos.TOP_LEFT);
 
         String speakerColor = entry.speaker() != null && entry.speaker().hasTextColor()
@@ -1643,12 +1755,53 @@ public final class DialogEntriesView extends ScrollPane {
 
         Label bodyLabel = new Label(entry.formattedBody());
         bodyLabel.getStyleClass().addAll(BODY_STYLE_CLASS, lineTypeStyleClass(entry.type()));
-        bodyLabel.setWrapText(true);
-        bodyLabel.setMaxWidth(Double.MAX_VALUE);
+        applyWrapping(bodyLabel);
         HBox.setHgrow(bodyLabel, Priority.ALWAYS);
         applyInlineColor(bodyLabel, speakerColor);
         row.getChildren().add(bodyLabel);
         return row;
+    }
+
+    /** Configures a {@link Label} so {@link Label#setWrapText wrapText} actually engages
+     *  inside an unconstrained-width container.  The recipe is the standard JavaFX one
+     *  for "label that fills its parent's width and wraps when text exceeds it":
+     *  <ul>
+     *    <li>{@code wrapText = true} — turn on wrapping at all.</li>
+     *    <li>{@code maxWidth = MAX_VALUE} — allow the parent to grow the label as wide
+     *        as it likes (paired with {@code Hgrow.ALWAYS} on the parent's child constraint
+     *        when applicable).</li>
+     *    <li>{@code minWidth = 0} — the missing piece.  Without this, {@link Label}'s
+     *        default {@code minWidth = USE_PREF_SIZE} returns the unwrapped single-line
+     *        text width, which {@link HBox}/{@link VBox} treats as a hard floor.  When
+     *        the parent is narrower than that floor (e.g. the dialog block column),
+     *        the parent gives up trying to shrink the label and lays it out at the
+     *        floor width — wrapping never gets a chance to engage and the text
+     *        overflows or gets clipped, depending on whether the parent is itself
+     *        unconstrained or has a viewport.  Setting {@code minWidth = 0} releases
+     *        the floor and lets the layout actually narrow the label to the parent's
+     *        width, at which point wrapText finally produces multiple lines.</li>
+     *  </ul>
+     *  Applied to every text-bearing label in the dialog entries view so multiline
+     *  spoken/comment/plain entries render correctly in both the live block and the
+     *  history view (which uses the same renderer). */
+    private static void applyWrapping(Label label) {
+        label.setWrapText(true);
+        label.setMaxWidth(Double.MAX_VALUE);
+        label.setMinWidth(0);
+        // setPrefWidth(0) is the missing piece that minWidth=0 alone doesn't fix.
+        // Label.computePrefWidth(-1) for a wrapText=true label returns the unwrapped
+        // single-line text width.  HBox/VBox sum children's pref widths to compute
+        // their own pref width, and the parent ScrollPane respects content pref
+        // width even with fitToWidth=true when content pref exceeds viewport.  Net
+        // result: long lines drove the row's pref width past the viewport, the
+        // ScrollPane sized content to that pref instead of clamping to viewport,
+        // and wrapText never engaged — the line scrolled off-screen.  Setting
+        // prefWidth=0 tells the parent layout "I have no natural width preference;
+        // give me whatever you can spare," and combined with Hgrow.ALWAYS on the
+        // HBox row (for spoken entries) or VBox fillWidth=true (for plain/comment
+        // entries), the parent then stretches the label to its own viewport-bound
+        // width and wrap engages at that finite width.
+        label.setPrefWidth(0);
     }
 
     private static void applyInlineColor(Label label, String webColor) {

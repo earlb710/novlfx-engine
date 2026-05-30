@@ -16,6 +16,7 @@ public final class ScreenTextResources {
     public static final String MAIN_MENU = "main-menu";
     public static final String PREFERENCES = "preferences";
     public static final String SAVE_LOAD = "save-load";
+    public static final String SAVE = "save";
     public static final String DIALOGUE = "dialogue";
     public static final String CHOICE = "choice";
     public static final String HUD = "hud";

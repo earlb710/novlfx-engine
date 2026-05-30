@@ -19,6 +19,7 @@ public final class EnginePlaceholderContentModule implements StaticContentModule
         definitions.put("ui.mainMenu.status", ScreenTextResources.text(ScreenTextResources.MAIN_MENU, "line.status"));
         definitions.put("ui.preferences.title", ScreenTextResources.title(ScreenTextResources.PREFERENCES));
         definitions.put("ui.saveLoad.title", ScreenTextResources.title(ScreenTextResources.SAVE_LOAD));
+        definitions.put("ui.save.title", ScreenTextResources.title(ScreenTextResources.SAVE));
         definitions.put("ui.dialogue.title", ScreenTextResources.title(ScreenTextResources.DIALOGUE));
         definitions.put("ui.choice.title", ScreenTextResources.title(ScreenTextResources.CHOICE));
         definitions.put("ui.hud.title", ScreenTextResources.title(ScreenTextResources.HUD));
