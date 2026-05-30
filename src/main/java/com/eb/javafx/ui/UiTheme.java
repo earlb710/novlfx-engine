@@ -350,6 +350,28 @@ public final class UiTheme {
                 -fx-font-style: italic;
             }
 
+            /* Text-node mirrors of the .label rules — spoken-entry bodies use
+             * TextFlow + Text instead of Label to fix wrap-text height propagation
+             * inside HBox.  See default.css for the full explanation. */
+            .dialog-entry .text {
+                -fx-fill: #ffffff;
+                -fx-font-size: 20px;
+            }
+            .dialog-entry-current .text {
+                -fx-fill: #ffffff;
+                -fx-font-size: 20px;
+                -fx-font-weight: bold;
+            }
+            .dialog-entry-previous .text {
+                -fx-font-size: 18px;
+            }
+            .dialog-entry-shout .text {
+                -fx-font-weight: bold;
+            }
+            .dialog-entry-whisper .text {
+                -fx-font-style: italic;
+            }
+
             .dialog-entry-divider {
                 -fx-alignment: center;
                 -fx-padding: 4px 0;

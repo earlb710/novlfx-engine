@@ -237,6 +237,34 @@
     -fx-text-fill: inherit;
 }
 
+/* Mirror rules for Text nodes inside TextFlow body containers — same selectors as
+ * the .label variants above but targeting .text (the default CSS class for Text)
+ * and using -fx-fill (Text's color property) instead of -fx-text-fill (Label's).
+ * The dialog-entry-body container switched from Label to TextFlow + Text because
+ * Label.wrapText doesn't reliably grow vertically inside HBox (HBox.computePrefHeight
+ * polls children without their assigned width, so wrap-text Labels report single-line
+ * pref height and the row gets sized too short — wrapped lines then show as
+ * ellipsis).  TextFlow handles wrap-height-from-width correctly.  These CSS rules
+ * mirror the Label styling so the visual treatment is identical between paths. */
+.dialog-entry .text {
+    -fx-fill: #ffffff;
+    -fx-font-size: 20px;
+}
+.dialog-entry-current .text {
+    -fx-fill: #ffffff;
+    -fx-font-size: 20px;
+    -fx-font-weight: bold;
+}
+.dialog-entry-previous .text {
+    -fx-font-size: 18px;
+}
+.dialog-entry-shout .text {
+    -fx-font-weight: bold;
+}
+.dialog-entry-whisper .text {
+    -fx-font-style: italic;
+}
+
 .dialog-entry-shout .dialog-entry-body {
     -fx-font-weight: bold;
 }

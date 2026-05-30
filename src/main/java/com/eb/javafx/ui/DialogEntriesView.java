@@ -742,18 +742,15 @@ public final class DialogEntriesView extends ScrollPane {
                 ? -1
                 : (restoredCurrentIndex < 0 ? restoredEntries.size() - 1 : restoredCurrentIndex);
         minVisibleIndex = 0;
-        // Conversation-open status: true when any ConversationStart in the entries list
-        // doesn't have a matching ConversationEnd later.  Cheap pass — we just count
-        // unmatched starts as we walk.
-        int openStarts = 0;
-        for (Entry entry : entries) {
-            if (entry instanceof ConversationStart) {
-                openStarts++;
-            } else if (entry instanceof ConversationEnd && openStarts > 0) {
-                openStarts--;
-            }
-        }
-        conversationOpenProperty.set(openStarts > 0);
+        // Loaded entries are STATIC history rows — not an active conversation.  The
+        // player isn't mid-chain when they load; they're picking up a snapshot.  If
+        // we set conversationOpenProperty=true based on unmatched ConversationStart
+        // entries (which would naturally appear in a chain saved before its end),
+        // the action menu would stay hidden forever after load because no code path
+        // calls endConversation on the static restored state.  Force false: the
+        // player can re-enter dialog via any action that calls startConversation,
+        // at which point the property flips true and the menu hides as expected.
+        conversationOpenProperty.set(false);
         // History entries are owned by DialogHistory — restored separately by its own
         // snapshot codec.  Don't double-write here.
         rebuild();
@@ -1459,6 +1456,15 @@ public final class DialogEntriesView extends ScrollPane {
     }
 
     private void rebuild() {
+        // Mark FIRST — before any child mutation or layout-triggering call below.
+        // Adding children, plus the bounds-read inside refreshAutoFitTracker (which can
+        // synchronously force a layout pass on the not-yet-laid-out container), would
+        // otherwise fire the heightProperty listener while rebuildPendingScroll is
+        // still false → the snap fires, then the flag flips, then the deferred scroll
+        // pushes back and animates → flicker.  Setting the flag up here closes that
+        // window so any height-change firing during this rebuild() call defers to the
+        // animation that scrollToBottomDeferred will play.
+        rebuildPendingScroll = true;
         entriesContainer.getChildren().clear();
         if (!entries.isEmpty()) {
             if (historyModeProperty.get()) {
@@ -1510,12 +1516,10 @@ public final class DialogEntriesView extends ScrollPane {
         // {@link #scrollAnimationDuration} so the reader's eye can follow the dialog dropping down
         // instead of jumping. Any previously-active animation is cancelled before the new one fires
         // so rapid forward clicks don't queue overlapping tweens.
-        // Mark before queueing so the height-change listener (which fires synchronously
-        // during the next layout pulse when content grows) knows the deferred animation
-        // owns this rebuild's scroll motion and skips its belt-and-braces snap.  Cleared
+        // Flag already set at the top of this method — see the comment at the
+        // rebuildPendingScroll = true line up there for why "early" matters.  Cleared
         // inside scrollToBottomDeferred so subsequent ad-hoc height changes (auto-fit
         // resizing, etc.) once again fall through to the snap fallback.
-        rebuildPendingScroll = true;
         Platform.runLater(() -> Platform.runLater(this::scrollToBottomDeferred));
     }
 
@@ -1704,69 +1708,29 @@ public final class DialogEntriesView extends ScrollPane {
         return node;
     }
 
-    private Label renderPlain(PlainEntry entry) {
+    private static Label renderPlain(PlainEntry entry) {
         Label label = new Label(entry.text());
-        configureWrappingBoundToContainer(label);
+        label.setWrapText(true);
+        label.setMaxWidth(Double.MAX_VALUE);
+        label.setMinWidth(0);
         label.getStyleClass().add(ENTRY_STYLE_CLASS);
         return label;
     }
 
-    /** Renders a {@link CommentEntry} as a small italic label.  The base
-     *  {@link #ENTRY_STYLE_CLASS} keeps it in the same column / wrap behavior as other
-     *  rows; the {@link #COMMENT_STYLE_CLASS} layered on top is the hook the stylesheet
-     *  uses to drop the font size and italicise the body — see the engine default.css. */
-    private Label renderComment(CommentEntry entry) {
+    /** Renders a {@link CommentEntry} as a small italic label. */
+    private static Label renderComment(CommentEntry entry) {
         Label label = new Label(entry.text());
-        configureWrappingBoundToContainer(label);
+        label.setWrapText(true);
+        label.setMaxWidth(Double.MAX_VALUE);
+        label.setMinWidth(0);
         label.getStyleClass().addAll(ENTRY_STYLE_CLASS, COMMENT_STYLE_CLASS);
         return label;
-    }
-
-    /** Wires the label's width so wrap-text actually engages.  Binds
-     *  {@code maxWidthProperty} and {@code prefWidthProperty} to the entries
-     *  container's live width — that container's width is driven by
-     *  {@link #setFitToWidth setFitToWidth=true} on this ScrollPane, so it always
-     *  equals the viewport width.  With an explicit finite width-binding the Label
-     *  no longer falls through to its unwrapped natural pref width during HBox/VBox
-     *  layout, which is what was leaking past the viewport's right edge despite
-     *  {@code wrapText=true}, {@code minWidth=0}, and {@code maxWidth=MAX_VALUE}.
-     *  See {@link #configureSpokenBodyWrappingBoundToContainer} for the variant that
-     *  subtracts the speaker column for two-column rows. */
-    private void configureWrappingBoundToContainer(Label label) {
-        label.setWrapText(true);
-        label.setMinWidth(0);
-        label.maxWidthProperty().bind(entriesContainer.widthProperty());
-        label.prefWidthProperty().bind(entriesContainer.widthProperty());
-    }
-
-    /** Variant of {@link #configureWrappingBoundToContainer} for the spoken-entry
-     *  body label sitting next to a fixed-width speaker column.  Binds width to
-     *  (container width − speaker column − HBox spacing) so the body knows the
-     *  exact horizontal slot it should wrap inside. */
-    private void configureSpokenBodyWrappingBoundToContainer(Label label, double rowSpacing) {
-        double speakerOffset = speakerColumnWidth + rowSpacing;
-        label.setWrapText(true);
-        label.setMinWidth(0);
-        javafx.beans.binding.DoubleBinding bodyWidthBinding =
-                entriesContainer.widthProperty().subtract(speakerOffset);
-        label.maxWidthProperty().bind(bodyWidthBinding);
-        label.prefWidthProperty().bind(bodyWidthBinding);
     }
 
     private HBox renderSpoken(SpokenEntry entry) {
         HBox row = new HBox(8);
         row.getStyleClass().addAll(ENTRY_STYLE_CLASS, lineTypeStyleClass(entry.type()));
         row.setMaxWidth(Double.MAX_VALUE);
-        // Critical for wrapping to engage: HBox by default refuses to size a child
-        // below the child's computed pref width.  For a Label whose pref width is the
-        // unwrapped single-line text width (which is what JFX returns even with
-        // wrapText=true when no width constraint is in effect), the HBox would
-        // therefore lay its bodyLabel out at the FULL single-line width — overflowing
-        // the viewport — instead of constraining the Label to the HBox's own width
-        // so the Label's wrap could kick in.  setMinWidth(0) on the row tells HBox
-        // the row itself can shrink, which transitively allows the bodyLabel's
-        // wrapping to function inside its Hgrow.ALWAYS slot below.
-        row.setMinWidth(0);
         row.setAlignment(Pos.TOP_LEFT);
 
         String speakerColor = entry.speaker() != null && entry.speaker().hasTextColor()
@@ -1784,63 +1748,33 @@ public final class DialogEntriesView extends ScrollPane {
             row.getChildren().add(speakerLabel);
         }
 
-        Label bodyLabel = new Label(entry.formattedBody());
-        bodyLabel.getStyleClass().addAll(BODY_STYLE_CLASS, lineTypeStyleClass(entry.type()));
-        // Bind to (entriesContainer.width − speaker column − HBox spacing) when a
-        // speaker column is present; bind to the full container width otherwise.
-        // Hgrow.ALWAYS stays as a fallback for when the binding can't engage
-        // (e.g. detached widget), but the binding is the primary constraint.
-        if (entry.speaker() != null) {
-            configureSpokenBodyWrappingBoundToContainer(bodyLabel, row.getSpacing());
-        } else {
-            configureWrappingBoundToContainer(bodyLabel);
+        // TextFlow + Text instead of a wrap-text Label.  JavaFX's Label.wrapText has
+        // a known limitation inside HBox: HBox.computePrefHeight polls each child's
+        // pref height WITHOUT first knowing its assigned width, so a wrap-text Label
+        // reports its single-line pref height and HBox sizes the row to that.  The
+        // Label then DOES wrap internally to fit the actual narrower width it's
+        // given at layoutChildren time, but only one line fits in the single-line
+        // height HBox allotted — overflow shows as ellipsis ("...").
+        //
+        // TextFlow is the canonical wrap container in JFX and was designed for this
+        // exact case: its computePrefHeight uses the actual assigned width to compute
+        // wrap height, so the row grows vertically to fit all wrapped lines.  Text
+        // nodes inside it inherit fill/font from inline style or programmatic setters.
+        javafx.scene.text.Text bodyText = new javafx.scene.text.Text(entry.formattedBody());
+        if (speakerColor != null) {
+            try {
+                bodyText.setFill(javafx.scene.paint.Color.web(speakerColor));
+            } catch (IllegalArgumentException ignored) {
+                // Unparseable colour — leave default fill.
+            }
         }
-        HBox.setHgrow(bodyLabel, Priority.ALWAYS);
-        applyInlineColor(bodyLabel, speakerColor);
-        row.getChildren().add(bodyLabel);
+        javafx.scene.text.TextFlow bodyFlow = new javafx.scene.text.TextFlow(bodyText);
+        bodyFlow.getStyleClass().addAll(BODY_STYLE_CLASS, lineTypeStyleClass(entry.type()));
+        bodyFlow.setMaxWidth(Double.MAX_VALUE);
+        bodyFlow.setMinWidth(0);
+        HBox.setHgrow(bodyFlow, Priority.ALWAYS);
+        row.getChildren().add(bodyFlow);
         return row;
-    }
-
-    /** Configures a {@link Label} so {@link Label#setWrapText wrapText} actually engages
-     *  inside an unconstrained-width container.  The recipe is the standard JavaFX one
-     *  for "label that fills its parent's width and wraps when text exceeds it":
-     *  <ul>
-     *    <li>{@code wrapText = true} — turn on wrapping at all.</li>
-     *    <li>{@code maxWidth = MAX_VALUE} — allow the parent to grow the label as wide
-     *        as it likes (paired with {@code Hgrow.ALWAYS} on the parent's child constraint
-     *        when applicable).</li>
-     *    <li>{@code minWidth = 0} — the missing piece.  Without this, {@link Label}'s
-     *        default {@code minWidth = USE_PREF_SIZE} returns the unwrapped single-line
-     *        text width, which {@link HBox}/{@link VBox} treats as a hard floor.  When
-     *        the parent is narrower than that floor (e.g. the dialog block column),
-     *        the parent gives up trying to shrink the label and lays it out at the
-     *        floor width — wrapping never gets a chance to engage and the text
-     *        overflows or gets clipped, depending on whether the parent is itself
-     *        unconstrained or has a viewport.  Setting {@code minWidth = 0} releases
-     *        the floor and lets the layout actually narrow the label to the parent's
-     *        width, at which point wrapText finally produces multiple lines.</li>
-     *  </ul>
-     *  Applied to every text-bearing label in the dialog entries view so multiline
-     *  spoken/comment/plain entries render correctly in both the live block and the
-     *  history view (which uses the same renderer). */
-    private static void applyWrapping(Label label) {
-        label.setWrapText(true);
-        label.setMaxWidth(Double.MAX_VALUE);
-        label.setMinWidth(0);
-        // setPrefWidth(0) is the missing piece that minWidth=0 alone doesn't fix.
-        // Label.computePrefWidth(-1) for a wrapText=true label returns the unwrapped
-        // single-line text width.  HBox/VBox sum children's pref widths to compute
-        // their own pref width, and the parent ScrollPane respects content pref
-        // width even with fitToWidth=true when content pref exceeds viewport.  Net
-        // result: long lines drove the row's pref width past the viewport, the
-        // ScrollPane sized content to that pref instead of clamping to viewport,
-        // and wrapText never engaged — the line scrolled off-screen.  Setting
-        // prefWidth=0 tells the parent layout "I have no natural width preference;
-        // give me whatever you can spare," and combined with Hgrow.ALWAYS on the
-        // HBox row (for spoken entries) or VBox fillWidth=true (for plain/comment
-        // entries), the parent then stretches the label to its own viewport-bound
-        // width and wrap engages at that finite width.
-        label.setPrefWidth(0);
     }
 
     private static void applyInlineColor(Label label, String webColor) {
