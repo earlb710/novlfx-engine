@@ -1822,8 +1822,14 @@ public final class DialogEntriesView extends ScrollPane {
         if (previous) {
             node.getStyleClass().add(PREVIOUS_ENTRY_STYLE_CLASS);
             node.setOpacity(PREVIOUS_ENTRY_OPACITY);
+            System.out.println("[DialogStyle] applyFade PREVIOUS node=" + node.getClass().getSimpleName()
+                    + " opacity=" + node.getOpacity()
+                    + " classes=" + node.getStyleClass());
         } else {
             node.getStyleClass().add(CURRENT_ENTRY_STYLE_CLASS);
+            System.out.println("[DialogStyle] applyFade CURRENT node=" + node.getClass().getSimpleName()
+                    + " opacity=" + node.getOpacity()
+                    + " classes=" + node.getStyleClass());
         }
     }
 

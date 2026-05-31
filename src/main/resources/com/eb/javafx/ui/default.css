@@ -255,8 +255,15 @@
     -fx-font-size: 20px;
     -fx-font-weight: bold;
 }
+/* Previous-entry Text needs higher specificity than .dialog-entry .text to win the
+ * cascade reliably for body Text inside TextFlow — without the extra qualifier the
+ * source-order can flip and previous rows render at the same 20px as current.
+ * Chaining .dialog-entry-previous to the body container's class makes the selector
+ * 3-class, beating the 2-class .dialog-entry .text base rule unconditionally. */
+.dialog-entry-previous .dialog-entry-body .text,
 .dialog-entry-previous .text {
     -fx-font-size: 18px;
+    -fx-font-weight: normal;
 }
 .dialog-entry-shout .text {
     -fx-font-weight: bold;

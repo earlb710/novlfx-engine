@@ -362,8 +362,13 @@ public final class UiTheme {
                 -fx-font-size: 20px;
                 -fx-font-weight: bold;
             }
+            /* 3-class selector to beat .dialog-entry .text in the cascade for previous
+             * (faded) rows.  Without the extra qualifier source-order can flip and
+             * previous Text renders at the same 20px as current. */
+            .dialog-entry-previous .dialog-entry-body .text,
             .dialog-entry-previous .text {
                 -fx-font-size: 18px;
+                -fx-font-weight: normal;
             }
             .dialog-entry-shout .text {
                 -fx-font-weight: bold;

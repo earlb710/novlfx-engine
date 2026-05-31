@@ -448,12 +448,14 @@ final class DialogEntriesViewTest {
         assertTrue(row.getStyleClass().contains(DialogEntriesView.SAY_STYLE_CLASS));
         assertEquals(2, row.getChildren().size());
         Label speaker = (Label) row.getChildren().get(0);
-        Label body = (Label) row.getChildren().get(1);
+        // Body is now a TextFlow containing one Text — switched from Label because
+        // wrap-text Labels in HBox don't grow vertically with wrapped content.
+        javafx.scene.text.TextFlow body = (javafx.scene.text.TextFlow) row.getChildren().get(1);
         assertEquals("Alice:", speaker.getText());
         assertTrue(speaker.getStyleClass().contains(DialogEntriesView.SPEAKER_STYLE_CLASS));
-        assertEquals("Hello, Bob!", body.getText());
+        javafx.scene.text.Text bodyText = (javafx.scene.text.Text) body.getChildren().get(0);
+        assertEquals("Hello, Bob!", bodyText.getText());
         assertTrue(body.getStyleClass().contains(DialogEntriesView.BODY_STYLE_CLASS));
-        assertTrue(body.isWrapText());
     }
 
     @Test
@@ -465,8 +467,9 @@ final class DialogEntriesViewTest {
 
         HBox row = (HBox) view.entryNodes().get(0);
         assertTrue(row.getStyleClass().contains(DialogEntriesView.SHOUT_STYLE_CLASS));
-        Label body = (Label) row.getChildren().get(1);
-        assertEquals("STOP!", body.getText());
+        javafx.scene.text.TextFlow body = (javafx.scene.text.TextFlow) row.getChildren().get(1);
+        javafx.scene.text.Text bodyText = (javafx.scene.text.Text) body.getChildren().get(0);
+        assertEquals("STOP!", bodyText.getText());
         assertTrue(body.getStyleClass().contains(DialogEntriesView.SHOUT_STYLE_CLASS));
     }
 
@@ -479,8 +482,9 @@ final class DialogEntriesViewTest {
 
         HBox row = (HBox) view.entryNodes().get(0);
         assertTrue(row.getStyleClass().contains(DialogEntriesView.WHISPER_STYLE_CLASS));
-        Label body = (Label) row.getChildren().get(1);
-        assertEquals("don't tell anyone", body.getText());
+        javafx.scene.text.TextFlow body = (javafx.scene.text.TextFlow) row.getChildren().get(1);
+        javafx.scene.text.Text bodyText = (javafx.scene.text.Text) body.getChildren().get(0);
+        assertEquals("don't tell anyone", bodyText.getText());
     }
 
     @Test
@@ -491,8 +495,9 @@ final class DialogEntriesViewTest {
 
         HBox row = (HBox) view.entryNodes().get(0);
         assertEquals(1, row.getChildren().size());
-        Label body = (Label) row.getChildren().get(0);
-        assertEquals("The room is dark.", body.getText());
+        javafx.scene.text.TextFlow body = (javafx.scene.text.TextFlow) row.getChildren().get(0);
+        javafx.scene.text.Text bodyText = (javafx.scene.text.Text) body.getChildren().get(0);
+        assertEquals("The room is dark.", bodyText.getText());
     }
 
     @Test
@@ -504,11 +509,15 @@ final class DialogEntriesViewTest {
 
         HBox row = (HBox) view.entryNodes().get(0);
         Label speaker = (Label) row.getChildren().get(0);
-        Label body = (Label) row.getChildren().get(1);
+        javafx.scene.text.TextFlow body = (javafx.scene.text.TextFlow) row.getChildren().get(1);
+        javafx.scene.text.Text bodyText = (javafx.scene.text.Text) body.getChildren().get(0);
         assertTrue(speaker.getStyle().contains("#88ddff"),
                 "speaker inline style should carry the role colour, was: " + speaker.getStyle());
-        assertTrue(body.getStyle().contains("#88ddff"),
-                "body inline style should carry the role colour, was: " + body.getStyle());
+        // Body colour is set via setFill on the Text (not inline style) so the renderer
+        // matches the speaker tint exactly via parsed Color.web().
+        javafx.scene.paint.Color expected = javafx.scene.paint.Color.web("#88ddff");
+        assertEquals(expected, bodyText.getFill(),
+                "body fill should match the speaker's text colour");
     }
 
     @Test
@@ -520,8 +529,10 @@ final class DialogEntriesViewTest {
 
         HBox row = (HBox) view.entryNodes().get(0);
         Label speaker = (Label) row.getChildren().get(0);
-        Label body = (Label) row.getChildren().get(1);
+        javafx.scene.text.TextFlow body = (javafx.scene.text.TextFlow) row.getChildren().get(1);
         assertEquals("", speaker.getStyle());
+        // No speaker colour → no inline fill applied to the Text; default CSS-driven
+        // fill applies instead.  TextFlow itself has no inline style.
         assertEquals("", body.getStyle());
     }
 
