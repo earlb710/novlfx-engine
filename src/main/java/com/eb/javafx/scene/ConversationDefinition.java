@@ -51,6 +51,7 @@ public final class ConversationDefinition {
         SHOUT("shout"),
         SAY("say"),
         WHISPER("whisper"),
+        THINK("think"),
         CHOICE("choice");
 
         private final String jsonValue;
@@ -79,6 +80,8 @@ public final class ConversationDefinition {
                 case SHOUT -> "<b>" + UtilString.escapeXML(checkedText.toUpperCase(Locale.ROOT)) + "</b>";
                 case SAY, CHOICE -> UtilString.escapeXML(checkedText);
                 case WHISPER -> "<i>" + UtilString.escapeXML(checkedText.toLowerCase(Locale.ROOT)) + "</i>";
+                // Internal thought — italic, preserving the author's casing.
+                case THINK -> "<i>" + UtilString.escapeXML(checkedText) + "</i>";
             };
         }
 

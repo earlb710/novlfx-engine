@@ -280,6 +280,14 @@
     -fx-font-style: italic;
 }
 
+.dialog-entry-think .text {
+    -fx-font-style: italic;
+}
+
+.dialog-entry-think .dialog-entry-body {
+    -fx-font-style: italic;
+}
+
 .dialog-entry-divider {
     -fx-alignment: center;
     -fx-padding: 4px 0;

@@ -368,6 +368,9 @@ public final class SaveScreen {
                 + " -fx-focus-color: " + accentHex + ";"
                 + " -fx-faint-focus-color: transparent;");
 
+        // Captured during tab construction so the auto-save-daily checkbox can bind its
+        // visibility to "is the Auto tab selected" (the checkbox only makes sense there).
+        final Tab[] autoTab = new Tab[1];
         Map<SaveSlotCategory, VBox> categoryContainers = new java.util.EnumMap<>(SaveSlotCategory.class);
         Map<SaveSlotCategory, String> categoryLabels = Map.of(
                 SaveSlotCategory.NORMAL, screenText("tab.normal"),
@@ -410,6 +413,9 @@ public final class SaveScreen {
             tabScroll.getStyleClass().add("engine-slim-scrollbar");
             Tab tab = new Tab(categoryLabels.get(cat), tabScroll);
             tabPane.getTabs().add(tab);
+            if (cat == SaveSlotCategory.AUTO) {
+                autoTab[0] = tab;
+            }
         }
 
         // ---- Pagination state ------------------------------------------------------
@@ -417,10 +423,17 @@ public final class SaveScreen {
         // slot numbers shift by SLOT_COUNT per page — page 2 maps to slots 16..30,
         // page 3 to 31..45, etc.  pageCount caps at MAX_PAGES (10) so a player can
         // accumulate up to 150 slots per category before the "+" button hides.
-        // selectedPage drives which slot range is currently displayed.  Both are
-        // session-only (no preference persistence) per the design ask.
-        javafx.beans.property.IntegerProperty pageCount    = new javafx.beans.property.SimpleIntegerProperty(1);
+        // selectedPage drives which slot range is currently displayed.  pageCount is
+        // persisted to global preferences (save.pageCount) so pages the player spawns via
+        // the "+" chip — and the saves stored on them — survive a restart; selectedPage
+        // stays session-only (always opens on page 1).
+        int storedPageCount = Math.min(MAX_PAGES,
+                Math.max(1, context.preferencesService().saveScreenPageCount()));
+        javafx.beans.property.IntegerProperty pageCount    = new javafx.beans.property.SimpleIntegerProperty(storedPageCount);
         javafx.beans.property.IntegerProperty selectedPage = new javafx.beans.property.SimpleIntegerProperty(1);
+        // Persist every page-count change (the "+" chip increments it) to global setup.
+        pageCount.addListener((obs, was, is) ->
+                context.preferencesService().saveSaveScreenPageCount(is.intValue()));
 
         Runnable rebuildAllTabs = () -> {
             int page = Math.max(1, selectedPage.get());
@@ -498,6 +511,18 @@ public final class SaveScreen {
         autoSaveDaily.setSelected(context.preferencesService().autoSaveDaily());
         autoSaveDaily.selectedProperty().addListener((obs, was, is) ->
                 context.preferencesService().saveAutoSaveDaily(is));
+        // The checkbox only applies to auto-saves, so it's shown only while the Auto tab is
+        // the active tab.  managed follows visible so the bottom strip reclaims the space
+        // (keeping the Back button centred) when it's hidden.
+        Runnable refreshAutoSaveVisibility = () -> {
+            boolean onAutoTab = autoTab[0] != null
+                    && tabPane.getSelectionModel().getSelectedItem() == autoTab[0];
+            autoSaveDaily.setVisible(onAutoTab);
+            autoSaveDaily.setManaged(onAutoTab);
+        };
+        tabPane.getSelectionModel().selectedItemProperty().addListener((obs, was, is) ->
+                refreshAutoSaveVisibility.run());
+        refreshAutoSaveVisibility.run();
 
         Button backButton = ButtonVisuals.applySvgArtwork(new Button(screenText("item.back.label")));
         backButton.setMinWidth(160);

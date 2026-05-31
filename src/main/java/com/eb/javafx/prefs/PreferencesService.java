@@ -42,6 +42,8 @@ public final class PreferencesService {
     private static final String TEXT_SPEED_KEY = "ui.textSpeed";
     private static final String AUTO_SAVE_DAILY_KEY = "save.autoSaveDaily";
     private static final String SAVE_SCREEN_VIEW_MODE_KEY = "save.viewMode";
+    private static final String SAVE_SCREEN_PAGE_COUNT_KEY = "save.pageCount";
+    private static final String SAVE_SCREEN_SELECTED_PAGE_KEY = "save.selectedPage";
 
     private final Preferences preferences = Preferences.userNodeForPackage(PreferencesService.class);
     private int windowWidth;
@@ -70,6 +72,8 @@ public final class PreferencesService {
     private boolean fullscreen;
     private boolean autoSaveDaily;
     private SaveScreenViewMode saveScreenViewMode;
+    private int saveScreenPageCount;
+    private int saveScreenSelectedPage;
     private Language language;
     private TextSpeed textSpeed;
 
@@ -105,9 +109,14 @@ public final class PreferencesService {
         voiceEnabled = preferences.getBoolean(VOICE_ENABLED_KEY, true);
         autoAdvanceOnVoiceEnd = preferences.getBoolean(AUTO_ADVANCE_ON_VOICE_END_KEY, false);
         fullscreen = preferences.getBoolean(FULLSCREEN_KEY, false);
-        autoSaveDaily = preferences.getBoolean(AUTO_SAVE_DAILY_KEY, false);
+        // Default ON: the first time a new player starts the game (no stored value yet),
+        // end-of-day auto-save is enabled.  Once the player toggles the Save-screen
+        // checkbox the stored value wins.
+        autoSaveDaily = preferences.getBoolean(AUTO_SAVE_DAILY_KEY, true);
         saveScreenViewMode = SaveScreenViewMode.fromPreferenceValue(
                 preferences.get(SAVE_SCREEN_VIEW_MODE_KEY, SaveScreenViewMode.GRID.preferenceValue()));
+        saveScreenPageCount = preferences.getInt(SAVE_SCREEN_PAGE_COUNT_KEY, 1);
+        saveScreenSelectedPage = preferences.getInt(SAVE_SCREEN_SELECTED_PAGE_KEY, 1);
         language = validatedLanguage(preferences.get(LANGUAGE_KEY, Language.ENGLISH.preferenceValue()));
         textSpeed = validatedTextSpeed(preferences.get(TEXT_SPEED_KEY, TextSpeed.NORMAL.preferenceValue()));
     }
@@ -263,6 +272,22 @@ public final class PreferencesService {
     public void saveSaveScreenViewMode(SaveScreenViewMode mode) {
         this.saveScreenViewMode = mode == null ? SaveScreenViewMode.GRID : mode;
         preferences.put(SAVE_SCREEN_VIEW_MODE_KEY, this.saveScreenViewMode.preferenceValue());
+        flushQuietly();
+    }
+
+    /** Returns how many Save-screen pages the player has spawned (global, persisted).  Always
+     *  at least 1.  Each page exposes a fixed block of slots, so this is the count the Save
+     *  screen restores on restart so previously-added pages (and the saves on them) stay
+     *  reachable. */
+    public int saveScreenPageCount() {
+        return Math.max(1, saveScreenPageCount);
+    }
+
+    /** Persists the Save-screen page count and updates the loaded model.  Clamped to a floor
+     *  of 1; the Save screen enforces its own upper cap before calling this. */
+    public void saveSaveScreenPageCount(int pageCount) {
+        this.saveScreenPageCount = Math.max(1, pageCount);
+        preferences.putInt(SAVE_SCREEN_PAGE_COUNT_KEY, this.saveScreenPageCount);
         flushQuietly();
     }
 

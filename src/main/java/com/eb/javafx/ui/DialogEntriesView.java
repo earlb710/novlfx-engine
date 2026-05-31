@@ -102,6 +102,7 @@ public final class DialogEntriesView extends ScrollPane {
     public static final String SAY_STYLE_CLASS = "dialog-entry-say";
     public static final String SHOUT_STYLE_CLASS = "dialog-entry-shout";
     public static final String WHISPER_STYLE_CLASS = "dialog-entry-whisper";
+    public static final String THINK_STYLE_CLASS = "dialog-entry-think";
     public static final String DIVIDER_STYLE_CLASS = "dialog-entry-divider";
     public static final String DIVIDER_LINE_STYLE_CLASS = "dialog-entry-divider-line";
     public static final String DIVIDER_LABEL_STYLE_CLASS = "dialog-entry-divider-label";
@@ -160,7 +161,7 @@ public final class DialogEntriesView extends ScrollPane {
             return switch (type) {
                 case SHOUT -> text.toUpperCase(Locale.ROOT);
                 case WHISPER -> text.toLowerCase(Locale.ROOT);
-                case SAY, CHOICE -> text;
+                case SAY, CHOICE, THINK -> text;
             };
         }
         @Override public String displayText() {
@@ -631,6 +632,16 @@ public final class DialogEntriesView extends ScrollPane {
     /** Convenience overload for whispering without an explicit speaker. */
     public void whisper(String text) {
         whisper(null, text);
+    }
+
+    /** Appends a {@link SpokenEntry} for a {@link LineType#THINK think} line (internal thought, italic). */
+    public void think(DialogSpeaker speaker, String text) {
+        appendSpoken(LineType.THINK, speaker, text);
+    }
+
+    /** Convenience overload for an unattributed internal thought. */
+    public void think(String text) {
+        think(null, text);
     }
 
     // ----- Conversation lifecycle ---------------------------------------------------------------
@@ -1815,6 +1826,7 @@ public final class DialogEntriesView extends ScrollPane {
             case SAY, CHOICE -> SAY_STYLE_CLASS;
             case SHOUT -> SHOUT_STYLE_CLASS;
             case WHISPER -> WHISPER_STYLE_CLASS;
+            case THINK -> THINK_STYLE_CLASS;
         };
     }
 
