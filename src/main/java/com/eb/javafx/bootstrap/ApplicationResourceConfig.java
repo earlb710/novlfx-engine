@@ -190,7 +190,52 @@ public final class ApplicationResourceConfig {
             }
         }
         promoteScreenBackgrounds(root, merged);
+        promoteFooterStyle(root, merged);
         return merged;
+    }
+
+    /** Reserved {@code resources} id prefix for a footer style field, e.g. {@code footer.color}. */
+    public static final String FOOTER_STYLE_PREFIX = "footer.";
+
+    /**
+     * Folds the optional top-level {@code footer} object — {@code { font, color, selectColor,
+     * backgroundColor, transparency }} — into {@code resources} entries {@code footer.<field>}.
+     */
+    private static void promoteFooterStyle(Map<String, Object> root, Map<String, String> merged) {
+        if (!root.containsKey("footer")) {
+            return;
+        }
+        Map<String, Object> footer = requireObject(root.get("footer"), "root.footer");
+        footer.forEach((rawField, rawValue) -> {
+            String field = normaliseFooterField(rawField);
+            if (field == null) {
+                throw new IllegalArgumentException("Unknown footer style field '" + rawField
+                        + "' in root.footer (use font / color / selectColor / backgroundColor / transparency).");
+            }
+            if (!(rawValue instanceof String stringValue)) {
+                throw new IllegalArgumentException("Expected JSON string for root.footer." + rawField + ".");
+            }
+            if (!stringValue.isBlank()) {
+                merged.put(FOOTER_STYLE_PREFIX + field, stringValue);
+            }
+        });
+    }
+
+    private static String normaliseFooterField(String field) {
+        return switch (field) {
+            case "font", "fontFamily" -> "font";
+            case "color", "textColor" -> "color";
+            case "selectColor", "activeColor", "highlightColor" -> "selectColor";
+            case "backgroundColor", "background" -> "backgroundColor";
+            case "transparency", "opacity" -> "transparency";
+            default -> null;
+        };
+    }
+
+    /** Configured footer style field ({@code font} / {@code color} / {@code selectColor} /
+     *  {@code backgroundColor} / {@code transparency}), if set. */
+    public Optional<String> footerStyle(String field) {
+        return Optional.ofNullable(resources.get(FOOTER_STYLE_PREFIX + field));
     }
 
     /** Reserved {@code resources} id prefix for a per-screen background field, keyed by screen

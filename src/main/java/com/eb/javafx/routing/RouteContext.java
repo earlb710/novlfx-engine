@@ -403,6 +403,9 @@ public final class RouteContext {
                 backgroundImageTransparency);
         Scene scene = new Scene(sceneRoot, preferencesService.windowWidth(), preferencesService.windowHeight());
         scene.getStylesheets().add(uiTheme.stylesheet());
+        // Config-driven footer override (font / colour / select colour / background /
+        // transparency) layered after the theme so it wins for the footer selectors.
+        com.eb.javafx.ui.FooterStyle.stylesheet().ifPresent(scene.getStylesheets()::add);
         return scene;
     }
 }

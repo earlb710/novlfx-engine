@@ -258,6 +258,16 @@ public final class BootstrapService {
         // Window chrome from config: title (resources.windowTitle) + app/taskbar icon
         // (resources.appIcon).  Generic — every host's primary stage gets it via boot.
         applyWindowChrome(primaryStage);
+        // Config-driven footer styling (the top-level `footer` object): font / colour / select
+        // colour / background / transparency, layered over the theme on every themed scene.
+        if (resourceConfig != null) {
+            com.eb.javafx.ui.FooterStyle.configure(
+                    resourceConfig.footerStyle("font").orElse(null),
+                    resourceConfig.footerStyle("color").orElse(null),
+                    resourceConfig.footerStyle("selectColor").orElse(null),
+                    resourceConfig.footerStyle("backgroundColor").orElse(null),
+                    resourceConfig.footerStyle("transparency").orElse(null));
+        }
         // Config-driven fonts: register any `font.*` entries from the app config so a game / mod
         // can add fonts purely through setup (config.json), before any scene CSS resolves a
         // -fx-font-family.  Best-effort — bad entries log and are skipped.

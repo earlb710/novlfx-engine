@@ -21,6 +21,7 @@ Content/code-level modding (new routes, new content modules, scripting) is out o
 | Footer-icon overrides | Footer icons resolve through the override root; SVG keeps recolour, raster supported | `ScreenShell.loadFooterIcon` |
 | Map artwork overrides | Town-map base (`map1.png`) + grid overlay (`map1-grid.png`) + building-hex/character icons override-aware | `AltLifeMapScreen.openMapImage` |
 | Button shape/artwork overrides | Engine button SVGs (`button-pill-long.svg` / `button-bevel.svg`) resolve through the override root / repoint; colour stays theme-palette-driven | `ButtonVisuals.resolveArtworkResource` |
+| Footer styling | Top-level `footer` object — font / text colour / select (highlight) colour / background / transparency — layered over the theme | `FooterStyle`, `ApplicationResourceConfig.footerStyle` |
 | Backgrounds | App / preferences / save-load default backgrounds via `config.json` keys; per-scene via screen-layout JSON metadata | `ApplicationResourceConfig`, `ScreenDesignJson` |
 | Per-screen backgrounds (any system screen) | `screenBackgrounds.<routeId>` = `{ color, image, transparency }`, resolved by the route being built | `RouteContext.themedScene*`, `ApplicationResourceConfig.screenBackground*` |
 | Save behavior | End-of-day auto-save default-on + Auto-tab checkbox; persisted save page count + last-selected page | `QuickSaveActions`, `PreferencesService` (`save.*`) |

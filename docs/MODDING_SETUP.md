@@ -391,6 +391,31 @@ engine's generated stylesheet, so it affects the real `-fx-*` tokens (not just A
 This is the strongest "skin my game" hook — it changes the generated theme tokens that every
 screen uses. Combine with §2.2 (custom CSS) for finer per-class tweaks.
 
+### 2.8 Footer styling
+
+The bottom footer bar has its own config knobs via a top-level `footer` object — font, text
+colour, the active-option **select** (highlight) colour, background colour, and transparency.
+Applied as a small generated stylesheet layered over the theme on every themed scene
+(`FooterStyle`), so it overrides the footer rules without touching the theme.
+
+```json
+"footer": {
+  "font": "Nasalization",
+  "color": "#e0e0e0",
+  "selectColor": "#ff5500",
+  "backgroundColor": "#101418",
+  "transparency": "0.85"
+}
+```
+
+- **`font`** → footer label font family. **`color`** → footer text colour.
+- **`selectColor`** → the active/selected option's highlight pill (overrides the built-in
+  `#ffcc00`). Aliases: `activeColor`, `highlightColor`.
+- **`backgroundColor`** → the footer bar background. Alias: `background`.
+- **`transparency`** → footer bar opacity, `0.0`–`1.0`. Alias: `opacity`.
+- Any subset; omitted fields keep the theme's footer styling. Values are CSS colours / a 0–1
+  number / a font family. (The footer *icon* tint is the theme palette's `footerIconColor`, §2.7.)
+
 ---
 
 ## 3. Content & text JSON
@@ -542,6 +567,7 @@ The engine itself reads only standard JVM properties (`user.home` for the save d
 | **Background for a specific system screen** | `config.json` → `screenBackgrounds.<routeId>` = `{ color, image, transparency }` (§1.6) |
 | Different colour theme (preset) | Preferences screen → Theme family/variant (writes `ui.themeFamily` / `ui.themeVariant`) |
 | **Custom theme colours** | `config.json` → `resources.themePalette` = a palette JSON (§2.7) |
+| **Style the footer** (font/color/select/transparency) | `config.json` → `footer` object (§2.8) |
 | **Set window title / app icon** | `config.json` → `resources.windowTitle` / `resources.appIcon` (§1.4) |
 | High-contrast / reduced motion | Preferences → accessibility toggles |
 | Restyle dialog text / panels | Edit `altlife-theme.css` (`-altlife-*` vars + the §2.3 classes) |

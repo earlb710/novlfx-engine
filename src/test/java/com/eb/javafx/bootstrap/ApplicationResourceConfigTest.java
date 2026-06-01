@@ -304,4 +304,39 @@ final class ApplicationResourceConfigTest {
         assertThrows(IllegalArgumentException.class, () -> ApplicationResourceConfig.fromJson(
                 "{ \"screenBackgrounds\": { \"main-menu\": { \"bogus\": \"x\" } } }", "inline"));
     }
+
+    @Test
+    void footerStyleFieldsParseAndAreAccessible() {
+        ApplicationResourceConfig config = ApplicationResourceConfig.fromJson("""
+                {
+                  "footer": {
+                    "font": "Nasalization",
+                    "color": "#e0e0e0",
+                    "selectColor": "#ff5500",
+                    "backgroundColor": "#101418",
+                    "transparency": "0.8"
+                  }
+                }
+                """, "inline");
+
+        assertEquals("Nasalization", config.footerStyle("font").orElse(null));
+        assertEquals("#e0e0e0", config.footerStyle("color").orElse(null));
+        assertEquals("#ff5500", config.footerStyle("selectColor").orElse(null));
+        assertEquals("#101418", config.footerStyle("backgroundColor").orElse(null));
+        assertEquals("0.8", config.footerStyle("transparency").orElse(null));
+        assertTrue(config.footerStyle("font").isPresent());
+    }
+
+    @Test
+    void footerStyleAcceptsAliasFieldNamesAndRejectsUnknown() {
+        ApplicationResourceConfig config = ApplicationResourceConfig.fromJson(
+                "{ \"footer\": { \"textColor\": \"#fff\", \"activeColor\": \"#f50\", \"opacity\": \"0.5\" } }",
+                "inline");
+        assertEquals("#fff", config.footerStyle("color").orElse(null));
+        assertEquals("#f50", config.footerStyle("selectColor").orElse(null));
+        assertEquals("0.5", config.footerStyle("transparency").orElse(null));
+
+        assertThrows(IllegalArgumentException.class, () -> ApplicationResourceConfig.fromJson(
+                "{ \"footer\": { \"bogus\": \"x\" } }", "inline"));
+    }
 }
