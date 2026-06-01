@@ -2,8 +2,13 @@
 
 _Last updated: 2026-05-12 (all items complete)_
 
-This document tracks the six remaining feature areas needed to reach Ren'Py feature parity.
-Each item has a linked implementation plan under `docs/superpowers/plans/`.
+This document tracks the six feature areas needed to reach Ren'Py feature parity — **all
+complete**. Each item has a linked implementation plan under `docs/superpowers/plans/`.
+
+> **Scope:** this is the *feature-parity* backlog only. For the config-driven **setup modding**
+> capabilities (themes/CSS, fonts, icon/image & map-art overrides, save behavior) see
+> [MODDING_SETUP.md](MODDING_SETUP.md) (the how-to) and [MODDING_TODO.md](MODDING_TODO.md) (its
+> own done/backlog tracker).
 
 ---
 

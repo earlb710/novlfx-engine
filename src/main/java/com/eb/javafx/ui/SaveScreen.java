@@ -210,7 +210,7 @@ public final class SaveScreen {
     /** Reads the GameDateTime supplier with try/catch isolation — returns null when no
      *  supplier is registered, it returned null, or it threw.  Callers should skip the
      *  snapshot-capture step on null without aborting the save (metadata still writes). */
-    private static com.eb.javafx.gamesupport.GameDateTime currentGameDateTime() {
+    static com.eb.javafx.gamesupport.GameDateTime currentGameDateTime() {
         java.util.function.Supplier<com.eb.javafx.gamesupport.GameDateTime> supplier = gameDateTimeSupplier;
         if (supplier == null) {
             return null;
@@ -226,7 +226,7 @@ public final class SaveScreen {
     /** Reads the supplier with try/catch isolation so a host bug can't break the save
      *  write path.  Returns empty string when no supplier is registered, the supplier
      *  returned null/blank, or the supplier threw. */
-    private static String currentGameDateString() {
+    static String currentGameDateString() {
         java.util.function.Supplier<String> supplier = gameDateSupplier;
         if (supplier == null) {
             return "";
@@ -1093,7 +1093,7 @@ public final class SaveScreen {
      *        route as-is so the player isn't stranded on the save screen.</li>
      *  </ol>
      */
-    private static void triggerLoad(RouteContext context, SaveSlotSummary summary) {
+    static void triggerLoad(RouteContext context, SaveSlotSummary summary) {
         // Restore the gameplay state BEFORE navigating so the destination scene
         // constructs against the loaded NPCs / map / time / etc., not the boot-default
         // state.  restoreSlotSnapshot returns false for legacy / metadata-only saves

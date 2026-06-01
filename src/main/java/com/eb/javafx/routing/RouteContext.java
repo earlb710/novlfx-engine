@@ -54,6 +54,10 @@ public final class RouteContext {
     private final java.util.Deque<SavedRoute> backStack = new java.util.ArrayDeque<>();
     /** Tracks the active route id so {@link #pushAndNavigateTo(String)} can record it. */
     private String activeRouteId;
+    /** Route id currently being constructed by a factory (set around {@code sceneRouter.open});
+     *  lets {@link #themedScene(BorderPane)} resolve the per-screen background for the screen
+     *  being built, since {@link #activeRouteId} still holds the outgoing route at that point. */
+    private String navigatingRouteId;
 
     public RouteContext(
             Stage primaryStage,
@@ -237,7 +241,18 @@ public final class RouteContext {
         // Buttons / handlers inside the new scene therefore capture this context's primaryStage,
         // and a stage-scoped context (see {@link #withPrimaryStage}) keeps subsequent navigations
         // confined to its scoped stage.
-        Scene newScene = sceneRouter.open(routeId, this);
+        //
+        // Track the route being constructed so themedScene() can resolve a per-screen background
+        // (config screenBackgrounds) for the screen the factory is building — activeRouteId still
+        // points at the OUTGOING route until the swap below.
+        String previousNavigating = navigatingRouteId;
+        navigatingRouteId = routeId;
+        Scene newScene;
+        try {
+            newScene = sceneRouter.open(routeId, this);
+        } finally {
+            navigatingRouteId = previousNavigating;
+        }
         Scene currentScene = primaryStage == null ? null : primaryStage.getScene();
         Scene activeScene;
         if (currentScene != null && newScene != null && newScene.getRoot() != null) {
@@ -323,31 +338,56 @@ public final class RouteContext {
     private record SavedRoute(String routeId, Parent root, java.util.List<String> stylesheets) {
     }
 
-    /** Creates a consistently sized and themed scene for a screen shell root. */
+    /** Creates a consistently sized and themed scene for a screen shell root.  Honors a
+     *  per-screen background override ({@code screenBackgrounds.<routeId>} in config) for the
+     *  screen being built, falling back to the app default for any unset field. */
     public Scene themedScene(BorderPane root) {
-        return themedScene(
+        return themedSceneForScreen(
                 root,
+                currentScreenKey(),
                 resourceConfig.defaultAppBackgroundColor(),
                 resourceConfig.defaultAppBackgroundImage(),
                 resourceConfig.defaultAppBackgroundImageTransparency());
     }
 
-    /** Creates a themed scene using the configured preferences screen background defaults. */
+    /** Creates a themed scene for the preferences screen.  Precedence per field:
+     *  {@code screenBackgrounds.preferences} → dedicated {@code defaultPreferencesScreen*} →. */
     public Scene themedPreferencesScene(BorderPane root) {
-        return themedScene(
+        return themedSceneForScreen(
                 root,
+                SceneRouter.PREFERENCES_ROUTE,
                 resourceConfig.defaultPreferencesScreenBackgroundColor(),
                 resourceConfig.defaultPreferencesScreenBackgroundImage(),
                 resourceConfig.defaultPreferencesScreenBackgroundImageTransparency());
     }
 
-    /** Creates a themed scene using the configured save/load screen background defaults. */
+    /** Creates a themed scene for the save/load screen.  Precedence per field:
+     *  {@code screenBackgrounds.save-load} → dedicated {@code defaultSaveLoadScreen*} →. */
     public Scene themedSaveLoadScene(BorderPane root) {
-        return themedScene(
+        return themedSceneForScreen(
                 root,
+                SceneRouter.SAVE_LOAD_ROUTE,
                 resourceConfig.defaultSaveLoadScreenBackgroundColor(),
                 resourceConfig.defaultSaveLoadScreenBackgroundImage(),
                 resourceConfig.defaultSaveLoadScreenBackgroundImageTransparency());
+    }
+
+    /** Resolves a scene background as: per-screen config override ({@code screenBackgrounds.key})
+     *  per field, else the supplied fallback (a dedicated default or the app default). */
+    private Scene themedSceneForScreen(BorderPane root, String screenKey,
+                                       String fallbackColor, String fallbackImage,
+                                       String fallbackTransparency) {
+        return themedScene(
+                root,
+                resourceConfig.screenBackgroundColor(screenKey).orElse(fallbackColor),
+                resourceConfig.screenBackgroundImage(screenKey).orElse(fallbackImage),
+                resourceConfig.screenBackgroundImageTransparency(screenKey).orElse(fallbackTransparency));
+    }
+
+    /** The screen id used for per-screen background resolution: the route being constructed when
+     *  inside a factory, otherwise the active route. */
+    private String currentScreenKey() {
+        return navigatingRouteId != null ? navigatingRouteId : activeRouteId;
     }
 
     private Scene themedScene(

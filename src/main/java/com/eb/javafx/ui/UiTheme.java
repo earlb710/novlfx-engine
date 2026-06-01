@@ -593,15 +593,109 @@ public final class UiTheme {
      *
      * @param preferencesService loaded preferences supplying font, theme, and accessibility tokens
      */
+    /** Config-driven custom palette spec: a base family/variant to start from plus a map of
+     *  colour-field overrides (record-component name → hex).  Null = no custom palette. */
+    private record CustomPaletteSpec(ThemeFamily baseFamily, ThemeVariant baseVariant,
+                                     java.util.Map<String, String> colors) { }
+
+    private static volatile CustomPaletteSpec customPalette;
+
+    /**
+     * Loads a config-driven custom theme palette from a JSON file (wired from
+     * {@code resources.themePalette} at boot).  The palette starts from a base family/variant
+     * and overrides individual colour fields by name, so a mod can retint the whole UI — even
+     * define a brand-new look — without touching code or the engine's CSS template.
+     *
+     * <p>JSON shape (all optional):</p>
+     * <pre>
+     * { "baseFamily": "forest", "baseVariant": "dark",
+     *   "colors": { "accentColor": "#ff8800", "labelText": "#ffffff", ... } }
+     * </pre>
+     *
+     * <p>Colour keys are the palette field names (accentColor, screenPanelBackground,
+     * buttonGradientStart, footerIconColor, …).  Unknown keys are ignored.  High-contrast mode
+     * still overrides everything for accessibility.  Best-effort: a parse error logs and leaves
+     * the built-in palettes in effect.</p>
+     */
+    public static void loadCustomPalette(Path jsonFile) {
+        if (jsonFile == null) {
+            customPalette = null;
+            return;
+        }
+        try {
+            customPalette = parseCustomPalette(
+                    Files.readString(jsonFile, StandardCharsets.UTF_8), jsonFile.toString());
+        } catch (IOException | RuntimeException exception) {
+            System.err.println("[UiTheme] Could not load custom palette " + jsonFile + ": " + exception);
+            customPalette = null;
+        }
+    }
+
+    /** Clears any config-driven custom palette (mainly for tests). */
+    public static void clearCustomPalette() {
+        customPalette = null;
+    }
+
+    private static CustomPaletteSpec parseCustomPalette(String json, String sourceName) {
+        Object root = com.eb.javafx.util.SimpleJson.parse(json, sourceName);
+        if (!(root instanceof java.util.Map<?, ?> map)) {
+            throw new IllegalArgumentException("Custom palette root must be a JSON object: " + sourceName);
+        }
+        ThemeFamily baseFamily = map.get("baseFamily") instanceof String f ? themeFamilyOf(f) : null;
+        ThemeVariant baseVariant = map.get("baseVariant") instanceof String v ? themeVariantOf(v) : null;
+        java.util.Map<String, String> colors = new java.util.LinkedHashMap<>();
+        if (map.get("colors") instanceof java.util.Map<?, ?> colorMap) {
+            colorMap.forEach((key, value) -> {
+                if (key instanceof String k && value instanceof String hex && !hex.isBlank()) {
+                    colors.put(k, hex);
+                }
+            });
+        }
+        return new CustomPaletteSpec(baseFamily, baseVariant, colors);
+    }
+
+    private static ThemeFamily themeFamilyOf(String value) {
+        for (ThemeFamily family : ThemeFamily.values()) {
+            if (family.preferenceValue().equalsIgnoreCase(value)) {
+                return family;
+            }
+        }
+        return null;
+    }
+
+    private static ThemeVariant themeVariantOf(String value) {
+        for (ThemeVariant variant : ThemeVariant.values()) {
+            if (variant.preferenceValue().equalsIgnoreCase(value)) {
+                return variant;
+            }
+        }
+        return null;
+    }
+
+    /** Resolves the active palette, applying a config custom palette over the selected (or spec
+     *  base) family/variant.  High contrast always wins. */
+    private static ThemePalette resolvePalette(boolean highContrast,
+                                               ThemeFamily family, ThemeVariant variant) {
+        if (highContrast) {
+            return ThemePalette.highContrast();
+        }
+        CustomPaletteSpec spec = customPalette;
+        if (spec == null) {
+            return ThemePalette.forSelection(family, variant);
+        }
+        ThemeFamily baseFamily = spec.baseFamily() != null ? spec.baseFamily() : family;
+        ThemeVariant baseVariant = spec.baseVariant() != null ? spec.baseVariant() : variant;
+        return ThemePalette.forSelection(baseFamily, baseVariant).withColorOverrides(spec.colors());
+    }
+
     public void initialize(PreferencesService preferencesService) {
         fontFamily = preferencesService.fontFamily();
         fontScale = preferencesService.fontScale();
         highContrast = preferencesService.highContrast();
         reducedMotion = preferencesService.reducedMotion();
 
-        ThemePalette palette = highContrast
-                ? ThemePalette.highContrast()
-                : ThemePalette.forSelection(preferencesService.themeFamily(), preferencesService.themeVariant());
+        ThemePalette palette = resolvePalette(highContrast,
+                preferencesService.themeFamily(), preferencesService.themeVariant());
         accentColor = palette.accentColor();
         textColor = palette.labelText();
         panelBackground = palette.screenPanelBackground();
@@ -635,9 +729,7 @@ public final class UiTheme {
         highContrast = preferencesService.highContrast();
         reducedMotion = preferencesService.reducedMotion();
 
-        ThemePalette palette = highContrast
-                ? ThemePalette.highContrast()
-                : ThemePalette.forSelection(themeFamily, themeVariant);
+        ThemePalette palette = resolvePalette(highContrast, themeFamily, themeVariant);
         accentColor = palette.accentColor();
         textColor = palette.labelText();
         panelBackground = palette.screenPanelBackground();
@@ -785,6 +877,50 @@ public final class UiTheme {
             String fieldRoleColor,
             String fieldRoleBackground,
             String footerIconColor) {
+
+        /** Returns a copy of this palette with any colour fields present in {@code overrides}
+         *  (keyed by record-component name, e.g. {@code "accentColor"}) replaced.  Unknown keys
+         *  are ignored; absent keys keep this palette's value.  Drives the config-driven custom
+         *  palette ({@link UiTheme#loadCustomPalette}). */
+        private ThemePalette withColorOverrides(java.util.Map<String, String> o) {
+            if (o == null || o.isEmpty()) {
+                return this;
+            }
+            return new ThemePalette(
+                    o.getOrDefault("rootBackground", rootBackground),
+                    o.getOrDefault("screenGradientStart", screenGradientStart),
+                    o.getOrDefault("screenGradientEnd", screenGradientEnd),
+                    o.getOrDefault("accentColor", accentColor),
+                    o.getOrDefault("screenPanelBackground", screenPanelBackground),
+                    o.getOrDefault("screenPanelBorder", screenPanelBorder),
+                    o.getOrDefault("footerBackground", footerBackground),
+                    o.getOrDefault("footerText", footerText),
+                    o.getOrDefault("sectionBorder", sectionBorder),
+                    o.getOrDefault("sectionText", sectionText),
+                    o.getOrDefault("textHighlight", textHighlight),
+                    o.getOrDefault("textHighlightHover", textHighlightHover),
+                    o.getOrDefault("valueText", valueText),
+                    o.getOrDefault("layoutPanelBackground", layoutPanelBackground),
+                    o.getOrDefault("labelText", labelText),
+                    o.getOrDefault("buttonBackground", buttonBackground),
+                    o.getOrDefault("buttonText", buttonText),
+                    o.getOrDefault("buttonBorder", buttonBorder),
+                    o.getOrDefault("buttonHoverBackground", buttonHoverBackground),
+                    o.getOrDefault("buttonHoverText", buttonHoverText),
+                    o.getOrDefault("buttonHoverBorder", buttonHoverBorder),
+                    o.getOrDefault("buttonPressedBackground", buttonPressedBackground),
+                    o.getOrDefault("buttonPressedText", buttonPressedText),
+                    o.getOrDefault("buttonPressedBorder", buttonPressedBorder),
+                    o.getOrDefault("svgButtonText", svgButtonText),
+                    o.getOrDefault("svgButtonHoverText", svgButtonHoverText),
+                    o.getOrDefault("buttonGradientStart", buttonGradientStart),
+                    o.getOrDefault("buttonGradientMid", buttonGradientMid),
+                    o.getOrDefault("buttonGradientEnd", buttonGradientEnd),
+                    o.getOrDefault("fieldRoleColor", fieldRoleColor),
+                    o.getOrDefault("fieldRoleBackground", fieldRoleBackground),
+                    o.getOrDefault("footerIconColor", footerIconColor));
+        }
+
         private static ThemePalette forSelection(ThemeFamily family, ThemeVariant variant) {
             return switch (family) {
                 case OCEAN -> variant == ThemeVariant.DARK

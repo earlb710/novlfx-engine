@@ -5,11 +5,15 @@ import com.eb.javafx.prefs.PreferencesService.ThemeFamily;
 import com.eb.javafx.prefs.PreferencesService.ThemeVariant;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.prefs.BackingStoreException;
 import java.util.prefs.Preferences;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 final class UiThemeTest {
@@ -17,6 +21,7 @@ final class UiThemeTest {
 
     @AfterEach
     void clearTestPreferences() throws BackingStoreException {
+        UiTheme.clearCustomPalette();
         preferences.clear();
         preferences.flush();
         PreferencesService preferencesService = new PreferencesService();
@@ -217,6 +222,79 @@ final class UiThemeTest {
         String blankResult = theme.accentOverrideStylesheet("  ");
         assertEquals(null, nullResult);
         assertEquals(null, blankResult);
+    }
+
+    @Test
+    void customPaletteOverridesSelectedPaletteColors(@TempDir Path tempDir) throws Exception {
+        Path json = tempDir.resolve("palette.json");
+        Files.writeString(json, "{ \"baseFamily\": \"forest\", \"baseVariant\": \"dark\","
+                + " \"colors\": { \"accentColor\": \"#abcdef\", \"footerIconColor\": \"#123456\" } }");
+        UiTheme.loadCustomPalette(json);
+
+        // Selected family is ocean, but the spec's baseFamily=forest is the starting palette.
+        preferences.put("ui.themeFamily", "ocean");
+        preferences.put("ui.themeVariant", "dark");
+        PreferencesService preferencesService = new PreferencesService();
+        preferencesService.load();
+
+        UiTheme theme = new UiTheme();
+        theme.initialize(preferencesService);
+
+        assertEquals("#abcdef", theme.accentColor(), "accentColor override should apply.");
+        assertEquals("#123456", theme.footerIconColor(), "footerIconColor override should apply.");
+        // A field not in the override keeps the forest/dark base value (labelText = #ffffff).
+        assertEquals("#ffffff", theme.textColor());
+        assertTrue(theme.stylesheetContent().contains("-fx-selection-bar: #abcdef;"));
+    }
+
+    @Test
+    void customPaletteWithoutBaseUsesSelectedFamilyAsBase(@TempDir Path tempDir) throws Exception {
+        Path json = tempDir.resolve("palette.json");
+        Files.writeString(json, "{ \"colors\": { \"accentColor\": \"#0a0b0c\" } }");
+        UiTheme.loadCustomPalette(json);
+
+        preferences.put("ui.themeFamily", "crimson");
+        preferences.put("ui.themeVariant", "dark");
+        PreferencesService preferencesService = new PreferencesService();
+        preferencesService.load();
+
+        UiTheme theme = new UiTheme();
+        theme.initialize(preferencesService);
+
+        assertEquals("#0a0b0c", theme.accentColor());
+        // Base remained crimson/dark — its default accent (#e83030) was replaced, not the rest.
+        assertNotEquals("#e83030", theme.accentColor());
+    }
+
+    @Test
+    void highContrastWinsOverCustomPalette(@TempDir Path tempDir) throws Exception {
+        Path json = tempDir.resolve("palette.json");
+        Files.writeString(json, "{ \"colors\": { \"accentColor\": \"#abcdef\" } }");
+        UiTheme.loadCustomPalette(json);
+
+        preferences.putBoolean("accessibility.highContrast", true);
+        PreferencesService preferencesService = new PreferencesService();
+        preferencesService.load();
+
+        UiTheme theme = new UiTheme();
+        theme.initialize(preferencesService);
+
+        // High contrast palette ignores the custom palette for accessibility.
+        assertEquals("#ffff66", theme.accentColor());
+    }
+
+    @Test
+    void loadCustomPaletteNullClearsOverride(@TempDir Path tempDir) {
+        UiTheme.loadCustomPalette(null);
+        preferences.put("ui.themeFamily", "ocean");
+        preferences.put("ui.themeVariant", "dark");
+        PreferencesService preferencesService = new PreferencesService();
+        preferencesService.load();
+
+        UiTheme theme = new UiTheme();
+        theme.initialize(preferencesService);
+
+        assertEquals("#66c1e0", theme.accentColor(), "No custom palette => stock ocean/dark accent.");
     }
 
     @Test

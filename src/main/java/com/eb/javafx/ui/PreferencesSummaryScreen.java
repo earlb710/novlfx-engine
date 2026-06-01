@@ -103,6 +103,9 @@ public final class PreferencesSummaryScreen {
                 screenText("block.text.title"),
                 textSpeedRow(context)));
         content.getChildren().add(settingsBlock(
+                screenText("block.save.title"),
+                autoSaveDailyRow(context)));
+        content.getChildren().add(settingsBlock(
                 screenText("block.language.title"),
                 languageRow(context)));
 
@@ -408,6 +411,17 @@ public final class PreferencesSummaryScreen {
                 audioService.setMuted(current);
             }
         });
+        HBox row = new HBox(8, checkBox);
+        row.getStyleClass().add(ScreenShell.LAYOUT_SECTION_ROW_STYLE_CLASS);
+        return row;
+    }
+
+    private static HBox autoSaveDailyRow(RouteContext context) {
+        CheckBox checkBox = new CheckBox(screenText("item.auto-save-daily.label"));
+        checkBox.getStyleClass().add(ScreenShell.SCREEN_TEXT_STYLE_CLASS);
+        checkBox.setSelected(context.preferencesService().autoSaveDaily());
+        checkBox.selectedProperty().addListener((observable, previous, current) ->
+                context.preferencesService().saveAutoSaveDaily(current));
         HBox row = new HBox(8, checkBox);
         row.getStyleClass().add(ScreenShell.LAYOUT_SECTION_ROW_STYLE_CLASS);
         return row;

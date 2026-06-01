@@ -237,7 +237,31 @@ public final class BootstrapService {
         randomService.initialize();
         audioService.initialize(preferencesService);
         gameSupportService.initialize();
+        // Config-driven asset overrides: a directory whose files mirror bundled resource paths,
+        // letting a game / mod replace icons & images without a rebuild.  Resource loaders that
+        // consult ResourceOverrides prefer a file here over the classpath copy.  Installed BEFORE
+        // theme init so the button-artwork SVGs (resolved at ButtonVisuals static init, which the
+        // theme triggers) can be overridden too.
+        com.eb.javafx.util.ResourceOverrides.setOverrideRoot(
+                resourceConfig == null ? null
+                        : resourceConfig.resolveResource(applicationRoot,
+                                com.eb.javafx.util.ResourceOverrides.OVERRIDE_ROOT_RESOURCE_ID)
+                                .orElse(null));
+        // Per-resource icon repoints: `resources` entries keyed `icon:<originalPath>` map a single
+        // icon/image to a replacement path without mirroring its full path under the override root.
+        com.eb.javafx.util.ResourceOverrides.setAliases(collectIconAliases());
+        // Config-driven custom theme palette (resources.themePalette): retint the whole UI — or
+        // define a new look — by overriding palette colour fields, no code/CSS edit.  Loaded
+        // before the theme initialises so the generated stylesheet picks it up.
+        UiTheme.loadCustomPalette(resolveConfigFile(THEME_PALETTE_RESOURCE_ID));
         uiTheme.initialize(preferencesService);
+        // Window chrome from config: title (resources.windowTitle) + app/taskbar icon
+        // (resources.appIcon).  Generic — every host's primary stage gets it via boot.
+        applyWindowChrome(primaryStage);
+        // Config-driven fonts: register any `font.*` entries from the app config so a game / mod
+        // can add fonts purely through setup (config.json), before any scene CSS resolves a
+        // -fx-font-family.  Best-effort — bad entries log and are skipped.
+        ConfiguredFonts.register(resourceConfig, applicationRoot);
         completePhase(completedPhases, phaseMessages, BootstrapPhase.CORE_SERVICES,
                 "Preferences, save/load, random, audio, game support, and theme services initialized.");
 
@@ -317,6 +341,103 @@ public final class BootstrapService {
                 resourceConfig,
                 resourceRegistry,
                 bootstrapReport);
+    }
+
+    // ----- Config-driven app chrome (window title / icon / custom palette) --------------------
+
+    /** Reserved {@code resources} ids for config-driven app chrome. */
+    private static final String THEME_PALETTE_RESOURCE_ID = "themePalette";
+    private static final String WINDOW_TITLE_RESOURCE_ID = "windowTitle";
+    private static final String APP_ICON_RESOURCE_ID = "appIcon";
+    private static final String CLASSPATH_SCHEME = "classpath:";
+
+    /** Collects per-resource icon repoints from {@code resources} entries keyed
+     *  {@code icon:<originalPath>} into an originalPath → replacementPath map. */
+    private java.util.Map<String, String> collectIconAliases() {
+        if (resourceConfig == null) {
+            return java.util.Map.of();
+        }
+        java.util.LinkedHashMap<String, String> aliases = new java.util.LinkedHashMap<>();
+        resourceConfig.resources().forEach((id, value) -> {
+            if (id.startsWith(com.eb.javafx.util.ResourceOverrides.ALIAS_RESOURCE_PREFIX)) {
+                String original = id.substring(
+                        com.eb.javafx.util.ResourceOverrides.ALIAS_RESOURCE_PREFIX.length());
+                if (!original.isBlank()) {
+                    aliases.put(original, value);
+                }
+            }
+        });
+        return aliases;
+    }
+
+    /** Resolves a {@code resources} entry to an existing file on disk, or null. */
+    private java.nio.file.Path resolveConfigFile(String resourceId) {
+        if (resourceConfig == null) {
+            return null;
+        }
+        return resourceConfig.resolveResource(applicationRoot, resourceId)
+                .filter(java.nio.file.Files::isRegularFile)
+                .orElse(null);
+    }
+
+    /** Applies the config-driven window title (falling back to the preference default) and the
+     *  optional app/taskbar icon to {@code primaryStage}.  Best-effort; failures are logged. */
+    private void applyWindowChrome(javafx.stage.Stage primaryStage) {
+        if (primaryStage == null) {
+            return;
+        }
+        String configuredTitle = resourceConfig == null ? null
+                : resourceConfig.resourcePath(WINDOW_TITLE_RESOURCE_ID)
+                        .filter(value -> !value.isBlank()).orElse(null);
+        primaryStage.setTitle(configuredTitle != null ? configuredTitle : preferencesService.windowTitle());
+
+        if (resourceConfig != null) {
+            resourceConfig.resourcePath(APP_ICON_RESOURCE_ID)
+                    .flatMap(this::loadAppIcon)
+                    .ifPresent(icon -> primaryStage.getIcons().add(icon));
+        }
+    }
+
+    /** Loads an app-icon image from a {@code classpath:}-prefixed path, an on-disk file under the
+     *  application root, or a bare classpath resource — whichever resolves first.  Empty on any
+     *  failure so a bad icon spec never aborts boot. */
+    private java.util.Optional<javafx.scene.image.Image> loadAppIcon(String spec) {
+        if (spec == null || spec.isBlank()) {
+            return java.util.Optional.empty();
+        }
+        try {
+            String trimmed = spec.trim();
+            if (trimmed.startsWith(CLASSPATH_SCHEME)) {
+                return loadIconFromClasspath(trimmed.substring(CLASSPATH_SCHEME.length()));
+            }
+            if (applicationRoot != null) {
+                java.nio.file.Path file = applicationRoot.resolve(trimmed);
+                if (java.nio.file.Files.isRegularFile(file)) {
+                    try (java.io.InputStream in = java.nio.file.Files.newInputStream(file)) {
+                        return imageOrEmpty(new javafx.scene.image.Image(in));
+                    }
+                }
+            }
+            return loadIconFromClasspath(trimmed);
+        } catch (java.io.IOException | RuntimeException exception) {
+            System.err.println("[BootstrapService] Could not load app icon '" + spec + "': " + exception);
+            return java.util.Optional.empty();
+        }
+    }
+
+    private static java.util.Optional<javafx.scene.image.Image> loadIconFromClasspath(String path)
+            throws java.io.IOException {
+        String normalized = path.startsWith("/") ? path : "/" + path;
+        try (java.io.InputStream in = BootstrapService.class.getResourceAsStream(normalized)) {
+            if (in == null) {
+                return java.util.Optional.empty();
+            }
+            return imageOrEmpty(new javafx.scene.image.Image(in));
+        }
+    }
+
+    private static java.util.Optional<javafx.scene.image.Image> imageOrEmpty(javafx.scene.image.Image image) {
+        return image.isError() ? java.util.Optional.empty() : java.util.Optional.of(image);
     }
 
     private void completePhase(

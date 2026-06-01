@@ -207,4 +207,101 @@ final class ApplicationResourceConfigTest {
 
         assertEquals(List.of("first", "second"), config.resourceRoots(ResourceCategory.SUPPORT));
     }
+
+    @Test
+    void firstClassModdingFieldsFoldIntoResourcesMap() {
+        ApplicationResourceConfig config = ApplicationResourceConfig.fromJson("""
+                {
+                  "windowTitle": "My Game",
+                  "appIcon": "icons/app.png",
+                  "assetOverrideRoot": "mods/assets",
+                  "uiTheme": "mods/theme.css",
+                  "themePalette": "mods/palette.json",
+                  "fonts": ["mods/A.ttf", "mods/B.otf"]
+                }
+                """, "inline");
+
+        assertEquals("My Game", config.resourcePath("windowTitle").orElse(null));
+        assertEquals("icons/app.png", config.resourcePath("appIcon").orElse(null));
+        assertEquals("mods/assets", config.resourcePath("assetOverrideRoot").orElse(null));
+        assertEquals("mods/theme.css", config.resourcePath("uiTheme").orElse(null));
+        assertEquals("mods/palette.json", config.resourcePath("themePalette").orElse(null));
+        // fonts array → font.cfgN entries that ConfiguredFonts registers.
+        assertEquals("mods/A.ttf", config.resourcePath("font.cfg0").orElse(null));
+        assertEquals("mods/B.otf", config.resourcePath("font.cfg1").orElse(null));
+    }
+
+    @Test
+    void explicitTopLevelFieldOverridesResourcesEntry() {
+        ApplicationResourceConfig config = ApplicationResourceConfig.fromJson("""
+                {
+                  "resources": { "windowTitle": "Old" },
+                  "windowTitle": "New"
+                }
+                """, "inline");
+        assertEquals("New", config.resourcePath("windowTitle").orElse(null));
+    }
+
+    @Test
+    void resourcesMapConventionsStillWorkWithoutTopLevelFields() {
+        ApplicationResourceConfig config = ApplicationResourceConfig.fromJson("""
+                { "resources": { "font.body": "x.ttf", "assetOverrideRoot": "a" } }
+                """, "inline");
+        assertEquals("x.ttf", config.resourcePath("font.body").orElse(null));
+        assertEquals("a", config.resourcePath("assetOverrideRoot").orElse(null));
+    }
+
+    @Test
+    void fontsMustBeAnArrayOfNonBlankStrings() {
+        assertThrows(IllegalArgumentException.class,
+                () -> ApplicationResourceConfig.fromJson("{ \"fonts\": \"notAnArray\" }", "inline"));
+        assertThrows(IllegalArgumentException.class,
+                () -> ApplicationResourceConfig.fromJson("{ \"fonts\": [\"\"] }", "inline"));
+    }
+
+    @Test
+    void perScreenBackgroundsAreParsedAndAccessibleByScreenKey() {
+        ApplicationResourceConfig config = ApplicationResourceConfig.fromJson("""
+                {
+                  "screenBackgrounds": {
+                    "main-menu":   { "color": "#101820", "image": "mods/menu.png", "transparency": "0.5" },
+                    "preferences": { "color": "#202020" }
+                  }
+                }
+                """, "inline");
+
+        assertEquals("#101820", config.screenBackgroundColor("main-menu").orElse(null));
+        assertEquals("mods/menu.png", config.screenBackgroundImage("main-menu").orElse(null));
+        assertEquals("0.5", config.screenBackgroundImageTransparency("main-menu").orElse(null));
+        assertEquals("#202020", config.screenBackgroundColor("preferences").orElse(null));
+        // Unset fields and unknown screens / null keys are empty (caller falls back to defaults).
+        assertTrue(config.screenBackgroundImage("preferences").isEmpty());
+        assertTrue(config.screenBackgroundColor("save-load").isEmpty());
+        assertTrue(config.screenBackgroundColor(null).isEmpty());
+    }
+
+    @Test
+    void perScreenBackgroundsAcceptLongFieldNames() {
+        ApplicationResourceConfig config = ApplicationResourceConfig.fromJson("""
+                {
+                  "screenBackgrounds": {
+                    "save-load": {
+                      "backgroundColor": "#0a0a0a",
+                      "backgroundImage": "x.png",
+                      "backgroundImageTransparency": "0.2"
+                    }
+                  }
+                }
+                """, "inline");
+
+        assertEquals("#0a0a0a", config.screenBackgroundColor("save-load").orElse(null));
+        assertEquals("x.png", config.screenBackgroundImage("save-load").orElse(null));
+        assertEquals("0.2", config.screenBackgroundImageTransparency("save-load").orElse(null));
+    }
+
+    @Test
+    void unknownScreenBackgroundFieldThrows() {
+        assertThrows(IllegalArgumentException.class, () -> ApplicationResourceConfig.fromJson(
+                "{ \"screenBackgrounds\": { \"main-menu\": { \"bogus\": \"x\" } } }", "inline"));
+    }
 }

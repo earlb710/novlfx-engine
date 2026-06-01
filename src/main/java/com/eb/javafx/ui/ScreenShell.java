@@ -1045,13 +1045,24 @@ public final class ScreenShell {
 
     private static Image loadFooterIcon(String resourcePath, String iconColor) {
         try {
-            URL resource = resolveResource(resourcePath);
+            // Override-aware + extension-flexible: a mod can supply the footer icon as any image
+            // type (its own .png/.jpg/.svg) via the asset override root; otherwise the bundled
+            // classpath SVG is used.
+            URL resource = com.eb.javafx.util.ResourceOverrides.findImage(resourcePath)
+                    .orElseGet(() -> resolveResource(resourcePath));
+            boolean svg = resource.getPath().toLowerCase(java.util.Locale.ROOT).endsWith(".svg");
             try (InputStream inputStream = resource.openStream()) {
-                VectorImage image = VectorImage.fromInputStream(inputStream);
-                if (iconColor != null && !iconColor.isBlank()) {
-                    image = image.replaceFillColor(FOOTER_ICON_SOURCE_COLOR, iconColor);
+                if (svg) {
+                    VectorImage image = VectorImage.fromInputStream(inputStream);
+                    // Recolour only applies to the vector source icons.
+                    if (iconColor != null && !iconColor.isBlank()) {
+                        image = image.replaceFillColor(FOOTER_ICON_SOURCE_COLOR, iconColor);
+                    }
+                    return image.toRasterImage(FOOTER_ICON_SIZE, FOOTER_ICON_SIZE);
                 }
-                return image.toRasterImage(FOOTER_ICON_SIZE, FOOTER_ICON_SIZE);
+                // Raster override (png/jpg/gif/…): load + scale directly; no recolour.
+                Image raster = new Image(inputStream, FOOTER_ICON_SIZE, FOOTER_ICON_SIZE, true, true);
+                return raster.isError() ? null : raster;
             }
         } catch (IllegalArgumentException | IOException | IllegalStateException exception) {
             return null;
@@ -1090,7 +1101,16 @@ public final class ScreenShell {
     }
 
     private static URL resolveResource(String resourcePath) {
-        String checkedPath = Validation.requireNonBlank(resourcePath, "Screen SVG background resource is required.");
+        String requested = Validation.requireNonBlank(resourcePath, "Screen SVG background resource is required.");
+        // A per-resource alias repoints this icon/SVG to a replacement path (override-root file
+        // or bundled resource) before any lookup.
+        String checkedPath = com.eb.javafx.util.ResourceOverrides.effectivePath(requested);
+        // Config-driven asset override wins when present (lets a mod replace footer / screen
+        // icons & SVGs without a rebuild); otherwise fall back to the bundled classpath copy.
+        java.util.Optional<URL> override = com.eb.javafx.util.ResourceOverrides.find(checkedPath);
+        if (override.isPresent()) {
+            return override.get();
+        }
         String absolutePath = checkedPath.startsWith("/") ? checkedPath : "/" + checkedPath;
         URL resource = ScreenShell.class.getResource(absolutePath);
         if (resource == null && !absolutePath.equals(checkedPath)) {

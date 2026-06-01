@@ -2,8 +2,11 @@ package com.eb.javafx.util;
 
 import javafx.scene.text.Font;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -50,5 +53,46 @@ final class FontResourcesTest {
         assertEquals(14.0, font.getSize());
         assertThrows(IllegalArgumentException.class, () -> FontResources.load("Alien.ttf", 0.0));
         assertThrows(IllegalArgumentException.class, () -> FontResources.load("Alien.ttf", -1.0));
+    }
+
+    // ----- Config-driven font modding hooks ---------------------------------------------------
+
+    @Test
+    void loadsFontFromArbitraryClasspathResource() {
+        // Off-whitelist classpath path, both with and without a leading slash.
+        Font withoutSlash = FontResources.loadResource("com/eb/javafx/fonts/Alien.ttf", 18.0);
+        assertNotNull(withoutSlash);
+        assertEquals(18.0, withoutSlash.getSize());
+
+        Font withSlash = FontResources.loadResource("/com/eb/javafx/fonts/Alien.ttf", 18.0);
+        assertNotNull(withSlash);
+    }
+
+    @Test
+    void loadResourceRejectsMissingOrInvalidArguments() {
+        assertThrows(IllegalStateException.class,
+                () -> FontResources.loadResource("com/eb/javafx/fonts/NoSuchFont.ttf", 12.0));
+        assertThrows(IllegalArgumentException.class, () -> FontResources.loadResource(" ", 12.0));
+        assertThrows(IllegalArgumentException.class,
+                () -> FontResources.loadResource("com/eb/javafx/fonts/Alien.ttf", 0.0));
+    }
+
+    @Test
+    void loadsFontFromFile(@TempDir Path tempDir) throws Exception {
+        Path fontFile = tempDir.resolve("My-Modded-Font.ttf");
+        try (InputStream inputStream = FontResources.open("Alien.ttf")) {
+            Files.copy(inputStream, fontFile);
+        }
+
+        Font font = FontResources.loadFile(fontFile, 20.0);
+        assertNotNull(font);
+        assertEquals(20.0, font.getSize());
+    }
+
+    @Test
+    void loadFileRejectsMissingOrInvalidArguments(@TempDir Path tempDir) {
+        assertThrows(IllegalStateException.class,
+                () -> FontResources.loadFile(tempDir.resolve("absent.ttf"), 12.0));
+        assertThrows(IllegalArgumentException.class, () -> FontResources.loadFile(null, 12.0));
     }
 }

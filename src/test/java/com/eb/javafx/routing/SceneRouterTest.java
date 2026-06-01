@@ -170,8 +170,10 @@ final class SceneRouterTest {
     void openingUnknownRouteFailsBeforeSceneConstruction() {
         SceneRouter router = new SceneRouter();
 
+        // Pass a (minimal) call context so the unknown-route check — not the
+        // context-not-registered guard — is what fails, before any scene is constructed.
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
-                router.open("missing-route"));
+                router.open("missing-route", minimalRouteContext(router)));
 
         assertEquals("Unknown JavaFX route: missing-route", exception.getMessage());
     }

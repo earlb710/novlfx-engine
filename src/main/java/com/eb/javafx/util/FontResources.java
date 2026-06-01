@@ -134,6 +134,57 @@ public final class FontResources {
         }
     }
 
+    /**
+     * Loads a font from an arbitrary <b>classpath</b> resource path — NOT restricted to the
+     * packaged engine font whitelist.  Used by config-driven font registration so a game/mod
+     * can add fonts shipped on the classpath (its own resources) without a code change.  A
+     * leading {@code /} is optional.  Registering the font (so its family resolves in CSS) is a
+     * side effect of {@link Font#loadFont}; the returned size is irrelevant to registration.
+     *
+     * @param resourcePath classpath resource path, e.g. {@code com/mygame/fonts/Foo.ttf}
+     * @param size font size in points
+     */
+    public static Font loadResource(String resourcePath, double size) {
+        Validation.requireNonBlank(resourcePath, "Font resource path is required.");
+        Validation.requirePositive(size, "Font size must be positive.");
+        String normalized = resourcePath.startsWith("/") ? resourcePath : "/" + resourcePath;
+        try (InputStream inputStream = FontResources.class.getResourceAsStream(normalized)) {
+            if (inputStream == null) {
+                throw new IllegalStateException("Font resource not found on classpath: " + resourcePath);
+            }
+            Font font = Font.loadFont(inputStream, size);
+            if (font == null) {
+                throw new IllegalStateException("Unable to load font resource: " + resourcePath);
+            }
+            return font;
+        } catch (IOException exception) {
+            throw new IllegalStateException("Unable to read font resource: " + resourcePath, exception);
+        }
+    }
+
+    /**
+     * Loads a font from a filesystem file — NOT restricted to the packaged whitelist.  Used by
+     * config-driven font registration so a mod can drop a real font file next to the game and
+     * reference it from {@code config.json} without rebuilding.  Registering the font is a side
+     * effect of {@link Font#loadFont}.
+     *
+     * @param file font file on disk
+     * @param size font size in points
+     */
+    public static Font loadFile(java.nio.file.Path file, double size) {
+        Validation.requireNonNull(file, "Font file is required.");
+        Validation.requirePositive(size, "Font size must be positive.");
+        try (InputStream inputStream = java.nio.file.Files.newInputStream(file)) {
+            Font font = Font.loadFont(inputStream, size);
+            if (font == null) {
+                throw new IllegalStateException("Unable to load font file: " + file);
+            }
+            return font;
+        } catch (IOException exception) {
+            throw new IllegalStateException("Unable to read font file: " + file, exception);
+        }
+    }
+
     private static String requirePackagedFontFileName(String fileName) {
         String validFileName = Validation.requireNonBlank(fileName, "Font file name is required.");
         if (validFileName.contains("/") || validFileName.contains("\\")) {

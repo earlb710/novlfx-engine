@@ -281,8 +281,21 @@ public final class ButtonVisuals {
         return pathData;
     }
 
+    /** Resolves a button-artwork SVG, honoring a config asset override / per-resource repoint
+     *  (so a mod can change the button shape & artwork without a rebuild), else the bundled
+     *  classpath copy.  Button art must stay SVG — the shape path and gradient are parsed from
+     *  the SVG markup — so this uses an exact (not extension-flexible) override lookup. */
+    private static URL resolveArtworkResource(String resourcePath) {
+        URL override = com.eb.javafx.util.ResourceOverrides.find(resourcePath).orElse(null);
+        if (override != null) {
+            return override;
+        }
+        String effective = com.eb.javafx.util.ResourceOverrides.effectivePath(resourcePath);
+        return ButtonVisuals.class.getResource(effective.startsWith("/") ? effective : "/" + effective);
+    }
+
     private static ArtworkResource loadArtworkResource(String resourcePath) {
-        URL resource = ButtonVisuals.class.getResource(resourcePath);
+        URL resource = resolveArtworkResource(resourcePath);
         if (resource == null) {
             LOGGER.log(System.Logger.Level.WARNING, "Button artwork resource is missing: {0}", resourcePath);
             return new ArtworkResource(resourcePath, "", "", "");
@@ -543,11 +556,12 @@ public final class ButtonVisuals {
     }
 
     private static String loadSvgResource(String resourcePath) {
-        try (InputStream stream = ButtonVisuals.class.getResourceAsStream(resourcePath)) {
-            if (stream == null) {
-                LOGGER.log(System.Logger.Level.WARNING, "Button shape resource is missing: {0}", resourcePath);
-                return "";
-            }
+        URL resource = resolveArtworkResource(resourcePath);
+        if (resource == null) {
+            LOGGER.log(System.Logger.Level.WARNING, "Button shape resource is missing: {0}", resourcePath);
+            return "";
+        }
+        try (InputStream stream = resource.openStream()) {
             return new String(stream.readAllBytes(), StandardCharsets.UTF_8);
         } catch (IOException exception) {
             LOGGER.log(System.Logger.Level.WARNING, "Button shape resource failed to load: " + resourcePath, exception);

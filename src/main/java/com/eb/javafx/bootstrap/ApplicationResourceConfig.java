@@ -115,6 +115,14 @@ public final class ApplicationResourceConfig {
     public static ApplicationResourceConfig fromJson(String json, String sourceName) {
         Map<String, Object> root = requireObject(SimpleJson.parse(json, sourceName), "root");
         ApplicationResourceConfig defaults = defaults();
+        // First-class modding fields (fonts / assetOverrideRoot / windowTitle / appIcon /
+        // uiTheme / themePalette) are folded into the generic `resources` map at parse time, so
+        // downstream code keeps reading them by their reserved ids and the equivalent
+        // `resources` entries still work for back-compat.  Explicit top-level fields win.
+        Map<String, String> resources = promoteFirstClassFields(root,
+                optionalObject(root, "resources", "root.resources")
+                        .map(ApplicationResourceConfig::toStringMap)
+                        .orElse(Map.of()));
         return new ApplicationResourceConfig(
                 optionalBoolean(root, "debug", "root.debug").orElse(defaults.debug()),
                 optionalStringAllowingBlank(root, "defaultAppBackgroundColor", "root.defaultAppBackgroundColor")
@@ -142,12 +150,112 @@ public final class ApplicationResourceConfig {
                 optionalStringAllowingBlank(root, "defaultSaveLoadScreenBackgroundImageTransparency",
                         "root.defaultSaveLoadScreenBackgroundImageTransparency")
                         .orElse(defaults.defaultSaveLoadScreenBackgroundImageTransparency()),
-                optionalObject(root, "resources", "root.resources")
-                        .map(ApplicationResourceConfig::toStringMap)
-                        .orElse(Map.of()),
+                resources,
                 optionalObject(root, "resourceRoots", "root.resourceRoots")
                         .map(ApplicationResourceConfig::toResourceRootsMap)
                         .orElse(Map.of()));
+    }
+
+    /** Reserved single-value first-class field ids that map 1:1 onto a {@code resources} entry. */
+    private static final List<String> FIRST_CLASS_STRING_FIELDS = List.of(
+            "assetOverrideRoot", "windowTitle", "appIcon", "uiTheme", "themePalette");
+
+    /**
+     * Folds the explicit top-level modding fields into a copy of {@code resources}.  String
+     * fields become same-named entries; the {@code fonts} array becomes {@code font.cfgN}
+     * entries (so {@link com.eb.javafx.util.FontResources}-driven registration picks them up).
+     * Explicit top-level values override any same-id {@code resources} entry.  Validates types.
+     */
+    private static Map<String, String> promoteFirstClassFields(
+            Map<String, Object> root, Map<String, String> resources) {
+        LinkedHashMap<String, String> merged = new LinkedHashMap<>(resources);
+        for (String field : FIRST_CLASS_STRING_FIELDS) {
+            optionalStringAllowingBlank(root, field, "root." + field)
+                    .filter(value -> !value.isBlank())
+                    .ifPresent(value -> merged.put(field, value));
+        }
+        if (root.containsKey("fonts")) {
+            Object value = root.get("fonts");
+            if (!(value instanceof List<?> list)) {
+                throw new IllegalArgumentException("Expected JSON array for root.fonts.");
+            }
+            int index = 0;
+            for (Object element : list) {
+                if (!(element instanceof String fontPath) || fontPath.isBlank()) {
+                    throw new IllegalArgumentException(
+                            "Expected non-blank JSON string for root.fonts[" + index + "].");
+                }
+                merged.put("font.cfg" + index, fontPath);
+                index++;
+            }
+        }
+        promoteScreenBackgrounds(root, merged);
+        return merged;
+    }
+
+    /** Reserved {@code resources} id prefix for a per-screen background field, keyed by screen
+     *  (route) id, e.g. {@code screenBackground.main-menu.color}. */
+    public static final String SCREEN_BACKGROUND_PREFIX = "screenBackground.";
+
+    /**
+     * Folds the optional top-level {@code screenBackgrounds} object — a per-screen (route-id)
+     * map of {@code { color, image, transparency }} — into {@code resources} entries
+     * {@code screenBackground.<key>.<field>}.  Field names accept friendly or long forms.
+     */
+    private static void promoteScreenBackgrounds(Map<String, Object> root, Map<String, String> merged) {
+        if (!root.containsKey("screenBackgrounds")) {
+            return;
+        }
+        Map<String, Object> screens = requireObject(root.get("screenBackgrounds"), "root.screenBackgrounds");
+        screens.forEach((screenKey, value) -> {
+            Map<String, Object> fields = requireObject(value, "root.screenBackgrounds." + screenKey);
+            fields.forEach((rawField, rawValue) -> {
+                String field = normaliseBackgroundField(rawField);
+                if (field == null) {
+                    throw new IllegalArgumentException(
+                            "Unknown screen background field '" + rawField + "' in root.screenBackgrounds."
+                                    + screenKey + " (use color / image / transparency).");
+                }
+                if (!(rawValue instanceof String stringValue)) {
+                    throw new IllegalArgumentException("Expected JSON string for root.screenBackgrounds."
+                            + screenKey + "." + rawField + ".");
+                }
+                if (!stringValue.isBlank()) {
+                    merged.put(SCREEN_BACKGROUND_PREFIX + screenKey + "." + field, stringValue);
+                }
+            });
+        });
+    }
+
+    private static String normaliseBackgroundField(String field) {
+        return switch (field) {
+            case "color", "backgroundColor" -> "color";
+            case "image", "backgroundImage" -> "image";
+            case "transparency", "imageTransparency", "backgroundImageTransparency" -> "transparency";
+            default -> null;
+        };
+    }
+
+    /** Per-screen background colour for {@code screenKey} (a route id), if configured. */
+    public Optional<String> screenBackgroundColor(String screenKey) {
+        return screenBackgroundField(screenKey, "color");
+    }
+
+    /** Per-screen background image for {@code screenKey} (a route id), if configured. */
+    public Optional<String> screenBackgroundImage(String screenKey) {
+        return screenBackgroundField(screenKey, "image");
+    }
+
+    /** Per-screen background image transparency for {@code screenKey} (a route id), if configured. */
+    public Optional<String> screenBackgroundImageTransparency(String screenKey) {
+        return screenBackgroundField(screenKey, "transparency");
+    }
+
+    private Optional<String> screenBackgroundField(String screenKey, String field) {
+        if (screenKey == null || screenKey.isBlank()) {
+            return Optional.empty();
+        }
+        return Optional.ofNullable(resources.get(SCREEN_BACKGROUND_PREFIX + screenKey + "." + field));
     }
 
     public boolean debug() {
