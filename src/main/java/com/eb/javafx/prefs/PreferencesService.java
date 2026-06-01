@@ -291,6 +291,21 @@ public final class PreferencesService {
         flushQuietly();
     }
 
+    /** Returns the Save-screen page that was last selected (global, persisted), so the screen
+     *  re-opens on the same page between sessions.  Always at least 1; the Save screen clamps
+     *  it against the live page count when applying. */
+    public int saveScreenSelectedPage() {
+        return Math.max(1, saveScreenSelectedPage);
+    }
+
+    /** Persists the last-selected Save-screen page and updates the loaded model.  Clamped to a
+     *  floor of 1. */
+    public void saveSaveScreenSelectedPage(int selectedPage) {
+        this.saveScreenSelectedPage = Math.max(1, selectedPage);
+        preferences.putInt(SAVE_SCREEN_SELECTED_PAGE_KEY, this.saveScreenSelectedPage);
+        flushQuietly();
+    }
+
     /** Forces the backing store to commit pending puts now rather than waiting for the
      *  JVM-exit shutdown hook.  Used by the save-screen checkboxes (Auto-save daily,
      *  Show as list) where the player expects their toggle to survive a restart even if

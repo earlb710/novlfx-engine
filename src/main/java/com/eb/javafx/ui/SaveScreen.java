@@ -423,17 +423,21 @@ public final class SaveScreen {
         // slot numbers shift by SLOT_COUNT per page — page 2 maps to slots 16..30,
         // page 3 to 31..45, etc.  pageCount caps at MAX_PAGES (10) so a player can
         // accumulate up to 150 slots per category before the "+" button hides.
-        // selectedPage drives which slot range is currently displayed.  pageCount is
-        // persisted to global preferences (save.pageCount) so pages the player spawns via
-        // the "+" chip — and the saves stored on them — survive a restart; selectedPage
-        // stays session-only (always opens on page 1).
+        // selectedPage drives which slot range is currently displayed.  Both are persisted to
+        // global preferences (save.pageCount / save.selectedPage) so pages the player spawns
+        // via the "+" chip — and the page they were last looking at — survive a restart.
         int storedPageCount = Math.min(MAX_PAGES,
                 Math.max(1, context.preferencesService().saveScreenPageCount()));
+        int storedSelectedPage = Math.min(storedPageCount,
+                Math.max(1, context.preferencesService().saveScreenSelectedPage()));
         javafx.beans.property.IntegerProperty pageCount    = new javafx.beans.property.SimpleIntegerProperty(storedPageCount);
-        javafx.beans.property.IntegerProperty selectedPage = new javafx.beans.property.SimpleIntegerProperty(1);
+        javafx.beans.property.IntegerProperty selectedPage = new javafx.beans.property.SimpleIntegerProperty(storedSelectedPage);
         // Persist every page-count change (the "+" chip increments it) to global setup.
         pageCount.addListener((obs, was, is) ->
                 context.preferencesService().saveSaveScreenPageCount(is.intValue()));
+        // Persist the active page so the screen re-opens on it next session.
+        selectedPage.addListener((obs, was, is) ->
+                context.preferencesService().saveSaveScreenSelectedPage(is.intValue()));
 
         Runnable rebuildAllTabs = () -> {
             int page = Math.max(1, selectedPage.get());
