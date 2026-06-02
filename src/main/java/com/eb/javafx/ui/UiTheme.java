@@ -701,7 +701,9 @@ public final class UiTheme {
         panelBackground = palette.screenPanelBackground();
         hoverBackground = palette.buttonHoverBackground();
         footerIconColor = palette.footerIconColor();
-        stylesheetContent = palette.toStylesheet(fontFamily);
+        // Apply the global text-size scale: rewrite every -fx-font-size in the generated theme so
+        // ALL themed text grows/shrinks (the sizes are px, which a root font-size can't scale).
+        stylesheetContent = com.eb.javafx.util.FontScaling.scale(palette.toStylesheet(fontFamily), fontScale);
         stylesheet = writeStylesheet(stylesheetContent);
         ButtonVisuals.configureArtworkGradient(
                 palette.buttonGradientStart(),
@@ -735,7 +737,9 @@ public final class UiTheme {
         panelBackground = palette.screenPanelBackground();
         hoverBackground = palette.buttonHoverBackground();
         footerIconColor = palette.footerIconColor();
-        stylesheetContent = palette.toStylesheet(fontFamily);
+        // Apply the global text-size scale: rewrite every -fx-font-size in the generated theme so
+        // ALL themed text grows/shrinks (the sizes are px, which a root font-size can't scale).
+        stylesheetContent = com.eb.javafx.util.FontScaling.scale(palette.toStylesheet(fontFamily), fontScale);
         stylesheet = writeStylesheet(stylesheetContent);
         ButtonVisuals.configureArtworkGradient(
                 palette.buttonGradientStart(),

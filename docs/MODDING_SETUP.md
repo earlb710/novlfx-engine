@@ -255,7 +255,7 @@ These classes are defined by the engine template and the game CSS and are safe t
 .screen-title { -fx-font-family: "Nasalization"; }
 ```
 
-- The base UI font family comes from the `ui.fontFamily` preference (default `System`); `ui.fontScale` (0.75–2.0) scales all text.
+- The base UI font family comes from the `ui.fontFamily` preference (default `System`). `ui.fontScale` (0.75–2.0) is the **global text size** — the Preferences screen exposes it as **Text size: Smaller / Normal / Bigger** (an accessibility setting). It works by rewriting every `-fx-font-size` in the generated theme stylesheet *and* AltLife's stylesheet via `FontScaling`, so all px-pinned text scales (a root font-size alone wouldn't).
 - **Use a different bundled font:** set `ui.fontFamily`, or reference a packaged family by name in the game CSS.
 
 **Add a brand-new font via config (`resources.font.*`).** Any entry in the `resources` map
@@ -508,7 +508,7 @@ seed defaults at boot. Full set:
 | `ui.logStatChanges` | Log stat changes | false |
 | `ui.footerShortcutDisplay` | Footer shortcut hint mode | `tooltip-only` |
 | `ui.footerIconDisplay` | Footer icon/text mode | `icons-with-text` |
-| `ui.fontFamily` / `ui.fontScale` | Base font + scale | `System` / 1.0 |
+| `ui.fontFamily` / `ui.fontScale` | Base font + **global text size** (Preferences → Text size: Smaller 0.85 / Normal 1.0 / Bigger 1.2; rewrites every theme + game font size) | `System` / 1.0 |
 | `ui.themeFamily` / `ui.themeVariant` | Theme palette (§2.1) | `ocean` / `dark` |
 | `ui.language` | UI language | `en` |
 | `ui.textSpeed` | Text reveal speed | `normal` (slow 800ms / normal 400 / fast 200) |

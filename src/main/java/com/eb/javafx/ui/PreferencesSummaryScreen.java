@@ -101,6 +101,7 @@ public final class PreferencesSummaryScreen {
                 fullscreenRow(context)));
         content.getChildren().add(settingsBlock(
                 screenText("block.text.title"),
+                textSizeRow(context),
                 textSpeedRow(context)));
         content.getChildren().add(settingsBlock(
                 screenText("block.save.title"),
@@ -299,6 +300,93 @@ public final class PreferencesSummaryScreen {
         HBox row = new HBox(8, label, slider, value);
         row.getStyleClass().add(ScreenShell.LAYOUT_SECTION_ROW_STYLE_CLASS);
         return row;
+    }
+
+    /** Global text-size choices mapped to font-scale factors.  Accessibility control: bump every
+     *  font up for low-vision players, or down for those who find the default too big. */
+    private enum TextSize {
+        SMALLER(0.85, "item.text-size.smaller"),
+        NORMAL(1.0, "item.text-size.normal"),
+        BIGGER(1.2, "item.text-size.bigger");
+
+        private final double scale;
+        private final String labelKey;
+
+        TextSize(double scale, String labelKey) {
+            this.scale = scale;
+            this.labelKey = labelKey;
+        }
+
+        String label() {
+            return screenText(labelKey);
+        }
+
+        /** The choice whose scale is closest to {@code fontScale}. */
+        static TextSize nearest(double fontScale) {
+            TextSize best = NORMAL;
+            double bestDelta = Double.MAX_VALUE;
+            for (TextSize size : values()) {
+                double delta = Math.abs(size.scale - fontScale);
+                if (delta < bestDelta) {
+                    bestDelta = delta;
+                    best = size;
+                }
+            }
+            return best;
+        }
+    }
+
+    private static HBox textSizeRow(RouteContext context) {
+        Label label = new Label(screenText("item.text-size.label"));
+        label.getStyleClass().add(ScreenShell.SCREEN_TEXT_STYLE_CLASS);
+        ComboBox<TextSize> comboBox = new ComboBox<>();
+        comboBox.getItems().addAll(TextSize.values());
+        comboBox.setConverter(new StringConverter<>() {
+            @Override
+            public String toString(TextSize size) {
+                return size == null ? "" : size.label();
+            }
+
+            @Override
+            public TextSize fromString(String string) {
+                for (TextSize size : TextSize.values()) {
+                    if (size.label().equals(string)) {
+                        return size;
+                    }
+                }
+                return null;
+            }
+        });
+        comboBox.setValue(TextSize.nearest(context.preferencesService().fontScale()));
+        comboBox.setOnAction(event -> {
+            TextSize selected = comboBox.getValue();
+            if (selected != null) {
+                applyFontScale(context, selected.scale);
+            }
+        });
+        HBox row = new HBox(8, label, comboBox);
+        row.getStyleClass().add(ScreenShell.LAYOUT_SECTION_ROW_STYLE_CLASS);
+        return row;
+    }
+
+    /** Persists the global font scale, re-initialises the theme (which rewrites all font sizes),
+     *  and rebuilds the preferences scene so the change is visible immediately — mirrors
+     *  {@link #applyTheme}. */
+    private static void applyFontScale(RouteContext context, double scale) {
+        context.preferencesService().saveFontScale(scale);
+        context.uiTheme().initialize(context.preferencesService());
+        Scene currentScene = context.primaryStage() == null ? null : context.primaryStage().getScene();
+        double width = currentScene == null ? context.preferencesService().windowWidth() : currentScene.getWidth();
+        double height = currentScene == null ? context.preferencesService().windowHeight() : currentScene.getHeight();
+        Scene rebuiltScene = createScene(context, width, height);
+        if (currentScene != null && rebuiltScene != null && rebuiltScene.getRoot() != null) {
+            javafx.scene.Parent rebuiltRoot = rebuiltScene.getRoot();
+            rebuiltScene.setRoot(new javafx.scene.layout.Pane());
+            currentScene.setRoot(rebuiltRoot);
+            currentScene.getStylesheets().setAll(rebuiltScene.getStylesheets());
+        } else if (context.primaryStage() != null) {
+            context.primaryStage().setScene(rebuiltScene);
+        }
     }
 
     private static HBox themeSelectionRow(RouteContext context) {

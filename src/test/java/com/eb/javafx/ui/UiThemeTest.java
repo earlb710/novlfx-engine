@@ -298,6 +298,33 @@ final class UiThemeTest {
     }
 
     @Test
+    void fontScaleRewritesAllGeneratedFontSizes() {
+        preferences.putDouble("ui.fontScale", 2.0);
+        PreferencesService preferencesService = new PreferencesService();
+        preferencesService.load();
+
+        UiTheme theme = new UiTheme();
+        theme.initialize(preferencesService);
+
+        assertEquals(2.0, theme.fontScale());
+        // The template's .screen-title is 34px; at 2.0x it must be rewritten to 68px.
+        assertTrue(theme.stylesheetContent().contains("-fx-font-size: 68px;"),
+                "All generated font sizes should scale with fontScale.");
+    }
+
+    @Test
+    void defaultFontScaleLeavesSizesUnscaled() {
+        PreferencesService preferencesService = new PreferencesService();
+        preferencesService.load();
+
+        UiTheme theme = new UiTheme();
+        theme.initialize(preferencesService);
+
+        assertEquals(1.0, theme.fontScale());
+        assertTrue(theme.stylesheetContent().contains("-fx-font-size: 34px;"));
+    }
+
+    @Test
     void initializeKeepsHighContrastOverrideForAnyThemeSelection() {
         preferences.put("ui.themeFamily", "forest");
         preferences.put("ui.themeVariant", "light-pastel");

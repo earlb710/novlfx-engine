@@ -437,6 +437,12 @@ public final class PreferencesService {
         preferences.putDouble(FONT_SCALE_KEY, this.fontScale);
     }
 
+    /** Persists just the global text-size scale, preserving the current font family.  Backs the
+     *  Preferences "Text size" (Smaller / Normal / Bigger) control. */
+    public void saveFontScale(double fontScale) {
+        saveFontPreferences(this.fontFamily, fontScale);
+    }
+
     /** Persists the selected theme family and variant. */
     public void saveThemePreferences(ThemeFamily themeFamily, ThemeVariant themeVariant) {
         this.themeFamily = themeFamily == null ? ThemeFamily.OCEAN : themeFamily;
