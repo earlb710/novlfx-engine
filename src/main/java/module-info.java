@@ -44,7 +44,16 @@ module com.novlfx.engine {
     exports com.eb.javafx.transitions;
     exports com.eb.javafx.gallery;
     exports com.eb.javafx.storyline;
-    exports com.eb.javafx.testscreen;
+    // com.eb.javafx.testscreen holds internal developer tooling / editor applications (screen
+    // designer, conversation editor, code-table management, etc.), not a general consumer-facing
+    // API, so it is NOT exported to the world. The Gradle run tasks launch them from the test
+    // runtime CLASSPATH (not the module path), so module exports don't affect those.
+    //
+    // It IS qualified-exported to the reference admin app (com.altlife.javafx), whose admin screen
+    // reflectively launches ManagementApplication.launchEmbedded() as a dev-tooling feature. A
+    // qualified export keeps the package out of the published API surface for arbitrary consumers
+    // while letting that one trusted module reach the embedded management tool.
+    exports com.eb.javafx.testscreen to com.altlife.javafx;
 
     // -------------------------------------------------------------------------------------
     // `opens` for packages that ship BOTH .class files and resources.

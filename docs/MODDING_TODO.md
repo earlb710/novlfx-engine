@@ -42,10 +42,23 @@ Content/code-level modding (new routes, new content modules, scripting) is out o
 | Dialog popup card width | `ui: { dialog: { minWidth, maxWidth } }` overrides the confirm/info/error popup card width (default 360 / 520) | `DialogMessages.setCardWidth`, `ApplicationResourceConfig.uiDialogField` |
 | Dialog-block previous-entry fade | `ui.dialog.previousEntryOpacity` (0–1) tunes the fade on entries above the cursor (default 0.5) | `DialogEntriesView.setPreviousEntryOpacity` |
 | Conversation-history cap | `save.maxHistoryEntries` sets the sliding-window size for retained conversations (default 1000) | `DialogHistory.setMaxConversations`, `ApplicationResourceConfig.saveField` |
+| Startup window size + bounds | `window: { defaultWidth, defaultHeight, minWidth, maxWidth, minHeight, maxHeight }` set the initial window size and the clamp range (defaults 1280×720 within 640–3840 × 480–2160) | `PreferencesService.setWindowSizeBounds`, `ApplicationResourceConfig.windowField` |
+| Font-scale clamp range | `ui.fontScaleMin` / `ui.fontScaleMax` widen/narrow the global Text-size accessibility range (default 0.75–2.0) | `PreferencesService.setFontScaleBounds`, `ApplicationResourceConfig.uiField` |
+| SVG background min raster | `display.svgBackgroundMinRaster.{width,height}` sets the minimum rasterisation size for SVG backgrounds (default 1920×1080) | `ScreenShell.setBackgroundSvgRasterMinSize`, `ApplicationResourceConfig.displayField` |
+| Dialog / save corner radii | Popup card/input/button + save block/tile/page-chip/thumbnail corner radii moved from inline Java to theme CSS (`.dialog-message-card/-input/-button`, `.save-grid-block/-tile/-page-chip/-thumb-placeholder`) — mod-overridable via custom theme CSS | `UiTheme` stylesheet template, `DialogMessages`, `SaveScreen` |
+| Save tile sizes | `save.gridThumbnailWidth/Height` + `save.listThumbnailWidth/Height` size the grid tiles (default 350×197) and list-row thumbnails (default 96×54) | `SaveScreen.setThumbnailSizes`, `ApplicationResourceConfig.saveField` |
+| Persisted thumbnail encoding | `save.thumbnailWidth/Height` (default ~1.4× the grid tile size, so it tracks `gridThumbnail*`) + `save.thumbnailJpegQuality` (default 0.85) control the saved JPEG resolution/quality | `SaveLoadService.setThumbnailEncoding`, `SaveScreen.gridThumbnailWidth/Height`, `BootstrapService` (supersample derive) |
+| Screen spacing / insets | `ui.spacing.{body,outer,panel,footer}` retune the body gap / outer margin / panel padding / footer gap (defaults 12 / 16 / 16 / 14) | `ScreenShell.setSpacing`, `ApplicationResourceConfig.uiSpacingField` |
+| Footer rest/hover opacity | `footer.restOpacity` / `footer.hoverOpacity` set the footer opacity at rest vs hover (defaults 0.5 / 1.0) | `ScreenShell.setFooterOpacity`, `ApplicationResourceConfig.footerStyle` |
+| Kinetic text-effect durations | `text.kineticEffects.{pulse,float,shake}` set the inline `[kinetic=…]` animation durations in ms (defaults 650 / 900 / 120) | `JavaFxRichTextRenderer.setKineticEffectDurations`, `ApplicationResourceConfig.textKineticField` |
 
 Tests: `ConfiguredFontsTest`, `ResourceOverridesTest`, `FontResourcesTest`, `UiThemeTest`
 (custom-palette cases), `ApplicationResourceConfigTest` (`uiDialogFieldsParse`,
-`saveMaxHistoryEntriesParses`), `DialogHistoryTest` (`configuredCapTrimsToTheConfiguredSlidingWindow`)
+`saveMaxHistoryEntriesParses`, `uiFontScaleBoundsParse`, `windowSizingParses`,
+`displaySvgBackgroundMinRasterParses`, `saveFieldsParse`, `uiSpacingParses`,
+`footerOpacityFieldsParseAsNumbers`, `textKineticEffectDurationsParse`), `DialogHistoryTest`
+(`configuredCapTrimsToTheConfiguredSlidingWindow`), `PreferencesServiceTest`
+(`configuredWindowBoundsDriveDefaultsAndClamps`, `configuredFontScaleBoundsChangeClamping`)
 (engine); `GameApplicationThemeStylesheetTest` (AltLife).
 
 ---

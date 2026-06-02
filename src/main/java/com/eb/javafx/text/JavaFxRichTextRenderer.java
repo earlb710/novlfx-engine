@@ -39,6 +39,31 @@ public final class JavaFxRichTextRenderer {
     private static final double DEFAULT_INLINE_ICON_HEIGHT = 18.0;
     private static final double DEFAULT_INLINE_ICON_BASELINE_OFFSET = 3.0;
 
+    // Kinetic text-effect animation durations (ms).  Config-overridable via the
+    // `text.kineticEffects` config object, wired once at boot by BootstrapService.  Static because
+    // renderer instances are created ad-hoc throughout the app; these are global tuning knobs.
+    private static final int DEFAULT_KINETIC_PULSE_MS = 650;
+    private static final int DEFAULT_KINETIC_FLOAT_MS = 900;
+    private static final int DEFAULT_KINETIC_SHAKE_MS = 120;
+    private static volatile int kineticPulseMillis = DEFAULT_KINETIC_PULSE_MS;
+    private static volatile int kineticFloatMillis = DEFAULT_KINETIC_FLOAT_MS;
+    private static volatile int kineticShakeMillis = DEFAULT_KINETIC_SHAKE_MS;
+
+    /** Overrides the kinetic text-effect animation durations (ms): pulse (fade), float (vertical
+     *  drift), shake (horizontal jitter).  Null / non-positive args keep the current value.
+     *  Called once at boot. */
+    public static void setKineticEffectDurations(Integer pulseMs, Integer floatMs, Integer shakeMs) {
+        if (pulseMs != null && pulseMs > 0) {
+            kineticPulseMillis = pulseMs;
+        }
+        if (floatMs != null && floatMs > 0) {
+            kineticFloatMillis = floatMs;
+        }
+        if (shakeMs != null && shakeMs > 0) {
+            kineticShakeMillis = shakeMs;
+        }
+    }
+
     private final TextTagParser parser;
     private final ImageDisplayRegistry imageDisplayRegistry;
     private final Function<String, Node> inlineIconFactory;
@@ -227,13 +252,14 @@ public final class JavaFxRichTextRenderer {
     private void applyKinetic(Text text, String value) {
         String mode = value == null ? "" : value.trim().toLowerCase();
         if ("pulse".equals(mode)) {
-            FadeTransition transition = new FadeTransition(Duration.millis(650), text);
+            FadeTransition transition = new FadeTransition(Duration.millis(kineticPulseMillis), text);
             transition.setFromValue(0.65);
             transition.setToValue(1.0);
             configureLooping(transition, text);
             return;
         }
-        TranslateTransition transition = new TranslateTransition(Duration.millis("float".equals(mode) ? 900 : 120), text);
+        TranslateTransition transition = new TranslateTransition(
+                Duration.millis("float".equals(mode) ? kineticFloatMillis : kineticShakeMillis), text);
         if ("float".equals(mode)) {
             transition.setFromY(-2.0);
             transition.setToY(2.0);

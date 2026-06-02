@@ -17,6 +17,7 @@ Example/demo index: [`examples/user-manual/README.md`](../examples/user-manual/R
 - **Text and utility helpers**: parse simple styled text tags, record conversation history, and use common validation, collection, path, packaged font, JSON, image, conversion, Unicode, and time helpers.
 - **Extension boundaries**: keep authored game content, application launchers, concrete assets, and domain-specific rules in the application repository.
 - **Application shell integration**: create the first app-owned JavaFX launcher, bootstrap flow, and media adapter on top of the reusable engine.
+- **Configuration knobs and reusable helpers**: the config-driven tuning surface (`config.json` knobs applied at boot), the reusable helper classes added for hosts, and the themeable CSS classes — a catalogue of recent engine enhancements.
 
 ## 2. Project setup and validation
 
@@ -1625,6 +1626,12 @@ This repository is intended to stay reusable. Keep the following in application 
 
 When adding new reusable behavior, preserve deterministic validation, initialize services explicitly, and add focused tests for the reusable behavior.
 
+The exported-package surface is classified into **Stable**, **Experimental**, and **Internal** (not
+exported) in [`API_STABILITY.md`](API_STABILITY.md). Consumers should rely on Stable packages
+freely; Experimental packages are usable but may change before they are proven by a shipping game.
+Internal packages (e.g. `com.eb.javafx.testscreen`, the developer tooling apps) are deliberately not
+exported.
+
 Example/demo code: [`examples/user-manual/11-extension-boundaries/ApplicationRouteModuleDemo.java`](../examples/user-manual/11-extension-boundaries/ApplicationRouteModuleDemo.java)
 
 ## 12. Application shell integration
@@ -1646,3 +1653,91 @@ If a later cleanup goal is a stricter pure-JavaFX stack, treat removal of the re
 Example/demo code:
 - [`examples/user-manual/12-application-shell/GameApplicationDemo.java`](../examples/user-manual/12-application-shell/GameApplicationDemo.java)
 - [`examples/user-manual/12-application-shell/JavaFxAudioPlaybackAdapterDemo.java`](../examples/user-manual/12-application-shell/JavaFxAudioPlaybackAdapterDemo.java)
+
+## 13. Configuration knobs and reusable helpers
+
+This section catalogues recent engine enhancements: the data-driven tuning knobs a host can set in
+`config.json` (applied once at boot by `BootstrapService`), the reusable helper classes added so a
+host doesn't re-implement common plumbing, and the themeable CSS classes. For the full
+setup/modding reference — JSON schema, layering, recipes — see
+[`MODDING_SETUP.md`](MODDING_SETUP.md); the running capability list lives in
+[`MODDING_TODO.md`](MODDING_TODO.md).
+
+### 13.1 Config-driven tuning knobs
+
+Every knob below is parsed by `ApplicationResourceConfig` and applied at boot. All are optional —
+omitting one keeps the engine default. Numeric overrides are validated leniently (blank /
+unparseable / out-of-range values fall back to the default).
+
+| `config.json` key | Effect (default) | Applied via |
+|---|---|---|
+| `window.defaultWidth` / `defaultHeight` | startup window size when none is stored (1280×720) | `PreferencesService.setWindowSizeBounds` |
+| `window.minWidth` / `maxWidth` / `minHeight` / `maxHeight` | window clamp bounds, on load and on resize (640–3840 × 480–2160) | `PreferencesService.setWindowSizeBounds` |
+| `ui.fontScaleMin` / `ui.fontScaleMax` | clamp range for the global Text-size accessibility scale (0.75–2.0) | `PreferencesService.setFontScaleBounds` |
+| `ui.dialog.minWidth` / `maxWidth` | confirm/info/error popup card width (360 / 520) | `DialogMessages.setCardWidth` |
+| `ui.dialog.previousEntryOpacity` | fade on dialog-block entries above the cursor (0.5) | `DialogEntriesView.setPreviousEntryOpacity` |
+| `ui.spacing.body` / `outer` / `panel` / `footer` | screen body gap / outer margin / panel padding / footer gap (12 / 16 / 16 / 14) | `ScreenShell.setSpacing` |
+| `footer.restOpacity` / `hoverOpacity` | footer opacity at rest vs hover (0.5 / 1.0) | `ScreenShell.setFooterOpacity` |
+| `footer.font` / `color` / `selectColor` / `backgroundColor` / `transparency` | footer text styling layered over the theme | `FooterStyle.configure` |
+| `footerOptions.<id>.shortcut` / `icon` | remap a footer option's keybinding / glyph | `ScreenShell.setFooterOptionOverrides` |
+| `tooltipDelayMs` | global tooltip show-delay | `ScreenShell.setTooltipShowDelayMillis` |
+| `textSpeed.slow` / `normal` / `fast` | ms each text-speed preset means | `PreferencesService.setTextSpeedDurations` |
+| `text.kineticEffects.pulse` / `float` / `shake` | `[kinetic=…]` animation durations in ms (650 / 900 / 120) | `JavaFxRichTextRenderer.setKineticEffectDurations` |
+| `autoAdvance.scrollFraction` / `minScrollMs` / `readPauseMultiplier` | auto-advance cadence tuning | `AutoSkipController.setAutoAdvanceTuning` |
+| `audioChannels.<id>.priority` / `volume` / `ducking` / `duckPercent` | per-channel audio policy | `AudioChannelConfigs.fromConfig` |
+| `save.maxHistoryEntries` | conversation-history sliding-window cap (1000) | `DialogHistory.setMaxConversations` |
+| `save.gridThumbnailWidth` / `Height`, `listThumbnailWidth` / `Height` | save-screen grid-tile (350×197) and list-row (96×54) thumbnail sizes | `SaveScreen.setThumbnailSizes` |
+| `save.thumbnailWidth` / `Height` | persisted JPEG thumbnail resolution — defaults to ~1.4× the grid-tile size, so it tracks `gridThumbnail*` | `SaveLoadService.setThumbnailEncoding` |
+| `save.thumbnailJpegQuality` | persisted-thumbnail JPEG quality 0–1 (0.85) | `SaveLoadService.setThumbnailEncoding` |
+| `display.svgBackgroundMinRaster.width` / `height` | minimum rasterisation size for SVG backgrounds (1920×1080) | `ScreenShell.setBackgroundSvgRasterMinSize` |
+| `hud.dialogIdleAlpha` / `dialogActiveAlpha` / `locationRestAlpha` / `locationHoverAlpha` / `statusLogAlpha` / `panelAlpha` | gameplay-HUD backdrop opacities (host-applied) | host HUD layer |
+| `screenBackgrounds.<routeId>.color` / `image` / `transparency` | per-screen background for any system screen | `RouteContext.themedScene*` |
+| `resources.uiTheme` | external theme CSS file overriding the bundled stylesheet | `ThemeStylesheetLoader.resolveOverrideUrl` |
+| `resources.themePalette` | JSON colour-field overrides on a base palette | `UiTheme.loadCustomPalette` |
+| `resources.assetOverrideRoot`, `icon:<path>` | replace bundled icons/images, or repoint a single one | `ResourceOverrides` |
+| `resources.windowTitle` / `appIcon` | window title string + window/taskbar icon image | `BootstrapService.applyWindowChrome` |
+| `fonts: [...]` / `font.*` | register fonts (classpath or on-disk) referenced by family name in CSS | `ConfiguredFonts` |
+| `mapBuildingColors` | JSON file of per-building hex gradient overrides (resolved as a first-class field; consumed by the host map layer) | host map layer |
+
+> First-class string fields (`assetOverrideRoot`, `windowTitle`, `appIcon`, `uiTheme`,
+> `themePalette`, `mapBuildingColors`) may be written either as top-level keys or inside the
+> `resources` id→path map — both resolve to the same value. The `debug` flag and the
+> `defaultApp*` / `defaultPreferencesScreen*` / `defaultSaveLoadScreen*` background fields are
+> pre-existing top-level config covered in §4.
+
+### 13.2 Reusable helper classes
+
+These were extracted so a host (any game) gets the behaviour for free instead of re-implementing it.
+All are stateless static utilities unless noted.
+
+| Class | Purpose |
+|---|---|
+| `com.eb.javafx.util.ConfigValues` | Lenient `config.json` scalar parsing — `parsePositiveInt/Double/Float`, `parseDouble`, `parseUnitOrNull`, `parseIntOr` / `parseDoubleOr`, `clampUnit`. Single source of truth for "parse or keep the default" semantics. |
+| `com.eb.javafx.util.ScaledStylesheet` | `scaledUri(sourceUrl, scale)` — produces a font-scaled copy of a CSS sheet as a cached temp file (returns the source unchanged at scale ≈ 1.0). Backs the global Text-size accessibility scale. |
+| `com.eb.javafx.ui.StageGeometry` | `clampToVisibleScreen(stage)` / `visualBoundsFor(stage)` / `clampToBounds(stage, bounds)` — keep a restored/configured window inside the visible screen bounds. |
+| `com.eb.javafx.ui.ThemeColors` | `relativeLuminance(color)`, `isLightTheme(uiTheme)` (luminance-based light/dark inference), `darken(hex, factor)` (hue-preserving, parse-safe). |
+| `com.eb.javafx.ui.ButtonStyling` | `bevel` / `bevelDescendants` / `centeredRow` / `centerButtonContainers` over `ButtonVisuals` — style-class names, spacing, padding, and hover tint are all caller-supplied. |
+| `com.eb.javafx.ui.RepeatedIconBadge` | `build(resourcePath, opacities, sizePx, gapPx, rasteriser)` / `singleIcon(...)` — an "N icons at opacity" badge (e.g. a meter drawn as a row of hearts) with an injected `IconRasteriser` callback. |
+| `com.eb.javafx.transitions.SheetTransitions` | `fadeIn(node[, duration])` — modal popup show choreography (fade + 0.95→1.0 scale, ease-out, crisp-text finisher). Sits beside `TransitionPlayer`. |
+| `com.eb.javafx.bootstrap.ApplicationRootLocator` | `detectFrom(current, contentMarkerDir, moduleDirName)` — heuristic application-root discovery (content sub-dir + optional build/module wrapper). |
+| `com.eb.javafx.bootstrap.AudioChannelConfigs` | `fromConfig(config, channelId, defaults…)` — builds an `AudioChannelConfig`, overlaying `audioChannels.<id>` overrides over caller defaults. |
+| `com.eb.javafx.bootstrap.ThemeStylesheetLoader` | `resolveOverrideUrl(config, applicationRoot, resourceId)` — resolves a config resource id (e.g. `uiTheme`) to a `file:` URL when it points at a readable file. |
+
+Image caching is centralised in `com.eb.javafx.util.SvgRasterCache` (`getOrCompute(key, loader)` /
+`keyFor(path, w, h)` / `clear()` / `size()`); hosts should route image memoisation through it with a
+distinct key prefix per subsystem rather than keeping local maps.
+
+### 13.3 Themeable CSS classes
+
+These classes are emitted by the generated theme stylesheet (so the global Text-size scale reaches
+them) and can be restyled by pointing `resources.uiTheme` at a custom CSS file. Font sizes and
+corner radii that used to be inline in Java now live here.
+
+- **Dialog popups** (`DialogMessages`): `.dialog-message-title`, `.dialog-message-header`,
+  `.dialog-message-content`, `.dialog-message-button` (font size + weight), `.dialog-message-card`,
+  `.dialog-message-input` (corner radii). Card *width* is config-driven (§13.1).
+- **Save screen** (`SaveScreen`): `.save-screen-mode-title`, `.save-screen-page-label` (font size);
+  `.save-grid-block`, `.save-tile`, `.save-page-chip`, `.save-thumb-placeholder` (corner radii).
+
+Colours that are theme-token / accent driven stay inline in Java (they are recomputed on a theme
+change); only size/radius/weight live in CSS.

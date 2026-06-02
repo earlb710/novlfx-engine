@@ -100,8 +100,12 @@ public final class SaveScreen {
      *  visible letterboxing.  Band width is 5 × 350 + 4 × 6 (hgap) = 1774 px, so the
      *  grid fits in any window ≥ ~1850 px wide (the load-from-admin window has been
      *  bumped to 1920 to match). */
-    private static final int GRID_THUMB_WIDTH = 350;
-    private static final int GRID_THUMB_HEIGHT = 197;
+    private static final int DEFAULT_GRID_THUMB_WIDTH = 350;
+    private static final int DEFAULT_GRID_THUMB_HEIGHT = 197;
+    // Config-overridable (save.gridThumbnailWidth/Height, applied at boot).  Non-final so a mod
+    // can resize the grid tiles; defaults preserve the 350×197 (≈16:9) layout above.
+    private static int GRID_THUMB_WIDTH = DEFAULT_GRID_THUMB_WIDTH;
+    private static int GRID_THUMB_HEIGHT = DEFAULT_GRID_THUMB_HEIGHT;
 
     /** Inset between the tile border and the thumbnail image — the picture itself
      *  shouldn't touch the tile border (delete pip + caption strip still do).  The
@@ -117,8 +121,33 @@ public final class SaveScreen {
     private static final int MAX_PAGES = 10;
 
     /** Thumbnail size for list rows (smaller — sits to the right of the text columns). */
-    private static final int LIST_THUMB_WIDTH = 96;
-    private static final int LIST_THUMB_HEIGHT = 54;
+    private static final int DEFAULT_LIST_THUMB_WIDTH = 96;
+    private static final int DEFAULT_LIST_THUMB_HEIGHT = 54;
+    // Config-overridable (save.listThumbnailWidth/Height, applied at boot).
+    private static int LIST_THUMB_WIDTH = DEFAULT_LIST_THUMB_WIDTH;
+    private static int LIST_THUMB_HEIGHT = DEFAULT_LIST_THUMB_HEIGHT;
+
+    /** Overrides the save-tile thumbnail dimensions (the {@code save.gridThumbnail*} /
+     *  {@code save.listThumbnail*} config). Null / non-positive args keep the current value.
+     *  Called once at boot. */
+    public static void setThumbnailSizes(Integer gridWidth, Integer gridHeight,
+                                         Integer listWidth, Integer listHeight) {
+        if (gridWidth != null && gridWidth > 0)   { GRID_THUMB_WIDTH = gridWidth; }
+        if (gridHeight != null && gridHeight > 0) { GRID_THUMB_HEIGHT = gridHeight; }
+        if (listWidth != null && listWidth > 0)   { LIST_THUMB_WIDTH = listWidth; }
+        if (listHeight != null && listHeight > 0) { LIST_THUMB_HEIGHT = listHeight; }
+    }
+
+    /** The current grid-tile thumbnail width (px) — drives the persisted-thumbnail resolution so
+     *  the saved preview matches whatever tile size is configured. */
+    public static int gridThumbnailWidth() {
+        return GRID_THUMB_WIDTH;
+    }
+
+    /** The current grid-tile thumbnail height (px). */
+    public static int gridThumbnailHeight() {
+        return GRID_THUMB_HEIGHT;
+    }
 
     private static final String PREFERENCES_ID = "preferences";
     private static final Set<String> ENABLED_FOOTER_IDS = Set.of(PREFERENCES_ID);
@@ -398,11 +427,10 @@ public final class SaveScreen {
                             ? "rgba(255, 255, 255, 0.15)" : blockTheme.accentColor();
             VBox block = new VBox(container);
             block.getStyleClass().add("save-grid-block");
+            // Corner radius lives in CSS (.save-grid-block); colours/padding stay inline.
             block.setStyle(
                     "-fx-background-color: " + blockPanel + ";"
-                    + " -fx-background-radius: 8;"
                     + " -fx-border-color: " + blockBorder + ";"
-                    + " -fx-border-radius: 8;"
                     + " -fx-border-width: 1;"
                     + " -fx-padding: 8;");
             // ScrollPane wraps the block so the list view (when active) remains scrollable
@@ -736,6 +764,7 @@ public final class SaveScreen {
         caption.setTextOverrun(javafx.scene.control.OverrunStyle.ELLIPSIS);
 
         StackPane tile = new StackPane();
+        tile.getStyleClass().add("save-tile");
         tile.setPrefSize(GRID_THUMB_WIDTH, GRID_THUMB_HEIGHT);
         tile.setMinSize(GRID_THUMB_WIDTH, GRID_THUMB_HEIGHT);
         tile.setMaxSize(GRID_THUMB_WIDTH, GRID_THUMB_HEIGHT);
@@ -747,20 +776,18 @@ public final class SaveScreen {
         // want them flush to the actual tile rect.  The resting style uses a 1 px border
         // at theme accent; the hover style swaps to a 2 px white border so the active
         // tile reads as the click target.
+        // Corner radius lives in CSS (.save-tile); the rest/hover inline styles carry only the
+        // state-dependent colours / border width.
         final String tileRestStyle =
                 "-fx-background-color: " + themePanel + ";"
               + " -fx-border-color: " + themeAccent + ";"
               + " -fx-border-width: 1;"
-              + " -fx-border-radius: 6;"
-              + " -fx-background-radius: 6;"
               + " -fx-padding: 0;"
               + " -fx-cursor: hand;";
         final String tileHoverStyle =
                 "-fx-background-color: " + themePanel + ";"
               + " -fx-border-color: white;"
               + " -fx-border-width: 2;"
-              + " -fx-border-radius: 6;"
-              + " -fx-background-radius: 6;"
               + " -fx-padding: 0;"
               + " -fx-cursor: hand;";
         tile.setStyle(tileRestStyle);
@@ -1342,7 +1369,9 @@ public final class SaveScreen {
         if (view.getImage() == null) {
             // Placeholder background so empty slots still occupy the cell footprint and the
             // grid layout doesn't shift between empty / filled.
-            view.setStyle("-fx-background-color: rgba(255,255,255,0.06); -fx-background-radius: 4;");
+            // Corner radius lives in CSS (.save-thumb-placeholder).
+            view.getStyleClass().add("save-thumb-placeholder");
+            view.setStyle("-fx-background-color: rgba(255,255,255,0.06);");
         }
         return view;
     }
@@ -1357,18 +1386,19 @@ public final class SaveScreen {
                                          javafx.beans.property.IntegerProperty selectedPage,
                                          String accent, String textHex) {
         Label chip = new Label(String.valueOf(pageNum));
+        chip.getStyleClass().add("save-page-chip");
         chip.setMinWidth(28);
         chip.setAlignment(Pos.CENTER);
         boolean selected = selectedPage.get() == pageNum;
+        // Corner radius lives in CSS (.save-page-chip); the per-state inline styles carry only the
+        // state-dependent colours / weight.
         String selectedStyle =
                 "-fx-text-fill: white;"
               + " -fx-font-size: 13px;"
               + " -fx-font-weight: bold;"
               + " -fx-background-color: " + accent + ";"
-              + " -fx-background-radius: 12;"
               + " -fx-border-color: white;"
               + " -fx-border-width: 1.5;"
-              + " -fx-border-radius: 12;"
               + " -fx-padding: 4 12 4 12;"
               + " -fx-cursor: hand;";
         String restStyle =
@@ -1376,10 +1406,8 @@ public final class SaveScreen {
               + " -fx-font-size: 13px;"
               + " -fx-font-weight: normal;"
               + " -fx-background-color: transparent;"
-              + " -fx-background-radius: 12;"
               + " -fx-border-color: transparent;"
               + " -fx-border-width: 1.5;"
-              + " -fx-border-radius: 12;"
               + " -fx-padding: 4 12 4 12;"
               + " -fx-cursor: hand;";
         String hoverStyle =
@@ -1387,10 +1415,8 @@ public final class SaveScreen {
               + " -fx-font-size: 13px;"
               + " -fx-font-weight: normal;"
               + " -fx-background-color: rgba(255,255,255,0.12);"
-              + " -fx-background-radius: 12;"
               + " -fx-border-color: " + accent + ";"
               + " -fx-border-width: 1.5;"
-              + " -fx-border-radius: 12;"
               + " -fx-padding: 4 12 4 12;"
               + " -fx-cursor: hand;";
         chip.setStyle(selected ? selectedStyle : restStyle);
@@ -1410,17 +1436,17 @@ public final class SaveScreen {
                                             javafx.beans.property.IntegerProperty selectedPage,
                                             String accent, String textHex) {
         Label chip = new Label("+");
+        chip.getStyleClass().add("save-page-chip");
         chip.setMinWidth(28);
         chip.setAlignment(Pos.CENTER);
+        // Corner radius lives in CSS (.save-page-chip); inline styles carry state colours only.
         String restStyle =
                 "-fx-text-fill: " + textHex + ";"
               + " -fx-font-size: 16px;"
               + " -fx-font-weight: bold;"
               + " -fx-background-color: transparent;"
-              + " -fx-background-radius: 12;"
               + " -fx-border-color: " + accent + ";"
               + " -fx-border-width: 1.5;"
-              + " -fx-border-radius: 12;"
               + " -fx-padding: 2 12 2 12;"
               + " -fx-cursor: hand;";
         String hoverStyle =
@@ -1428,10 +1454,8 @@ public final class SaveScreen {
               + " -fx-font-size: 16px;"
               + " -fx-font-weight: bold;"
               + " -fx-background-color: " + accent + ";"
-              + " -fx-background-radius: 12;"
               + " -fx-border-color: white;"
               + " -fx-border-width: 1.5;"
-              + " -fx-border-radius: 12;"
               + " -fx-padding: 2 12 2 12;"
               + " -fx-cursor: hand;";
         chip.setStyle(restStyle);

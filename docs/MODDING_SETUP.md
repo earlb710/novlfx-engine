@@ -157,15 +157,23 @@ get its own background** via a top-level `screenBackgrounds` map keyed by **rout
 > `AltLifeSceneStyles`) are governed by their own background system (§2.5 / screen-layout JSON
 > §3.3), not this engine map.
 
-### 1.7 Dialog tuning (`ui.dialog`) & history cap (`save`)
+### 1.7 Dialog tuning (`ui.dialog`), history cap (`save`), window sizing (`window`)
 
-Two small top-level config objects tune dialog behaviour:
+A few small top-level config objects tune dialog behaviour, history retention, and the startup
+window:
 
 ```json
 "ui": {
-  "dialog": { "minWidth": 420, "maxWidth": 640, "previousEntryOpacity": 0.3 }
+  "dialog": { "minWidth": 420, "maxWidth": 640, "previousEntryOpacity": 0.3 },
+  "fontScaleMin": 0.5,
+  "fontScaleMax": 3.0
 },
-"save": { "maxHistoryEntries": 250 }
+"save": { "maxHistoryEntries": 250 },
+"window": {
+  "defaultWidth": 1600, "defaultHeight": 900,
+  "minWidth": 800, "maxWidth": 5120,
+  "minHeight": 600, "maxHeight": 2880
+}
 ```
 
 **`ui.dialog`** (`ApplicationResourceConfig.uiDialogField`):
@@ -177,10 +185,74 @@ Two small top-level config objects tune dialog behaviour:
   `DialogEntriesView.setPreviousEntryOpacity`.
 - The popup **font sizes** are CSS, not config — restyle `.dialog-message-*` (§2.3).
 
+**`ui` scalars** (`ApplicationResourceConfig.uiField`):
+- `fontScaleMin` / `fontScaleMax` — clamp range for the global **Text size** scale (default
+  `0.75` / `2.0`). `max` is clamped to be ≥ `min`. Applied **before** preferences load so a stored
+  scale outside the new range re-clamps. Wired into `PreferencesService.setFontScaleBounds`.
+
 **`save`** (`ApplicationResourceConfig.saveField`):
 - `maxHistoryEntries` — conversation-history sliding-window cap (default `1000`). Once exceeded,
   the oldest conversation is dropped as each new one begins. Wired into
   `DialogHistory.setMaxConversations`.
+- `gridThumbnailWidth` / `gridThumbnailHeight` — save-screen **grid** tile size (default
+  `350` × `197`, ≈16:9).
+- `listThumbnailWidth` / `listThumbnailHeight` — save-screen **list-row** thumbnail size (default
+  `96` × `54`). All four wired into `SaveScreen.setThumbnailSizes`; non-positive values ignored.
+- `thumbnailWidth` / `thumbnailHeight` — resolution the persisted JPEG thumbnail is encoded at.
+  **Defaults to ~1.4× the grid tile size** (so a 350×197 tile → ~490×276) — i.e. it tracks
+  `gridThumbnailWidth/Height` automatically and stays crisp under Retina-style scaling; set these
+  to pin an explicit resolution instead. Wired into `SaveLoadService.setThumbnailEncoding`.
+- `thumbnailJpegQuality` — JPEG encode quality (`0`–`1`, default `0.85`; clamped). Lower = smaller
+  files, more artefacts.
+
+**`ui.spacing`** (`ApplicationResourceConfig.uiSpacingField`) + **`footer` opacity**
+(`ApplicationResourceConfig.footerStyle`):
+
+```json
+"ui": { "spacing": { "body": 12, "outer": 16, "panel": 16, "footer": 14 } },
+"footer": { "restOpacity": 0.5, "hoverOpacity": 1.0 }
+```
+
+- `ui.spacing.body` — vertical gap between stacked body sections (default `12`).
+- `ui.spacing.outer` — outer screen margin around header/body (default `16`).
+- `ui.spacing.panel` — padding inside titled panels (default `16`).
+- `ui.spacing.footer` — gap between footer options (default `14`). All wired into
+  `ScreenShell.setSpacing`; `0` is allowed, negatives ignored.
+- `footer.restOpacity` / `footer.hoverOpacity` — footer opacity at rest vs. on hover (defaults
+  `0.5` / `1.0`, clamped to `[0,1]`). Wired into `ScreenShell.setFooterOpacity`. These sit in the
+  same `footer` object as the footer font/colour styling (§2.8).
+
+**`window`** (`ApplicationResourceConfig.windowField`):
+- `defaultWidth` / `defaultHeight` — startup window size when no size is stored yet (default
+  `1280` / `720`).
+- `minWidth` / `maxWidth` / `minHeight` / `maxHeight` — clamp bounds applied both on load and when
+  persisting a resized window (defaults `640`–`3840` × `480`–`2160`).
+- Each `max` is clamped ≥ its `min`; each default is clamped into its `[min, max]` range. Applied
+  **before** preferences load. Wired into `PreferencesService.setWindowSizeBounds`.
+
+**`display`** (`ApplicationResourceConfig.displayField`):
+
+```json
+"display": { "svgBackgroundMinRaster": { "width": 2560, "height": 1440 } }
+```
+
+- `svgBackgroundMinRaster.width` / `.height` — the minimum pixel size an SVG background is
+  rasterised to (default `1920` × `1080`); raise it for sharper SVG backdrops on high-DPI / large
+  windows. Non-positive values are ignored. Wired into `ScreenShell.setBackgroundSvgRasterMinSize`.
+
+> Corner radii for the dialog popups and save screen are CSS, not config — restyle
+> `.dialog-message-card` / `.dialog-message-input` / `.dialog-message-button` and `.save-grid-block`
+> / `.save-tile` / `.save-page-chip` / `.save-thumb-placeholder` (§2.3).
+
+**`text.kineticEffects`** (`ApplicationResourceConfig.textKineticField`):
+
+```json
+"text": { "kineticEffects": { "pulse": 650, "float": 900, "shake": 120 } }
+```
+
+- Animation durations (ms) for the inline `[kinetic=...]` text effects: `pulse` (fade in/out),
+  `float` (vertical drift), `shake` (horizontal jitter). Defaults `650` / `900` / `120`;
+  non-positive values ignored. Wired into `JavaFxRichTextRenderer.setKineticEffectDurations`.
 
 ---
 
@@ -260,8 +332,8 @@ These classes are defined by the engine template and the game CSS and are safe t
 - **Layout system:** `.layout-content`, `.layout-main-content`, `.layout-sidebar`, `.layout-card`, `.layout-section`, `.layout-section-title`, `.layout-section-row`, `.layout-titled-panel`, `.layout-hud-overlay`, `.layout-dialogue`, `.layout-menu`, `.layout-form`, `.layout-two-column`, `.layout-column`, `.layout-subtitle`, `.layout-footer`, `.layout-action-row`, `.layout-primary-action`, `.layout-secondary-action`, `.layout-title`, `.layout-value`, `.layout-text-highlight`
 - **Dialog block:** `.dialog-entries-view`, `.dialog-entries-container`, `.dialog-entry`, `.dialog-entry-current`, `.dialog-entry-previous`, `.dialog-entry-speaker`, `.dialog-entry-body`, `.dialog-entry-say`, `.dialog-entry-shout`, `.dialog-entry-whisper`, `.dialog-entry-think`, `.dialog-entry-comment`, `.dialog-entry-divider`, `.dialog-entry-divider-line`, `.dialog-entry-divider-label`
 - **Conversation history:** `.conversation-history-rows`, `.conversation-history-speaker`, `.conversation-history-message`
-- **Dialog popups (confirm/info/error):** `.dialog-message-title`, `.dialog-message-header`, `.dialog-message-content`, `.dialog-message-button` (font size only; colours are accent/theme-token driven and stay inline). Card width is config-driven — see §1.7.
-- **Save screen / scrollbars:** `.save-screen-tabs` (+ `.tab`, `.tab:selected`, `.tab-label`), `.save-screen-mode-title`, `.save-screen-page-label`, `.engine-slim-scrollbar`
+- **Dialog popups (confirm/info/error):** `.dialog-message-title`, `.dialog-message-header`, `.dialog-message-content`, `.dialog-message-button` (font size only; colours are accent/theme-token driven and stay inline); `.dialog-message-card` + `.dialog-message-input` carry the corner radii. Card width is config-driven — see §1.7.
+- **Save screen / scrollbars:** `.save-screen-tabs` (+ `.tab`, `.tab:selected`, `.tab-label`), `.save-screen-mode-title`, `.save-screen-page-label`, `.engine-slim-scrollbar`; corner radii: `.save-grid-block`, `.save-tile`, `.save-page-chip`, `.save-thumb-placeholder`
 - **Error screen** (literal colours, theme-independent): `.error-screen`, `.error-screen-title`, `.error-screen-message`, `.error-screen-details`, `.error-screen-*-button`
 - **Tooltip:** `.tooltip` (global `-fx-show-delay`)
 - **Game-specific (AltLife):** `.altlife-bevel-button`, `.altlife-button-row`, `.stat-budget-row`, `.status-log-panel`, `.main-character-section-title`, `.startup-option-heading`

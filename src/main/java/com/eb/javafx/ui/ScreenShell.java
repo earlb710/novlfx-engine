@@ -110,20 +110,62 @@ public final class ScreenShell {
     public static final String LAYOUT_ACTION_ROW_STYLE_CLASS = "layout-action-row";
     public static final String LAYOUT_PRIMARY_ACTION_STYLE_CLASS = "layout-primary-action";
     public static final String LAYOUT_SECONDARY_ACTION_STYLE_CLASS = "layout-secondary-action";
-    public static final double BODY_SPACING = 12;
-    public static final Insets OUTER_INSETS = new Insets(16);
-    public static final Insets PANEL_INSETS = new Insets(16);
+    public static final double DEFAULT_BODY_SPACING = 12;
+    public static final double DEFAULT_OUTER_INSET = 16;
+    public static final double DEFAULT_PANEL_INSET = 16;
+    private static final double DEFAULT_FOOTER_SPACING = 14;
+    private static final double DEFAULT_FOOTER_REST_OPACITY = 0.5;
+    private static final double DEFAULT_FOOTER_HOVER_OPACITY = 1.0;
+
+    // Config-overridable spacing / insets (the `ui.spacing` config object, applied at boot before
+    // any scene is built).  Non-final so a mod can retune the body gap and outer/panel margins;
+    // defaults preserve the original 12 / 16 / 16 layout.
+    public static double BODY_SPACING = DEFAULT_BODY_SPACING;
+    public static Insets OUTER_INSETS = new Insets(DEFAULT_OUTER_INSET);
+    public static Insets PANEL_INSETS = new Insets(DEFAULT_PANEL_INSET);
     static final Insets FOOTER_INSETS = new Insets(1);
-    private static final Insets OUTER_INSETS_WITHOUT_BOTTOM = new Insets(
-            OUTER_INSETS.getTop(),
-            OUTER_INSETS.getRight(),
-            0,
-            OUTER_INSETS.getLeft());
-    private static final double FOOTER_SPACING = 14;
+    private static Insets OUTER_INSETS_WITHOUT_BOTTOM = outerInsetsWithoutBottom(OUTER_INSETS);
+    private static double FOOTER_SPACING = DEFAULT_FOOTER_SPACING;
     private static final double COMPACT_FOOTER_SPACING = 6;
     private static final int FOOTER_ICON_SIZE = 14;
-    private static final double DEFAULT_FOOTER_OPACITY = 0.5;
-    private static final double FULL_FOOTER_OPACITY = 1.0;
+    // Config-overridable footer rest / hover opacity (`footer.restOpacity` / `footer.hoverOpacity`).
+    private static double footerRestOpacity = DEFAULT_FOOTER_REST_OPACITY;
+    private static double footerHoverOpacity = DEFAULT_FOOTER_HOVER_OPACITY;
+
+    /** The outer margin with the bottom edge zeroed (header/body sit flush to the footer). */
+    private static Insets outerInsetsWithoutBottom(Insets outer) {
+        return new Insets(outer.getTop(), outer.getRight(), 0, outer.getLeft());
+    }
+
+    /** Overrides screen spacing / insets (the {@code ui.spacing} config object): body gap, outer
+     *  margin, panel padding, footer gap.  Null args keep the current value; negatives are ignored.
+     *  Call once at boot before scenes are built. */
+    public static void setSpacing(Double body, Double outer, Double panel, Double footer) {
+        if (body != null && body >= 0) {
+            BODY_SPACING = body;
+        }
+        if (outer != null && outer >= 0) {
+            OUTER_INSETS = new Insets(outer);
+            OUTER_INSETS_WITHOUT_BOTTOM = outerInsetsWithoutBottom(OUTER_INSETS);
+        }
+        if (panel != null && panel >= 0) {
+            PANEL_INSETS = new Insets(panel);
+        }
+        if (footer != null && footer >= 0) {
+            FOOTER_SPACING = footer;
+        }
+    }
+
+    /** Overrides the footer resting / hover opacity (`footer.restOpacity` / `footer.hoverOpacity`).
+     *  Null args keep the current value; others are clamped to {@code [0, 1]}.  Call once at boot. */
+    public static void setFooterOpacity(Double rest, Double hover) {
+        if (rest != null) {
+            footerRestOpacity = Math.max(0.0, Math.min(1.0, rest));
+        }
+        if (hover != null) {
+            footerHoverOpacity = Math.max(0.0, Math.min(1.0, hover));
+        }
+    }
     private static final double DEFAULT_FOOTER_BACKGROUND_TRANSPARENCY = 0.5;
     private static final Duration DEFAULT_TOOLTIP_SHOW_DELAY = Duration.millis(150);
     /** Config-driven tooltip show-delay override (null = use {@link #DEFAULT_TOOLTIP_SHOW_DELAY}). */
@@ -141,8 +183,23 @@ public final class ScreenShell {
     private static final Color DEFAULT_FOOTER_BACKGROUND_COLOR = Color.rgb(10, 20, 38);
     private static final Color DEFAULT_FOOTER_BORDER_COLOR = Color.web("#143869");
     private static final CornerRadii FOOTER_CORNER_RADII = new CornerRadii(999);
-    private static final int BACKGROUND_SVG_RASTER_MIN_WIDTH = 1920;
-    private static final int BACKGROUND_SVG_RASTER_MIN_HEIGHT = 1080;
+    private static final int DEFAULT_BACKGROUND_SVG_RASTER_MIN_WIDTH = 1920;
+    private static final int DEFAULT_BACKGROUND_SVG_RASTER_MIN_HEIGHT = 1080;
+    /** Config-overridable minimum raster size for SVG backgrounds (the `display.svgBackgroundMinRaster`
+     *  config object). Defaults to 1920×1080. */
+    private static volatile int backgroundSvgRasterMinWidth = DEFAULT_BACKGROUND_SVG_RASTER_MIN_WIDTH;
+    private static volatile int backgroundSvgRasterMinHeight = DEFAULT_BACKGROUND_SVG_RASTER_MIN_HEIGHT;
+
+    /** Sets the minimum raster dimensions used when rasterising an SVG background; null / non-positive
+     *  args keep the current value. Called once at boot. */
+    public static void setBackgroundSvgRasterMinSize(Integer width, Integer height) {
+        if (width != null && width > 0) {
+            backgroundSvgRasterMinWidth = width;
+        }
+        if (height != null && height > 0) {
+            backgroundSvgRasterMinHeight = height;
+        }
+    }
     private static final String FOOTER_BACKGROUND_COLOR_PROPERTY = "screenFooterBackgroundColor";
     private static final String FOOTER_BACKGROUND_TRANSPARENCY_PROPERTY = "screenFooterBackgroundTransparency";
     private static final String FOOTER_BORDER_STYLE_PROPERTY = "screenFooterBorderStyle";
@@ -247,9 +304,9 @@ public final class ScreenShell {
     static void configureDefaultFooterPresentation(HBox footer) {
         Validation.requireNonNull(footer, "Footer node is required.");
         footer.setSpacing(FOOTER_SPACING);
-        footer.setOpacity(DEFAULT_FOOTER_OPACITY);
-        footer.setOnMouseEntered(event -> footer.setOpacity(FULL_FOOTER_OPACITY));
-        footer.setOnMouseExited(event -> footer.setOpacity(DEFAULT_FOOTER_OPACITY));
+        footer.setOpacity(footerRestOpacity);
+        footer.setOnMouseEntered(event -> footer.setOpacity(footerHoverOpacity));
+        footer.setOnMouseExited(event -> footer.setOpacity(footerRestOpacity));
     }
 
     static void pinFooterToBottom(BorderPane screen) {
@@ -1129,8 +1186,8 @@ public final class ScreenShell {
     }
 
     private static Dimension2D backgroundSvgRasterSize(VectorImage image) {
-        double width = Math.max(BACKGROUND_SVG_RASTER_MIN_WIDTH, image.getWidth());
-        double height = Math.max(BACKGROUND_SVG_RASTER_MIN_HEIGHT, image.getHeight());
+        double width = Math.max(backgroundSvgRasterMinWidth, image.getWidth());
+        double height = Math.max(backgroundSvgRasterMinHeight, image.getHeight());
         if (!Platform.isFxApplicationThread()) {
             return new Dimension2D(width, height);
         }

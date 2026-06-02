@@ -443,14 +443,133 @@ final class ApplicationResourceConfigTest {
     }
 
     @Test
-    void saveMaxHistoryEntriesParses() {
+    void uiFontScaleBoundsParse() {
         ApplicationResourceConfig config = ApplicationResourceConfig.fromJson(
-                "{ \"save\": { \"maxHistoryEntries\": 250 } }", "inline");
+                "{ \"ui\": { \"fontScaleMin\": 0.5, \"fontScaleMax\": 3.0 } }", "inline");
+
+        assertEquals("0.5", config.uiField("fontScaleMin").orElse(null));
+        // Whole-number doubles drop the trailing ".0" (requireScalarString) → "3".
+        assertEquals("3", config.uiField("fontScaleMax").orElse(null));
+        assertTrue(ApplicationResourceConfig.fromJson("{}", "inline")
+                .uiField("fontScaleMin").isEmpty());
+        // Unknown top-level ui field rejected.
+        assertThrows(IllegalArgumentException.class, () -> ApplicationResourceConfig.fromJson(
+                "{ \"ui\": { \"bogus\": 1 } }", "inline"));
+    }
+
+    @Test
+    void windowSizingParses() {
+        ApplicationResourceConfig config = ApplicationResourceConfig.fromJson("""
+                {
+                  "window": {
+                    "defaultWidth": 1600, "defaultHeight": 900,
+                    "minWidth": 800, "maxWidth": 5120,
+                    "minHeight": 600, "maxHeight": 2880
+                  }
+                }
+                """, "inline");
+
+        assertEquals("1600", config.windowField("defaultWidth").orElse(null));
+        assertEquals("900", config.windowField("defaultHeight").orElse(null));
+        assertEquals("800", config.windowField("minWidth").orElse(null));
+        assertEquals("5120", config.windowField("maxWidth").orElse(null));
+        assertEquals("600", config.windowField("minHeight").orElse(null));
+        assertEquals("2880", config.windowField("maxHeight").orElse(null));
+        assertTrue(ApplicationResourceConfig.fromJson("{}", "inline")
+                .windowField("defaultWidth").isEmpty());
+        assertThrows(IllegalArgumentException.class, () -> ApplicationResourceConfig.fromJson(
+                "{ \"window\": { \"bogus\": 1 } }", "inline"));
+    }
+
+    @Test
+    void displaySvgBackgroundMinRasterParses() {
+        ApplicationResourceConfig config = ApplicationResourceConfig.fromJson(
+                "{ \"display\": { \"svgBackgroundMinRaster\": { \"width\": 2560, \"height\": 1440 } } }",
+                "inline");
+
+        assertEquals("2560", config.displayField("svgBackgroundMinRaster.width").orElse(null));
+        assertEquals("1440", config.displayField("svgBackgroundMinRaster.height").orElse(null));
+        assertTrue(ApplicationResourceConfig.fromJson("{}", "inline")
+                .displayField("svgBackgroundMinRaster.width").isEmpty());
+        // Unknown display field and unknown nested field both rejected.
+        assertThrows(IllegalArgumentException.class, () -> ApplicationResourceConfig.fromJson(
+                "{ \"display\": { \"bogus\": 1 } }", "inline"));
+        assertThrows(IllegalArgumentException.class, () -> ApplicationResourceConfig.fromJson(
+                "{ \"display\": { \"svgBackgroundMinRaster\": { \"depth\": 1 } } }", "inline"));
+    }
+
+    @Test
+    void saveFieldsParse() {
+        ApplicationResourceConfig config = ApplicationResourceConfig.fromJson("""
+                {
+                  "save": {
+                    "maxHistoryEntries": 250,
+                    "gridThumbnailWidth": 400, "gridThumbnailHeight": 225,
+                    "listThumbnailWidth": 120, "listThumbnailHeight": 68,
+                    "thumbnailWidth": 640, "thumbnailHeight": 360, "thumbnailJpegQuality": 0.9
+                  }
+                }
+                """, "inline");
 
         assertEquals("250", config.saveField("maxHistoryEntries").orElse(null));
+        assertEquals("400", config.saveField("gridThumbnailWidth").orElse(null));
+        assertEquals("225", config.saveField("gridThumbnailHeight").orElse(null));
+        assertEquals("120", config.saveField("listThumbnailWidth").orElse(null));
+        assertEquals("68", config.saveField("listThumbnailHeight").orElse(null));
+        assertEquals("640", config.saveField("thumbnailWidth").orElse(null));
+        assertEquals("360", config.saveField("thumbnailHeight").orElse(null));
+        assertEquals("0.9", config.saveField("thumbnailJpegQuality").orElse(null));
         assertTrue(ApplicationResourceConfig.fromJson("{}", "inline")
                 .saveField("maxHistoryEntries").isEmpty());
         assertThrows(IllegalArgumentException.class, () -> ApplicationResourceConfig.fromJson(
                 "{ \"save\": { \"bogus\": 1 } }", "inline"));
+    }
+
+    @Test
+    void uiSpacingParses() {
+        ApplicationResourceConfig config = ApplicationResourceConfig.fromJson(
+                "{ \"ui\": { \"spacing\": { \"body\": 10, \"outer\": 20, \"panel\": 14, \"footer\": 8 } } }",
+                "inline");
+
+        assertEquals("10", config.uiSpacingField("body").orElse(null));
+        assertEquals("20", config.uiSpacingField("outer").orElse(null));
+        assertEquals("14", config.uiSpacingField("panel").orElse(null));
+        assertEquals("8", config.uiSpacingField("footer").orElse(null));
+        assertTrue(ApplicationResourceConfig.fromJson("{}", "inline")
+                .uiSpacingField("body").isEmpty());
+        assertThrows(IllegalArgumentException.class, () -> ApplicationResourceConfig.fromJson(
+                "{ \"ui\": { \"spacing\": { \"bogus\": 1 } } }", "inline"));
+    }
+
+    @Test
+    void textKineticEffectDurationsParse() {
+        ApplicationResourceConfig config = ApplicationResourceConfig.fromJson(
+                "{ \"text\": { \"kineticEffects\": { \"pulse\": 500, \"float\": 800, \"shake\": 100 } } }",
+                "inline");
+
+        assertEquals("500", config.textKineticField("pulse").orElse(null));
+        assertEquals("800", config.textKineticField("float").orElse(null));
+        assertEquals("100", config.textKineticField("shake").orElse(null));
+        assertTrue(ApplicationResourceConfig.fromJson("{}", "inline")
+                .textKineticField("pulse").isEmpty());
+        // Unknown text field and unknown nested field both rejected.
+        assertThrows(IllegalArgumentException.class, () -> ApplicationResourceConfig.fromJson(
+                "{ \"text\": { \"bogus\": 1 } }", "inline"));
+        assertThrows(IllegalArgumentException.class, () -> ApplicationResourceConfig.fromJson(
+                "{ \"text\": { \"kineticEffects\": { \"wobble\": 1 } } }", "inline"));
+    }
+
+    @Test
+    void footerOpacityFieldsParseAsNumbers() {
+        ApplicationResourceConfig config = ApplicationResourceConfig.fromJson(
+                "{ \"footer\": { \"restOpacity\": 0.4, \"hoverOpacity\": 0.9 } }", "inline");
+
+        assertEquals("0.4", config.footerStyle("restOpacity").orElse(null));
+        assertEquals("0.9", config.footerStyle("hoverOpacity").orElse(null));
+        // String footer fields still work alongside the numeric ones.
+        ApplicationResourceConfig mixed = ApplicationResourceConfig.fromJson(
+                "{ \"footer\": { \"color\": \"#fff\", \"restOpacity\": 0.3 } }", "inline");
+        assertEquals("#fff", mixed.footerStyle("color").orElse(null));
+        assertEquals("0.3", mixed.footerStyle("restOpacity").orElse(null));
     }
 }

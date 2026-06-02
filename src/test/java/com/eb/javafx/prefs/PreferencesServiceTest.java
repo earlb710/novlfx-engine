@@ -141,6 +141,37 @@ final class PreferencesServiceTest {
     }
 
     @Test
+    void configuredWindowBoundsDriveDefaultsAndClamps() {
+        PreferencesService service = new PreferencesService();
+        // Widen the clamp ranges and move the default; no stored value yet, so load() should
+        // land on the configured default.
+        service.setWindowSizeBounds(1600, 900, 800, 5120, 600, 2880);
+        service.load();
+        assertEquals(1600, service.windowWidth());
+        assertEquals(900, service.windowHeight());
+
+        // A value beyond the configured ceiling now clamps to the configured max (not 3840/2160).
+        service.saveWindowSize(9999, 9999);
+        service.load();
+        assertEquals(5120, service.windowWidth());
+        assertEquals(2880, service.windowHeight());
+    }
+
+    @Test
+    void configuredFontScaleBoundsChangeClamping() {
+        preferences.putDouble("ui.fontScale", 9.0);
+        PreferencesService service = new PreferencesService();
+        // Raise the ceiling to 3.0; the stored 9.0 now clamps to 3.0 instead of the default 2.0.
+        service.setFontScaleBounds(0.5, 3.0);
+        service.load();
+        assertEquals(3.0, service.fontScale());
+
+        // saveFontScale honours the configured floor too.
+        service.saveFontScale(0.1);
+        assertEquals(0.5, service.fontScale());
+    }
+
+    @Test
     void savePreferenceGroupsPersistAndUpdateLoadedValues() {
         PreferencesService service = new PreferencesService();
         service.load();

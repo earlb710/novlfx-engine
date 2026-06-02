@@ -231,6 +231,21 @@ public final class BootstrapService {
         EnumSet<BootstrapPhase> completedPhases = EnumSet.noneOf(BootstrapPhase.class);
         Map<BootstrapPhase, String> phaseMessages = new EnumMap<>(BootstrapPhase.class);
 
+        // Config-driven startup window sizing + clamp bounds (the `window` object) and the
+        // font-scale clamp range (`ui.fontScaleMin/Max`) must be applied BEFORE load() reads the
+        // stored preferences, since load() clamps against these bounds.
+        if (resourceConfig != null) {
+            preferencesService.setWindowSizeBounds(
+                    parsePositiveInt(resourceConfig.windowField("defaultWidth").orElse(null)),
+                    parsePositiveInt(resourceConfig.windowField("defaultHeight").orElse(null)),
+                    parsePositiveInt(resourceConfig.windowField("minWidth").orElse(null)),
+                    parsePositiveInt(resourceConfig.windowField("maxWidth").orElse(null)),
+                    parsePositiveInt(resourceConfig.windowField("minHeight").orElse(null)),
+                    parsePositiveInt(resourceConfig.windowField("maxHeight").orElse(null)));
+            preferencesService.setFontScaleBounds(
+                    parsePositiveDouble(resourceConfig.uiField("fontScaleMin").orElse(null)),
+                    parsePositiveDouble(resourceConfig.uiField("fontScaleMax").orElse(null)));
+        }
         // Core services: load user preferences before constructing scenes that use window sizing.
         preferencesService.load();
         saveLoadService.initialize();
@@ -273,6 +288,19 @@ public final class BootstrapService {
             com.eb.javafx.ui.ScreenShell.setFooterOptionOverrides(collectFooterOptionOverrides());
             com.eb.javafx.ui.ScreenShell.setTooltipShowDelayMillis(parsePositiveDouble(
                     resourceConfig.tooltipDelayMillis().orElse(null)));
+            // Minimum raster size for SVG backgrounds (`display.svgBackgroundMinRaster`).
+            com.eb.javafx.ui.ScreenShell.setBackgroundSvgRasterMinSize(
+                    parsePositiveInt(resourceConfig.displayField("svgBackgroundMinRaster.width").orElse(null)),
+                    parsePositiveInt(resourceConfig.displayField("svgBackgroundMinRaster.height").orElse(null)));
+            // Screen spacing / insets (`ui.spacing`) and footer rest/hover opacity (`footer.*Opacity`).
+            com.eb.javafx.ui.ScreenShell.setSpacing(
+                    parseDouble(resourceConfig.uiSpacingField("body").orElse(null)),
+                    parseDouble(resourceConfig.uiSpacingField("outer").orElse(null)),
+                    parseDouble(resourceConfig.uiSpacingField("panel").orElse(null)),
+                    parseDouble(resourceConfig.uiSpacingField("footer").orElse(null)));
+            com.eb.javafx.ui.ScreenShell.setFooterOpacity(
+                    parseDouble(resourceConfig.footerStyle("restOpacity").orElse(null)),
+                    parseDouble(resourceConfig.footerStyle("hoverOpacity").orElse(null)));
             preferencesService.setTextSpeedDurations(
                     parsePositiveInt(resourceConfig.textSpeedMillis("slow").orElse(null)),
                     parsePositiveInt(resourceConfig.textSpeedMillis("normal").orElse(null)),
@@ -289,9 +317,32 @@ public final class BootstrapService {
             // Dialog-block previous-entry fade opacity (`ui.dialog.previousEntryOpacity`).
             com.eb.javafx.ui.DialogEntriesView.setPreviousEntryOpacity(
                     parseDouble(resourceConfig.uiDialogField("previousEntryOpacity").orElse(null)));
+            // Kinetic text-effect durations (`text.kineticEffects.{pulse,float,shake}`).
+            com.eb.javafx.text.JavaFxRichTextRenderer.setKineticEffectDurations(
+                    parsePositiveInt(resourceConfig.textKineticField("pulse").orElse(null)),
+                    parsePositiveInt(resourceConfig.textKineticField("float").orElse(null)),
+                    parsePositiveInt(resourceConfig.textKineticField("shake").orElse(null)));
             // Conversation-history sliding-window cap (`save.maxHistoryEntries`).
             com.eb.javafx.text.DialogHistory.setMaxConversations(
                     parsePositiveInt(resourceConfig.saveField("maxHistoryEntries").orElse(null)));
+            // Save-tile thumbnail dimensions (`save.gridThumbnail*` / `save.listThumbnail*`).
+            com.eb.javafx.ui.SaveScreen.setThumbnailSizes(
+                    parsePositiveInt(resourceConfig.saveField("gridThumbnailWidth").orElse(null)),
+                    parsePositiveInt(resourceConfig.saveField("gridThumbnailHeight").orElse(null)),
+                    parsePositiveInt(resourceConfig.saveField("listThumbnailWidth").orElse(null)),
+                    parsePositiveInt(resourceConfig.saveField("listThumbnailHeight").orElse(null)));
+            // Persisted-thumbnail encoding (`save.thumbnail*`).  Resolution defaults to the
+            // (configured) grid-tile size × a supersample factor so the saved preview stays crisp
+            // for whatever tile size is in effect; an explicit save.thumbnailWidth/Height wins.
+            Integer cfgThumbWidth  = parsePositiveInt(resourceConfig.saveField("thumbnailWidth").orElse(null));
+            Integer cfgThumbHeight = parsePositiveInt(resourceConfig.saveField("thumbnailHeight").orElse(null));
+            int targetThumbWidth = cfgThumbWidth != null ? cfgThumbWidth
+                    : (int) Math.round(com.eb.javafx.ui.SaveScreen.gridThumbnailWidth() * THUMBNAIL_SUPERSAMPLE);
+            int targetThumbHeight = cfgThumbHeight != null ? cfgThumbHeight
+                    : (int) Math.round(com.eb.javafx.ui.SaveScreen.gridThumbnailHeight() * THUMBNAIL_SUPERSAMPLE);
+            com.eb.javafx.save.SaveLoadService.setThumbnailEncoding(
+                    targetThumbWidth, targetThumbHeight,
+                    parseFloat(resourceConfig.saveField("thumbnailJpegQuality").orElse(null)));
         }
         // Config-driven fonts: register any `font.*` entries from the app config so a game / mod
         // can add fonts purely through setup (config.json), before any scene CSS resolves a
@@ -422,42 +473,28 @@ public final class BootstrapService {
         return overrides;
     }
 
+    // Thin delegators to the shared engine parser (com.eb.javafx.util.ConfigValues) — kept as
+    // short private names so the ~45 boot call sites stay readable; the logic lives in one place.
     private static Integer parsePositiveInt(String value) {
-        if (value == null || value.isBlank()) {
-            return null;
-        }
-        try {
-            int parsed = (int) Math.round(Double.parseDouble(value.trim()));
-            return parsed > 0 ? parsed : null;
-        } catch (NumberFormatException exception) {
-            return null;
-        }
+        return com.eb.javafx.util.ConfigValues.parsePositiveInt(value);
     }
 
     private static Double parsePositiveDouble(String value) {
-        if (value == null || value.isBlank()) {
-            return null;
-        }
-        try {
-            double parsed = Double.parseDouble(value.trim());
-            return parsed > 0 ? parsed : null;
-        } catch (NumberFormatException exception) {
-            return null;
-        }
+        return com.eb.javafx.util.ConfigValues.parsePositiveDouble(value);
     }
 
-    /** Parses a double allowing zero / negative (e.g. an opacity where 0.0 is meaningful);
-     *  null/blank/unparseable yields null. */
     private static Double parseDouble(String value) {
-        if (value == null || value.isBlank()) {
-            return null;
-        }
-        try {
-            return Double.parseDouble(value.trim());
-        } catch (NumberFormatException exception) {
-            return null;
-        }
+        return com.eb.javafx.util.ConfigValues.parseDouble(value);
     }
+
+    private static Float parseFloat(String value) {
+        return com.eb.javafx.util.ConfigValues.parsePositiveFloat(value);
+    }
+
+    /** Default supersample factor: persisted thumbnails render at this multiple of the save-grid
+     *  tile size so they stay crisp under Retina-style scaling (350×197 tile → ~490×276, matching
+     *  the prior 480×270 default). */
+    private static final double THUMBNAIL_SUPERSAMPLE = 1.4;
 
     /** Resolves a {@code resources} entry to an existing file on disk, or null. */
     private java.nio.file.Path resolveConfigFile(String resourceId) {

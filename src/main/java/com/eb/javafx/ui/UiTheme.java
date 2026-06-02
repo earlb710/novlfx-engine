@@ -411,6 +411,19 @@ public final class UiTheme {
             .dialog-message-button {
                 -fx-font-size: 13px;
                 -fx-font-weight: bold;
+                -fx-background-radius: 6;
+                -fx-border-radius: 6;
+            }
+
+            /* DialogMessages corner radii (card / prompt text input) — bundled here so they are
+               mod-overridable; colours/borders stay inline in DialogMessages. */
+            .dialog-message-card {
+                -fx-background-radius: 10;
+                -fx-border-radius: 10;
+            }
+            .dialog-message-input {
+                -fx-background-radius: 4;
+                -fx-border-radius: 4;
             }
 
             /* SaveScreen text sizes — mode title + page-strip labels (font size only;
@@ -420,6 +433,25 @@ public final class UiTheme {
             }
             .save-screen-page-label {
                 -fx-font-size: 13px;
+            }
+
+            /* SaveScreen corner radii — block frame / slot tile / page chips / thumbnail
+               placeholder.  Bundled here (was inline in SaveScreen) so they are mod-overridable;
+               the per-state colours stay inline. */
+            .save-grid-block {
+                -fx-background-radius: 8;
+                -fx-border-radius: 8;
+            }
+            .save-tile {
+                -fx-background-radius: 6;
+                -fx-border-radius: 6;
+            }
+            .save-page-chip {
+                -fx-background-radius: 12;
+                -fx-border-radius: 12;
+            }
+            .save-thumb-placeholder {
+                -fx-background-radius: 4;
             }
 
             /* SaveScreen tab strip — mirrors the AltLife startup-options-tabs look

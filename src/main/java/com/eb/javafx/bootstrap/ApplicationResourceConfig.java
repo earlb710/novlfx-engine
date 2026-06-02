@@ -201,45 +201,87 @@ public final class ApplicationResourceConfig {
         promoteHud(root, merged);
         promoteUiDialog(root, merged);
         promoteSave(root, merged);
+        promoteWindow(root, merged);
+        promoteDisplay(root, merged);
+        promoteText(root, merged);
         return merged;
     }
 
+    public static final String UI_PREFIX = "ui.";
     public static final String UI_DIALOG_PREFIX = "ui.dialog.";
+    public static final String UI_SPACING_PREFIX = "ui.spacing.";
 
-    /** Folds {@code ui: { dialog: { minWidth, maxWidth } }} into {@code ui.dialog.<field>}
-     *  resources entries (confirm/info/error popup card width). */
+    /** Folds the top-level {@code ui} object: the nested {@code dialog} object
+     *  ({@code minWidth / maxWidth / previousEntryOpacity}) into {@code ui.dialog.<field>}, the
+     *  nested {@code spacing} object ({@code body / outer / panel / footer}) into
+     *  {@code ui.spacing.<field>}, and the scalar accessibility fields
+     *  {@code fontScaleMin / fontScaleMax} into {@code ui.<field>}. */
     private static void promoteUiDialog(Map<String, Object> root, Map<String, String> merged) {
         if (!root.containsKey("ui")) {
             return;
         }
         Map<String, Object> ui = requireObject(root.get("ui"), "root.ui");
-        Object dialog = ui.get("dialog");
-        if (dialog == null) {
-            return;
-        }
-        Map<String, Object> fields = requireObject(dialog, "root.ui.dialog");
-        fields.forEach((field, raw) -> {
-            if (!Set.of("minWidth", "maxWidth", "previousEntryOpacity").contains(field)) {
-                throw new IllegalArgumentException("Unknown ui.dialog field '" + field
-                        + "' (use minWidth / maxWidth / previousEntryOpacity).");
+        ui.forEach((key, value) -> {
+            switch (key) {
+                case "dialog" -> {
+                    Map<String, Object> fields = requireObject(value, "root.ui.dialog");
+                    fields.forEach((field, raw) -> {
+                        if (!Set.of("minWidth", "maxWidth", "previousEntryOpacity").contains(field)) {
+                            throw new IllegalArgumentException("Unknown ui.dialog field '" + field
+                                    + "' (use minWidth / maxWidth / previousEntryOpacity).");
+                        }
+                        merged.put(UI_DIALOG_PREFIX + field,
+                                requireScalarString(raw, "root.ui.dialog." + field));
+                    });
+                }
+                case "spacing" -> {
+                    Map<String, Object> fields = requireObject(value, "root.ui.spacing");
+                    fields.forEach((field, raw) -> {
+                        if (!Set.of("body", "outer", "panel", "footer").contains(field)) {
+                            throw new IllegalArgumentException("Unknown ui.spacing field '" + field
+                                    + "' (use body / outer / panel / footer).");
+                        }
+                        merged.put(UI_SPACING_PREFIX + field,
+                                requireScalarString(raw, "root.ui.spacing." + field));
+                    });
+                }
+                case "fontScaleMin", "fontScaleMax" ->
+                        merged.put(UI_PREFIX + key, requireScalarString(value, "root.ui." + key));
+                default -> throw new IllegalArgumentException("Unknown ui field '" + key
+                        + "' (use dialog / spacing / fontScaleMin / fontScaleMax).");
             }
-            merged.put(UI_DIALOG_PREFIX + field, requireScalarString(raw, "root.ui.dialog." + field));
         });
+    }
+
+    /** Top-level {@code ui} scalar field (e.g. {@code fontScaleMin / fontScaleMax}), if set. */
+    public Optional<String> uiField(String field) {
+        return Optional.ofNullable(resources.get(UI_PREFIX + field));
+    }
+
+    /** {@code ui.spacing} field ({@code body / outer / panel / footer}), if set. */
+    public Optional<String> uiSpacingField(String field) {
+        return Optional.ofNullable(resources.get(UI_SPACING_PREFIX + field));
     }
 
     public static final String SAVE_PREFIX = "save.";
 
-    /** Folds {@code save: { maxHistoryEntries }} into {@code save.<field>} resources entries
-     *  (conversation-history sliding-window cap). */
+    /** Folds {@code save: { maxHistoryEntries, gridThumbnailWidth, gridThumbnailHeight,
+     *  listThumbnailWidth, listThumbnailHeight, thumbnailWidth, thumbnailHeight,
+     *  thumbnailJpegQuality }} into {@code save.<field>} resources entries (history cap + save-tile
+     *  thumbnail dimensions + persisted-thumbnail encoding). */
     private static void promoteSave(Map<String, Object> root, Map<String, String> merged) {
         if (!root.containsKey("save")) {
             return;
         }
         Map<String, Object> fields = requireObject(root.get("save"), "root.save");
         fields.forEach((field, raw) -> {
-            if (!Set.of("maxHistoryEntries").contains(field)) {
-                throw new IllegalArgumentException("Unknown save field '" + field
-                        + "' (use maxHistoryEntries).");
+            if (!Set.of("maxHistoryEntries", "gridThumbnailWidth", "gridThumbnailHeight",
+                    "listThumbnailWidth", "listThumbnailHeight",
+                    "thumbnailWidth", "thumbnailHeight", "thumbnailJpegQuality").contains(field)) {
+                throw new IllegalArgumentException("Unknown save field '" + field + "' (use "
+                        + "maxHistoryEntries / gridThumbnailWidth / gridThumbnailHeight"
+                        + " / listThumbnailWidth / listThumbnailHeight"
+                        + " / thumbnailWidth / thumbnailHeight / thumbnailJpegQuality).");
             }
             merged.put(SAVE_PREFIX + field, requireScalarString(raw, "root.save." + field));
         });
@@ -248,6 +290,92 @@ public final class ApplicationResourceConfig {
     /** Save-system field (e.g. {@code maxHistoryEntries}), if set. */
     public Optional<String> saveField(String field) {
         return Optional.ofNullable(resources.get(SAVE_PREFIX + field));
+    }
+
+    public static final String WINDOW_PREFIX = "window.";
+
+    /** Folds {@code window: { defaultWidth, defaultHeight, minWidth, maxWidth, minHeight, maxHeight }}
+     *  into {@code window.<field>} resources entries (startup window size + clamp bounds). */
+    private static void promoteWindow(Map<String, Object> root, Map<String, String> merged) {
+        if (!root.containsKey("window")) {
+            return;
+        }
+        Map<String, Object> fields = requireObject(root.get("window"), "root.window");
+        fields.forEach((field, raw) -> {
+            if (!Set.of("defaultWidth", "defaultHeight", "minWidth", "maxWidth",
+                    "minHeight", "maxHeight").contains(field)) {
+                throw new IllegalArgumentException("Unknown window field '" + field + "' (use "
+                        + "defaultWidth / defaultHeight / minWidth / maxWidth / minHeight / maxHeight).");
+            }
+            merged.put(WINDOW_PREFIX + field, requireScalarString(raw, "root.window." + field));
+        });
+    }
+
+    /** Window-sizing field (e.g. {@code defaultWidth / minWidth}), if set. */
+    public Optional<String> windowField(String field) {
+        return Optional.ofNullable(resources.get(WINDOW_PREFIX + field));
+    }
+
+    public static final String DISPLAY_PREFIX = "display.";
+
+    /** Folds {@code display: { svgBackgroundMinRaster: { width, height } }} into
+     *  {@code display.svgBackgroundMinRaster.<field>} resources entries. */
+    private static void promoteDisplay(Map<String, Object> root, Map<String, String> merged) {
+        if (!root.containsKey("display")) {
+            return;
+        }
+        Map<String, Object> display = requireObject(root.get("display"), "root.display");
+        display.forEach((key, value) -> {
+            if (!"svgBackgroundMinRaster".equals(key)) {
+                throw new IllegalArgumentException("Unknown display field '" + key
+                        + "' (use svgBackgroundMinRaster).");
+            }
+            Map<String, Object> fields = requireObject(value, "root.display.svgBackgroundMinRaster");
+            fields.forEach((field, raw) -> {
+                if (!Set.of("width", "height").contains(field)) {
+                    throw new IllegalArgumentException("Unknown display.svgBackgroundMinRaster field '"
+                            + field + "' (use width / height).");
+                }
+                merged.put(DISPLAY_PREFIX + "svgBackgroundMinRaster." + field,
+                        requireScalarString(raw, "root.display.svgBackgroundMinRaster." + field));
+            });
+        });
+    }
+
+    /** Display field (e.g. {@code svgBackgroundMinRaster.width}), if set. */
+    public Optional<String> displayField(String field) {
+        return Optional.ofNullable(resources.get(DISPLAY_PREFIX + field));
+    }
+
+    public static final String TEXT_KINETIC_PREFIX = "text.kineticEffects.";
+
+    /** Folds {@code text: { kineticEffects: { pulse, float, shake } }} into
+     *  {@code text.kineticEffects.<field>} resources entries (kinetic text-effect durations, ms). */
+    private static void promoteText(Map<String, Object> root, Map<String, String> merged) {
+        if (!root.containsKey("text")) {
+            return;
+        }
+        Map<String, Object> text = requireObject(root.get("text"), "root.text");
+        text.forEach((key, value) -> {
+            if (!"kineticEffects".equals(key)) {
+                throw new IllegalArgumentException("Unknown text field '" + key
+                        + "' (use kineticEffects).");
+            }
+            Map<String, Object> fields = requireObject(value, "root.text.kineticEffects");
+            fields.forEach((field, raw) -> {
+                if (!Set.of("pulse", "float", "shake").contains(field)) {
+                    throw new IllegalArgumentException("Unknown text.kineticEffects field '" + field
+                            + "' (use pulse / float / shake).");
+                }
+                merged.put(TEXT_KINETIC_PREFIX + field,
+                        requireScalarString(raw, "root.text.kineticEffects." + field));
+            });
+        });
+    }
+
+    /** Kinetic text-effect duration field ({@code pulse / float / shake}, ms), if set. */
+    public Optional<String> textKineticField(String field) {
+        return Optional.ofNullable(resources.get(TEXT_KINETIC_PREFIX + field));
     }
 
     /** Dialog (confirm/info/error popup) card-width field, if set. */
@@ -448,7 +576,13 @@ public final class ApplicationResourceConfig {
             String field = normaliseFooterField(rawField);
             if (field == null) {
                 throw new IllegalArgumentException("Unknown footer style field '" + rawField
-                        + "' in root.footer (use font / color / selectColor / backgroundColor / transparency).");
+                        + "' in root.footer (use font / color / selectColor / backgroundColor"
+                        + " / transparency / restOpacity / hoverOpacity).");
+            }
+            if (isNumericFooterField(field)) {
+                merged.put(FOOTER_STYLE_PREFIX + field,
+                        requireScalarString(rawValue, "root.footer." + rawField));
+                return;
             }
             if (!(rawValue instanceof String stringValue)) {
                 throw new IllegalArgumentException("Expected JSON string for root.footer." + rawField + ".");
@@ -466,8 +600,15 @@ public final class ApplicationResourceConfig {
             case "selectColor", "activeColor", "highlightColor" -> "selectColor";
             case "backgroundColor", "background" -> "backgroundColor";
             case "transparency", "opacity" -> "transparency";
+            case "restOpacity" -> "restOpacity";
+            case "hoverOpacity" -> "hoverOpacity";
             default -> null;
         };
+    }
+
+    /** Footer fields whose value is a number (opacity) rather than a CSS string. */
+    private static boolean isNumericFooterField(String field) {
+        return "restOpacity".equals(field) || "hoverOpacity".equals(field);
     }
 
     /** Configured footer style field ({@code font} / {@code color} / {@code selectColor} /

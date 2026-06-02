@@ -246,12 +246,35 @@ public final class SaveLoadService {
      *  3–5 MB a full-screen lossless PNG would consume.  Source aspect ratio is
      *  preserved (we scale to fit a 16:9 frame), so non-16:9 sources letterbox slightly
      *  rather than stretching. */
-    private static final int THUMBNAIL_TARGET_WIDTH  = 480;
-    private static final int THUMBNAIL_TARGET_HEIGHT = 270;
+    private static final int DEFAULT_THUMBNAIL_TARGET_WIDTH  = 480;
+    private static final int DEFAULT_THUMBNAIL_TARGET_HEIGHT = 270;
     /** JPEG quality — 0.85 is the standard "high quality without obvious artefacts"
      *  setting for photographic-style content (game screenshots, scene captures).  At
      *  this quality a 480×270 game screenshot lands at ~25–45 KB. */
-    private static final float JPEG_QUALITY = 0.85f;
+    private static final float DEFAULT_JPEG_QUALITY = 0.85f;
+
+    // Config-overridable thumbnail encoding (the `save.thumbnail*` config, applied at boot).  The
+    // target resolution defaults to ~1.4× the save-grid tile size (computed in BootstrapService) so
+    // the persisted preview stays crisp for whatever tile size is configured; an explicit
+    // save.thumbnailWidth/Height overrides that.  Static because the encode path is static.
+    private static volatile int thumbnailTargetWidth  = DEFAULT_THUMBNAIL_TARGET_WIDTH;
+    private static volatile int thumbnailTargetHeight = DEFAULT_THUMBNAIL_TARGET_HEIGHT;
+    private static volatile float jpegQuality = DEFAULT_JPEG_QUALITY;
+
+    /** Overrides the persisted-thumbnail encoding (the {@code save.thumbnail*} config): target
+     *  width/height (px) and JPEG quality.  Null / non-positive width/height keep the current value;
+     *  quality is clamped to {@code (0, 1]} (null keeps current).  Called once at boot. */
+    public static void setThumbnailEncoding(Integer targetWidth, Integer targetHeight, Float quality) {
+        if (targetWidth != null && targetWidth > 0) {
+            thumbnailTargetWidth = targetWidth;
+        }
+        if (targetHeight != null && targetHeight > 0) {
+            thumbnailTargetHeight = targetHeight;
+        }
+        if (quality != null) {
+            jpegQuality = Math.max(0.01f, Math.min(1.0f, quality));
+        }
+    }
 
     /** Writes a pre-captured {@link WritableImage} as the slot's thumbnail JPG.  Used when
      *  the calling screen captured its own snapshot before navigating to the Save screen so
@@ -274,7 +297,7 @@ public final class SaveLoadService {
         }
         BufferedImage rgbThumbnail = downscaleToJpegThumbnail(fullImage);
         try {
-            writeJpeg(rgbThumbnail, slotThumbnailPath(category, slot).toFile(), JPEG_QUALITY);
+            writeJpeg(rgbThumbnail, slotThumbnailPath(category, slot).toFile(), jpegQuality);
         } catch (IOException exception) {
             throw new IllegalStateException(
                     "Unable to write save-slot thumbnail: " + category + " " + slot, exception);
@@ -292,8 +315,8 @@ public final class SaveLoadService {
         int srcW = source.getWidth();
         int srcH = source.getHeight();
         double scale = Math.min(
-                (double) THUMBNAIL_TARGET_WIDTH  / srcW,
-                (double) THUMBNAIL_TARGET_HEIGHT / srcH);
+                (double) thumbnailTargetWidth  / srcW,
+                (double) thumbnailTargetHeight / srcH);
         // Never upscale — if the source is already smaller than the target, write at its
         // native size to avoid blurring an already-tiny snapshot.
         if (scale > 1.0) {

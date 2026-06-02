@@ -77,6 +77,46 @@ public final class PreferencesService {
     private Language language;
     private TextSpeed textSpeed;
 
+    // Config-overridable startup window sizing + clamp bounds (the `window` config object, applied
+    // at boot before load()).  Defaults preserve the original 1280x720 within 640-3840 x 480-2160.
+    private int defaultWindowWidth  = 1280;
+    private int defaultWindowHeight = 720;
+    private int minWindowWidth      = 640;
+    private int maxWindowWidth      = 3840;
+    private int minWindowHeight     = 480;
+    private int maxWindowHeight     = 2160;
+    // Config-overridable font-scale clamp range (the `ui.fontScaleMin/Max` fields).  Default 0.75-2.0.
+    private double fontScaleMin = 0.75;
+    private double fontScaleMax = 2.0;
+
+    /** Overrides the startup window size and its clamp bounds (the {@code window} config object).
+     *  Null args keep the current value; non-positive values are ignored; each max is clamped to be
+     *  &ge; its min, and each default is clamped into its [min, max] range.  Call once before
+     *  {@link #load()}. */
+    public void setWindowSizeBounds(Integer defaultWidth, Integer defaultHeight,
+                                    Integer minWidth, Integer maxWidth,
+                                    Integer minHeight, Integer maxHeight) {
+        if (minWidth != null && minWidth > 0)        { minWindowWidth = minWidth; }
+        if (maxWidth != null && maxWidth > 0)        { maxWindowWidth = maxWidth; }
+        if (minHeight != null && minHeight > 0)      { minWindowHeight = minHeight; }
+        if (maxHeight != null && maxHeight > 0)      { maxWindowHeight = maxHeight; }
+        if (maxWindowWidth < minWindowWidth)   { maxWindowWidth = minWindowWidth; }
+        if (maxWindowHeight < minWindowHeight) { maxWindowHeight = minWindowHeight; }
+        if (defaultWidth != null && defaultWidth > 0)   { defaultWindowWidth = defaultWidth; }
+        if (defaultHeight != null && defaultHeight > 0) { defaultWindowHeight = defaultHeight; }
+        defaultWindowWidth  = clamp(defaultWindowWidth, minWindowWidth, maxWindowWidth);
+        defaultWindowHeight = clamp(defaultWindowHeight, minWindowHeight, maxWindowHeight);
+    }
+
+    /** Overrides the font-scale clamp range (the {@code ui.fontScaleMin/Max} fields).  Null args keep
+     *  the current value; non-positive values are ignored; {@code max} is clamped to be &ge; {@code
+     *  min}.  Call once before {@link #load()}. */
+    public void setFontScaleBounds(Double min, Double max) {
+        if (min != null && min > 0) { fontScaleMin = min; }
+        if (max != null && max > 0) { fontScaleMax = max; }
+        if (fontScaleMax < fontScaleMin) { fontScaleMax = fontScaleMin; }
+    }
+
     /**
      * Loads startup preferences with conservative defaults for the first shell.
      *
@@ -84,8 +124,8 @@ public final class PreferencesService {
      * callers consume them during bootstrap.</p>
      */
     public void load() {
-        windowWidth = clamp(preferences.getInt(WIDTH_KEY, 1280), 640, 3840);
-        windowHeight = clamp(preferences.getInt(HEIGHT_KEY, 720), 480, 2160);
+        windowWidth = clamp(preferences.getInt(WIDTH_KEY, defaultWindowWidth), minWindowWidth, maxWindowWidth);
+        windowHeight = clamp(preferences.getInt(HEIGHT_KEY, defaultWindowHeight), minWindowHeight, maxWindowHeight);
         hudAlpha = clamp(preferences.getDouble(HUD_ALPHA_KEY, 1.0), 0.0, 1.0);
         sayWindowAlpha = clamp(preferences.getDouble(SAY_WINDOW_ALPHA_KEY, 1.0), 0.0, 1.0);
         showPortrait = preferences.getBoolean(SHOW_PORTRAIT_KEY, true);
@@ -95,7 +135,7 @@ public final class PreferencesService {
         footerIconDisplay = validatedFooterIconDisplay(
                 preferences.get(FOOTER_ICON_DISPLAY_KEY, FooterIconDisplay.ICONS_WITH_TEXT.preferenceValue()));
         fontFamily = preferences.get(FONT_FAMILY_KEY, "System");
-        fontScale = clamp(preferences.getDouble(FONT_SCALE_KEY, 1.0), 0.75, 2.0);
+        fontScale = clamp(preferences.getDouble(FONT_SCALE_KEY, 1.0), fontScaleMin, fontScaleMax);
         themeFamily = validatedThemeFamily(preferences.get(THEME_FAMILY_KEY, ThemeFamily.OCEAN.preferenceValue()));
         themeVariant = validatedThemeVariant(preferences.get(THEME_VARIANT_KEY, ThemeVariant.DARK.preferenceValue()));
         highContrast = preferences.getBoolean(HIGH_CONTRAST_KEY, false);
@@ -407,8 +447,8 @@ public final class PreferencesService {
 
     /** Persists a clamped window size separately from save-game state. */
     public void saveWindowSize(double width, double height) {
-        preferences.putInt(WIDTH_KEY, clamp((int) Math.round(width), 640, 3840));
-        preferences.putInt(HEIGHT_KEY, clamp((int) Math.round(height), 480, 2160));
+        preferences.putInt(WIDTH_KEY, clamp((int) Math.round(width), minWindowWidth, maxWindowWidth));
+        preferences.putInt(HEIGHT_KEY, clamp((int) Math.round(height), minWindowHeight, maxWindowHeight));
     }
 
     /** Persists UI visibility preferences and updates the loaded model. */
@@ -474,7 +514,7 @@ public final class PreferencesService {
      */
     public void saveFontPreferences(String fontFamily, double fontScale) {
         this.fontFamily = fontFamily == null || fontFamily.isBlank() ? "System" : fontFamily;
-        this.fontScale = clamp(fontScale, 0.75, 2.0);
+        this.fontScale = clamp(fontScale, fontScaleMin, fontScaleMax);
         preferences.put(FONT_FAMILY_KEY, this.fontFamily);
         preferences.putDouble(FONT_SCALE_KEY, this.fontScale);
     }

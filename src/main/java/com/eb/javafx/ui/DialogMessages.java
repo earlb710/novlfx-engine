@@ -187,11 +187,11 @@ public final class DialogMessages {
         card.setMaxHeight(Region.USE_PREF_SIZE);
         card.setAlignment(Pos.TOP_LEFT);
         card.setPadding(new Insets(20));
+        card.getStyleClass().add("dialog-message-card");
+        // Corner radius lives in CSS (.dialog-message-card); colours/border-width stay inline.
         card.setStyle(
                 "-fx-background-color: " + CARD_BG + ";"
-                + " -fx-background-radius: 10;"
                 + " -fx-border-color: " + accent + ";"
-                + " -fx-border-radius: 10;"
                 + " -fx-border-width: 1.5;");
 
         if (title != null && !title.isBlank()) {
@@ -297,13 +297,12 @@ public final class DialogMessages {
         btn.getStyleClass().add("dialog-message-button");
         String bg = primary ? accent : "rgba(255, 255, 255, 0.08)";
         String fg = primary ? "#ffffff" : textHex;
+        // Corner radius lives in CSS (.dialog-message-button); colours/padding stay inline.
         btn.setStyle(
                 "-fx-background-color: " + bg + ";"
                 + " -fx-text-fill: " + fg + ";"
                 + " -fx-padding: 6 18 6 18;"
-                + " -fx-background-radius: 6;"
                 + " -fx-border-color: " + accent + ";"
-                + " -fx-border-radius: 6;"
                 + " -fx-border-width: 1;"
                 + " -fx-cursor: hand;"
                 + " -fx-focus-color: transparent;"
@@ -328,11 +327,11 @@ public final class DialogMessages {
         card.setMaxHeight(Region.USE_PREF_SIZE);
         card.setAlignment(Pos.TOP_LEFT);
         card.setPadding(new Insets(20));
+        card.getStyleClass().add("dialog-message-card");
+        // Corner radius lives in CSS (.dialog-message-card); colours/border-width stay inline.
         card.setStyle(
                 "-fx-background-color: " + CARD_BG + ";"
-                + " -fx-background-radius: 10;"
                 + " -fx-border-color: " + accent + ";"
-                + " -fx-border-radius: 10;"
                 + " -fx-border-width: 1.5;");
 
         if (title != null && !title.isBlank()) {
@@ -358,15 +357,15 @@ public final class DialogMessages {
 
         javafx.scene.control.TextField textField = new javafx.scene.control.TextField(
                 defaultValue == null ? "" : defaultValue);
+        textField.getStyleClass().add("dialog-message-input");
+        // Corner radius lives in CSS (.dialog-message-input); colours/padding stay inline.
         textField.setStyle(
                 "-fx-background-color: rgba(255,255,255,0.08);"
                 + " -fx-text-fill: " + textHex + ";"
                 + " -fx-prompt-text-fill: rgba(230,230,230,0.5);"
                 + " -fx-font-size: 14px;"
                 + " -fx-padding: 6 10 6 10;"
-                + " -fx-background-radius: 4;"
                 + " -fx-border-color: " + accent + ";"
-                + " -fx-border-radius: 4;"
                 + " -fx-border-width: 1;");
         card.getChildren().add(textField);
 
