@@ -8,7 +8,10 @@ import com.eb.javafx.routing.RouteModule;
 import com.eb.javafx.scene.JsonConversationContentModule;
 import com.eb.javafx.scene.JsonSceneModule;
 import com.eb.javafx.scene.SceneModule;
+import com.eb.javafx.ui.GlobalStylesheets;
+import com.eb.javafx.util.FontResources;
 import com.eb.javafx.util.Validation;
+import javafx.scene.text.Font;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -19,8 +22,13 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Optional;
+import java.util.ServiceLoader;
+import java.util.Set;
 
 /** Application-supplied startup options for reusable bootstrap service creation. */
 public final class BootstrapOptions {
@@ -215,16 +223,181 @@ public final class BootstrapOptions {
             Path applicationRoot) {
         ResourceRegistry.Builder builder = ResourceRegistry.builder();
         ClassLoader loader = BootstrapOptions.class.getClassLoader();
-        for (ResourceCategory category : ResourceCategory.values()) {
-            for (String spec : appConfig.resourceRoots(category)) {
-                builder.addRoot(category, spec, applicationRoot, loader);
-            }
-        }
-        for (ResourceCategory category : ResourceCategory.values()) {
-            for (String spec : libraryConfig.resourceRoots(category)) {
-                builder.addRoot(category, spec, applicationRoot, loader);
-            }
-        }
+        addConfigRoots(builder, appConfig, applicationRoot, loader);
+        addConfigRoots(builder, libraryConfig, applicationRoot, loader);
         return builder.build();
+    }
+
+    private static void addConfigRoots(ResourceRegistry.Builder builder, ApplicationResourceConfig config,
+            Path applicationRoot, ClassLoader loader) {
+        for (ResourceCategory category : ResourceCategory.values()) {
+            for (String spec : config.resourceRoots(category)) {
+                builder.addRoot(category, spec, applicationRoot, loader);
+            }
+        }
+    }
+
+    // -------------------------------------------------------------------------------------------
+    // Extension-discovery SPI assembly (see docs/SPI_PLAN.md). `discovering(...)` mirrors
+    // `fromConfig(...)` but additionally discovers EngineModuleProvider implementations (explicit +
+    // ServiceLoader), orders them, and lets each contribute modules / resource roots / fonts /
+    // stylesheets BEFORE the resource registry is frozen. Root layering stays:
+    // application roots -> provider roots -> library roots (first match wins).
+    // -------------------------------------------------------------------------------------------
+
+    /** Like {@link #fromConfig(Path)}, plus SPI discovery. Explicit providers take precedence over
+     *  discovered ones of the same {@link EngineModuleProvider#id() id}. */
+    public static BootstrapOptions discovering(Path configPath, EngineModuleProvider... explicitProviders) {
+        Path normalizedConfigPath = Validation.requireNonNull(configPath, "Bootstrap config path is required.")
+                .toAbsolutePath()
+                .normalize();
+        Path parent = normalizedConfigPath.getParent();
+        Path applicationRoot = parent == null ? Paths.get("").toAbsolutePath().normalize() : parent;
+        ApplicationResourceConfig resourceConfig = ApplicationResourceConfig.load(normalizedConfigPath);
+        return discovering(applicationRoot, resourceConfig, List.of(explicitProviders));
+    }
+
+    /** SPI discovery rooted at an explicit application root + already-parsed config. */
+    public static BootstrapOptions discovering(Path applicationRoot, ApplicationResourceConfig resourceConfig,
+            List<EngineModuleProvider> explicitProviders) {
+        Path normalizedRoot = Validation.requireNonNull(applicationRoot, "Application root is required.")
+                .toAbsolutePath()
+                .normalize();
+        Validation.requireNonNull(resourceConfig, "Application resource config is required.");
+        ApplicationResourceConfig libraryConfig = loadLibraryConfig();
+
+        List<EngineModuleProvider> providers = orderProviders(
+                explicitProviders == null ? List.of() : explicitProviders);
+
+        ResourceRegistry.Builder builder = ResourceRegistry.builder();
+        ClassLoader loader = BootstrapOptions.class.getClassLoader();
+        addConfigRoots(builder, resourceConfig, normalizedRoot, loader);     // application roots first
+
+        DiscoveryContext context = new DiscoveryContext(normalizedRoot, resourceConfig, builder);
+        for (EngineModuleProvider provider : providers) {
+            try {
+                provider.contribute(context);                                // provider roots + modules + fonts + css
+            } catch (RuntimeException exception) {
+                System.err.println("[BootstrapOptions] EngineModuleProvider '" + provider.id()
+                        + "' failed to contribute: " + exception);
+                exception.printStackTrace();
+            }
+        }
+
+        addConfigRoots(builder, libraryConfig, normalizedRoot, loader);      // library roots last
+        ResourceRegistry registry = builder.build();
+
+        BootstrapOptions options = new BootstrapOptions(
+                normalizedRoot, resourceConfig, registry,
+                context.staticContentModules, context.sceneModules, context.routeModules);
+
+        Optional<URL> appLoadUrl = ApplicationJsonLoadDefinition.defaultUrl(registry);
+        if (appLoadUrl.isPresent()) {
+            return options.withApplicationJsonLoads(ApplicationJsonLoadDefinition.load(appLoadUrl.get()).loads());
+        }
+        return options;
+    }
+
+    /** Combines explicit + ServiceLoader-discovered providers, de-dups by id (explicit wins), sorts
+     *  by {@link EngineModuleProvider#priority() priority}, then resolves {@code dependsOn()} into a
+     *  deterministic topological order. */
+    static List<EngineModuleProvider> orderProviders(List<EngineModuleProvider> explicit) {
+        LinkedHashMap<String, EngineModuleProvider> byId = new LinkedHashMap<>();
+        for (EngineModuleProvider provider : explicit) {
+            if (provider != null) {
+                byId.putIfAbsent(provider.id(), provider);
+            }
+        }
+        for (EngineModuleProvider provider : ServiceLoader.load(EngineModuleProvider.class)) {
+            byId.putIfAbsent(provider.id(), provider);
+        }
+        List<EngineModuleProvider> nodes = new ArrayList<>(byId.values());
+        nodes.sort(Comparator.comparingInt(EngineModuleProvider::priority));     // stable: ties keep order
+        return topologicalByDependsOn(nodes);
+    }
+
+    /** Stable topological order over {@code dependsOn()} that preserves the incoming (priority) order
+     *  for ready nodes. Unknown deps are ignored; cycles are broken by taking the first remaining
+     *  node (nothing is dropped). */
+    private static List<EngineModuleProvider> topologicalByDependsOn(List<EngineModuleProvider> ordered) {
+        Set<String> present = new HashSet<>();
+        for (EngineModuleProvider provider : ordered) {
+            present.add(provider.id());
+        }
+        List<EngineModuleProvider> remaining = new ArrayList<>(ordered);
+        List<EngineModuleProvider> result = new ArrayList<>();
+        Set<String> emitted = new HashSet<>();
+        while (!remaining.isEmpty()) {
+            EngineModuleProvider next = null;
+            for (EngineModuleProvider provider : remaining) {
+                boolean depsReady = true;
+                for (String dep : provider.dependsOn()) {
+                    if (present.contains(dep) && !emitted.contains(dep)) {
+                        depsReady = false;
+                        break;
+                    }
+                }
+                if (depsReady) {
+                    next = provider;
+                    break;                                                   // first in priority order
+                }
+            }
+            if (next == null) {
+                next = remaining.get(0);                                      // cycle / unsatisfiable
+            }
+            remaining.remove(next);
+            emitted.add(next.id());
+            result.add(next);
+        }
+        return result;
+    }
+
+    /** {@link ModuleContext} implementation backing {@link #discovering}. Collects modules into
+     *  lists, registers fonts immediately (a side effect of {@link FontResources#loadResource}),
+     *  funnels resource roots into the in-progress registry builder, and routes stylesheets to the
+     *  global sink. */
+    private static final class DiscoveryContext implements ModuleContext {
+        private final Path applicationRoot;
+        private final ApplicationResourceConfig resourceConfig;
+        private final ResourceRoots resourceRoots;
+        private final FontRegistrar fonts;
+        final List<StaticContentModule> staticContentModules = new ArrayList<>();
+        final List<SceneModule> sceneModules = new ArrayList<>();
+        final List<RouteModule> routeModules = new ArrayList<>();
+
+        DiscoveryContext(Path applicationRoot, ApplicationResourceConfig resourceConfig,
+                ResourceRegistry.Builder builder) {
+            this.applicationRoot = applicationRoot;
+            this.resourceConfig = resourceConfig;
+            this.resourceRoots = new ResourceRoots() {
+                @Override public ResourceRoots addClasspathRoot(ResourceCategory category, String classpathPath,
+                        ClassLoader classLoader) {
+                    builder.addClasspathRoot(category, classpathPath, classLoader);
+                    return this;
+                }
+                @Override public ResourceRoots addFilesystemRoot(ResourceCategory category, Path directory) {
+                    builder.addFilesystemRoot(category, directory);
+                    return this;
+                }
+            };
+            this.fonts = new FontRegistrar() {
+                @Override public Font registerFromModule(Class<?> owner, String resourcePath, double size) {
+                    return FontResources.loadResource(resourcePath, size, owner.getClassLoader());
+                }
+                @Override public void register(Font font) {
+                    // Font.loadFont already registers the family globally; this is a tracking hook.
+                }
+            };
+        }
+
+        @Override public Path applicationRoot() { return applicationRoot; }
+        @Override public ApplicationResourceConfig resourceConfig() { return resourceConfig; }
+        @Override public Path providerAssetBase() { return applicationRoot; }
+        @Override public void addStaticContentModule(StaticContentModule module) { staticContentModules.add(module); }
+        @Override public void addSceneModule(SceneModule module) { sceneModules.add(module); }
+        @Override public void addRouteModule(RouteModule module) { routeModules.add(module); }
+        @Override public ResourceRoots resourceRoots() { return resourceRoots; }
+        @Override public FontRegistrar fonts() { return fonts; }
+        @Override public void addStylesheet(String url) { GlobalStylesheets.add(url); }
     }
 }

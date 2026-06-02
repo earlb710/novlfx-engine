@@ -406,6 +406,12 @@ public final class RouteContext {
         // Config-driven footer override (font / colour / select colour / background /
         // transparency) layered after the theme so it wins for the footer selectors.
         com.eb.javafx.ui.FooterStyle.stylesheet().ifPresent(scene.getStylesheets()::add);
+        // Extension-contributed stylesheets (registered by SPI providers), layered last.
+        for (String providerStylesheet : com.eb.javafx.ui.GlobalStylesheets.all()) {
+            if (!scene.getStylesheets().contains(providerStylesheet)) {
+                scene.getStylesheets().add(providerStylesheet);
+            }
+        }
         return scene;
     }
 }

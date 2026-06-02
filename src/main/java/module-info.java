@@ -72,4 +72,9 @@ module com.novlfx.engine {
     //  NOT module packages from JPMS's perspective and don't need opens.)
     opens com.eb.javafx.gamesupport;
     opens com.eb.javafx.ui;
+
+    // Extension-discovery SPI: a consumer declares `provides EngineModuleProvider with ...` (or a
+    // classpath META-INF/services file) and the engine discovers them via ServiceLoader during
+    // bootstrap assembly (BootstrapOptions.discovering).
+    uses com.eb.javafx.bootstrap.EngineModuleProvider;
 }

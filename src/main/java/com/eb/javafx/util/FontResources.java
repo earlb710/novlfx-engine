@@ -163,6 +163,42 @@ public final class FontResources {
     }
 
     /**
+     * Module-aware variant of {@link #loadResource(String, double)}: resolves the font resource
+     * through the supplied {@code loader} (typically a provider's own module class loader,
+     * {@code SomeProvider.class.getClassLoader()}) instead of the engine's.
+     *
+     * <p>This is what lets an extension module load a font bundled inside <em>its</em> jar without
+     * the engine's class loader (a different module) hitting JPMS encapsulation. A {@code null}
+     * loader falls back to the engine's own class loader, making this behave like the two-arg form.
+     * The resource must live in a resource-only package (no {@code .class} files) or an
+     * {@code opens}'d package of the provider's module to be readable cross-module.</p>
+     *
+     * @param resourcePath classpath resource path; a leading {@code /} is optional
+     * @param size         font size in points
+     * @param loader       class loader to resolve against, or {@code null} for the engine's
+     */
+    public static Font loadResource(String resourcePath, double size, ClassLoader loader) {
+        Validation.requireNonBlank(resourcePath, "Font resource path is required.");
+        Validation.requirePositive(size, "Font size must be positive.");
+        ClassLoader effective = loader != null ? loader : FontResources.class.getClassLoader();
+        // ClassLoader.getResourceAsStream takes a name WITHOUT a leading slash (unlike the
+        // Class-relative form used by the two-arg overload).
+        String name = resourcePath.startsWith("/") ? resourcePath.substring(1) : resourcePath;
+        try (InputStream inputStream = effective.getResourceAsStream(name)) {
+            if (inputStream == null) {
+                throw new IllegalStateException("Font resource not found on classpath: " + resourcePath);
+            }
+            Font font = Font.loadFont(inputStream, size);
+            if (font == null) {
+                throw new IllegalStateException("Unable to load font resource: " + resourcePath);
+            }
+            return font;
+        } catch (IOException exception) {
+            throw new IllegalStateException("Unable to read font resource: " + resourcePath, exception);
+        }
+    }
+
+    /**
      * Loads a font from a filesystem file — NOT restricted to the packaged whitelist.  Used by
      * config-driven font registration so a mod can drop a real font file next to the game and
      * reference it from {@code config.json} without rebuilding.  Registering the font is a side

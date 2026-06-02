@@ -193,8 +193,11 @@ calls `ConfiguredFonts.register(...)`.
 
 ## 9. Rollout phases
 
-1. Add SPI types + `ModuleContext` + resource hooks + module-aware `FontResources` overload. No
-   behavior change (nothing discovered yet).
+1. ✅ **Done** — Added SPI types (`EngineModuleProvider`, `ModuleContext`, `ResourceRoots`,
+   `FontRegistrar` in `com.eb.javafx.bootstrap`) + the module-aware
+   `FontResources.loadResource(path, size, ClassLoader)` overload. Pure additions; nothing is
+   discovered or wired into boot yet, so there is no behavior change. Tests: `EngineModuleProviderTest`,
+   `FontResourcesTest.moduleAwareLoadResolvesAgainstSuppliedClassLoader`.
 2. Wire `ServiceLoader` discovery into a new `BootstrapOptions.discovering(...)`; keep explicit path.
 3. Convert engine defaults to internal low-priority providers.
 4. Migrate AltLife to a single provider; switch `GameApplication` to `discovering(...)`.

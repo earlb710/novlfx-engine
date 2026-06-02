@@ -78,6 +78,24 @@ final class FontResourcesTest {
     }
 
     @Test
+    void moduleAwareLoadResolvesAgainstSuppliedClassLoader() {
+        ClassLoader loader = FontResourcesTest.class.getClassLoader();
+        // Leading slash optional; resolved via the supplied loader (ClassLoader uses no leading slash).
+        Font withoutSlash = FontResources.loadResource("com/eb/javafx/fonts/Alien.ttf", 18.0, loader);
+        assertNotNull(withoutSlash);
+        assertEquals(18.0, withoutSlash.getSize());
+        assertNotNull(FontResources.loadResource("/com/eb/javafx/fonts/Alien.ttf", 18.0, loader));
+
+        // Null loader falls back to the engine's own class loader (same as the two-arg form).
+        assertNotNull(FontResources.loadResource("com/eb/javafx/fonts/Alien.ttf", 18.0, null));
+
+        assertThrows(IllegalStateException.class,
+                () -> FontResources.loadResource("com/eb/javafx/fonts/NoSuchFont.ttf", 12.0, loader));
+        assertThrows(IllegalArgumentException.class,
+                () -> FontResources.loadResource("com/eb/javafx/fonts/Alien.ttf", 0.0, loader));
+    }
+
+    @Test
     void loadsFontFromFile(@TempDir Path tempDir) throws Exception {
         Path fontFile = tempDir.resolve("My-Modded-Font.ttf");
         try (InputStream inputStream = FontResources.open("Alien.ttf")) {
