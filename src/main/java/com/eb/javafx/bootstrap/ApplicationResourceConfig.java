@@ -17,6 +17,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * JSON-backed application resource configuration.
@@ -158,7 +159,8 @@ public final class ApplicationResourceConfig {
 
     /** Reserved single-value first-class field ids that map 1:1 onto a {@code resources} entry. */
     private static final List<String> FIRST_CLASS_STRING_FIELDS = List.of(
-            "assetOverrideRoot", "windowTitle", "appIcon", "uiTheme", "themePalette");
+            "assetOverrideRoot", "windowTitle", "appIcon", "uiTheme", "themePalette",
+            "mapBuildingColors");
 
     /**
      * Folds the explicit top-level modding fields into a copy of {@code resources}.  String
@@ -191,7 +193,243 @@ public final class ApplicationResourceConfig {
         }
         promoteScreenBackgrounds(root, merged);
         promoteFooterStyle(root, merged);
+        promoteFooterOptions(root, merged);
+        promoteTextSpeed(root, merged);
+        promoteScalar(root, "tooltipDelayMs", merged);
+        promoteAudioChannels(root, merged);
+        promoteAutoAdvance(root, merged);
+        promoteHud(root, merged);
+        promoteUiDialog(root, merged);
+        promoteSave(root, merged);
         return merged;
+    }
+
+    public static final String UI_DIALOG_PREFIX = "ui.dialog.";
+
+    /** Folds {@code ui: { dialog: { minWidth, maxWidth } }} into {@code ui.dialog.<field>}
+     *  resources entries (confirm/info/error popup card width). */
+    private static void promoteUiDialog(Map<String, Object> root, Map<String, String> merged) {
+        if (!root.containsKey("ui")) {
+            return;
+        }
+        Map<String, Object> ui = requireObject(root.get("ui"), "root.ui");
+        Object dialog = ui.get("dialog");
+        if (dialog == null) {
+            return;
+        }
+        Map<String, Object> fields = requireObject(dialog, "root.ui.dialog");
+        fields.forEach((field, raw) -> {
+            if (!Set.of("minWidth", "maxWidth", "previousEntryOpacity").contains(field)) {
+                throw new IllegalArgumentException("Unknown ui.dialog field '" + field
+                        + "' (use minWidth / maxWidth / previousEntryOpacity).");
+            }
+            merged.put(UI_DIALOG_PREFIX + field, requireScalarString(raw, "root.ui.dialog." + field));
+        });
+    }
+
+    public static final String SAVE_PREFIX = "save.";
+
+    /** Folds {@code save: { maxHistoryEntries }} into {@code save.<field>} resources entries
+     *  (conversation-history sliding-window cap). */
+    private static void promoteSave(Map<String, Object> root, Map<String, String> merged) {
+        if (!root.containsKey("save")) {
+            return;
+        }
+        Map<String, Object> fields = requireObject(root.get("save"), "root.save");
+        fields.forEach((field, raw) -> {
+            if (!Set.of("maxHistoryEntries").contains(field)) {
+                throw new IllegalArgumentException("Unknown save field '" + field
+                        + "' (use maxHistoryEntries).");
+            }
+            merged.put(SAVE_PREFIX + field, requireScalarString(raw, "root.save." + field));
+        });
+    }
+
+    /** Save-system field (e.g. {@code maxHistoryEntries}), if set. */
+    public Optional<String> saveField(String field) {
+        return Optional.ofNullable(resources.get(SAVE_PREFIX + field));
+    }
+
+    /** Dialog (confirm/info/error popup) card-width field, if set. */
+    public Optional<String> uiDialogField(String field) {
+        return Optional.ofNullable(resources.get(UI_DIALOG_PREFIX + field));
+    }
+
+    public static final String HUD_PREFIX = "hud.";
+
+    /** Folds {@code hud: { dialogIdleAlpha, dialogActiveAlpha, locationRestAlpha, locationHoverAlpha }}
+     *  into {@code hud.<field>} resources entries (gameplay HUD backdrop opacity). */
+    private static void promoteHud(Map<String, Object> root, Map<String, String> merged) {
+        if (!root.containsKey("hud")) {
+            return;
+        }
+        Map<String, Object> fields = requireObject(root.get("hud"), "root.hud");
+        fields.forEach((field, raw) -> {
+            if (!Set.of("dialogIdleAlpha", "dialogActiveAlpha", "locationRestAlpha",
+                    "locationHoverAlpha", "statusLogAlpha", "panelAlpha").contains(field)) {
+                throw new IllegalArgumentException("Unknown hud field '" + field + "' (use "
+                        + "dialogIdleAlpha / dialogActiveAlpha / locationRestAlpha / locationHoverAlpha"
+                        + " / statusLogAlpha / panelAlpha).");
+            }
+            merged.put(HUD_PREFIX + field, requireScalarString(raw, "root.hud." + field));
+        });
+    }
+
+    /** HUD backdrop-alpha field, if set. */
+    public Optional<String> hudField(String field) {
+        return Optional.ofNullable(resources.get(HUD_PREFIX + field));
+    }
+
+    public static final String AUDIO_CHANNEL_PREFIX = "audioChannel.";
+    public static final String AUTO_ADVANCE_PREFIX = "autoAdvance.";
+
+    /** Folds {@code audioChannels: { "<id>": { priority, volume, ducking, duckPercent } }} into
+     *  {@code audioChannel.<id>.<field>} resources entries. */
+    private static void promoteAudioChannels(Map<String, Object> root, Map<String, String> merged) {
+        if (!root.containsKey("audioChannels")) {
+            return;
+        }
+        Map<String, Object> channels = requireObject(root.get("audioChannels"), "root.audioChannels");
+        channels.forEach((channelId, value) -> {
+            Map<String, Object> fields = requireObject(value, "root.audioChannels." + channelId);
+            fields.forEach((field, raw) -> {
+                if (!Set.of("priority", "volume", "ducking", "duckPercent").contains(field)) {
+                    throw new IllegalArgumentException("Unknown audio channel field '" + field
+                            + "' in root.audioChannels." + channelId
+                            + " (use priority / volume / ducking / duckPercent).");
+                }
+                merged.put(AUDIO_CHANNEL_PREFIX + channelId + "." + field,
+                        requireScalarString(raw, "root.audioChannels." + channelId + "." + field));
+            });
+        });
+    }
+
+    /** Folds {@code autoAdvance: { scrollFraction, minScrollMs, readPauseMultiplier }} into
+     *  {@code autoAdvance.<field>} resources entries. */
+    private static void promoteAutoAdvance(Map<String, Object> root, Map<String, String> merged) {
+        if (!root.containsKey("autoAdvance")) {
+            return;
+        }
+        Map<String, Object> fields = requireObject(root.get("autoAdvance"), "root.autoAdvance");
+        fields.forEach((field, raw) -> {
+            if (!Set.of("scrollFraction", "minScrollMs", "readPauseMultiplier").contains(field)) {
+                throw new IllegalArgumentException("Unknown autoAdvance field '" + field
+                        + "' (use scrollFraction / minScrollMs / readPauseMultiplier).");
+            }
+            merged.put(AUTO_ADVANCE_PREFIX + field, requireScalarString(raw, "root.autoAdvance." + field));
+        });
+    }
+
+    /** Audio-channel override field ({@code priority}/{@code volume}/{@code ducking}/
+     *  {@code duckPercent}) for {@code channelId}, if set. */
+    public Optional<String> audioChannelField(String channelId, String field) {
+        return Optional.ofNullable(resources.get(AUDIO_CHANNEL_PREFIX + channelId + "." + field));
+    }
+
+    /** Auto-advance tuning field ({@code scrollFraction}/{@code minScrollMs}/
+     *  {@code readPauseMultiplier}), if set. */
+    public Optional<String> autoAdvanceField(String field) {
+        return Optional.ofNullable(resources.get(AUTO_ADVANCE_PREFIX + field));
+    }
+
+    /** Reserved {@code resources} id prefixes for footer-option (keybinding/icon) overrides and
+     *  per-speed text-speed durations. */
+    public static final String FOOTER_OPTION_PREFIX = "footerOption.";
+    public static final String TEXT_SPEED_PREFIX = "textSpeed.";
+
+    /** Folds {@code footerOptions: { "<id>": { shortcut, icon } }} into
+     *  {@code footerOption.<id>.<field>} resources entries (footer keybinding / glyph mods). */
+    private static void promoteFooterOptions(Map<String, Object> root, Map<String, String> merged) {
+        if (!root.containsKey("footerOptions")) {
+            return;
+        }
+        Map<String, Object> options = requireObject(root.get("footerOptions"), "root.footerOptions");
+        options.forEach((optionId, value) -> {
+            Map<String, Object> fields = requireObject(value, "root.footerOptions." + optionId);
+            fields.forEach((rawField, rawValue) -> {
+                String field = switch (rawField) {
+                    case "shortcut", "key" -> "shortcut";
+                    case "icon", "glyph" -> "icon";
+                    default -> null;
+                };
+                if (field == null) {
+                    throw new IllegalArgumentException("Unknown footer option field '" + rawField
+                            + "' in root.footerOptions." + optionId + " (use shortcut / icon).");
+                }
+                if (!(rawValue instanceof String stringValue)) {
+                    throw new IllegalArgumentException("Expected JSON string for root.footerOptions."
+                            + optionId + "." + rawField + ".");
+                }
+                if (!stringValue.isBlank()) {
+                    merged.put(FOOTER_OPTION_PREFIX + optionId + "." + field, stringValue);
+                }
+            });
+        });
+    }
+
+    /** Folds {@code textSpeed: { slow, normal, fast }} (millisecond reveal/auto-advance times)
+     *  into {@code textSpeed.<speed>} resources entries. */
+    private static void promoteTextSpeed(Map<String, Object> root, Map<String, String> merged) {
+        if (!root.containsKey("textSpeed")) {
+            return;
+        }
+        Map<String, Object> speeds = requireObject(root.get("textSpeed"), "root.textSpeed");
+        speeds.forEach((speed, value) -> {
+            if (!(speed.equals("slow") || speed.equals("normal") || speed.equals("fast"))) {
+                throw new IllegalArgumentException("Unknown text speed '" + speed
+                        + "' in root.textSpeed (use slow / normal / fast).");
+            }
+            merged.put(TEXT_SPEED_PREFIX + speed, requireScalarString(value, "root.textSpeed." + speed));
+        });
+    }
+
+    /** Folds a top-level scalar (string or number) field into the resources map. */
+    private static void promoteScalar(Map<String, Object> root, String key, Map<String, String> merged) {
+        if (root.containsKey(key)) {
+            merged.put(key, requireScalarString(root.get(key), "root." + key));
+        }
+    }
+
+    private static String requireScalarString(Object value, String description) {
+        if (value instanceof String stringValue && !stringValue.isBlank()) {
+            return stringValue;
+        }
+        if (value instanceof Number number) {
+            // Drop a trailing .0 for whole-number millis.
+            String text = number.toString();
+            return text.endsWith(".0") ? text.substring(0, text.length() - 2) : text;
+        }
+        throw new IllegalArgumentException("Expected a string or number for " + description + ".");
+    }
+
+    /** Footer-option override field ({@code shortcut} / {@code icon}) for {@code optionId}, if set. */
+    public Optional<String> footerOptionOverride(String optionId, String field) {
+        return Optional.ofNullable(resources.get(FOOTER_OPTION_PREFIX + optionId + "." + field));
+    }
+
+    /** All footer option ids that carry an override (so a host can iterate them). */
+    public java.util.Set<String> footerOptionOverrideIds() {
+        java.util.LinkedHashSet<String> ids = new java.util.LinkedHashSet<>();
+        for (String key : resources.keySet()) {
+            if (key.startsWith(FOOTER_OPTION_PREFIX)) {
+                int dot = key.indexOf('.', FOOTER_OPTION_PREFIX.length());
+                if (dot > 0) {
+                    ids.add(key.substring(FOOTER_OPTION_PREFIX.length(), dot));
+                }
+            }
+        }
+        return ids;
+    }
+
+    /** Configured reveal/auto-advance milliseconds for a text speed ({@code slow}/{@code normal}/
+     *  {@code fast}), if set. */
+    public Optional<String> textSpeedMillis(String speed) {
+        return Optional.ofNullable(resources.get(TEXT_SPEED_PREFIX + speed));
+    }
+
+    /** Configured global tooltip show-delay in milliseconds, if set. */
+    public Optional<String> tooltipDelayMillis() {
+        return Optional.ofNullable(resources.get("tooltipDelayMs"));
     }
 
     /** Reserved {@code resources} id prefix for a footer style field, e.g. {@code footer.color}. */

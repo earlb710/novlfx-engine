@@ -126,6 +126,18 @@ public final class ScreenShell {
     private static final double FULL_FOOTER_OPACITY = 1.0;
     private static final double DEFAULT_FOOTER_BACKGROUND_TRANSPARENCY = 0.5;
     private static final Duration DEFAULT_TOOLTIP_SHOW_DELAY = Duration.millis(150);
+    /** Config-driven tooltip show-delay override (null = use {@link #DEFAULT_TOOLTIP_SHOW_DELAY}). */
+    private static volatile Duration tooltipShowDelayOverride;
+
+    /** Sets the global tooltip show-delay (milliseconds) from config; null/non-positive clears. */
+    public static void setTooltipShowDelayMillis(Double millis) {
+        tooltipShowDelayOverride = (millis == null || millis <= 0) ? null : Duration.millis(millis);
+    }
+
+    private static Duration tooltipShowDelay() {
+        Duration override = tooltipShowDelayOverride;
+        return override != null ? override : DEFAULT_TOOLTIP_SHOW_DELAY;
+    }
     private static final Color DEFAULT_FOOTER_BACKGROUND_COLOR = Color.rgb(10, 20, 38);
     private static final Color DEFAULT_FOOTER_BORDER_COLOR = Color.web("#143869");
     private static final CornerRadii FOOTER_CORNER_RADII = new CornerRadii(999);
@@ -411,7 +423,40 @@ public final class ScreenShell {
     }
 
     public static List<FooterOption> defaultFooterOptions() {
-        return FOOTER_OPTIONS;
+        return applyFooterOptionOverrides(FOOTER_OPTIONS);
+    }
+
+    /** Config-driven per-option overrides: {@code id → { "shortcut": ..., "icon": ... }}.  Lets a
+     *  game / mod remap footer keyboard shortcuts and glyphs through {@code config.json}. */
+    private static volatile Map<String, Map<String, String>> footerOptionOverrides = Map.of();
+
+    /** Installs footer-option keybinding / glyph overrides (keyed by option id).  Pass null/empty
+     *  to clear.  Applied to every {@link #footerOptionsForGameState} / {@link #defaultFooterOptions}. */
+    public static void setFooterOptionOverrides(Map<String, Map<String, String>> overrides) {
+        footerOptionOverrides = (overrides == null || overrides.isEmpty()) ? Map.of() : Map.copyOf(overrides);
+    }
+
+    private static List<FooterOption> applyFooterOptionOverrides(List<FooterOption> options) {
+        Map<String, Map<String, String>> overrides = footerOptionOverrides;
+        if (overrides.isEmpty()) {
+            return options;
+        }
+        return options.stream().map(option -> {
+            Map<String, String> override = overrides.get(option.id());
+            if (override == null) {
+                return option;
+            }
+            FooterOption result = option;
+            String shortcut = override.get("shortcut");
+            if (shortcut != null && !shortcut.isBlank()) {
+                result = result.withShortcut(shortcut.trim());
+            }
+            String icon = override.get("icon");
+            if (icon != null && !icon.isBlank()) {
+                result = result.withIcon(icon.trim());
+            }
+            return result;
+        }).toList();
     }
 
     /** Shortcut string used by {@link #installDebugScreenInfoShortcut} and the debug-info dialog footer hint. */
@@ -613,7 +658,7 @@ public final class ScreenShell {
 
     public static List<FooterOption> footerOptionsForGameState(GameState gameState) {
         boolean historyAvailable = gameState != null && !gameState.conversationHistory().entries().isEmpty();
-        return changeFooterEnabled(FOOTER_OPTIONS, "history", historyAvailable);
+        return applyFooterOptionOverrides(changeFooterEnabled(FOOTER_OPTIONS, "history", historyAvailable));
     }
 
     public static List<FooterOption> localizeFooterOptions(
@@ -1251,7 +1296,7 @@ public final class ScreenShell {
     /** Creates a shared tooltip with a shorter delay so hover help appears promptly across reusable UI screens. */
     public static Tooltip createTooltip(String text) {
         Tooltip tooltip = new Tooltip(text);
-        tooltip.setShowDelay(DEFAULT_TOOLTIP_SHOW_DELAY);
+        tooltip.setShowDelay(tooltipShowDelay());
         return tooltip;
     }
 

@@ -16,11 +16,30 @@ import java.util.Optional;
  */
 public final class DialogHistory {
     /**
-     * Maximum number of conversation entries retained in memory. Once this limit is reached,
-     * the oldest entry is dropped each time a new conversation begins, so the history acts as a
-     * sliding window of the most recent 1 000 conversations.
+     * Default maximum number of conversation entries retained in memory. Once this limit is
+     * reached, the oldest entry is dropped each time a new conversation begins, so the history
+     * acts as a sliding window of the most recent 1 000 conversations.
      */
-    public static final int MAX_CONVERSATIONS = 1000;
+    public static final int DEFAULT_MAX_CONVERSATIONS = 1000;
+
+    /**
+     * Effective history cap (config-overridable via {@code save.maxHistoryEntries}, wired at boot
+     * by {@code BootstrapService}). Defaults to {@link #DEFAULT_MAX_CONVERSATIONS}.
+     */
+    private static volatile int maxConversations = DEFAULT_MAX_CONVERSATIONS;
+
+    /** Overrides the sliding-window history cap. Null or non-positive values keep the current
+     *  value. Called once at boot. */
+    public static void setMaxConversations(Integer cap) {
+        if (cap != null && cap > 0) {
+            maxConversations = cap;
+        }
+    }
+
+    /** The effective history cap currently in force. */
+    public static int maxConversations() {
+        return maxConversations;
+    }
 
     private final List<DialogHistoryEntry> entries = new ArrayList<>();
     private int openEntryIndex = -1;
@@ -96,7 +115,7 @@ public final class DialogHistory {
         entries.add(entry);
         // Trim the oldest conversation once the sliding window is full. openEntryIndex always
         // points at the last element, so the index stays valid after the remove.
-        if (entries.size() > MAX_CONVERSATIONS) {
+        while (entries.size() > maxConversations) {
             entries.remove(0);
         }
         openEntryIndex = entries.size() - 1;

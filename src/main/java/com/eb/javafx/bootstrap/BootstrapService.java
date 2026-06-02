@@ -259,14 +259,39 @@ public final class BootstrapService {
         // (resources.appIcon).  Generic — every host's primary stage gets it via boot.
         applyWindowChrome(primaryStage);
         // Config-driven footer styling (the top-level `footer` object): font / colour / select
-        // colour / background / transparency, layered over the theme on every themed scene.
+        // colour / background / transparency, plus a global tooltip show-delay — layered over the
+        // theme on every themed scene.  Plus footer keybinding/glyph overrides, configurable
+        // text-speed durations, and the engine tooltip-delay override.
         if (resourceConfig != null) {
             com.eb.javafx.ui.FooterStyle.configure(
                     resourceConfig.footerStyle("font").orElse(null),
                     resourceConfig.footerStyle("color").orElse(null),
                     resourceConfig.footerStyle("selectColor").orElse(null),
                     resourceConfig.footerStyle("backgroundColor").orElse(null),
-                    resourceConfig.footerStyle("transparency").orElse(null));
+                    resourceConfig.footerStyle("transparency").orElse(null),
+                    resourceConfig.tooltipDelayMillis().orElse(null));
+            com.eb.javafx.ui.ScreenShell.setFooterOptionOverrides(collectFooterOptionOverrides());
+            com.eb.javafx.ui.ScreenShell.setTooltipShowDelayMillis(parsePositiveDouble(
+                    resourceConfig.tooltipDelayMillis().orElse(null)));
+            preferencesService.setTextSpeedDurations(
+                    parsePositiveInt(resourceConfig.textSpeedMillis("slow").orElse(null)),
+                    parsePositiveInt(resourceConfig.textSpeedMillis("normal").orElse(null)),
+                    parsePositiveInt(resourceConfig.textSpeedMillis("fast").orElse(null)));
+            // Auto-advance cadence tuning (the `autoAdvance` config object).
+            com.eb.javafx.ui.AutoSkipController.setAutoAdvanceTuning(
+                    parsePositiveDouble(resourceConfig.autoAdvanceField("scrollFraction").orElse(null)),
+                    parsePositiveInt(resourceConfig.autoAdvanceField("minScrollMs").orElse(null)),
+                    parsePositiveDouble(resourceConfig.autoAdvanceField("readPauseMultiplier").orElse(null)));
+            // Confirm/info/error popup card width (the `ui.dialog` config object).
+            com.eb.javafx.ui.DialogMessages.setCardWidth(
+                    parsePositiveDouble(resourceConfig.uiDialogField("minWidth").orElse(null)),
+                    parsePositiveDouble(resourceConfig.uiDialogField("maxWidth").orElse(null)));
+            // Dialog-block previous-entry fade opacity (`ui.dialog.previousEntryOpacity`).
+            com.eb.javafx.ui.DialogEntriesView.setPreviousEntryOpacity(
+                    parseDouble(resourceConfig.uiDialogField("previousEntryOpacity").orElse(null)));
+            // Conversation-history sliding-window cap (`save.maxHistoryEntries`).
+            com.eb.javafx.text.DialogHistory.setMaxConversations(
+                    parsePositiveInt(resourceConfig.saveField("maxHistoryEntries").orElse(null)));
         }
         // Config-driven fonts: register any `font.*` entries from the app config so a game / mod
         // can add fonts purely through setup (config.json), before any scene CSS resolves a
@@ -378,6 +403,60 @@ public final class BootstrapService {
             }
         });
         return aliases;
+    }
+
+    /** Builds the footer-option keybinding/glyph override map (id → {shortcut?, icon?}) from config. */
+    private java.util.Map<String, java.util.Map<String, String>> collectFooterOptionOverrides() {
+        if (resourceConfig == null) {
+            return java.util.Map.of();
+        }
+        java.util.LinkedHashMap<String, java.util.Map<String, String>> overrides = new java.util.LinkedHashMap<>();
+        for (String id : resourceConfig.footerOptionOverrideIds()) {
+            java.util.LinkedHashMap<String, String> fields = new java.util.LinkedHashMap<>();
+            resourceConfig.footerOptionOverride(id, "shortcut").ifPresent(v -> fields.put("shortcut", v));
+            resourceConfig.footerOptionOverride(id, "icon").ifPresent(v -> fields.put("icon", v));
+            if (!fields.isEmpty()) {
+                overrides.put(id, fields);
+            }
+        }
+        return overrides;
+    }
+
+    private static Integer parsePositiveInt(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        try {
+            int parsed = (int) Math.round(Double.parseDouble(value.trim()));
+            return parsed > 0 ? parsed : null;
+        } catch (NumberFormatException exception) {
+            return null;
+        }
+    }
+
+    private static Double parsePositiveDouble(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        try {
+            double parsed = Double.parseDouble(value.trim());
+            return parsed > 0 ? parsed : null;
+        } catch (NumberFormatException exception) {
+            return null;
+        }
+    }
+
+    /** Parses a double allowing zero / negative (e.g. an opacity where 0.0 is meaningful);
+     *  null/blank/unparseable yields null. */
+    private static Double parseDouble(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        try {
+            return Double.parseDouble(value.trim());
+        } catch (NumberFormatException exception) {
+            return null;
+        }
     }
 
     /** Resolves a {@code resources} entry to an existing file on disk, or null. */

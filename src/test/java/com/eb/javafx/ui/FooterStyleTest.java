@@ -10,7 +10,7 @@ final class FooterStyleTest {
 
     @Test
     void buildsRulesForEachConfiguredField() {
-        String css = FooterStyle.buildCss("Nasalization", "#e0e0e0", "#ff5500", "#101418", "0.8");
+        String css = FooterStyle.buildCss("Nasalization", "#e0e0e0", "#ff5500", "#101418", "0.8", null);
 
         assertTrue(css.contains(".screen-footer-option {"));
         assertTrue(css.contains("-fx-text-fill: #e0e0e0;"));
@@ -24,22 +24,31 @@ final class FooterStyleTest {
 
     @Test
     void omitsUnsetFields() {
-        String css = FooterStyle.buildCss(null, "#fff", null, null, null);
+        String css = FooterStyle.buildCss(null, "#fff", null, null, null, null);
         assertTrue(css.contains("-fx-text-fill: #fff;"));
         assertFalse(css.contains("-fx-font-family"));
         assertFalse(css.contains(".screen-footer-option-active"));
         assertFalse(css.contains(".screen-footer-bar"));
+        assertFalse(css.contains(".tooltip"));
     }
 
     @Test
     void emptyWhenNothingConfigured() {
-        assertTrue(FooterStyle.buildCss(null, null, null, null, "  ").isBlank());
+        assertTrue(FooterStyle.buildCss(null, null, null, null, "  ", null).isBlank());
+    }
+
+    @Test
+    void emitsTooltipDelayRuleForNumericValueOnly() {
+        assertTrue(FooterStyle.buildCss(null, null, null, null, null, "300")
+                .contains(".tooltip {\n    -fx-show-delay: 300ms;\n}"));
+        // Non-numeric tooltip value is ignored.
+        assertTrue(FooterStyle.buildCss(null, null, null, null, null, "soon").isBlank());
     }
 
     @Test
     void rejectsCssInjectingValues() {
         // A value that tries to close the block / add rules must be dropped.
-        String css = FooterStyle.buildCss(null, "#fff; } .root { -fx-background-color: red;", null, null, null);
+        String css = FooterStyle.buildCss(null, "#fff; } .root { -fx-background-color: red;", null, null, null, null);
         assertFalse(css.contains("-fx-background-color: red"));
         assertFalse(css.contains("}"));
         assertTrue(css.isBlank());
@@ -47,11 +56,11 @@ final class FooterStyleTest {
 
     @Test
     void configureWritesStylesheetUriAndClears() {
-        FooterStyle.configure("Nasalization", "#fff", "#f50", null, null);
+        FooterStyle.configure("Nasalization", "#fff", "#f50", null, null, "200");
         assertTrue(FooterStyle.stylesheet().isPresent());
         assertTrue(FooterStyle.stylesheet().get().startsWith("file:"));
 
-        FooterStyle.configure(null, null, null, null, null);
+        FooterStyle.configure(null, null, null, null, null, null);
         assertFalse(FooterStyle.stylesheet().isPresent());
     }
 }

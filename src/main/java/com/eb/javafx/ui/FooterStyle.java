@@ -35,8 +35,8 @@ public final class FooterStyle {
      * @param transparency    footer bar opacity, {@code 0.0}–{@code 1.0}
      */
     public static void configure(String font, String color, String selectColor,
-                                 String backgroundColor, String transparency) {
-        String css = buildCss(font, color, selectColor, backgroundColor, transparency);
+                                 String backgroundColor, String transparency, String tooltipDelayMs) {
+        String css = buildCss(font, color, selectColor, backgroundColor, transparency, tooltipDelayMs);
         if (css.isBlank()) {
             stylesheetUri = null;
             return;
@@ -59,7 +59,7 @@ public final class FooterStyle {
 
     /** Builds the CSS body — visible for tests; never null. */
     static String buildCss(String font, String color, String selectColor,
-                           String backgroundColor, String transparency) {
+                           String backgroundColor, String transparency, String tooltipDelayMs) {
         StringBuilder option = new StringBuilder();
         appendDeclaration(option, "-fx-text-fill", color);
         if (isSafe(font)) {
@@ -80,7 +80,23 @@ public final class FooterStyle {
         if (bar.length() > 0) {
             css.append(".screen-footer-bar {\n").append(bar).append("}\n");
         }
+        // Global tooltip show-delay — applies to every Tooltip (not just the footer) so it wins
+        // over a game's static `.tooltip` CSS.  Only numeric values are accepted.
+        if (isNumeric(tooltipDelayMs)) {
+            css.append(".tooltip {\n    -fx-show-delay: ").append(tooltipDelayMs.trim()).append("ms;\n}\n");
+        }
         return css.toString();
+    }
+
+    private static boolean isNumeric(String value) {
+        if (!isSafe(value)) {
+            return false;
+        }
+        try {
+            return Double.parseDouble(value.trim()) > 0;
+        } catch (NumberFormatException exception) {
+            return false;
+        }
     }
 
     private static void appendDeclaration(StringBuilder block, String property, String value) {

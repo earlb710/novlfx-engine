@@ -339,4 +339,118 @@ final class ApplicationResourceConfigTest {
         assertThrows(IllegalArgumentException.class, () -> ApplicationResourceConfig.fromJson(
                 "{ \"footer\": { \"bogus\": \"x\" } }", "inline"));
     }
+
+    @Test
+    void footerOptionKeybindingAndGlyphOverridesParse() {
+        ApplicationResourceConfig config = ApplicationResourceConfig.fromJson("""
+                {
+                  "footerOptions": {
+                    "save":  { "shortcut": "Ctrl+W", "icon": "S" },
+                    "quick-save": { "key": "F5" }
+                  }
+                }
+                """, "inline");
+
+        assertEquals("Ctrl+W", config.footerOptionOverride("save", "shortcut").orElse(null));
+        assertEquals("S", config.footerOptionOverride("save", "icon").orElse(null));
+        assertEquals("F5", config.footerOptionOverride("quick-save", "shortcut").orElse(null));
+        assertEquals(java.util.Set.of("save", "quick-save"), config.footerOptionOverrideIds());
+        assertThrows(IllegalArgumentException.class, () -> ApplicationResourceConfig.fromJson(
+                "{ \"footerOptions\": { \"save\": { \"bogus\": \"x\" } } }", "inline"));
+    }
+
+    @Test
+    void textSpeedDurationsAndTooltipDelayParseAsNumbersOrStrings() {
+        ApplicationResourceConfig config = ApplicationResourceConfig.fromJson("""
+                {
+                  "textSpeed": { "slow": 1000, "normal": 500, "fast": "150" },
+                  "tooltipDelayMs": 300
+                }
+                """, "inline");
+
+        assertEquals("1000", config.textSpeedMillis("slow").orElse(null));
+        assertEquals("500", config.textSpeedMillis("normal").orElse(null));
+        assertEquals("150", config.textSpeedMillis("fast").orElse(null));
+        assertEquals("300", config.tooltipDelayMillis().orElse(null));
+        assertThrows(IllegalArgumentException.class, () -> ApplicationResourceConfig.fromJson(
+                "{ \"textSpeed\": { \"medium\": 300 } }", "inline"));
+    }
+
+    @Test
+    void audioChannelAutoAdvanceAndMapColorsParse() {
+        ApplicationResourceConfig config = ApplicationResourceConfig.fromJson("""
+                {
+                  "audioChannels": { "voice": { "priority": 7, "volume": 0.8, "ducking": "PAUSE", "duckPercent": 0.4 } },
+                  "autoAdvance": { "scrollFraction": 0.4, "minScrollMs": 30, "readPauseMultiplier": 1.5 },
+                  "mapBuildingColors": "mods/map-colors.json"
+                }
+                """, "inline");
+
+        assertEquals("7", config.audioChannelField("voice", "priority").orElse(null));
+        assertEquals("0.8", config.audioChannelField("voice", "volume").orElse(null));
+        assertEquals("PAUSE", config.audioChannelField("voice", "ducking").orElse(null));
+        assertEquals("0.4", config.audioChannelField("voice", "duckPercent").orElse(null));
+        assertEquals("0.4", config.autoAdvanceField("scrollFraction").orElse(null));
+        assertEquals("30", config.autoAdvanceField("minScrollMs").orElse(null));
+        assertEquals("1.5", config.autoAdvanceField("readPauseMultiplier").orElse(null));
+        assertEquals("mods/map-colors.json", config.resourcePath("mapBuildingColors").orElse(null));
+
+        assertThrows(IllegalArgumentException.class, () -> ApplicationResourceConfig.fromJson(
+                "{ \"audioChannels\": { \"voice\": { \"bogus\": 1 } } }", "inline"));
+        assertThrows(IllegalArgumentException.class, () -> ApplicationResourceConfig.fromJson(
+                "{ \"autoAdvance\": { \"bogus\": 1 } }", "inline"));
+    }
+
+    @Test
+    void hudBackdropAlphasParse() {
+        ApplicationResourceConfig config = ApplicationResourceConfig.fromJson("""
+                {
+                  "hud": {
+                    "dialogIdleAlpha": 0.2, "dialogActiveAlpha": 0.95,
+                    "locationRestAlpha": 0.05, "locationHoverAlpha": 0.7,
+                    "statusLogAlpha": 0.85, "panelAlpha": 0.8
+                  }
+                }
+                """, "inline");
+
+        assertEquals("0.2", config.hudField("dialogIdleAlpha").orElse(null));
+        assertEquals("0.95", config.hudField("dialogActiveAlpha").orElse(null));
+        assertEquals("0.05", config.hudField("locationRestAlpha").orElse(null));
+        assertEquals("0.7", config.hudField("locationHoverAlpha").orElse(null));
+        assertEquals("0.85", config.hudField("statusLogAlpha").orElse(null));
+        assertEquals("0.8", config.hudField("panelAlpha").orElse(null));
+        assertThrows(IllegalArgumentException.class, () -> ApplicationResourceConfig.fromJson(
+                "{ \"hud\": { \"bogus\": 0.5 } }", "inline"));
+    }
+
+    @Test
+    void uiDialogFieldsParse() {
+        ApplicationResourceConfig config = ApplicationResourceConfig.fromJson("""
+                {
+                  "ui": { "dialog": { "minWidth": 420, "maxWidth": 640, "previousEntryOpacity": 0.3 } }
+                }
+                """, "inline");
+
+        assertEquals("420", config.uiDialogField("minWidth").orElse(null));
+        assertEquals("640", config.uiDialogField("maxWidth").orElse(null));
+        assertEquals("0.3", config.uiDialogField("previousEntryOpacity").orElse(null));
+        // Absent ui / ui.dialog yields empty (no error).
+        assertTrue(ApplicationResourceConfig.fromJson("{}", "inline")
+                .uiDialogField("minWidth").isEmpty());
+        // Unknown ui.dialog field rejected.
+        assertThrows(IllegalArgumentException.class, () -> ApplicationResourceConfig.fromJson(
+                "{ \"ui\": { \"dialog\": { \"bogus\": 1 } } }", "inline"));
+    }
+
+    @Test
+    void saveMaxHistoryEntriesParses() {
+        ApplicationResourceConfig config = ApplicationResourceConfig.fromJson(
+                "{ \"save\": { \"maxHistoryEntries\": 250 } }", "inline");
+
+        assertEquals("250", config.saveField("maxHistoryEntries").orElse(null));
+        assertTrue(ApplicationResourceConfig.fromJson("{}", "inline")
+                .saveField("maxHistoryEntries").isEmpty());
+        assertThrows(IllegalArgumentException.class, () -> ApplicationResourceConfig.fromJson(
+                "{ \"save\": { \"bogus\": 1 } }", "inline"));
+    }
 }

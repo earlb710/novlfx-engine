@@ -157,6 +157,31 @@ get its own background** via a top-level `screenBackgrounds` map keyed by **rout
 > `AltLifeSceneStyles`) are governed by their own background system (§2.5 / screen-layout JSON
 > §3.3), not this engine map.
 
+### 1.7 Dialog tuning (`ui.dialog`) & history cap (`save`)
+
+Two small top-level config objects tune dialog behaviour:
+
+```json
+"ui": {
+  "dialog": { "minWidth": 420, "maxWidth": 640, "previousEntryOpacity": 0.3 }
+},
+"save": { "maxHistoryEntries": 250 }
+```
+
+**`ui.dialog`** (`ApplicationResourceConfig.uiDialogField`):
+- `minWidth` / `maxWidth` (px) — confirm/info/error popup card width (default 360 / 520). Either
+  may be omitted; a `maxWidth` below `minWidth` clamps up to `minWidth`; non-positive ignored.
+  Wired into `DialogMessages.setCardWidth`.
+- `previousEntryOpacity` (`0.0`–`1.0`) — fade applied to dialog-block entries above the current
+  cursor line (default `0.5`). Clamped to `[0,1]`. Wired into
+  `DialogEntriesView.setPreviousEntryOpacity`.
+- The popup **font sizes** are CSS, not config — restyle `.dialog-message-*` (§2.3).
+
+**`save`** (`ApplicationResourceConfig.saveField`):
+- `maxHistoryEntries` — conversation-history sliding-window cap (default `1000`). Once exceeded,
+  the oldest conversation is dropped as each new one begins. Wired into
+  `DialogHistory.setMaxConversations`.
+
 ---
 
 ## 2. Theme & look-and-feel
@@ -235,7 +260,8 @@ These classes are defined by the engine template and the game CSS and are safe t
 - **Layout system:** `.layout-content`, `.layout-main-content`, `.layout-sidebar`, `.layout-card`, `.layout-section`, `.layout-section-title`, `.layout-section-row`, `.layout-titled-panel`, `.layout-hud-overlay`, `.layout-dialogue`, `.layout-menu`, `.layout-form`, `.layout-two-column`, `.layout-column`, `.layout-subtitle`, `.layout-footer`, `.layout-action-row`, `.layout-primary-action`, `.layout-secondary-action`, `.layout-title`, `.layout-value`, `.layout-text-highlight`
 - **Dialog block:** `.dialog-entries-view`, `.dialog-entries-container`, `.dialog-entry`, `.dialog-entry-current`, `.dialog-entry-previous`, `.dialog-entry-speaker`, `.dialog-entry-body`, `.dialog-entry-say`, `.dialog-entry-shout`, `.dialog-entry-whisper`, `.dialog-entry-think`, `.dialog-entry-comment`, `.dialog-entry-divider`, `.dialog-entry-divider-line`, `.dialog-entry-divider-label`
 - **Conversation history:** `.conversation-history-rows`, `.conversation-history-speaker`, `.conversation-history-message`
-- **Save screen / scrollbars:** `.save-screen-tabs` (+ `.tab`, `.tab:selected`, `.tab-label`), `.engine-slim-scrollbar`
+- **Dialog popups (confirm/info/error):** `.dialog-message-title`, `.dialog-message-header`, `.dialog-message-content`, `.dialog-message-button` (font size only; colours are accent/theme-token driven and stay inline). Card width is config-driven — see §1.7.
+- **Save screen / scrollbars:** `.save-screen-tabs` (+ `.tab`, `.tab:selected`, `.tab-label`), `.save-screen-mode-title`, `.save-screen-page-label`, `.engine-slim-scrollbar`
 - **Error screen** (literal colours, theme-independent): `.error-screen`, `.error-screen-title`, `.error-screen-message`, `.error-screen-details`, `.error-screen-*-button`
 - **Tooltip:** `.tooltip` (global `-fx-show-delay`)
 - **Game-specific (AltLife):** `.altlife-bevel-button`, `.altlife-button-row`, `.stat-budget-row`, `.status-log-panel`, `.main-character-section-title`, `.startup-option-heading`
@@ -416,6 +442,112 @@ Applied as a small generated stylesheet layered over the theme on every themed s
 - Any subset; omitted fields keep the theme's footer styling. Values are CSS colours / a 0–1
   number / a font family. (The footer *icon* tint is the theme palette's `footerIconColor`, §2.7.)
 
+**Footer keybindings & glyphs** — remap a footer option's keyboard shortcut and/or icon via a
+top-level `footerOptions` map keyed by option id (`back`, `history`, `skip-mode`, `load`, `save`,
+`quick-save`, `preferences`, `forward`):
+
+```json
+"footerOptions": {
+  "save":       { "shortcut": "Ctrl+W", "icon": "💾" },
+  "quick-save": { "shortcut": "F5" }
+}
+```
+
+- `shortcut` (alias `key`) — a combo like `Ctrl+S`, `F5`, `Space`, `Backspace`. `icon` (alias
+  `glyph`) — the displayed glyph. Either is optional; unset keeps the default
+  (`ScreenShell.setFooterOptionOverrides`).
+
+**Tooltip delay** — `tooltipDelayMs` sets the global tooltip show-delay (ms) for **all** tooltips
+(applied both to engine tooltips and via a generated `.tooltip { -fx-show-delay }` that wins over
+a game's static CSS):
+
+```json
+"tooltipDelayMs": 300
+```
+
+### 2.9 Text-speed durations
+
+The text-speed preset the player picks (Text speed: slow / normal / fast) maps to a reveal /
+auto-advance duration. The default ms (800 / 400 / 200) are tunable via a top-level `textSpeed`
+object — useful to make even "fast" slower, or "slow" faster:
+
+```json
+"textSpeed": { "slow": 1000, "normal": 500, "fast": 120 }
+```
+
+Any subset; omitted speeds keep their default. Read by `PreferencesService.textSpeedMillis()`
+(consumed by auto-advance / the dialog reveal). The *selection* itself remains a player preference
+(`ui.textSpeed`); this just sets what each option means.
+
+### 2.10 Audio channels & auto-advance cadence
+
+**Audio channels** — tune the music / sound / voice channels (priority, default volume, and the
+voice-ducking policy) via a top-level `audioChannels` map keyed by channel id:
+
+```json
+"audioChannels": {
+  "music": { "priority": 5, "volume": 1.0 },
+  "voice": { "priority": 10, "volume": 1.0, "ducking": "REDUCE_TO_PERCENT", "duckPercent": 0.3 }
+}
+```
+
+- `priority` (int), `volume` (0–1), `ducking` (`NONE` / `REDUCE_TO_PERCENT` / `PAUSE`),
+  `duckPercent` (0–1, used by `REDUCE_TO_PERCENT`). Any subset; unset fields keep the defaults.
+  (Per-user master/music/sound/voice volumes remain the audio preferences.)
+
+**Auto-advance cadence** — how auto-mode paces the dialog scroll + read pause:
+
+```json
+"autoAdvance": { "scrollFraction": 0.5, "minScrollMs": 50, "readPauseMultiplier": 2.0 }
+```
+
+- `scrollFraction` (0–1) — scroll animation = this × the text-speed delay. `minScrollMs` — floor so
+  the scroll stays visible at fast speeds. `readPauseMultiplier` — the gap after scrolling is
+  `(delay − scroll) × this`. Read by `AutoSkipController.setAutoAdvanceTuning`.
+
+### 2.11 Map building colours (AltLife)
+
+The town-map building-hex gradient colours (`AltLifeMapScreen`) can be overridden from a JSON file
+at `resources.mapBuildingColors` — recolour the map hexes without editing each SVG:
+
+```json
+"mapBuildingColors": "mods/map-colors.json"
+```
+
+`mods/map-colors.json` maps a building id to a `[top, bottom]` (or `{ "top":…, "bottom":… }`)
+gradient pair; unlisted buildings keep their defaults:
+
+```json
+{ "altlife.building.lab": ["#0e7490", "#164e63"], "altlife.building.dorm": { "top": "#1e3a8a", "bottom": "#172554" } }
+```
+
+### 2.12 HUD opacity & backdrop
+
+- **HUD opacity** — a **Preferences screen** control (Visual block → *HUD opacity*: Solid / Subtle /
+  Faint) sets `ui.hudAlpha`, applied to the gameplay HUD panels (location, header, room-people,
+  action menu, status log) on the next gameplay scene. (This wires up the previously-stubbed
+  `ui.hudAlpha` preference.)
+- **HUD backdrop alphas (config)** — a top-level `hud` object tunes the dialog-block and
+  location-panel translucency:
+
+```json
+"hud": {
+  "dialogIdleAlpha": 0.3,
+  "dialogActiveAlpha": 0.9,
+  "locationRestAlpha": 0.1,
+  "locationHoverAlpha": 0.6,
+  "statusLogAlpha": 1.0,
+  "panelAlpha": 0.9
+}
+```
+
+  - `dialogIdleAlpha` / `dialogActiveAlpha` — the **dialog block** backdrop when idle vs. while reading.
+  - `locationRestAlpha` / `locationHoverAlpha` — the **location panel** backdrop at rest vs. hover.
+  - `statusLogAlpha` — the **status-log** panel opacity (combines with the global HUD-opacity preference).
+  - `panelAlpha` — the **generic HUD panel** chrome opacity.
+
+  Each 0–1; any subset; applied at boot (`AltLifeMainAppLayout.setHudAlphas`).
+
 ---
 
 ## 3. Content & text JSON
@@ -568,6 +700,14 @@ The engine itself reads only standard JVM properties (`user.home` for the save d
 | Different colour theme (preset) | Preferences screen → Theme family/variant (writes `ui.themeFamily` / `ui.themeVariant`) |
 | **Custom theme colours** | `config.json` → `resources.themePalette` = a palette JSON (§2.7) |
 | **Style the footer** (font/color/select/transparency) | `config.json` → `footer` object (§2.8) |
+| **Remap footer keys / glyphs** | `config.json` → `footerOptions` map (§2.8) |
+| **Tooltip show-delay** | `config.json` → `tooltipDelayMs` (§2.8) |
+| **Tune text-speed durations** | `config.json` → `textSpeed` object (§2.9) |
+| **Tune audio channels** (priority/volume/ducking) | `config.json` → `audioChannels` map (§2.10) |
+| **Tune auto-advance cadence** | `config.json` → `autoAdvance` object (§2.10) |
+| **Recolour map building hexes** | `config.json` → `mapBuildingColors` JSON file (§2.11) |
+| **HUD opacity** | Preferences → HUD opacity (Solid/Subtle/Faint → `ui.hudAlpha`) (§2.12) |
+| **HUD dialog/location transparency** | `config.json` → `hud` object (§2.12) |
 | **Set window title / app icon** | `config.json` → `resources.windowTitle` / `resources.appIcon` (§1.4) |
 | High-contrast / reduced motion | Preferences → accessibility toggles |
 | Restyle dialog text / panels | Edit `altlife-theme.css` (`-altlife-*` vars + the §2.3 classes) |

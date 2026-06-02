@@ -44,7 +44,7 @@ import java.util.stream.Collectors;
  *
  * <p>The panel renders a stack of dialog entries: the entry at the current cursor is shown at the
  * bottom of the panel at full opacity, while earlier entries are drawn above it at
- * {@value #PREVIOUS_ENTRY_OPACITY} opacity so the player sees the active line with recent context
+ * {@value #DEFAULT_PREVIOUS_ENTRY_OPACITY} opacity so the player sees the active line with recent context
  * fading away.</p>
  *
  * <p>Entries are one of four kinds (modelled as the sealed {@link Entry} hierarchy):</p>
@@ -91,8 +91,26 @@ import java.util.stream.Collectors;
  * ScrollPane}'s skin children, not the entry list).</p>
  */
 public final class DialogEntriesView extends ScrollPane {
-    /** Opacity applied to entries above the current cursor. */
-    public static final double PREVIOUS_ENTRY_OPACITY = 0.5;
+    /** Default opacity applied to entries above the current cursor. */
+    public static final double DEFAULT_PREVIOUS_ENTRY_OPACITY = 0.5;
+
+    /** Effective fade opacity for previous entries (config-overridable via
+     *  {@code ui.dialog.previousEntryOpacity}, wired at boot by {@code BootstrapService}).
+     *  Defaults to {@link #DEFAULT_PREVIOUS_ENTRY_OPACITY}. */
+    private static volatile double previousEntryOpacity = DEFAULT_PREVIOUS_ENTRY_OPACITY;
+
+    /** Overrides the fade opacity for entries above the current cursor. Null values keep the
+     *  current value; others are clamped to {@code [0.0, 1.0]}. Called once at boot. */
+    public static void setPreviousEntryOpacity(Double opacity) {
+        if (opacity != null) {
+            previousEntryOpacity = Math.max(0.0, Math.min(1.0, opacity));
+        }
+    }
+
+    /** The effective previous-entry fade opacity currently in force. */
+    public static double previousEntryOpacity() {
+        return previousEntryOpacity;
+    }
     public static final String STYLE_CLASS = "dialog-entries-view";
     public static final String ENTRY_STYLE_CLASS = "dialog-entry";
     public static final String CURRENT_ENTRY_STYLE_CLASS = "dialog-entry-current";
@@ -1833,15 +1851,9 @@ public final class DialogEntriesView extends ScrollPane {
     private static void applyFade(Node node, boolean previous) {
         if (previous) {
             node.getStyleClass().add(PREVIOUS_ENTRY_STYLE_CLASS);
-            node.setOpacity(PREVIOUS_ENTRY_OPACITY);
-            System.out.println("[DialogStyle] applyFade PREVIOUS node=" + node.getClass().getSimpleName()
-                    + " opacity=" + node.getOpacity()
-                    + " classes=" + node.getStyleClass());
+            node.setOpacity(previousEntryOpacity);
         } else {
             node.getStyleClass().add(CURRENT_ENTRY_STYLE_CLASS);
-            System.out.println("[DialogStyle] applyFade CURRENT node=" + node.getClass().getSimpleName()
-                    + " opacity=" + node.getOpacity()
-                    + " classes=" + node.getStyleClass());
         }
     }
 

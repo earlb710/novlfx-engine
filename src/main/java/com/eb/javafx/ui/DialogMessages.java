@@ -61,10 +61,29 @@ public final class DialogMessages {
     private static final String DEFAULT_TEXT   = "#e6e6e6";
     private static final String CARD_BG        = "rgba(28, 32, 40, 0.96)";
     private static final String BACKDROP_BG    = "rgba(0, 0, 0, 0.55)";
-    private static final double CARD_MIN_WIDTH = 360.0;
-    private static final double CARD_MAX_WIDTH = 520.0;
+    private static final double DEFAULT_CARD_MIN_WIDTH = 360.0;
+    private static final double DEFAULT_CARD_MAX_WIDTH = 520.0;
+
+    // Config-overridable card width (config.json -> ui.dialog.minWidth / maxWidth, wired at boot
+    // by BootstrapService).  Defaults preserve the original 360 / 520 layout.
+    private static double cardMinWidth = DEFAULT_CARD_MIN_WIDTH;
+    private static double cardMaxWidth = DEFAULT_CARD_MAX_WIDTH;
 
     private DialogMessages() {
+    }
+
+    /** Override the confirm/info/error dialog card width.  Null or non-positive values keep the
+     *  current value; a max below the min is clamped up to the min.  Called once at boot. */
+    public static void setCardWidth(Double minWidth, Double maxWidth) {
+        if (minWidth != null && minWidth > 0) {
+            cardMinWidth = minWidth;
+        }
+        if (maxWidth != null && maxWidth > 0) {
+            cardMaxWidth = maxWidth;
+        }
+        if (cardMaxWidth < cardMinWidth) {
+            cardMaxWidth = cardMinWidth;
+        }
     }
 
     /** Yes/No confirmation dialog.  Calls {@code callback} with the chosen result after the
@@ -163,8 +182,8 @@ public final class DialogMessages {
         // buttons + padding) so it reads as a tidy centred dialog rather than a
         // full-height panel.  Same treatment on maxWidth via CARD_MAX_WIDTH below.
         VBox card = new VBox(12);
-        card.setMinWidth(CARD_MIN_WIDTH);
-        card.setMaxWidth(CARD_MAX_WIDTH);
+        card.setMinWidth(cardMinWidth);
+        card.setMaxWidth(cardMaxWidth);
         card.setMaxHeight(Region.USE_PREF_SIZE);
         card.setAlignment(Pos.TOP_LEFT);
         card.setPadding(new Insets(20));
@@ -177,27 +196,22 @@ public final class DialogMessages {
 
         if (title != null && !title.isBlank()) {
             Label titleLabel = new Label(title);
-            titleLabel.setStyle(
-                    "-fx-font-size: 18px;"
-                    + " -fx-font-weight: bold;"
-                    + " -fx-text-fill: " + accent + ";");
+            titleLabel.getStyleClass().add("dialog-message-title");
+            titleLabel.setStyle("-fx-text-fill: " + accent + ";");
             card.getChildren().add(titleLabel);
         }
         if (header != null && !header.isBlank()) {
             Label headerLabel = new Label(header);
             headerLabel.setWrapText(true);
-            headerLabel.setStyle(
-                    "-fx-font-size: 14px;"
-                    + " -fx-font-weight: bold;"
-                    + " -fx-text-fill: " + textHex + ";");
+            headerLabel.getStyleClass().add("dialog-message-header");
+            headerLabel.setStyle("-fx-text-fill: " + textHex + ";");
             card.getChildren().add(headerLabel);
         }
         if (content != null && !content.isBlank()) {
             Label contentLabel = new Label(content);
             contentLabel.setWrapText(true);
-            contentLabel.setStyle(
-                    "-fx-font-size: 13px;"
-                    + " -fx-text-fill: " + textHex + ";");
+            contentLabel.getStyleClass().add("dialog-message-content");
+            contentLabel.setStyle("-fx-text-fill: " + textHex + ";");
             card.getChildren().add(contentLabel);
         }
 
@@ -280,13 +294,12 @@ public final class DialogMessages {
         Button btn = new Button(label);
         btn.setMinWidth(90);
         btn.setFocusTraversable(true);
+        btn.getStyleClass().add("dialog-message-button");
         String bg = primary ? accent : "rgba(255, 255, 255, 0.08)";
         String fg = primary ? "#ffffff" : textHex;
         btn.setStyle(
                 "-fx-background-color: " + bg + ";"
                 + " -fx-text-fill: " + fg + ";"
-                + " -fx-font-size: 13px;"
-                + " -fx-font-weight: bold;"
                 + " -fx-padding: 6 18 6 18;"
                 + " -fx-background-radius: 6;"
                 + " -fx-border-color: " + accent + ";"
@@ -310,8 +323,8 @@ public final class DialogMessages {
         String textHex = theme == null ? DEFAULT_TEXT : safeColor(theme.textColor(), DEFAULT_TEXT);
 
         VBox card = new VBox(12);
-        card.setMinWidth(CARD_MIN_WIDTH);
-        card.setMaxWidth(CARD_MAX_WIDTH);
+        card.setMinWidth(cardMinWidth);
+        card.setMaxWidth(cardMaxWidth);
         card.setMaxHeight(Region.USE_PREF_SIZE);
         card.setAlignment(Pos.TOP_LEFT);
         card.setPadding(new Insets(20));
@@ -324,19 +337,22 @@ public final class DialogMessages {
 
         if (title != null && !title.isBlank()) {
             Label titleLabel = new Label(title);
-            titleLabel.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: " + accent + ";");
+            titleLabel.getStyleClass().add("dialog-message-title");
+            titleLabel.setStyle("-fx-text-fill: " + accent + ";");
             card.getChildren().add(titleLabel);
         }
         if (header != null && !header.isBlank()) {
             Label headerLabel = new Label(header);
             headerLabel.setWrapText(true);
-            headerLabel.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: " + textHex + ";");
+            headerLabel.getStyleClass().add("dialog-message-header");
+            headerLabel.setStyle("-fx-text-fill: " + textHex + ";");
             card.getChildren().add(headerLabel);
         }
         if (content != null && !content.isBlank()) {
             Label contentLabel = new Label(content);
             contentLabel.setWrapText(true);
-            contentLabel.setStyle("-fx-font-size: 13px; -fx-text-fill: " + textHex + ";");
+            contentLabel.getStyleClass().add("dialog-message-content");
+            contentLabel.setStyle("-fx-text-fill: " + textHex + ";");
             card.getChildren().add(contentLabel);
         }
 

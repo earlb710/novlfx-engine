@@ -96,6 +96,7 @@ public final class PreferencesSummaryScreen {
         content.getChildren().add(settingsBlock(
                 screenText("block.visual.title"),
                 themeSelectionRow(context),
+                hudOpacityRow(context),
                 footerIconDisplayRow(context),
                 footerDisplayRow(context),
                 fullscreenRow(context)));
@@ -387,6 +388,75 @@ public final class PreferencesSummaryScreen {
         } else if (context.primaryStage() != null) {
             context.primaryStage().setScene(rebuiltScene);
         }
+    }
+
+    /** HUD opacity presets (gameplay HUD overlay translucency).  Accessibility / preference:
+     *  fade the HUD for a cleaner view, or keep it solid. */
+    private enum HudOpacity {
+        SOLID(1.0, "item.hud-opacity.solid"),
+        SUBTLE(0.85, "item.hud-opacity.subtle"),
+        FAINT(0.6, "item.hud-opacity.faint");
+
+        private final double alpha;
+        private final String labelKey;
+
+        HudOpacity(double alpha, String labelKey) {
+            this.alpha = alpha;
+            this.labelKey = labelKey;
+        }
+
+        String label() {
+            return screenText(labelKey);
+        }
+
+        static HudOpacity nearest(double hudAlpha) {
+            HudOpacity best = SOLID;
+            double bestDelta = Double.MAX_VALUE;
+            for (HudOpacity value : values()) {
+                double delta = Math.abs(value.alpha - hudAlpha);
+                if (delta < bestDelta) {
+                    bestDelta = delta;
+                    best = value;
+                }
+            }
+            return best;
+        }
+    }
+
+    private static HBox hudOpacityRow(RouteContext context) {
+        Label label = new Label(screenText("item.hud-opacity.label"));
+        label.getStyleClass().add(ScreenShell.SCREEN_TEXT_STYLE_CLASS);
+        ComboBox<HudOpacity> comboBox = new ComboBox<>();
+        comboBox.getItems().addAll(HudOpacity.values());
+        comboBox.setConverter(new StringConverter<>() {
+            @Override
+            public String toString(HudOpacity value) {
+                return value == null ? "" : value.label();
+            }
+
+            @Override
+            public HudOpacity fromString(String string) {
+                for (HudOpacity value : HudOpacity.values()) {
+                    if (value.label().equals(string)) {
+                        return value;
+                    }
+                }
+                return null;
+            }
+        });
+        comboBox.setValue(HudOpacity.nearest(context.preferencesService().hudAlpha()));
+        comboBox.setOnAction(event -> {
+            HudOpacity selected = comboBox.getValue();
+            if (selected != null) {
+                // Persist only — the gameplay HUD (not visible on this screen) picks it up the
+                // next time a gameplay scene is built.  Preserve the say-window opacity.
+                context.preferencesService().saveUiOpacity(
+                        selected.alpha, context.preferencesService().sayWindowAlpha());
+            }
+        });
+        HBox row = new HBox(8, label, comboBox);
+        row.getStyleClass().add(ScreenShell.LAYOUT_SECTION_ROW_STYLE_CLASS);
+        return row;
     }
 
     private static HBox themeSelectionRow(RouteContext context) {

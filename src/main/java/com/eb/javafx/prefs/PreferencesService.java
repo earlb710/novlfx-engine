@@ -363,6 +363,48 @@ public final class PreferencesService {
         return textSpeed;
     }
 
+    /** Config-driven per-speed reveal/auto-advance durations (ms): {@code [slow, normal, fast]},
+     *  or null to use the {@link TextSpeed} enum defaults. */
+    private static volatile int[] textSpeedDurationOverride;
+
+    /** Sets configurable text-speed durations (ms); any null arg keeps that speed's enum default.
+     *  Pass all null to clear the override. */
+    public static void setTextSpeedDurations(Integer slow, Integer normal, Integer fast) {
+        if (slow == null && normal == null && fast == null) {
+            textSpeedDurationOverride = null;
+            return;
+        }
+        int[] durations = {
+                TextSpeed.SLOW.durationMillis(),
+                TextSpeed.NORMAL.durationMillis(),
+                TextSpeed.FAST.durationMillis()};
+        if (slow != null && slow > 0) {
+            durations[0] = slow;
+        }
+        if (normal != null && normal > 0) {
+            durations[1] = normal;
+        }
+        if (fast != null && fast > 0) {
+            durations[2] = fast;
+        }
+        textSpeedDurationOverride = durations;
+    }
+
+    /** The reveal/auto-advance duration (ms) for the current text speed — the configured override
+     *  when set, otherwise the {@link TextSpeed} enum default.  Consumers should prefer this over
+     *  {@code textSpeed().durationMillis()} so the config durations take effect. */
+    public int textSpeedMillis() {
+        int[] override = textSpeedDurationOverride;
+        if (override == null) {
+            return textSpeed.durationMillis();
+        }
+        return switch (textSpeed) {
+            case SLOW -> override[0];
+            case NORMAL -> override[1];
+            case FAST -> override[2];
+        };
+    }
+
     /** Persists a clamped window size separately from save-game state. */
     public void saveWindowSize(double width, double height) {
         preferences.putInt(WIDTH_KEY, clamp((int) Math.round(width), 640, 3840));

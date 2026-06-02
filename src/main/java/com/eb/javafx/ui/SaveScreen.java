@@ -333,7 +333,10 @@ public final class SaveScreen {
         Label loadModeLabel = new Label(screenText("mode.load"));
         Label modeSeparator = new Label(" / ");
         for (Label lbl : new Label[]{saveModeLabel, loadModeLabel, modeSeparator}) {
-            lbl.setStyle("-fx-font-family: 'Nasalization Rg', sans-serif; -fx-font-size: 36px; -fx-font-weight: bold;");
+            // Font size lives in CSS (.save-screen-mode-title) so it scales with the global
+            // Text-size accessibility setting and is mod-overridable; family/weight stay inline.
+            lbl.getStyleClass().add("save-screen-mode-title");
+            lbl.setStyle("-fx-font-family: 'Nasalization Rg', sans-serif; -fx-font-weight: bold;");
         }
         modeSeparator.setStyle(modeSeparator.getStyle() + " -fx-text-fill: #777;");
         saveModeLabel.setOnMouseClicked(event -> mode.set(SaveLoadMode.SAVE));
@@ -475,7 +478,9 @@ public final class SaveScreen {
         pageStrip.setAlignment(Pos.CENTER_RIGHT);
         pageStrip.setPadding(new Insets(6, 12, 6, 12));
         Label pageLabel = new Label("Page :");
-        pageLabel.setStyle("-fx-text-fill: " + stripText + "; -fx-font-size: 13px; -fx-font-weight: bold;");
+        // Font size lives in CSS (.save-screen-page-label); colour stays inline (strip-themed).
+        pageLabel.getStyleClass().add("save-screen-page-label");
+        pageLabel.setStyle("-fx-text-fill: " + stripText + "; -fx-font-weight: bold;");
         Runnable rebuildPageStrip = () -> {
             pageStrip.getChildren().clear();
             pageStrip.getChildren().add(pageLabel);

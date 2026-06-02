@@ -393,6 +393,35 @@ public final class UiTheme {
                 -fx-font-style: italic;
             }
 
+            /* DialogMessages (confirm / info / error popups).  Font sizes live here so the
+               global Text-size accessibility scale reaches them and a mod can override them
+               via a custom theme CSS — text colours stay inline in DialogMessages because
+               they are accent/theme-token driven. */
+            .dialog-message-title {
+                -fx-font-size: 18px;
+                -fx-font-weight: bold;
+            }
+            .dialog-message-header {
+                -fx-font-size: 14px;
+                -fx-font-weight: bold;
+            }
+            .dialog-message-content {
+                -fx-font-size: 13px;
+            }
+            .dialog-message-button {
+                -fx-font-size: 13px;
+                -fx-font-weight: bold;
+            }
+
+            /* SaveScreen text sizes — mode title + page-strip labels (font size only;
+               colours/effects stay inline in SaveScreen). */
+            .save-screen-mode-title {
+                -fx-font-size: 36px;
+            }
+            .save-screen-page-label {
+                -fx-font-size: 13px;
+            }
+
             /* SaveScreen tab strip — mirrors the AltLife startup-options-tabs look
                (transparent frame, dark tinted tabs with rounded top corners, brighter
                selected tab). */

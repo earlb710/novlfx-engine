@@ -129,21 +129,21 @@ final class DialogHistoryTest {
         GameDateTime ts = new GameDateTime(1, "default");
 
         // Seed exactly MAX_CONVERSATIONS entries.
-        for (int i = 0; i < DialogHistory.MAX_CONVERSATIONS; i++) {
+        for (int i = 0; i < DialogHistory.DEFAULT_MAX_CONVERSATIONS; i++) {
             history.beginDialog("dialog-" + i, ts);
             history.endDialog(ts);
         }
-        assertEquals(DialogHistory.MAX_CONVERSATIONS, history.entries().size());
+        assertEquals(DialogHistory.DEFAULT_MAX_CONVERSATIONS, history.entries().size());
         assertEquals("dialog-0", history.entries().get(0).dialogId());
 
         // One more conversation should drop the oldest.
         history.beginDialog("dialog-overflow", ts);
         history.endDialog(ts);
 
-        assertEquals(DialogHistory.MAX_CONVERSATIONS, history.entries().size());
+        assertEquals(DialogHistory.DEFAULT_MAX_CONVERSATIONS, history.entries().size());
         // "dialog-0" should have been evicted; "dialog-1" is now the oldest.
         assertEquals("dialog-1", history.entries().get(0).dialogId());
-        assertEquals("dialog-overflow", history.entries().get(DialogHistory.MAX_CONVERSATIONS - 1).dialogId());
+        assertEquals("dialog-overflow", history.entries().get(DialogHistory.DEFAULT_MAX_CONVERSATIONS - 1).dialogId());
         assertFalse(history.openDialog().isPresent());
     }
 
@@ -153,7 +153,7 @@ final class DialogHistoryTest {
         GameDateTime ts = new GameDateTime(1, "default");
 
         // Fill to max + 5, exercising five trims.
-        for (int i = 0; i < DialogHistory.MAX_CONVERSATIONS + 5; i++) {
+        for (int i = 0; i < DialogHistory.DEFAULT_MAX_CONVERSATIONS + 5; i++) {
             history.beginDialog("d-" + i, ts);
             history.endDialog(ts);
         }
@@ -163,8 +163,33 @@ final class DialogHistoryTest {
         history.addMessage(DialogSpeaker.text("s", "Speaker"), "last line");
         DialogHistoryEntry ended = history.endDialog(ts);
 
-        assertEquals(DialogHistory.MAX_CONVERSATIONS, history.entries().size());
+        assertEquals(DialogHistory.DEFAULT_MAX_CONVERSATIONS, history.entries().size());
         assertEquals("final", ended.dialogId());
         assertEquals(1, ended.messages().size());
+    }
+
+    @Test
+    void configuredCapTrimsToTheConfiguredSlidingWindow() {
+        DialogHistory.setMaxConversations(3);
+        try {
+            assertEquals(3, DialogHistory.maxConversations());
+            DialogHistory history = new DialogHistory();
+            GameDateTime ts = new GameDateTime(1, "default");
+            for (int i = 0; i < 6; i++) {
+                history.beginDialog("d-" + i, ts);
+                history.endDialog(ts);
+            }
+            assertEquals(3, history.entries().size());
+            assertEquals("d-3", history.entries().get(0).dialogId());
+            assertEquals("d-5", history.entries().get(2).dialogId());
+
+            // Null / non-positive overrides are ignored (keep current value).
+            DialogHistory.setMaxConversations(null);
+            DialogHistory.setMaxConversations(0);
+            DialogHistory.setMaxConversations(-5);
+            assertEquals(3, DialogHistory.maxConversations());
+        } finally {
+            DialogHistory.setMaxConversations(DialogHistory.DEFAULT_MAX_CONVERSATIONS);
+        }
     }
 }

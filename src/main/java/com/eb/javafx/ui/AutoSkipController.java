@@ -60,6 +60,31 @@ public final class AutoSkipController {
      *  still visible, but anything below ~50 ms tends to look like an instant snap). */
     public static final int MIN_SCROLL_DURATION_MS = 50;
 
+    /** Default read-pause multiplier — the gap after the scroll animation is
+     *  {@code (textSpeed − scrollMs) × this}. */
+    public static final double DEFAULT_READ_PAUSE_MULTIPLIER = 2.0;
+
+    // Config-driven tuning (set at boot from the `autoAdvance` config object); fall back to the
+    // defaults above when unset.  Lets a game / mod tune auto-mode cadence without code.
+    private static volatile double configuredScrollFraction = DEFAULT_SCROLL_DURATION_FRACTION;
+    private static volatile int configuredMinScrollMs = MIN_SCROLL_DURATION_MS;
+    private static volatile double configuredReadPauseMultiplier = DEFAULT_READ_PAUSE_MULTIPLIER;
+
+    /** Installs auto-advance cadence tuning from config; any null arg keeps the current value.
+     *  {@code scrollFraction} is clamped to (0, 1]; the others to sane minimums. */
+    public static void setAutoAdvanceTuning(Double scrollFraction, Integer minScrollMs,
+                                            Double readPauseMultiplier) {
+        if (scrollFraction != null && scrollFraction > 0.0 && scrollFraction <= 1.0) {
+            configuredScrollFraction = scrollFraction;
+        }
+        if (minScrollMs != null && minScrollMs >= 0) {
+            configuredMinScrollMs = minScrollMs;
+        }
+        if (readPauseMultiplier != null && readPauseMultiplier >= 0.0) {
+            configuredReadPauseMultiplier = readPauseMultiplier;
+        }
+    }
+
     private final SceneSession session;
     private final DialogEntriesView dialog;
     private final PreferencesService prefs;
@@ -76,7 +101,7 @@ public final class AutoSkipController {
      *                 pump, no animation wiring).
      *  @param prefs   preferences service to read {@code textSpeed} from. */
     public AutoSkipController(SceneSession session, DialogEntriesView dialog, PreferencesService prefs) {
-        this(session, dialog, prefs, DEFAULT_SCROLL_DURATION_FRACTION);
+        this(session, dialog, prefs, configuredScrollFraction);
     }
 
     /** Creates a controller with a custom scroll-duration fraction.  Useful for
@@ -134,8 +159,8 @@ public final class AutoSkipController {
         if (advance == null) {
             throw new IllegalArgumentException("Advance callback is required.");
         }
-        int delayMs = prefs.textSpeed().durationMillis();
-        double scrollMs = Math.max(MIN_SCROLL_DURATION_MS, delayMs * scrollDurationFraction);
+        int delayMs = prefs.textSpeedMillis();
+        double scrollMs = Math.max(configuredMinScrollMs, delayMs * scrollDurationFraction);
         if (dialog != null) {
             dialog.setScrollAnimationDuration(Duration.millis(scrollMs));
         }
@@ -151,7 +176,7 @@ public final class AutoSkipController {
             //
             // The scroll animation duration itself is unchanged so the drop-in cue keeps
             // tracking the text-speed preference — only the read-time pause stretches.
-            double readPauseMs = Math.max(0.0, delayMs - scrollMs) * 2.0;
+            double readPauseMs = Math.max(0.0, delayMs - scrollMs) * configuredReadPauseMultiplier;
             int tickIntervalMs = (int) Math.round(scrollMs + readPauseMs);
             session.startAutoAdvance(tickIntervalMs, advance);
         }

@@ -22,6 +22,15 @@ Content/code-level modding (new routes, new content modules, scripting) is out o
 | Map artwork overrides | Town-map base (`map1.png`) + grid overlay (`map1-grid.png`) + building-hex/character icons override-aware | `AltLifeMapScreen.openMapImage` |
 | Button shape/artwork overrides | Engine button SVGs (`button-pill-long.svg` / `button-bevel.svg`) resolve through the override root / repoint; colour stays theme-palette-driven | `ButtonVisuals.resolveArtworkResource` |
 | Footer styling | Top-level `footer` object — font / text colour / select (highlight) colour / background / transparency — layered over the theme | `FooterStyle`, `ApplicationResourceConfig.footerStyle` |
+| Footer keybindings & glyphs | `footerOptions.<id>` — remap shortcut and/or icon per footer option | `ScreenShell.setFooterOptionOverrides` |
+| Tooltip delay | `tooltipDelayMs` — global tooltip show-delay (engine + generated `.tooltip` CSS) | `ScreenShell.setTooltipShowDelayMillis`, `FooterStyle` |
+| Text-speed durations | `textSpeed: { slow, normal, fast }` ms tune what each speed preset means | `PreferencesService.textSpeedMillis`, `setTextSpeedDurations` |
+| Audio channels | `audioChannels.<id>` — priority / volume / ducking policy / duck percent | `GameApplication.audioChannelConfig`, `ApplicationResourceConfig.audioChannelField` |
+| Auto-advance cadence | `autoAdvance: { scrollFraction, minScrollMs, readPauseMultiplier }` | `AutoSkipController.setAutoAdvanceTuning` |
+| Map building colours | `mapBuildingColors` JSON file → per-building hex gradient overrides | `AltLifeMapScreen.loadBuildingColors` |
+| HUD opacity (preference) | Preferences → HUD opacity (Solid/Subtle/Faint) wires + applies `ui.hudAlpha` to the gameplay HUD | `PreferencesSummaryScreen.hudOpacityRow`, `AltLifeMainAppLayout` |
+| HUD panel opacities | `hud: { dialogIdleAlpha, dialogActiveAlpha, locationRestAlpha, locationHoverAlpha, statusLogAlpha, panelAlpha }` — dialog block / location / status-log / generic panels | `AltLifeMainAppLayout.setHudAlphas`, `ApplicationResourceConfig.hudField` |
+| Global text size (accessibility) | Preferences → Text size (Smaller/Normal/Bigger) rewrites every theme + game font size | `FontScaling`, `UiTheme`, `PreferencesSummaryScreen` |
 | Backgrounds | App / preferences / save-load default backgrounds via `config.json` keys; per-scene via screen-layout JSON metadata | `ApplicationResourceConfig`, `ScreenDesignJson` |
 | Per-screen backgrounds (any system screen) | `screenBackgrounds.<routeId>` = `{ color, image, transparency }`, resolved by the route being built | `RouteContext.themedScene*`, `ApplicationResourceConfig.screenBackground*` |
 | Save behavior | End-of-day auto-save default-on + Auto-tab checkbox; persisted save page count + last-selected page | `QuickSaveActions`, `PreferencesService` (`save.*`) |
@@ -29,9 +38,15 @@ Content/code-level modding (new routes, new content modules, scripting) is out o
 | Auto-save toggle on Preferences | "Auto save daily" checkbox added to the Preferences screen (Save block), not only the Save screen | `PreferencesSummaryScreen.autoSaveDailyRow` |
 | First-class config fields | `fonts: [...]`, `assetOverrideRoot`, `windowTitle`, `appIcon`, `uiTheme`, `themePalette` as top-level `config.json` fields (folded into `resources`; map convention still works) | `ApplicationResourceConfig.promoteFirstClassFields` |
 | Per-icon repoint ids | `resources` entries keyed `icon:<originalPath>` repoint a single icon/image to a replacement (override-root or classpath) without mirroring the full path | `ResourceOverrides` aliases, `BootstrapService.collectIconAliases` |
+| Dialog popup / save-screen fonts | `DialogMessages` (confirm/info/error title/header/content/button) + `SaveScreen` mode-title / page-label font sizes moved from inline Java to theme CSS (`.dialog-message-*`, `.save-screen-mode-title`, `.save-screen-page-label`) — now scale with the global Text-size accessibility setting and are mod-overridable via custom theme CSS | `UiTheme` stylesheet template, `DialogMessages`, `SaveScreen` |
+| Dialog popup card width | `ui: { dialog: { minWidth, maxWidth } }` overrides the confirm/info/error popup card width (default 360 / 520) | `DialogMessages.setCardWidth`, `ApplicationResourceConfig.uiDialogField` |
+| Dialog-block previous-entry fade | `ui.dialog.previousEntryOpacity` (0–1) tunes the fade on entries above the cursor (default 0.5) | `DialogEntriesView.setPreviousEntryOpacity` |
+| Conversation-history cap | `save.maxHistoryEntries` sets the sliding-window size for retained conversations (default 1000) | `DialogHistory.setMaxConversations`, `ApplicationResourceConfig.saveField` |
 
 Tests: `ConfiguredFontsTest`, `ResourceOverridesTest`, `FontResourcesTest`, `UiThemeTest`
-(custom-palette cases) (engine); `GameApplicationThemeStylesheetTest` (AltLife).
+(custom-palette cases), `ApplicationResourceConfigTest` (`uiDialogFieldsParse`,
+`saveMaxHistoryEntriesParses`), `DialogHistoryTest` (`configuredCapTrimsToTheConfiguredSlidingWindow`)
+(engine); `GameApplicationThemeStylesheetTest` (AltLife).
 
 ---
 

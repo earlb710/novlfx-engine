@@ -114,8 +114,8 @@ final class DialogEntriesViewTest {
         assertEquals("Line 2.", secondShown.getText());
         assertEquals("Line 3.", bottom.getText());
 
-        assertEquals(DialogEntriesView.PREVIOUS_ENTRY_OPACITY, firstShown.getOpacity(), 1e-9);
-        assertEquals(DialogEntriesView.PREVIOUS_ENTRY_OPACITY, secondShown.getOpacity(), 1e-9);
+        assertEquals(DialogEntriesView.DEFAULT_PREVIOUS_ENTRY_OPACITY, firstShown.getOpacity(), 1e-9);
+        assertEquals(DialogEntriesView.DEFAULT_PREVIOUS_ENTRY_OPACITY, secondShown.getOpacity(), 1e-9);
         assertEquals(1.0, bottom.getOpacity(), 1e-9);
 
         assertTrue(firstShown.getStyleClass().contains(DialogEntriesView.PREVIOUS_ENTRY_STYLE_CLASS));
@@ -137,7 +137,7 @@ final class DialogEntriesViewTest {
         Label current = (Label) view.entryNodes().get(1);
         assertEquals("Line 1.", previous.getText());
         assertEquals("Line 2.", current.getText());
-        assertEquals(DialogEntriesView.PREVIOUS_ENTRY_OPACITY, previous.getOpacity(), 1e-9);
+        assertEquals(DialogEntriesView.DEFAULT_PREVIOUS_ENTRY_OPACITY, previous.getOpacity(), 1e-9);
         assertEquals(1.0, current.getOpacity(), 1e-9);
         assertTrue(view.canGoBack());
         assertTrue(view.canGoForward());
