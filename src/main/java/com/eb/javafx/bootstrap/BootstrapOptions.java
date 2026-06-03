@@ -268,12 +268,17 @@ public final class BootstrapOptions {
 
         List<EngineModuleProvider> providers = orderProviders(
                 explicitProviders == null ? List.of() : explicitProviders);
-
-        ResourceRegistry.Builder builder = ResourceRegistry.builder();
         ClassLoader loader = BootstrapOptions.class.getClassLoader();
-        addConfigRoots(builder, resourceConfig, normalizedRoot, loader);     // application roots first
 
-        DiscoveryContext context = new DiscoveryContext(normalizedRoot, resourceConfig, builder);
+        // Base registry from CONFIG roots only (application + library). Exposed to providers during
+        // contribute() so a provider can construct content modules that resolve their assets up
+        // front (e.g. a code table found via the registry). Provider-added roots aren't in here.
+        ResourceRegistry baseRegistry = buildRegistry(resourceConfig, libraryConfig, normalizedRoot);
+
+        // Provider-added roots are captured as deferred appliers so the FINAL runtime registry can
+        // layer them application -> provider -> library (only rebuilt if any are contributed).
+        List<java.util.function.Consumer<ResourceRegistry.Builder>> providerRoots = new ArrayList<>();
+        DiscoveryContext context = new DiscoveryContext(normalizedRoot, resourceConfig, baseRegistry, providerRoots);
         for (EngineModuleProvider provider : providers) {
             try {
                 provider.contribute(context);                                // provider roots + modules + fonts + css
@@ -284,8 +289,14 @@ public final class BootstrapOptions {
             }
         }
 
-        addConfigRoots(builder, libraryConfig, normalizedRoot, loader);      // library roots last
-        ResourceRegistry registry = builder.build();
+        ResourceRegistry registry = baseRegistry;
+        if (!providerRoots.isEmpty()) {
+            ResourceRegistry.Builder builder = ResourceRegistry.builder();
+            addConfigRoots(builder, resourceConfig, normalizedRoot, loader);     // application roots first
+            providerRoots.forEach(applier -> applier.accept(builder));           // provider roots next
+            addConfigRoots(builder, libraryConfig, normalizedRoot, loader);      // library roots last
+            registry = builder.build();
+        }
 
         BootstrapOptions options = new BootstrapOptions(
                 normalizedRoot, resourceConfig, registry,
@@ -359,6 +370,7 @@ public final class BootstrapOptions {
     private static final class DiscoveryContext implements ModuleContext {
         private final Path applicationRoot;
         private final ApplicationResourceConfig resourceConfig;
+        private final ResourceRegistry resourceRegistry;
         private final ResourceRoots resourceRoots;
         private final FontRegistrar fonts;
         final List<StaticContentModule> staticContentModules = new ArrayList<>();
@@ -366,17 +378,19 @@ public final class BootstrapOptions {
         final List<RouteModule> routeModules = new ArrayList<>();
 
         DiscoveryContext(Path applicationRoot, ApplicationResourceConfig resourceConfig,
-                ResourceRegistry.Builder builder) {
+                ResourceRegistry resourceRegistry,
+                List<java.util.function.Consumer<ResourceRegistry.Builder>> providerRoots) {
             this.applicationRoot = applicationRoot;
             this.resourceConfig = resourceConfig;
+            this.resourceRegistry = resourceRegistry;
             this.resourceRoots = new ResourceRoots() {
                 @Override public ResourceRoots addClasspathRoot(ResourceCategory category, String classpathPath,
                         ClassLoader classLoader) {
-                    builder.addClasspathRoot(category, classpathPath, classLoader);
+                    providerRoots.add(builder -> builder.addClasspathRoot(category, classpathPath, classLoader));
                     return this;
                 }
                 @Override public ResourceRoots addFilesystemRoot(ResourceCategory category, Path directory) {
-                    builder.addFilesystemRoot(category, directory);
+                    providerRoots.add(builder -> builder.addFilesystemRoot(category, directory));
                     return this;
                 }
             };
@@ -392,6 +406,7 @@ public final class BootstrapOptions {
 
         @Override public Path applicationRoot() { return applicationRoot; }
         @Override public ApplicationResourceConfig resourceConfig() { return resourceConfig; }
+        @Override public ResourceRegistry resourceRegistry() { return resourceRegistry; }
         @Override public Path providerAssetBase() { return applicationRoot; }
         @Override public void addStaticContentModule(StaticContentModule module) { staticContentModules.add(module); }
         @Override public void addSceneModule(SceneModule module) { sceneModules.add(module); }

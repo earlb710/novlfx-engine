@@ -18,6 +18,7 @@ Example/demo index: [`examples/user-manual/README.md`](../examples/user-manual/R
 - **Extension boundaries**: keep authored game content, application launchers, concrete assets, and domain-specific rules in the application repository.
 - **Application shell integration**: create the first app-owned JavaFX launcher, bootstrap flow, and media adapter on top of the reusable engine.
 - **Configuration knobs and reusable helpers**: the config-driven tuning surface (`config.json` knobs applied at boot), the reusable helper classes added for hosts, and the themeable CSS classes — a catalogue of recent engine enhancements.
+- **Writing an extension (module-provider SPI)**: contribute content/scene/route modules and resources by implementing `EngineModuleProvider`, declaring it as a `ServiceLoader` service, and booting through `BootstrapOptions.discovering(...)`.
 
 ## 2. Project setup and validation
 
@@ -1741,3 +1742,101 @@ corner radii that used to be inline in Java now live here.
 
 Colours that are theme-token / accent driven stay inline in Java (they are recomputed on a theme
 change); only size/radius/weight live in CSS.
+
+## 14. Writing an extension (module-provider SPI)
+
+A project extends the engine by implementing one interface and declaring it as a service — no fork
+of any central wiring method. The engine discovers providers, orders them, and lets each contribute
+its content/scene/route modules and resources during bootstrap assembly. Design details and
+rationale are in [`SPI_PLAN.md`](SPI_PLAN.md).
+
+> **Runnable starting points:** [`examples/starter-template`](../examples/starter-template/README.md)
+> is a complete minimal game built this way (copy it to start a project), and
+> [`examples/integration-patterns`](../examples/integration-patterns/README.md) shows the
+> explicit-wiring, JSON-content, and resource-shipping variants.
+
+### 14.1 The provider
+
+```java
+public final class AcmeModuleProvider implements com.eb.javafx.bootstrap.EngineModuleProvider {
+    public AcmeModuleProvider() { }                       // public no-arg ctor (ServiceLoader)
+
+    @Override public void contribute(com.eb.javafx.bootstrap.ModuleContext ctx) {
+        var resourceConfig = ctx.resourceConfig();
+        var applicationRoot = ctx.applicationRoot();
+
+        ctx.addStaticContentModule(new AcmeContentModule(/* … from ctx … */));
+        ctx.addSceneModule(new AcmeSceneModule(/* … */));
+        ctx.addRouteModule(new AcmeRouteModule());
+    }
+}
+```
+
+`contribute(ModuleContext)` runs once during options assembly, after the application root and
+configuration are resolved. Heavy construction belongs here, not in the constructor. Optional
+overrides: `id()` (defaults to the class name; used for de-duplication), `priority()` (lower
+contributes first; default `0`), and `dependsOn()` (ids that must precede this provider).
+
+### 14.2 Declaring it as a service
+
+- **Module path** — in the consumer's `module-info.java`:
+  ```java
+  provides com.eb.javafx.bootstrap.EngineModuleProvider with com.acme.AcmeModuleProvider;
+  ```
+  (The engine declares `uses com.eb.javafx.bootstrap.EngineModuleProvider;`.)
+- **Class path** — ship `META-INF/services/com.eb.javafx.bootstrap.EngineModuleProvider` containing
+  the provider's fully-qualified name.
+
+### 14.3 Booting with discovery
+
+Assemble options through `BootstrapOptions.discovering(...)` instead of `fromConfig(...)`:
+
+```java
+BootstrapOptions options = BootstrapOptions.discovering(
+        applicationRoot.resolve("config.json"),
+        new AcmeModuleProvider());     // optional: also pass your own provider explicitly
+new BootstrapService(options).boot(primaryStage);
+```
+
+Discovery merges **explicit** providers with **`ServiceLoader`-discovered** ones, de-duplicates by
+`id()` (explicit wins), sorts by `priority()`, then resolves `dependsOn()`. A throwing provider is
+isolated (logged, others continue). Passing your own provider explicitly is the robust pattern — it
+works on both the module path and the class path; a third-party plugin only needs the service
+declaration to be picked up. The engine's own baseline (placeholder content/scene + default routes)
+is a built-in lowest-priority provider, so a host that contributes nothing still boots.
+
+### 14.4 The `ModuleContext` surface
+
+| Method | Use |
+|---|---|
+| `applicationRoot()` / `resourceConfig()` | resolved inputs for building modules |
+| `resourceRegistry()` | the config-resolved registry, for modules that resolve assets up front |
+| `providerAssetBase()` | per-provider base for relative **filesystem** assets |
+| `addStaticContentModule` / `addSceneModule` / `addRouteModule` | register modules |
+| `resourceRoots()` | add classpath roots (with the provider's class loader) + filesystem roots |
+| `fonts()` | register fonts bundled in the provider's module |
+| `addStylesheet(url)` | add a stylesheet applied to every themed scene |
+
+### 14.5 Resource contract (read this before shipping assets in a jar)
+
+**A provider owns its in-jar resources; the engine resolves only filesystem resources.** Under JPMS,
+a resource in a package that contains `.class` files is encapsulated to its module — another module
+(the engine) cannot read it by path. So:
+
+- **Fonts in your jar** — load through your own module:
+  `ctx.fonts().registerFromModule(getClass(), "/com/acme/fonts/Acme.ttf", 12);`
+- **Stylesheets in your jar** — hand over a URL you built yourself (it carries your class loader):
+  `ctx.addStylesheet(getClass().getResource("/com/acme/theme.css").toExternalForm());`
+- **Scene JSON / SVG / meshes in your jar** — read them in `contribute()` (same-module) and register
+  the parsed content.
+- **Classpath resource roots** — `ctx.resourceRoots().addClasspathRoot(category, path, getClass().getClassLoader())`.
+  Cross-module reads work **only** for resources in a **resource-only package** (no `.class`) or a
+  package your `module-info` `opens` — mirror the engine's own `opens com.eb.javafx.ui;`.
+- **On-disk resources** (backgrounds, external CSS/fonts, config) are filesystem I/O and JPMS-immune;
+  resolve them under `providerAssetBase()` or a filesystem root you contribute.
+
+The single rule that avoids the "works on the class path, null on the module path" trap: never let
+the engine load your jar's resource by string path — push it through these hooks instead.
+
+> **Stability:** the SPI types live in `com.eb.javafx.bootstrap` (a Stable package), but the SPI
+> itself is young — treat it as solidifying. See [`API_STABILITY.md`](API_STABILITY.md).

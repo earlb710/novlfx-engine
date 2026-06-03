@@ -1,0 +1,46 @@
+// Minimal Gradle build for a novlfx game. Copy this directory, rename the module/package, and go.
+plugins {
+    id 'application'
+    id 'org.openjfx.javafxplugin' version '0.1.0'
+}
+
+group = 'com.example'
+version = '0.1.0'
+
+java {
+    toolchain { languageVersion = JavaLanguageVersion.of(17) }
+}
+
+javafx {
+    version = '17.0.16'
+    modules = ['javafx.controls', 'javafx.media']
+}
+
+repositories {
+    mavenCentral()
+    maven { url 'https://jitpack.io' }   // until novlfx-engine is on a public repo
+}
+
+dependencies {
+    // novlfx-engine is not yet published to Maven Central. Use ONE of:
+    //
+    //   1) JitPack (no local checkout):
+    //        implementation 'com.github.<owner>:novlfx-engine:<commit-or-tag>'
+    //
+    //   2) A local composite build (engine checked out next to this project):
+    //        // in settings.gradle:  includeBuild '../novlfx-engine'
+    //        implementation 'com.novlfx:engine'
+    //
+    // Once it is published, this becomes a normal coordinate:
+    implementation 'com.novlfx:engine:0.1.0'
+}
+
+application {
+    mainModule = 'com.example.starter'
+    mainClass = 'com.example.starter.StarterGame'
+}
+
+run {
+    // config.json is resolved relative to the working directory at runtime.
+    workingDir = projectDir
+}

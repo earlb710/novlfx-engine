@@ -198,10 +198,40 @@ calls `ConfiguredFonts.register(...)`.
    `FontResources.loadResource(path, size, ClassLoader)` overload. Pure additions; nothing is
    discovered or wired into boot yet, so there is no behavior change. Tests: `EngineModuleProviderTest`,
    `FontResourcesTest.moduleAwareLoadResolvesAgainstSuppliedClassLoader`.
-2. Wire `ServiceLoader` discovery into a new `BootstrapOptions.discovering(...)`; keep explicit path.
-3. Convert engine defaults to internal low-priority providers.
-4. Migrate AltLife to a single provider; switch `GameApplication` to `discovering(...)`.
-5. Document the provider contract (this file + USER_MANUAL §11 / a "Writing a plugin" section).
+2. ✅ **Done** — `BootstrapOptions.discovering(configPath, explicit...)` /
+   `discovering(root, config, explicit)` discover providers (explicit + `ServiceLoader`), de-dup by
+   `id()` (explicit wins), sort by `priority()`, then topologically by `dependsOn()`, and run
+   `contribute(ModuleContext)` against an in-progress `ResourceRegistry.Builder` (root layering:
+   application → provider → library). A throwing provider is isolated. Resource hooks are live:
+   roots funnel into the builder, fonts register immediately via the module-aware loader, stylesheets
+   go to the new `com.eb.javafx.ui.GlobalStylesheets` sink (applied to every themed scene in
+   `RouteContext.themedScene`). Added `uses com.eb.javafx.bootstrap.EngineModuleProvider;` to
+   `module-info`. The explicit `BootstrapOptions` path is unchanged. Tests:
+   `BootstrapOptionsDiscoveryTest`.
+3. ✅ **Done** — Engine defaults (`EnginePlaceholderContentModule`, `EnginePlaceholderSceneModule`,
+   `DefaultRouteModule`) are now expressed as the internal lowest-priority `EngineDefaultsProvider`.
+   `BootstrapService.boot()` composes it ahead of the application-supplied modules on **every** boot
+   path (via a minimal collecting context), so the baseline is always present and registered first.
+   It is deliberately **not** a `ServiceLoader` service and is kept **out of the option module
+   lists** (so `BootstrapOptions.with*` replacements can't clobber it). Tests:
+   `EngineDefaultsProviderTest`; AltLife `GameApplicationTest`/`GameApplicationRouteIntegrationTest`
+   boot through it unchanged.
+4. ✅ **Done** — `AltLifeModuleProvider` contributes AltLife's content/scene/route modules via
+   `contribute(ModuleContext)`; `GameApplication.createBootstrapOptions(...)` now delegates to
+   `BootstrapOptions.discovering(config, new AltLifeModuleProvider())` (so the boot path — and all
+   11 existing boot tests — route through the SPI). AltLife declares
+   `provides EngineModuleProvider with AltLifeModuleProvider` (verified in the compiled descriptor),
+   making it ServiceLoader-discoverable on the module path; it is also passed explicitly so the path
+   is robust on the class path too (de-duped by id). The migration surfaced one interface
+   refinement: **`ModuleContext.resourceRegistry()`** (the config-resolved registry a provider needs
+   to construct registry-backed modules such as `AltLifeCodeTableContentModule.fromRegistry`), so
+   `discovering()` now builds the config registry first, exposes it during `contribute()`, and
+   layers any provider-added roots into the final runtime registry. Tests:
+   `GameApplicationTest` / `GameApplicationRouteIntegrationTest` boot through it unchanged.
+5. ✅ **Done** — Provider contract documented for plugin authors in USER_MANUAL §14 ("Writing an
+   extension — the module-provider SPI"), covering the provider interface, `ServiceLoader`
+   declaration (modular `provides` / classpath `META-INF/services`), the `discovering(...)` entry
+   point, the `ModuleContext` surface, the in-jar vs on-disk resource contract, and ordering.
 
 ---
 

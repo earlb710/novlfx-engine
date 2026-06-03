@@ -50,6 +50,9 @@ final class EngineModuleProviderTest {
         ModuleContext ctx = new ModuleContext() {
             @Override public java.nio.file.Path applicationRoot() { return java.nio.file.Path.of("."); }
             @Override public ApplicationResourceConfig resourceConfig() { return ApplicationResourceConfig.defaults(); }
+            @Override public com.eb.javafx.resources.ResourceRegistry resourceRegistry() {
+                return com.eb.javafx.resources.ResourceRegistry.builder().build();
+            }
             @Override public java.nio.file.Path providerAssetBase() { return java.nio.file.Path.of("."); }
             @Override public void addStaticContentModule(com.eb.javafx.content.StaticContentModule m) { }
             @Override public void addSceneModule(com.eb.javafx.scene.SceneModule m) { }

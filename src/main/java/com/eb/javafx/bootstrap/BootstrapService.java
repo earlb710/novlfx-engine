@@ -2,7 +2,6 @@ package com.eb.javafx.bootstrap;
 
 import com.eb.javafx.audio.AudioService;
 import com.eb.javafx.content.ContentRegistry;
-import com.eb.javafx.content.EnginePlaceholderContentModule;
 import com.eb.javafx.content.StaticContentModule;
 import com.eb.javafx.display.ImageDisplayRegistry;
 import com.eb.javafx.gamesupport.GameSupportService;
@@ -10,12 +9,10 @@ import com.eb.javafx.prefs.PreferencesService;
 import com.eb.javafx.random.GameRandomService;
 import com.eb.javafx.resources.ResourceRegistry;
 import com.eb.javafx.globalApi.GlobalApiAdapter;
-import com.eb.javafx.routing.DefaultRouteModule;
 import com.eb.javafx.routing.RouteContext;
 import com.eb.javafx.routing.RouteModule;
 import com.eb.javafx.routing.SceneRouter;
 import com.eb.javafx.save.SaveLoadService;
-import com.eb.javafx.scene.EnginePlaceholderSceneModule;
 import com.eb.javafx.scene.SceneExecutor;
 import com.eb.javafx.scene.SceneModule;
 import com.eb.javafx.scene.SceneRegistry;
@@ -354,23 +351,31 @@ public final class BootstrapService {
         // Static content registries: replace define/import side effects with named registry calls.
         contentRegistry.registerBaseContent();
         imageDisplayRegistry.registerBaseDisplayContent();
-        EnginePlaceholderContentModule enginePlaceholderContentModule = new EnginePlaceholderContentModule();
-        enginePlaceholderContentModule.register(contentRegistry, imageDisplayRegistry);
-        staticContentModules.forEach(module -> module.register(contentRegistry, imageDisplayRegistry));
-        EnginePlaceholderSceneModule enginePlaceholderSceneModule = new EnginePlaceholderSceneModule();
-        enginePlaceholderSceneModule.registerScenes(sceneRegistry);
-        sceneModules.forEach(module -> module.registerScenes(sceneRegistry));
+
+        // The engine baseline (placeholder content/scene + default route) is contributed first, via
+        // the internal lowest-priority EngineDefaultsProvider, ahead of the application-supplied
+        // modules. Composed here (not in the option lists) so it applies on every boot path —
+        // discovery-assembled or not — and is never clobbered by BootstrapOptions.with* replacements.
+        List<StaticContentModule> allStaticContentModules = new ArrayList<>();
+        List<SceneModule> allSceneModules = new ArrayList<>();
+        List<RouteModule> allRouteModules = new ArrayList<>();
+        new EngineDefaultsProvider().contribute(
+                new EngineDefaultsCollector(allStaticContentModules, allSceneModules, allRouteModules));
+        allStaticContentModules.addAll(staticContentModules);
+        allSceneModules.addAll(sceneModules);
+        allRouteModules.addAll(routeModules);
+
+        allStaticContentModules.forEach(module -> module.register(contentRegistry, imageDisplayRegistry));
+        allSceneModules.forEach(module -> module.registerScenes(sceneRegistry));
         completePhase(completedPhases, phaseMessages, BootstrapPhase.STATIC_CONTENT_REGISTRIES,
                 "Base static content, display definitions, and scene definitions registered.");
 
         // Game rules: validate required definitions before any screen can depend on them.
         contentRegistry.validateRules();
         imageDisplayRegistry.validateDisplayContent();
-        enginePlaceholderContentModule.validate(contentRegistry, imageDisplayRegistry);
-        staticContentModules.forEach(module -> module.validate(contentRegistry, imageDisplayRegistry));
+        allStaticContentModules.forEach(module -> module.validate(contentRegistry, imageDisplayRegistry));
         sceneRegistry.validateScenes();
-        enginePlaceholderSceneModule.validateScenes(sceneRegistry);
-        sceneModules.forEach(module -> module.validateScenes(sceneRegistry));
+        allSceneModules.forEach(module -> module.validateScenes(sceneRegistry));
         completePhase(completedPhases, phaseMessages, BootstrapPhase.GAME_RULES,
                 "Required content, display, and scene definitions validated.");
 
@@ -394,9 +399,8 @@ public final class BootstrapService {
                 sceneRouter,
                 applicationRoot,
                 resourceConfig);
-        List<RouteModule> allRouteModules = new ArrayList<>();
-        allRouteModules.add(new DefaultRouteModule());
-        allRouteModules.addAll(routeModules);
+        // allRouteModules was composed above (DefaultRouteModule via EngineDefaultsProvider, then the
+        // application route modules).
         sceneRouter.registerRoutes(routeContext, allRouteModules);
         sceneRouter.validateRouteDefinitions(contentRegistry);
         GlobalApiAdapter globalApiAdapter = new GlobalApiAdapter(randomService, sceneRouter, audioService);
@@ -584,5 +588,39 @@ public final class BootstrapService {
 
     private static Path defaultApplicationRoot() {
         return Paths.get("").toAbsolutePath().normalize();
+    }
+
+    /** Minimal {@link ModuleContext} used only to collect the {@link EngineDefaultsProvider}'s
+     *  modules into lists. The engine-defaults provider calls only the {@code add*Module} sinks; the
+     *  resolved-input and resource-registration methods are not part of this baseline-composition
+     *  path and throw if invoked. */
+    private static final class EngineDefaultsCollector implements ModuleContext {
+        private final List<StaticContentModule> staticModules;
+        private final List<SceneModule> sceneModules;
+        private final List<RouteModule> routeModules;
+
+        EngineDefaultsCollector(List<StaticContentModule> staticModules, List<SceneModule> sceneModules,
+                List<RouteModule> routeModules) {
+            this.staticModules = staticModules;
+            this.sceneModules = sceneModules;
+            this.routeModules = routeModules;
+        }
+
+        @Override public void addStaticContentModule(StaticContentModule module) { staticModules.add(module); }
+        @Override public void addSceneModule(SceneModule module) { sceneModules.add(module); }
+        @Override public void addRouteModule(RouteModule module) { routeModules.add(module); }
+
+        private static UnsupportedOperationException unused() {
+            return new UnsupportedOperationException(
+                    "EngineDefaultsProvider does not use this ModuleContext method.");
+        }
+
+        @Override public Path applicationRoot() { throw unused(); }
+        @Override public ApplicationResourceConfig resourceConfig() { throw unused(); }
+        @Override public ResourceRegistry resourceRegistry() { throw unused(); }
+        @Override public Path providerAssetBase() { throw unused(); }
+        @Override public ResourceRoots resourceRoots() { throw unused(); }
+        @Override public FontRegistrar fonts() { throw unused(); }
+        @Override public void addStylesheet(String url) { throw unused(); }
     }
 }

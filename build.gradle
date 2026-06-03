@@ -1,6 +1,7 @@
 plugins {
     id 'java-library'
     id 'org.openjfx.javafxplugin' version '0.1.0'
+    id 'org.gradlex.extra-java-module-info' version '1.13.1'
 }
 
 group = 'com.novlfx'
@@ -24,9 +25,20 @@ dependencies {
     }
     api 'se.alipsa:fxsvgimage:1.5.1'
     api 'org.fxyz3d:fxyz3d:0.6.0'
+    // glTF/GLB load + write for the engine's 3D asset helpers (GltfLoader/GltfWriter).
+    api 'de.javagl:jgltf-model:2.0.4'
     testImplementation 'org.fxyz3d:fxyz3d-importers:0.6.0'
     testImplementation 'org.junit.jupiter:junit-jupiter:5.10.2'
     testImplementation 'org.junit.platform:junit-platform-launcher:1.10.2'
+}
+
+// jgltf jars are non-modular — name them as automatic modules for the module path.
+extraJavaModuleInfo {
+    failOnMissingModuleInfo = false
+    automaticModule('de.javagl:jgltf-model', 'de.javagl.jgltf.model')
+    automaticModule('de.javagl:jgltf-impl-v1', 'de.javagl.jgltf.impl.v1')
+    automaticModule('de.javagl:jgltf-impl-v2', 'de.javagl.jgltf.impl.v2')
+    automaticModule('de.javagl:jgltf-impl-v2-ext', 'de.javagl.jgltf.impl.v2.ext')
 }
 
 tasks.named('compileJava') {

@@ -1,6 +1,7 @@
 package com.eb.javafx.bootstrap;
 
 import com.eb.javafx.content.StaticContentModule;
+import com.eb.javafx.resources.ResourceRegistry;
 import com.eb.javafx.routing.RouteModule;
 import com.eb.javafx.scene.SceneModule;
 
@@ -26,6 +27,14 @@ public interface ModuleContext {
 
     /** The parsed application configuration ({@code config.json}). */
     ApplicationResourceConfig resourceConfig();
+
+    /** The resource registry resolved from configuration roots (application + library), available
+     *  for a provider to construct content modules that resolve their assets up front (e.g. a code
+     *  table whose JSON is found via the registry). Provider-contributed roots (see
+     *  {@link #resourceRoots()}) are layered into the engine's final runtime registry but are not
+     *  reflected here — a provider resolves its <em>own</em> bundled resources through its module,
+     *  not through this registry. */
+    ResourceRegistry resourceRegistry();
 
     /** A per-provider base directory for this provider's <em>relative</em> filesystem assets, so two
      *  providers' relative paths don't collide. Defaults to {@link #applicationRoot()} unless the

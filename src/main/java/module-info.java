@@ -8,6 +8,7 @@ module com.novlfx.engine {
     requires org.girod.javafx.svgimage;
     requires org.fxyz3d.core;
     requires xml.apis.ext;
+    requires de.javagl.jgltf.model;
 
     exports com.eb.javafx.achievements;
     exports com.eb.javafx.audio;
@@ -21,6 +22,7 @@ module com.novlfx.engine {
     exports com.eb.javafx.display;
     exports com.eb.javafx.events;
     exports com.eb.javafx.gamesupport;
+    exports com.eb.javafx.gltf;
     exports com.eb.javafx.input;
     exports com.eb.javafx.inventory;
     exports com.eb.javafx.journal;
