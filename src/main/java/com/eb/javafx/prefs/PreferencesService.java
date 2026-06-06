@@ -442,6 +442,9 @@ public final class PreferencesService {
             case SLOW -> override[0];
             case NORMAL -> override[1];
             case FAST -> override[2];
+            // VERY_SLOW / VERY_FAST aren't config-overridable (the override array covers the
+            // original three speeds); they always use their enum default duration.
+            case VERY_SLOW, VERY_FAST -> textSpeed.durationMillis();
         };
     }
 
@@ -814,9 +817,11 @@ public final class PreferencesService {
      * before the panel pins to the bottom; faster speeds snap the view down quickly.
      */
     public enum TextSpeed {
+        VERY_SLOW("very-slow", 1600),
         SLOW("slow", 800),
         NORMAL("normal", 400),
-        FAST("fast", 200);
+        FAST("fast", 200),
+        VERY_FAST("very-fast", 100);
 
         private final String preferenceValue;
         private final int durationMillis;

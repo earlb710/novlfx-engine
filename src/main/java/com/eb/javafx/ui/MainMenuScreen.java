@@ -31,10 +31,10 @@ public final class MainMenuScreen {
     }
 
     public static ScreenViewModel viewModel(RouteContext context) {
+        // Only the application name heads the menu. The engine's "line.status" / "line.startup-complete"
+        // strings are dev/boilerplate placeholders, not player-facing copy, so they're omitted.
         List<String> lines = List.of(
-                context.contentRegistry().definition("application.name"),
-                ScreenTextResources.text(ScreenTextResources.MAIN_MENU, "line.status"),
-                ScreenTextResources.text(ScreenTextResources.MAIN_MENU, "line.startup-complete"));
+                context.contentRegistry().definition("application.name"));
         List<ScreenActionViewModel> actions = new ArrayList<>();
 
         for (RouteDescriptor descriptor : context.sceneRouter().routeDescriptors().values()) {

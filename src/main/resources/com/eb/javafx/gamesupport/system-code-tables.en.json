@@ -613,6 +613,15 @@
       "title": "Text Speed",
       "codes": [
         {
+          "id": "very-slow",
+          "title": "Very Slow",
+          "sortOrder": 5,
+          "tags": [
+            "settings",
+            "ui"
+          ]
+        },
+        {
           "id": "slow",
           "title": "Slow",
           "sortOrder": 10,
@@ -634,6 +643,15 @@
           "id": "fast",
           "title": "Fast",
           "sortOrder": 30,
+          "tags": [
+            "settings",
+            "ui"
+          ]
+        },
+        {
+          "id": "very-fast",
+          "title": "Very Fast",
+          "sortOrder": 40,
           "tags": [
             "settings",
             "ui"

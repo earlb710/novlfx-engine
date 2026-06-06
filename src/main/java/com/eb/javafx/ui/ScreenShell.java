@@ -1069,6 +1069,34 @@ public final class ScreenShell {
         }
     }
 
+    /**
+     * Sets the "active" highlight on the footer Label whose option id equals {@code optionId},
+     * <em>without</em> disturbing the active state of any other option (unlike
+     * {@link #setActiveFooterOption}, which clears every other option).  Used for independent
+     * mode pills such as history-mode that coexist with other highlights.  No-op when the footer
+     * or the option isn't found.  {@code footer} may be the footer {@link HBox} itself or any
+     * ancestor (the live footer bar is located via {@link #findFooterBar}).
+     */
+    public static void setFooterOptionActiveById(Node footer, String optionId, boolean active) {
+        if (footer == null || optionId == null) {
+            return;
+        }
+        HBox bar = footer instanceof HBox hbox
+                && hbox.getStyleClass().contains(SCREEN_FOOTER_BAR_STYLE_CLASS)
+                ? hbox : findFooterBar(footer);
+        if (bar == null) {
+            return;
+        }
+        for (Node child : bar.getChildren()) {
+            if (child instanceof Label label
+                    && label.getUserData() instanceof FooterOption option
+                    && optionId.equals(option.id())) {
+                setFooterOptionActive(label, active);
+                return;
+            }
+        }
+    }
+
     private static FooterOption findById(List<FooterOption> options, String id) {
         if (options == null || id == null) {
             return null;
