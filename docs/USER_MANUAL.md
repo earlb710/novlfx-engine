@@ -860,6 +860,9 @@ API in `com.eb.javafx.ui`:
 | `bindToFooter(Node)` | Wire the standard `ScreenShell.footerBar()` back / forward labels to drive `goBack()` / `goForward()`. Accepts either the footer `HBox` itself or any ancestor that contains it. **Auto-called by `MainAppLayoutRenderer`** when the dialog slot is a `DialogEntriesView`; idempotent on repeat calls. |
 | `bindHistoryToggle(Node, Node, double)` | Wire the footer history (◷) button so clicking it collapses the story slot and expands the dialog to full height. **Auto-called by `MainAppLayoutRenderer`** using `1.0 - plan.storyDialogRatio()`; idempotent on repeat calls. |
 | `installKeyboardShortcuts(Scene)` | Install `Backspace` / `Space` event filters that mirror the default footer back / forward shortcuts. **Auto-installed** as soon as the view is added to a scene; idempotent on repeat calls. |
+| `setHoverFadeEnabled(boolean)` / `hoverFadeEnabled()` | Opt into the hover fade: the dialog block dims to its unhovered opacity while the pointer is outside it (so the background art shows through) and lifts back to full opacity while hovered. Off by default. |
+| `setHoverFadeOpacities(double hovered, double unhovered)` / `hoverFadeHoveredOpacity()` / `hoverFadeUnhoveredOpacity()` | Configure / read the opacities used by the fade (defaults `1.0` hovered / `0.2` unhovered). |
+| `addHoverCompanion(Node)` | Register an extra node as a hover source so the fade stays lifted while the pointer is over it too. **Auto-called by `MainAppLayoutRenderer`** with the `ScreenShell.footerBar()`, so moving the pointer down onto the footer keeps the dialog block lifted instead of fading the moment the pointer leaves the dialog bounds; idempotent on repeat calls. |
 
 A typical wiring in the main app layout's dialog slot — the renderer auto-wires the footer
 back/forward labels, the history (◷) toggle, and the Space/Backspace keyboard shortcuts, so the
@@ -931,6 +934,24 @@ assert dialog.isHistoryMode();
 dialog.bindHistoryToggle(footerOrAncestor, storyNode, 1.0 - plan.storyDialogRatio());
 ```
 
+Hover fade — gameplay shells can let the dialog block dim while the pointer is away from it (so the
+background art reads clearly) and lift back to full opacity while the player is reading or
+interacting. It is **opt-in** (off by default); enable it on the view and the renderer takes care of
+the rest:
+
+```java
+DialogEntriesView dialog = new DialogEntriesView();
+dialog.setHoverFadeOpacities(1.0, 0.2);  // hovered / unhovered (these are the defaults)
+dialog.setHoverFadeEnabled(true);
+```
+
+The footer bar counts as part of the dialog block for this purpose: `MainAppLayoutRenderer` auto-registers
+the `ScreenShell.footerBar()` as a hover companion (`dialog.addHoverCompanion(footer)`), so moving the
+pointer down onto the footer to click back / forward / save keeps the dialog lifted instead of fading
+the instant the pointer leaves the dialog's own bounds. Register additional companions yourself for any
+other controls that sit outside the widget. The fade only drops back to the unhovered opacity once the
+pointer has left the dialog *and* every registered companion.
+
 Note: `say`/`shout`/`whisper` only persist into `DialogHistory` while a conversation is open
 (between `startConversation` and `endConversation`). Calling them without an open conversation
 still updates the visible widget; the history side is just skipped.
@@ -962,6 +983,66 @@ Style hooks (overridable in application stylesheets):
 | `.dialog-entry-divider` | The `HBox` for a `ConversationStart` / `ConversationEnd` |
 | `.dialog-entry-divider-line` | The thin horizontal lines on either side of a divider |
 | `.dialog-entry-divider-label` | The participants / "End" label in the middle of a divider |
+
+#### Footer control (`FooterController`) <a id="footer-control-footercontroller"></a>
+
+`com.eb.javafx.ui.FooterController` is the generic footer router that turns the static footer bar
+produced by `ScreenShell.footerBar()` into a live control: it installs the hover highlight, the
+id-based click router, and the scene-level keyboard-shortcut filter. It deliberately sits *above*
+`ScreenShell` — it depends on `SceneRouter`, `SaveScreen`, and `QuickSaveActions`, which the
+low-level `ScreenShell` footer renderer must not. Hosts keep policy over *which* options appear
+(by supplying the `List<ScreenShell.FooterOption>`); `FooterController` owns the generic behaviour
+of wiring those options to actions. **JavaFX application thread only.**
+
+> In a `MAIN_APP_LAYOUT` screen whose dialog slot is a `DialogEntriesView`, the back/forward/history
+> wiring and keyboard shortcuts are already handled by `MainAppLayoutRenderer` (see [Dialog entries
+> widget](#dialog-entries-widget)). Reach for `FooterController` directly when you build a custom
+> screen shell — or any non-`MAIN_APP_LAYOUT` container — and need the standard footer behaviour.
+
+API in `com.eb.javafx.ui` (both methods are `static`):
+
+| Method | Purpose |
+|---|---|
+| `wireFooter(BorderPane root, RouteContext context, List<FooterOption> options, Runnable back, Runnable forward, Runnable skip, Runnable history)` | Render `options` into `root`'s footer (`root.getBottom()` must be the footer `HBox`) and install the hover highlight + id-based click router. Applies live footer preferences (shortcut/icon display) and re-applies them whenever the root re-attaches to a scene or crosses the responsive-width breakpoint, and configures the responsive (compact) footer at 900px. No-op when the bottom node is not an `HBox`. |
+| `installKeyboardShortcuts(Scene scene)` | Add a scene-level `KEY_PRESSED` filter that mirrors footer clicks (delegated to `ScreenShell.dispatchKeyToFooter`) and adds the `F5` quick-save / `F9` quick-load aliases, which have no footer button. Skips already-consumed events so it doesn't double-fire behind a host scene-flow filter. Inert until a `wireFooter` call has captured a `RouteContext`. |
+
+Option dispatch — each footer option is matched by its `id`. The back / forward / skip / history
+callbacks are caller-supplied and may be `null` (a null option simply becomes inert; a null
+`history` action falls back to `SceneRouter.CONVERSATION_HISTORY_ROUTE`). The save, load,
+preferences, and quick-save options are handled **internally** — save/load snapshot the current
+scene and push it onto the back-stack before navigating to the save/load route, preferences pushes
+the preferences route, and quick-save writes straight to the rotating quick-save buffer. The
+public option-id constants are the contract between your `FooterOption` list and this router:
+
+| Constant | Option | Handling |
+|---|---|---|
+| `FooterController.BACK_ID` (`"back"`) | Back | Runs the supplied `back` callback. |
+| `FooterController.FORWARD_ID` (`"forward"`) | Forward | Runs the supplied `forward` callback. |
+| `FooterController.SKIP_MODE_ID` (`"skip-mode"`) | Skip | Runs the supplied `skip` callback. |
+| `FooterController.HISTORY_ID` (`"history"`) | History (◷) | Runs the supplied `history` callback, or navigates to `CONVERSATION_HISTORY_ROUTE` when it is `null`. |
+| `FooterController.SAVE_ID` (`"save"`) | Save | Snapshots the caller scene and pushes the save/load route in `SAVE` mode. |
+| `FooterController.LOAD_ID` (`"load"`) | Load | Snapshots the caller scene and pushes the save/load route in `LOAD` mode. |
+| `FooterController.PREFERENCES_ID` (`"preferences"`) | Preferences | Pushes the preferences route (close button restores the caller scene). |
+| `FooterController.QUICK_SAVE_ID` (`"quick-save"`) | Quick save | `QuickSaveActions.quickSave(context)`; `F9` triggers `quickLoad` behind a confirm. |
+
+Typical wiring for a custom screen shell:
+
+```java
+BorderPane root = new BorderPane(storyNode);
+root.setBottom(ScreenShell.footerBar());   // standard back / history / forward / save / load / prefs
+
+FooterController.wireFooter(
+        root,
+        routeContext,
+        ScreenShell.defaultFooterOptions(),   // or your own List<FooterOption>
+        () -> cursor.goBack(),        // back
+        () -> cursor.goForward(),     // forward
+        () -> skipController.toggle(),// skip
+        null);                        // history -> CONVERSATION_HISTORY_ROUTE
+
+Scene scene = new Scene(root, 1280, 720);
+FooterController.installKeyboardShortcuts(scene);  // Backspace/Space via footer + F5/F9 quick-save
+```
 
 #### Error screen (error and exception surface) <a id="error-screen-error-and-exception-surface"></a>
 
@@ -1423,6 +1504,8 @@ Audio support currently includes:
 - stop tracking for a channel
 
 `AudioAdapterPolicy`, `AudioAssetResolver`, `AudioFadeRequest`, `AudioCrossfadeRequest`, and `AudioPlaybackLifecycleEvent` document reusable expectations for concrete adapters: app-owned asset lookup, channel lifecycle events, fades, crossfades, optional preloading, and channel-specific player pool sizing. `JavaFxAudioPlaybackAdapter` is the opt-in JavaFX media bridge: applications provide the resolver that maps authored paths to concrete media URIs, and the adapter creates `MediaPlayer` instances for looping commands plus pooled `AudioClip` instances for non-looping commands.
+
+Background music loops by default. The `music` channel is the dedicated looping background-music channel (`AudioService.MUSIC_CHANNEL`): build requests with `SoundRequest.music(audioRef)` — a looping request on that channel — so the track repeats when it finishes (the adapter cycles a `MediaPlayer` indefinitely). Through the `GlobalApiAdapter`, `playMusic(sourcePath)` starts looping background music, and `playSound(channelId, sourcePath)` loops automatically when the channel is the music channel while every other channel plays the asset once. To play music without looping, construct an explicit non-looping `SoundRequest` directly.
 
 Concrete media files and path resolution remain application-owned. Applications can use `JavaFxAudioPlaybackAdapter` directly or provide their own `AudioPlaybackAdapter` when they need custom player lifecycle, platform handling, or richer fade/crossfade behavior.
 

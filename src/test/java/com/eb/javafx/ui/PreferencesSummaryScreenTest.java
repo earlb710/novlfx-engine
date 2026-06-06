@@ -17,10 +17,13 @@ import javafx.scene.control.Label;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.RadioButton;
 import javafx.scene.control.ScrollPane;
+import javafx.geometry.Pos;
 import javafx.scene.input.KeyCode;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.scene.Node;
 import javafx.stage.Stage;
@@ -34,6 +37,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
@@ -76,6 +80,102 @@ final class PreferencesSummaryScreenTest {
             assertTrue(block.getChildren().get(0).getStyleClass().contains(ScreenShell.LAYOUT_SECTION_TITLE_STYLE_CLASS));
             assertTrue(block.getChildren().contains(firstRow));
             assertTrue(block.getChildren().contains(secondRow));
+        });
+    }
+
+    @Test
+    void twoColumnBlocksPlacesBlocksAcrossTwoColumns() throws Exception {
+        assumeTrue(!GraphicsEnvironment.isHeadless(), "JavaFX control test requires a display.");
+        runOnJavaFxThread(() -> {
+            VBox a = PreferencesSummaryScreen.settingsBlock("A", new Label("ra"));
+            VBox b = PreferencesSummaryScreen.settingsBlock("B", new Label("rb"));
+            VBox c = PreferencesSummaryScreen.settingsBlock("C", new Label("rc"));
+
+            GridPane grid = PreferencesSummaryScreen.twoColumnBlocks(a, b, c);
+
+            assertEquals(2, grid.getColumnConstraints().size(), "Grid should declare two columns.");
+            assertEquals(50.0, grid.getColumnConstraints().get(0).getPercentWidth(), 0.001);
+            assertEquals(50.0, grid.getColumnConstraints().get(1).getPercentWidth(), 0.001);
+            // Filled left-to-right, top-to-bottom: a=(c0,r0), b=(c1,r0), c=(c0,r1).
+            assertEquals(Integer.valueOf(0), GridPane.getColumnIndex(a));
+            assertEquals(Integer.valueOf(0), GridPane.getRowIndex(a));
+            assertEquals(Integer.valueOf(1), GridPane.getColumnIndex(b));
+            assertEquals(Integer.valueOf(0), GridPane.getRowIndex(b));
+            assertEquals(Integer.valueOf(0), GridPane.getColumnIndex(c));
+            assertEquals(Integer.valueOf(1), GridPane.getRowIndex(c));
+        });
+    }
+
+    @Test
+    void labelFieldRowsRightAlignLabelsAndLeftAlignFields() throws Exception {
+        assumeTrue(!GraphicsEnvironment.isHeadless(), "JavaFX control test requires a display.");
+        runOnJavaFxThread(() -> {
+            PreferencesService preferencesService = new PreferencesService();
+            preferencesService.load();
+
+            UiTheme uiTheme = new UiTheme();
+            uiTheme.initialize(preferencesService);
+
+            Stage stage = new Stage();
+            SceneRouter router = createManualRouter(stage, preferencesService, uiTheme);
+            Scene scene = router.open(SceneRouter.PREFERENCES_ROUTE);
+            stage.setScene(scene);
+
+            BorderPane root = ScreenShell.shellRoot(scene.getRoot());
+            Label themeLabel = findLabel(root, "Theme");
+
+            // Label sits in a fixed-width, right-aligned column.
+            assertEquals(Pos.CENTER_RIGHT, themeLabel.getAlignment(),
+                    "Preference labels should be right-aligned.");
+            assertTrue(themeLabel.getMinWidth() > 0,
+                    "Preference labels should have a fixed column width.");
+
+            // The field follows the label in a left-aligned row, so fields start left.
+            assertTrue(themeLabel.getParent() instanceof HBox, "Label should live in an HBox row.");
+            HBox row = (HBox) themeLabel.getParent();
+            assertEquals(Pos.CENTER_LEFT, row.getAlignment(), "Field column should be left-aligned.");
+            assertEquals(themeLabel, row.getChildren().get(0),
+                    "Label should be the first (left-most) node, with the field to its right.");
+            assertTrue(row.getChildren().get(1) instanceof ComboBox,
+                    "The field should follow the label.");
+            stage.close();
+        });
+    }
+
+    @Test
+    void mainMenuAndCloseButtonsStayBottomCentre() throws Exception {
+        assumeTrue(!GraphicsEnvironment.isHeadless(), "JavaFX layout test requires a display.");
+        runOnJavaFxThread(() -> {
+            PreferencesService preferencesService = new PreferencesService();
+            preferencesService.load();
+
+            UiTheme uiTheme = new UiTheme();
+            uiTheme.initialize(preferencesService);
+
+            Stage stage = new Stage();
+            SceneRouter router = createManualRouter(stage, preferencesService, uiTheme);
+            Scene scene = router.open(SceneRouter.PREFERENCES_ROUTE);
+            stage.setScene(scene);
+
+            BorderPane root = ScreenShell.shellRoot(scene.getRoot());
+            Button mainMenu = findButton(root, "Main Menu");
+
+            // The buttons sit in a horizontally-centred bar.
+            assertTrue(mainMenu.getParent() instanceof HBox, "Buttons should live in an HBox bar.");
+            HBox buttonBar = (HBox) mainMenu.getParent();
+            assertEquals(Pos.CENTER, buttonBar.getAlignment(), "Button bar should be centred horizontally.");
+
+            // That bar is the bottom slot of the content area, anchored bottom-centre, and the
+            // content area grows to fill the height so the bar stays pinned to the screen bottom
+            // even when the (two-column) settings grid is short.
+            assertTrue(buttonBar.getParent() instanceof BorderPane, "Button bar should be a BorderPane slot.");
+            BorderPane contentArea = (BorderPane) buttonBar.getParent();
+            assertSame(buttonBar, contentArea.getBottom(), "Buttons must occupy the bottom slot.");
+            assertEquals(Pos.BOTTOM_CENTER, BorderPane.getAlignment(buttonBar),
+                    "Button bar should be anchored bottom-centre.");
+            assertEquals(Priority.ALWAYS, VBox.getVgrow(contentArea),
+                    "Content area should grow to fill height so the buttons stay at the bottom.");
+            stage.close();
         });
     }
 

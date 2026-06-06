@@ -29,10 +29,15 @@ import javafx.scene.control.Slider;
 import javafx.scene.control.Toggle;
 import javafx.scene.control.ToggleGroup;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.ColumnConstraints;
+import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
+import javafx.scene.text.TextAlignment;
 import javafx.util.StringConverter;
 
 import java.util.List;
@@ -83,33 +88,33 @@ public final class PreferencesSummaryScreen {
                 context.navigateTo(SceneRouter.MAIN_MENU_ROUTE);
             }
         };
-        VBox content = new VBox(10);
-        content.getChildren().add(settingsBlock(
-                screenText("block.audio.title"),
-                volumeRow(context, screenText("item.master-volume.label"), context.preferencesService().masterVolume(),
-                        PreferencesSummaryScreen::saveMasterVolume),
-                volumeRow(context, screenText("item.music-volume.label"), context.preferencesService().musicVolume(),
-                        PreferencesSummaryScreen::saveMusicVolume),
-                volumeRow(context, screenText("item.sound-volume.label"), context.preferencesService().soundVolume(),
-                        PreferencesSummaryScreen::saveSoundVolume),
-                muteAllRow(context)));
-        content.getChildren().add(settingsBlock(
-                screenText("block.visual.title"),
-                themeSelectionRow(context),
-                hudOpacityRow(context),
-                footerIconDisplayRow(context),
-                footerDisplayRow(context),
-                fullscreenRow(context)));
-        content.getChildren().add(settingsBlock(
-                screenText("block.text.title"),
-                textSizeRow(context),
-                textSpeedRow(context)));
-        content.getChildren().add(settingsBlock(
-                screenText("block.save.title"),
-                autoSaveDailyRow(context)));
-        content.getChildren().add(settingsBlock(
-                screenText("block.language.title"),
-                languageRow(context)));
+        GridPane content = twoColumnBlocks(
+                settingsBlock(
+                        screenText("block.audio.title"),
+                        volumeRow(context, screenText("item.master-volume.label"), context.preferencesService().masterVolume(),
+                                PreferencesSummaryScreen::saveMasterVolume),
+                        volumeRow(context, screenText("item.music-volume.label"), context.preferencesService().musicVolume(),
+                                PreferencesSummaryScreen::saveMusicVolume),
+                        volumeRow(context, screenText("item.sound-volume.label"), context.preferencesService().soundVolume(),
+                                PreferencesSummaryScreen::saveSoundVolume),
+                        muteAllRow(context)),
+                settingsBlock(
+                        screenText("block.visual.title"),
+                        themeSelectionRow(context),
+                        hudOpacityRow(context),
+                        footerIconDisplayRow(context),
+                        footerDisplayRow(context),
+                        fullscreenRow(context)),
+                settingsBlock(
+                        screenText("block.text.title"),
+                        textSizeRow(context),
+                        textSpeedRow(context)),
+                settingsBlock(
+                        screenText("block.save.title"),
+                        autoSaveDailyRow(context)),
+                settingsBlock(
+                        screenText("block.language.title"),
+                        languageRow(context)));
 
         ScrollPane scrollPane = new ScrollPane(content);
         scrollPane.setFitToWidth(true);
@@ -139,6 +144,13 @@ public final class PreferencesSummaryScreen {
         BorderPane contentArea = new BorderPane();
         contentArea.setCenter(scrollPane);
         contentArea.setBottom(closeBox);
+        BorderPane.setAlignment(closeBox, Pos.BOTTOM_CENTER);
+        // The shell wraps this content in a top-aligned VBox, which would otherwise size the
+        // content area to its preferred height — leaving the button bar floating just below the
+        // (now shorter, two-column) settings grid. Grow the content area to fill the available
+        // height so the Main Menu / Close buttons stay pinned to the bottom-centre of the screen.
+        contentArea.setMaxHeight(Double.MAX_VALUE);
+        VBox.setVgrow(contentArea, Priority.ALWAYS);
 
         BorderPane root = ScreenShell.titled(viewModel.title(), contentArea, footerOptions());
         HBox footer = (HBox) root.getBottom();
@@ -264,6 +276,61 @@ public final class PreferencesSummaryScreen {
         return ScreenShell.styledPanel(ScreenShell.LAYOUT_CARD_STYLE_CLASS, blockChildren);
     }
 
+    /** Horizontal gap and resting column count for the preferences block grid. */
+    private static final double BLOCK_GRID_GAP = 10;
+    private static final int BLOCK_COLUMNS = 2;
+
+    /**
+     * Lays the settings blocks out in a two-column grid (filled left-to-right, top-to-bottom).
+     * Both columns share the available width equally and the blocks stretch to fill their cell so
+     * the cards line up. The host {@link ScrollPane} keeps the grid scrollable when the rows exceed
+     * the viewport height.
+     */
+    static GridPane twoColumnBlocks(VBox... blocks) {
+        GridPane grid = new GridPane();
+        grid.setHgap(BLOCK_GRID_GAP);
+        grid.setVgap(BLOCK_GRID_GAP);
+        for (int column = 0; column < BLOCK_COLUMNS; column++) {
+            ColumnConstraints constraints = new ColumnConstraints();
+            constraints.setPercentWidth(100.0 / BLOCK_COLUMNS);
+            constraints.setHgrow(Priority.ALWAYS);
+            constraints.setFillWidth(true);
+            grid.getColumnConstraints().add(constraints);
+        }
+        for (int index = 0; index < blocks.length; index++) {
+            VBox block = blocks[index];
+            block.setMaxWidth(Double.MAX_VALUE);
+            GridPane.setHgrow(block, Priority.ALWAYS);
+            GridPane.setFillWidth(block, true);
+            grid.add(block, index % BLOCK_COLUMNS, index / BLOCK_COLUMNS);
+        }
+        return grid;
+    }
+
+    /** Fixed width of the right-aligned label column so every "label + field" row lines its
+     *  fields up at the same x-position. */
+    private static final double LABEL_COLUMN_WIDTH = 150;
+
+    /**
+     * Builds a "label + field" preference row as two columns: the label sits in a fixed-width,
+     * right-aligned column and the field (plus any trailing nodes) start left-aligned immediately
+     * after it, so fields line up vertically across rows.
+     */
+    private static HBox labeledRow(String labelText, Node field, Node... trailing) {
+        Label label = new Label(labelText);
+        label.getStyleClass().add(ScreenShell.SCREEN_TEXT_STYLE_CLASS);
+        label.setMinWidth(LABEL_COLUMN_WIDTH);
+        label.setPrefWidth(LABEL_COLUMN_WIDTH);
+        label.setMaxWidth(Region.USE_PREF_SIZE);
+        label.setAlignment(Pos.CENTER_RIGHT);
+        label.setTextAlignment(TextAlignment.RIGHT);
+        HBox row = new HBox(8, label, field);
+        row.getChildren().addAll(trailing);
+        row.setAlignment(Pos.CENTER_LEFT);
+        row.getStyleClass().add(ScreenShell.LAYOUT_SECTION_ROW_STYLE_CLASS);
+        return row;
+    }
+
     static String percentLabel(double volume) {
         return Math.round(volume * VOLUME_PERCENT_SCALE) + "%";
     }
@@ -284,13 +351,13 @@ public final class PreferencesSummaryScreen {
             String labelText,
             double currentVolume,
             VolumeSaver volumeSaver) {
-        Label label = new Label(labelText);
-        label.getStyleClass().add(ScreenShell.SCREEN_TEXT_STYLE_CLASS);
         Slider slider = new Slider(0, VOLUME_PERCENT_SCALE, currentVolume * VOLUME_PERCENT_SCALE);
         slider.setShowTickLabels(true);
         slider.setShowTickMarks(true);
         slider.setMajorTickUnit(25);
         slider.setBlockIncrement(10);
+        slider.setMaxWidth(Double.MAX_VALUE);
+        HBox.setHgrow(slider, Priority.ALWAYS);
         Label value = new Label(percentLabel(currentVolume));
         value.getStyleClass().add(ScreenShell.SCREEN_VALUE_STYLE_CLASS);
         slider.valueProperty().addListener((observable, previous, current) -> {
@@ -298,9 +365,7 @@ public final class PreferencesSummaryScreen {
             value.setText(percentLabel(updatedVolume));
             volumeSaver.save(context, updatedVolume);
         });
-        HBox row = new HBox(8, label, slider, value);
-        row.getStyleClass().add(ScreenShell.LAYOUT_SECTION_ROW_STYLE_CLASS);
-        return row;
+        return labeledRow(labelText, slider, value);
     }
 
     /** Global text-size choices mapped to font-scale factors.  Accessibility control: bump every
@@ -338,8 +403,6 @@ public final class PreferencesSummaryScreen {
     }
 
     private static HBox textSizeRow(RouteContext context) {
-        Label label = new Label(screenText("item.text-size.label"));
-        label.getStyleClass().add(ScreenShell.SCREEN_TEXT_STYLE_CLASS);
         ComboBox<TextSize> comboBox = new ComboBox<>();
         comboBox.getItems().addAll(TextSize.values());
         comboBox.setConverter(new StringConverter<>() {
@@ -365,9 +428,7 @@ public final class PreferencesSummaryScreen {
                 applyFontScale(context, selected.scale);
             }
         });
-        HBox row = new HBox(8, label, comboBox);
-        row.getStyleClass().add(ScreenShell.LAYOUT_SECTION_ROW_STYLE_CLASS);
-        return row;
+        return labeledRow(screenText("item.text-size.label"), comboBox);
     }
 
     /** Persists the global font scale, re-initialises the theme (which rewrites all font sizes),
@@ -424,8 +485,6 @@ public final class PreferencesSummaryScreen {
     }
 
     private static HBox hudOpacityRow(RouteContext context) {
-        Label label = new Label(screenText("item.hud-opacity.label"));
-        label.getStyleClass().add(ScreenShell.SCREEN_TEXT_STYLE_CLASS);
         ComboBox<HudOpacity> comboBox = new ComboBox<>();
         comboBox.getItems().addAll(HudOpacity.values());
         comboBox.setConverter(new StringConverter<>() {
@@ -454,14 +513,10 @@ public final class PreferencesSummaryScreen {
                         selected.alpha, context.preferencesService().sayWindowAlpha());
             }
         });
-        HBox row = new HBox(8, label, comboBox);
-        row.getStyleClass().add(ScreenShell.LAYOUT_SECTION_ROW_STYLE_CLASS);
-        return row;
+        return labeledRow(screenText("item.hud-opacity.label"), comboBox);
     }
 
     private static HBox themeSelectionRow(RouteContext context) {
-        Label label = new Label(screenText("item.theme.label"));
-        label.getStyleClass().add(ScreenShell.SCREEN_TEXT_STYLE_CLASS);
         ComboBox<ThemeChoice> comboBox = new ComboBox<>();
         comboBox.getItems().addAll(themeChoices());
         comboBox.setConverter(new StringConverter<>() {
@@ -485,14 +540,10 @@ public final class PreferencesSummaryScreen {
                 applyTheme(context, selected.family(), selected.variant());
             }
         });
-        HBox row = new HBox(8, label, comboBox);
-        row.getStyleClass().add(ScreenShell.LAYOUT_SECTION_ROW_STYLE_CLASS);
-        return row;
+        return labeledRow(screenText("item.theme.label"), comboBox);
     }
 
     private static HBox footerDisplayRow(RouteContext context) {
-        Label label = new Label(screenText("item.footer-shortcuts.label"));
-        label.getStyleClass().add(ScreenShell.SCREEN_TEXT_STYLE_CLASS);
         ComboBox<FooterShortcutDisplay> comboBox = new ComboBox<>();
         comboBox.getItems().addAll(FooterShortcutDisplay.values());
         comboBox.setConverter(new StringConverter<>() {
@@ -519,14 +570,10 @@ public final class PreferencesSummaryScreen {
                 applyCurrentFooterPreferences(context);
             }
         });
-        HBox row = new HBox(8, label, comboBox);
-        row.getStyleClass().add(ScreenShell.LAYOUT_SECTION_ROW_STYLE_CLASS);
-        return row;
+        return labeledRow(screenText("item.footer-shortcuts.label"), comboBox);
     }
 
     private static HBox footerIconDisplayRow(RouteContext context) {
-        Label label = new Label(screenText("item.footer-icon-display.label"));
-        label.getStyleClass().add(ScreenShell.SCREEN_TEXT_STYLE_CLASS);
         ComboBox<FooterIconDisplay> comboBox = new ComboBox<>();
         comboBox.getItems().addAll(FooterIconDisplay.values());
         comboBox.setConverter(new StringConverter<>() {
@@ -553,9 +600,7 @@ public final class PreferencesSummaryScreen {
                 applyCurrentFooterPreferences(context);
             }
         });
-        HBox row = new HBox(8, label, comboBox);
-        row.getStyleClass().add(ScreenShell.LAYOUT_SECTION_ROW_STYLE_CLASS);
-        return row;
+        return labeledRow(screenText("item.footer-icon-display.label"), comboBox);
     }
 
     private static HBox muteAllRow(RouteContext context) {
@@ -601,8 +646,6 @@ public final class PreferencesSummaryScreen {
     }
 
     private static HBox textSpeedRow(RouteContext context) {
-        Label label = new Label(screenText("item.text-speed.label"));
-        label.getStyleClass().add(ScreenShell.SCREEN_TEXT_STYLE_CLASS);
         ComboBox<TextSpeed> comboBox = new ComboBox<>();
         comboBox.getItems().addAll(TextSpeed.values());
         comboBox.setConverter(new StringConverter<>() {
@@ -628,9 +671,7 @@ public final class PreferencesSummaryScreen {
                 context.preferencesService().saveTextSpeed(selected);
             }
         });
-        HBox row = new HBox(8, label, comboBox);
-        row.getStyleClass().add(ScreenShell.LAYOUT_SECTION_ROW_STYLE_CLASS);
-        return row;
+        return labeledRow(screenText("item.text-speed.label"), comboBox);
     }
 
     private static HBox languageRow(RouteContext context) {

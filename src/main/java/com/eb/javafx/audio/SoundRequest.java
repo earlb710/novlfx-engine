@@ -40,6 +40,17 @@ public final class SoundRequest {
         return new SoundRequest(channelId, audioRef, false, 1.0);
     }
 
+    /**
+     * Creates a looping background-music request at full relative volume on the
+     * {@link AudioService#MUSIC_CHANNEL music channel}. Background music plays on repeat so it keeps
+     * going when the track finishes; the adapter honours the loop flag by cycling indefinitely.
+     *
+     * @param audioRef non-blank authored music asset path
+     */
+    public static SoundRequest music(String audioRef) {
+        return new SoundRequest(AudioService.MUSIC_CHANNEL, audioRef, true, 1.0);
+    }
+
     public String channelId() {
         return channelId;
     }

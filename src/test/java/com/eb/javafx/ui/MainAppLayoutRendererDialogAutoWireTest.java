@@ -109,6 +109,56 @@ final class MainAppLayoutRendererDialogAutoWireTest {
     }
 
     @Test
+    void rendererWiresFooterAsHoverCompanionSoFooterHoverKeepsDialogLifted() {
+        DialogEntriesView dialog = new DialogEntriesView();
+        dialog.addEntry("Line A");
+
+        StackPane storyArea = new StackPane();
+        MainAppLayoutPlan plan = new MainAppLayoutPlan(
+                "hover-companion",
+                null,
+                ScreenBackgroundFit.STRETCH,
+                1.0,
+                "#000000",
+                "story",
+                "dialog",
+                MainAppLayoutPlan.DEFAULT_STORY_DIALOG_RATIO,
+                MainAppLayoutOrientation.VERTICAL,
+                /* showFooter */ true,
+                MainAppLayoutInsets.EMPTY,
+                MainAppLayoutInsets.EMPTY,
+                List.of());
+
+        MainAppScreenResolver resolver = id -> switch (id) {
+            case "story" -> storyArea;
+            case "dialog" -> dialog;
+            default -> null;
+        };
+
+        StackPane root = MainAppLayoutRenderer.render(plan, resolver, null);
+        HBox footer = findFooter(root);
+        assertNotNull(footer, "Renderer should produce a footer when showFooter=true.");
+
+        // Host opts into the hover fade: the dialog dims while unhovered, lifts while hovered.
+        dialog.setHoverFadeOpacities(1.0, 0.2);
+        dialog.setHoverFadeEnabled(true);
+        assertEquals(0.2, dialog.getOpacity(), 0.001,
+                "Dialog starts unhovered (faded) before any pointer enters.");
+
+        // Pointer enters the FOOTER (not the dialog itself). Because the renderer registered the
+        // footer as a hover companion, the dialog treats itself as hovered and lifts the fade — as
+        // if the pointer were over the dialog block.
+        footer.fireEvent(syntheticMouse(footer, javafx.scene.input.MouseEvent.MOUSE_ENTERED));
+        assertEquals(1.0, dialog.getOpacity(), 0.001,
+                "Hovering the footer must lift the dialog's hover-fade.");
+
+        // Pointer leaves the footer with no other source hovered — the fade drops back.
+        footer.fireEvent(syntheticMouse(footer, javafx.scene.input.MouseEvent.MOUSE_EXITED));
+        assertEquals(0.2, dialog.getOpacity(), 0.001,
+                "Leaving the footer drops the dialog back to its unhovered opacity.");
+    }
+
+    @Test
     void rendererSkipsAutoWireWhenFooterIsDisabled() {
         DialogEntriesView dialog = new DialogEntriesView();
         dialog.addEntry("Only line.");
@@ -241,6 +291,19 @@ final class MainAppLayoutRendererDialogAutoWireTest {
             }
         }
         return null;
+    }
+
+    private static javafx.scene.input.MouseEvent syntheticMouse(
+            Node target, javafx.event.EventType<javafx.scene.input.MouseEvent> type) {
+        return new javafx.scene.input.MouseEvent(
+                target, target,
+                type,
+                0, 0, 0, 0,
+                javafx.scene.input.MouseButton.NONE,
+                0,
+                false, false, false, false,
+                false, false, false, false, false, false,
+                null);
     }
 
     private static javafx.scene.input.MouseEvent syntheticClick(Node target) {

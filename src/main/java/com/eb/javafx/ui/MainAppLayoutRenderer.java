@@ -156,6 +156,14 @@ public final class MainAppLayoutRenderer {
             return;
         }
         dialog.bindToFooter(root);
+        // Extend the dialog block's hover state to the footer bar: moving the pointer down onto the
+        // footer keeps the dialog in its hovered style (e.g. the hover-fade stays lifted) instead of
+        // dropping it the instant the pointer leaves the dialog's own bounds. No effect unless the
+        // host has opted into the hover fade via DialogEntriesView.setHoverFadeEnabled(true).
+        HBox footerBar = ScreenShell.findFooterBar(root);
+        if (footerBar != null) {
+            dialog.addHoverCompanion(footerBar);
+        }
         Node storyArea = findStyledNode(frame, "layout-main-app-story-area");
         if (storyArea != null) {
             double dialogHeightShare = 1.0 - plan.storyDialogRatio();

@@ -36,6 +36,23 @@ final class AudioQueueTest {
     }
 
     @Test
+    void musicFactoryBuildsLoopingRequestOnMusicChannel() {
+        SoundRequest request = SoundRequest.music("music/theme.ogg");
+        assertEquals(AudioService.MUSIC_CHANNEL, request.channelId());
+        assertEquals("music/theme.ogg", request.sourcePath());
+        assertTrue(request.loop(), "Background music should loop so it repeats when finished.");
+        assertEquals(1.0, request.relativeVolume(), 0.0001);
+    }
+
+    @Test
+    void musicRequestPlaysAsLoopingCommand() {
+        AudioService service = initializedService();
+        AudioPlaybackCommand command = service.play(SoundRequest.music("music/theme.ogg"));
+        assertTrue(command.loop(), "Music playback command should loop indefinitely.");
+        assertEquals(AudioService.MUSIC_CHANNEL, command.channelId());
+    }
+
+    @Test
     void queueMusicStoresPendingRequest() {
         AudioService service = initializedService();
         SoundRequest queued = SoundRequest.queued("music/track2.ogg", AudioService.MUSIC_CHANNEL);

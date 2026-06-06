@@ -82,9 +82,22 @@ public final class GlobalApiAdapter {
         return Optional.ofNullable(lastRouteRequest);
     }
 
-    /** Validates and records a sound request through the JavaFX audio service. */
+    /**
+     * Validates and records a sound request through the JavaFX audio service. Requests on the
+     * {@link AudioService#MUSIC_CHANNEL music channel} loop (background music repeats when the track
+     * finishes); every other channel plays the asset once.
+     */
     public AudioPlaybackCommand playSound(String channelId, String sourcePath) {
-        return audioService.play(new SoundRequest(channelId, sourcePath, false, 1.0));
+        boolean loop = AudioService.MUSIC_CHANNEL.equals(channelId);
+        return audioService.play(new SoundRequest(channelId, sourcePath, loop, 1.0));
+    }
+
+    /**
+     * Starts looping background music on the {@link AudioService#MUSIC_CHANNEL music channel}, so the
+     * track repeats when it finishes.
+     */
+    public AudioPlaybackCommand playMusic(String sourcePath) {
+        return audioService.play(SoundRequest.music(sourcePath));
     }
 
     private GlobalRouteRequest routeRequest(GlobalRouteAction action, String routeId) {

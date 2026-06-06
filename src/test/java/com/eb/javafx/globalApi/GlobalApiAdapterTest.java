@@ -1,5 +1,6 @@
 package com.eb.javafx.globalApi;
 
+import com.eb.javafx.audio.AudioPlaybackCommand;
 import com.eb.javafx.audio.AudioService;
 import com.eb.javafx.content.ContentRegistry;
 import com.eb.javafx.content.EnginePlaceholderContentModule;
@@ -17,6 +18,7 @@ import java.util.prefs.BackingStoreException;
 import java.util.prefs.Preferences;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -56,5 +58,28 @@ final class GlobalApiAdapterTest {
         assertEquals(GlobalRouteAction.HIDE_SCREEN, adapter.hideScreen(SceneRouter.HUD_ROUTE).action());
         assertTrue(adapter.visibleScreens().isEmpty());
         assertThrows(IllegalStateException.class, () -> adapter.jump("missing"));
+    }
+
+    @Test
+    void backgroundMusicLoopsWhileOtherChannelsPlayOnce() {
+        PreferencesService preferencesService = new PreferencesService();
+        preferencesService.load();
+        SceneRouter sceneRouter = new SceneRouter();
+        GameRandomService randomService = new GameRandomService();
+        randomService.initialize();
+        AudioService audioService = new AudioService();
+        audioService.initialize(preferencesService);
+        GlobalApiAdapter adapter = new GlobalApiAdapter(randomService, sceneRouter, audioService);
+
+        // Background music repeats when finished.
+        AudioPlaybackCommand music = adapter.playSound(AudioService.MUSIC_CHANNEL, "music/theme.ogg");
+        assertTrue(music.loop(), "Music channel playback should loop.");
+
+        AudioPlaybackCommand explicitMusic = adapter.playMusic("music/theme.ogg");
+        assertTrue(explicitMusic.loop(), "playMusic should loop.");
+
+        // Other channels stay one-shot.
+        AudioPlaybackCommand sound = adapter.playSound(AudioService.SOUND_CHANNEL, "sfx/click.ogg");
+        assertFalse(sound.loop(), "Non-music channels should play once.");
     }
 }

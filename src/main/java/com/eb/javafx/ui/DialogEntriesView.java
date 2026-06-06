@@ -301,6 +301,8 @@ public final class DialogEntriesView extends ScrollPane {
     private Node wiredHistoryStoryNode;
     /** Tracks scenes that already have the keyboard shortcut filter installed so installation is idempotent. */
     private final java.util.Set<javafx.scene.Scene> wiredScenes = new java.util.HashSet<>();
+    /** Companion nodes already registered as hover sources so {@link #addHoverCompanion(Node)} is idempotent. */
+    private final java.util.Set<Node> wiredHoverCompanions = new java.util.HashSet<>();
     /**
      * Sentinel value representing the dialog widget itself as a hover source — distinguishes
      * self-hover from companion-node hover in {@link #activeHoverSources} so each source can be
@@ -485,11 +487,17 @@ public final class DialogEntriesView extends ScrollPane {
      * "lifted" state to nearby UI (typically the footer bar) so players can read the dialog
      * clearly while clicking back/forward/auto-skip controls that sit outside the widget itself.
      *
-     * <p>Idempotent registration isn't enforced — handing the same node to this method twice
-     * registers two listeners. Wire it once during layout assembly.</p>
+     * <p>Idempotent — registering the same {@code companion} again is a no-op, so it is safe for
+     * {@code MainAppLayoutRenderer} to auto-wire the footer while an application also calls this
+     * manually.</p>
      */
     public void addHoverCompanion(Node companion) {
         Validation.requireNonNull(companion, "Hover companion is required.");
+        if (!wiredHoverCompanions.add(companion)) {
+            // Already registered as a hover source (e.g. the renderer auto-wired this footer and
+            // the application wired it again). Skip so we don't stack duplicate listeners.
+            return;
+        }
         Object source = companion;
         companion.hoverProperty().addListener((obs, was, hovering) -> updateHoverSource(source, hovering));
         companion.addEventHandler(MouseEvent.MOUSE_ENTERED, event -> updateHoverSource(source, true));
