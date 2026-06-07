@@ -25,6 +25,7 @@ import javafx.scene.shape.CullFace;
 import javafx.scene.shape.DrawMode;
 import javafx.scene.shape.MeshView;
 import javafx.scene.shape.TriangleMesh;
+import javafx.scene.shape.VertexFormat;
 import javafx.scene.transform.Rotate;
 
 import java.io.IOException;
@@ -192,10 +193,16 @@ public final class GltfLoader {
                     ? "mesh" : meshModel.getName();
             List<MeshPrimitiveModel> prims = meshModel.getMeshPrimitiveModels();
             for (int i = 0; i < prims.size(); i++) {
-                MeshView view = buildPrimitive(prims.get(i), skin, jointMatrices);
+                MeshPrimitiveModel prim = prims.get(i);
+                MeshView view = buildPrimitive(prim, skin, jointMatrices);
                 if (view != null) {
                     parent.getChildren().add(view);
-                    String partName = prims.size() == 1 ? meshName : meshName + " #" + (i + 1);
+                    // Prefer the material name (Face, Torso, Arms, …) so the parts tree shows the
+                    // real component list; fall back to the mesh name + index.
+                    String matName = prim.getMaterialModel() == null ? null : prim.getMaterialModel().getName();
+                    String partName = (matName != null && !matName.isBlank())
+                            ? matName
+                            : (prims.size() == 1 ? meshName : meshName + " #" + (i + 1));
                     parts.add(new BakedPart(meshName, partName, view));
                 }
             }
@@ -215,24 +222,26 @@ public final class GltfLoader {
         int vertexCount = posAccessor.getCount();
         float[] positions = readFloats(posAccessor.getAccessorData(), vertexCount * 3);
 
-        // Apply skinning if we have joint matrices and skin data.
+        // Authored normals (used so smooth shading survives UV seams — without them JavaFX
+        // auto-computes faceted normals that break at every seam, leaving visible lines).
+        AccessorModel normAccessor = primitive.getAttributes().get("NORMAL");
+        float[] normals = (normAccessor != null)
+                ? readFloats(normAccessor.getAccessorData(), normAccessor.getCount() * 3) : null;
+
+        // Apply skinning to positions (and the same joints/weights to normals — rotation only).
         if (skin != null && jointMatrices != null) {
             positions = applySkinning(positions, vertexCount, primitive, skin, jointMatrices);
+            if (normals != null) {
+                normals = applyNormalSkinning(normals, vertexCount, primitive, skin, jointMatrices);
+            }
         }
 
-        // UV coords — flip V for JavaFX (GLTF origin is top-left, same as JavaFX, but
-        // Blender sometimes exports with V flipped depending on the material).
+        // UV coords — glTF and JavaFX both use a top-left UV origin, so V maps DIRECTLY (no flip).
         AccessorModel texAccessor = primitive.getAttributes().get("TEXCOORD_0");
-        float[] texCoords;
         boolean hasUvs = texAccessor != null;
+        float[] texCoords;
         if (hasUvs) {
-            int uvCount = texAccessor.getCount();
-            float[] raw = readFloats(texAccessor.getAccessorData(), uvCount * 2);
-            texCoords = new float[raw.length];
-            for (int i = 0; i < uvCount; i++) {
-                texCoords[i * 2]     = raw[i * 2];
-                texCoords[i * 2 + 1] = 1.0f - raw[i * 2 + 1]; // flip V
-            }
+            texCoords = readFloats(texAccessor.getAccessorData(), texAccessor.getCount() * 2);
         } else {
             texCoords = new float[]{0f, 0f};
         }
@@ -251,12 +260,26 @@ public final class GltfLoader {
         mesh.getPoints().addAll(positions);
         mesh.getTexCoords().addAll(texCoords);
 
-        int[] faceArray = new int[indices.length * 2];
-        for (int i = 0; i < indices.length; i++) {
-            faceArray[i * 2]     = indices[i];
-            faceArray[i * 2 + 1] = hasUvs ? indices[i] : 0;
+        if (normals != null) {
+            // POINT_NORMAL_TEXCOORD: supply authored normals; faces carry 9 ints/triangle
+            // (point, normal, texcoord index — all equal since glTF is parallel-indexed).
+            mesh.setVertexFormat(VertexFormat.POINT_NORMAL_TEXCOORD);
+            mesh.getNormals().addAll(normals);
+            int[] faceArray = new int[indices.length * 3];
+            for (int i = 0; i < indices.length; i++) {
+                faceArray[i * 3]     = indices[i];
+                faceArray[i * 3 + 1] = indices[i];
+                faceArray[i * 3 + 2] = hasUvs ? indices[i] : 0;
+            }
+            mesh.getFaces().addAll(faceArray);
+        } else {
+            int[] faceArray = new int[indices.length * 2];
+            for (int i = 0; i < indices.length; i++) {
+                faceArray[i * 2]     = indices[i];
+                faceArray[i * 2 + 1] = hasUvs ? indices[i] : 0;
+            }
+            mesh.getFaces().addAll(faceArray);
         }
-        mesh.getFaces().addAll(faceArray);
 
         PhongMaterial mat = buildMaterial(primitive.getMaterialModel());
 
@@ -297,6 +320,44 @@ public final class GltfLoader {
                 ry += w * (m[1]*px + m[5]*py + m[9]*pz  + m[13]);
                 rz += w * (m[2]*px + m[6]*py + m[10]*pz + m[14]);
             }
+            result[v * 3]     = rx;
+            result[v * 3 + 1] = ry;
+            result[v * 3 + 2] = rz;
+        }
+        return result;
+    }
+
+    /**
+     * Skins vertex normals with the same joints/weights as positions, but using only the
+     * rotation part of each joint matrix (no translation), then renormalises. Keeps lighting
+     * correct on a posed mesh.
+     */
+    private static float[] applyNormalSkinning(float[] normals, int vertexCount,
+                                               MeshPrimitiveModel primitive,
+                                               SkinModel skin, float[][] jointMatrices) {
+        AccessorModel jointsAccessor  = primitive.getAttributes().get("JOINTS_0");
+        AccessorModel weightsAccessor = primitive.getAttributes().get("WEIGHTS_0");
+        if (jointsAccessor == null || weightsAccessor == null) return normals;
+
+        int[] joints   = readJointIndices(jointsAccessor.getAccessorData(), vertexCount);
+        float[] weights = readFloats(weightsAccessor.getAccessorData(), vertexCount * 4);
+
+        float[] result = new float[normals.length];
+        for (int v = 0; v < vertexCount; v++) {
+            float nx = normals[v * 3], ny = normals[v * 3 + 1], nz = normals[v * 3 + 2];
+            float rx = 0, ry = 0, rz = 0;
+            for (int b = 0; b < 4; b++) {
+                float w = weights[v * 4 + b];
+                if (w < 1e-6f) continue;
+                int jIdx = joints[v * 4 + b];
+                if (jIdx >= jointMatrices.length) continue;
+                float[] m = jointMatrices[jIdx]; // column-major 4×4 (rotation in 0,1,2,4,5,6,8,9,10)
+                rx += w * (m[0]*nx + m[4]*ny + m[8]*nz);
+                ry += w * (m[1]*nx + m[5]*ny + m[9]*nz);
+                rz += w * (m[2]*nx + m[6]*ny + m[10]*nz);
+            }
+            float len = (float) Math.sqrt(rx*rx + ry*ry + rz*rz);
+            if (len > 1e-8f) { rx /= len; ry /= len; rz /= len; }
             result[v * 3]     = rx;
             result[v * 3 + 1] = ry;
             result[v * 3 + 2] = rz;
@@ -450,15 +511,43 @@ public final class GltfLoader {
         PhongMaterial mat = new PhongMaterial(Color.LIGHTSTEELBLUE);
         if (matModel == null) return mat;
 
-        // Try to get the base colour texture from the first texture in the model.
-        // Proper PBR texture lookup requires the v2 material extension API which is
-        // version-specific; for now we apply the first available embedded image.
+        // Map each material to its OWN PBR base-colour texture/factor (glTF 2.0 / MaterialModelV2),
+        // rather than blanket-applying the first texture to every material.
+        if (matModel instanceof de.javagl.jgltf.model.v2.MaterialModelV2 v2) {
+            de.javagl.jgltf.model.TextureModel tex = v2.getBaseColorTexture();
+            boolean hasTex = false;
+            if (tex != null) {
+                Image img = loadTextureImage(tex);
+                if (img != null) {
+                    mat.setDiffuseMap(img);
+                    hasTex = true;
+                }
+            }
+            float[] f = v2.getBaseColorFactor();
+            if (hasTex) {
+                // Show the texture's true colours (a black/zero factor would otherwise blacken it).
+                mat.setDiffuseColor(Color.WHITE);
+            } else if (f != null && f.length >= 3 && (f[0] + f[1] + f[2] > 0.01)) {
+                mat.setDiffuseColor(new Color(clamp(f[0]), clamp(f[1]), clamp(f[2]),
+                        f.length > 3 ? clamp(f[3]) : 1.0));
+            }
+            return mat;
+        }
+
+        // Fallback for non-v2 materials: first available embedded image, if any.
         List<TextureModel> textures = model.getTextureModels();
         if (!textures.isEmpty()) {
             Image img = loadTextureImage(textures.get(0));
-            if (img != null) mat.setDiffuseMap(img);
+            if (img != null) {
+                mat.setDiffuseMap(img);
+                mat.setDiffuseColor(Color.WHITE);
+            }
         }
         return mat;
+    }
+
+    private static double clamp(double v) {
+        return Math.max(0.0, Math.min(1.0, v));
     }
 
     private static Image loadTextureImage(TextureModel tex) {
