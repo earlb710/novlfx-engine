@@ -136,7 +136,12 @@ public final class PreferencesSummaryScreen {
         // the footer close icon and the Ctrl+P shortcut.
         Button closeButton = ButtonVisuals.applySvgArtwork(new Button(screenText("item.close.label")));
         closeButton.setOnAction(event -> closeAction.run());
-        closeButton.setMinWidth(220);
+        // Match the Main Menu button's size exactly — its longer label otherwise makes it grow
+        // wider than the 220 floor, leaving the Close button visibly smaller. Binding min + pref +
+        // max to the Main Menu button's actual width keeps the two footer buttons identical.
+        closeButton.minWidthProperty().bind(mainMenuButton.widthProperty());
+        closeButton.prefWidthProperty().bind(mainMenuButton.widthProperty());
+        closeButton.maxWidthProperty().bind(mainMenuButton.widthProperty());
         HBox closeBox = new HBox(12, mainMenuButton, closeButton);
         closeBox.setAlignment(Pos.CENTER);
         closeBox.setPadding(new Insets(12, 0, 12, 0));

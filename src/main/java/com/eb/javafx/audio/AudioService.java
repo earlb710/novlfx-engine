@@ -4,8 +4,10 @@ import com.eb.javafx.prefs.PreferencesService;
 import com.eb.javafx.util.InitializationGuard;
 import com.eb.javafx.util.Validation;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -34,6 +36,7 @@ public final class AudioService {
     private final Map<String, SoundRequest> queuedRequests = new LinkedHashMap<>();
     private final Map<String, AudioChannelConfig> channelConfigs = new LinkedHashMap<>();
     private final InitializationGuard initializationGuard = new InitializationGuard("Audio service used before initialization.");
+    private final List<Runnable> volumeChangeListeners = new ArrayList<>();
     private boolean muted;
     private double masterVolume;
 
@@ -104,6 +107,7 @@ public final class AudioService {
     public void setMasterVolume(double masterVolume) {
         assertInitialized();
         this.masterVolume = clampVolume(masterVolume);
+        fireVolumeChanged();
     }
 
     /** Returns the current per-channel volume multiplier. */
@@ -118,12 +122,36 @@ public final class AudioService {
         assertInitialized();
         requireChannel(channelId);
         channelVolumes.put(channelId, clampVolume(volume));
+        fireVolumeChanged();
     }
 
     /** Mutes future playback commands without forgetting configured volumes. */
     public void setMuted(boolean muted) {
         assertInitialized();
         this.muted = muted;
+        fireVolumeChanged();
+    }
+
+    /**
+     * Registers a listener fired whenever the master volume, a channel volume, or the mute state
+     * changes. Lets a host that drives its own media players (outside the command/adapter path —
+     * e.g. a looping-music player) re-apply the effective volume immediately when the user adjusts
+     * the sound settings. Listeners run on the calling thread (the JavaFX thread for UI changes).
+     */
+    public void addVolumeChangeListener(Runnable listener) {
+        if (listener != null) {
+            volumeChangeListeners.add(listener);
+        }
+    }
+
+    private void fireVolumeChanged() {
+        for (Runnable listener : volumeChangeListeners) {
+            try {
+                listener.run();
+            } catch (RuntimeException ignored) {
+                // A misbehaving listener must not break volume updates for the others.
+            }
+        }
     }
 
     /** Returns whether playback commands should resolve to silent effective volume. */
