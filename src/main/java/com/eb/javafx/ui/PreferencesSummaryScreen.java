@@ -51,6 +51,8 @@ public final class PreferencesSummaryScreen {
     private static final String PREFERENCES_ID = "preferences";
     private static final Set<String> ENABLED_FOOTER_IDS = Set.of(PREFERENCES_ID);
     private static final double VOLUME_PERCENT_SCALE = 100.0;
+    /** Fixed width for both footer buttons (Main Menu / Close) so their pill artwork matches. */
+    private static final double FOOTER_BUTTON_WIDTH = 220;
 
     private static MainMenuConfirmation mainMenuConfirmationOverride;
 
@@ -122,8 +124,13 @@ public final class PreferencesSummaryScreen {
         scrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
         scrollPane.setStyle("-fx-background: transparent; -fx-background-color: transparent;");
 
-        Button mainMenuButton = ButtonVisuals.applySvgArtwork(new Button(screenText("item.main-menu.label")));
-        mainMenuButton.setMinWidth(220);
+        // Render BOTH footer buttons' pill artwork at the same fixed size so Close matches Main
+        // Menu. The SVG artwork sizes to the label text otherwise, so the short "Close" label gives
+        // a smaller pill than "Main Menu". The size must be set BEFORE applySvgArtwork so the pill is
+        // rasterized at that width.
+        Button mainMenuButton = new Button(screenText("item.main-menu.label"));
+        mainMenuButton.setPrefSize(FOOTER_BUTTON_WIDTH, ButtonVisuals.BUTTON_ARTWORK_HEIGHT);
+        ButtonVisuals.applySvgArtwork(mainMenuButton);
         // Async confirmation via the in-scene DialogMessages helper — works in fullscreen
         // mode where stock Alert dialogs hide behind the primary stage.  Test escape
         // hatch (mainMenuConfirmationOverride) still answers synchronously for tests that
@@ -134,14 +141,10 @@ public final class PreferencesSummaryScreen {
         // Wired directly to closeAction (instead of ScreenNavigation.button(..., MAIN_MENU_ROUTE))
         // so the button honours the back-stack-aware navigation set up above — same behaviour as
         // the footer close icon and the Ctrl+P shortcut.
-        Button closeButton = ButtonVisuals.applySvgArtwork(new Button(screenText("item.close.label")));
+        Button closeButton = new Button(screenText("item.close.label"));
+        closeButton.setPrefSize(FOOTER_BUTTON_WIDTH, ButtonVisuals.BUTTON_ARTWORK_HEIGHT);
+        ButtonVisuals.applySvgArtwork(closeButton);
         closeButton.setOnAction(event -> closeAction.run());
-        // Match the Main Menu button's size exactly — its longer label otherwise makes it grow
-        // wider than the 220 floor, leaving the Close button visibly smaller. Binding min + pref +
-        // max to the Main Menu button's actual width keeps the two footer buttons identical.
-        closeButton.minWidthProperty().bind(mainMenuButton.widthProperty());
-        closeButton.prefWidthProperty().bind(mainMenuButton.widthProperty());
-        closeButton.maxWidthProperty().bind(mainMenuButton.widthProperty());
         HBox closeBox = new HBox(12, mainMenuButton, closeButton);
         closeBox.setAlignment(Pos.CENTER);
         closeBox.setPadding(new Insets(12, 0, 12, 0));
