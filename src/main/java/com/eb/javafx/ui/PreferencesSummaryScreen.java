@@ -103,6 +103,7 @@ public final class PreferencesSummaryScreen {
                 settingsBlock(
                         screenText("block.visual.title"),
                         themeSelectionRow(context),
+                        buttonStyleRow(context),
                         hudOpacityRow(context),
                         footerIconDisplayRow(context),
                         footerDisplayRow(context),
@@ -522,6 +523,46 @@ public final class PreferencesSummaryScreen {
             }
         });
         return labeledRow(screenText("item.hud-opacity.label"), comboBox);
+    }
+
+    private static String buttonShapeLabel(ButtonStyling.Shape shape) {
+        return switch (shape) {
+            case SQUARE -> screenText("item.button-style.square");
+            case ROUND -> screenText("item.button-style.round");
+            case CUT -> screenText("item.button-style.cut");
+        };
+    }
+
+    /** Dropdown selecting the global bevel-button corner shape (Square / Cut corners / Round
+     *  corners).  Persisted via {@link ButtonStyling#setDefaultShape}; bevel buttons pick it up on
+     *  their next styling pass (e.g. returning to the main menu). */
+    private static HBox buttonStyleRow(RouteContext context) {
+        ComboBox<ButtonStyling.Shape> comboBox = new ComboBox<>();
+        comboBox.getItems().addAll(ButtonStyling.Shape.values());
+        comboBox.setConverter(new StringConverter<>() {
+            @Override
+            public String toString(ButtonStyling.Shape shape) {
+                return shape == null ? "" : buttonShapeLabel(shape);
+            }
+
+            @Override
+            public ButtonStyling.Shape fromString(String string) {
+                for (ButtonStyling.Shape shape : ButtonStyling.Shape.values()) {
+                    if (buttonShapeLabel(shape).equals(string)) {
+                        return shape;
+                    }
+                }
+                return null;
+            }
+        });
+        comboBox.setValue(ButtonStyling.defaultShape());
+        comboBox.setOnAction(event -> {
+            ButtonStyling.Shape selected = comboBox.getValue();
+            if (selected != null) {
+                ButtonStyling.setDefaultShape(selected);
+            }
+        });
+        return labeledRow(screenText("item.button-style.label"), comboBox);
     }
 
     private static HBox themeSelectionRow(RouteContext context) {

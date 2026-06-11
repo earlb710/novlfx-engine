@@ -21,18 +21,65 @@ import javafx.scene.layout.VBox;
  */
 public final class ButtonStyling {
 
+    /** Selectable artwork shape for {@link #bevel(Button, String, ColorAdjust, Shape)} — maps to the
+     *  engine's bundled button SVGs: {@code SQUARE} → button-square, {@code CUT} → button-bevel
+     *  (chamfered corners), {@code ROUND} → button-pill-long. */
+    public enum Shape { SQUARE, CUT, ROUND }
+
+    private static final java.util.prefs.Preferences PREFS =
+            java.util.prefs.Preferences.userNodeForPackage(ButtonStyling.class);
+    private static final String DEFAULT_SHAPE_KEY = "ui.buttonShape";
+    /** Live default shape used by the no-shape {@code bevel(...)} overloads — persisted so the
+     *  player's Preferences-screen choice survives restarts.  Defaults to {@code CUT} (the
+     *  historical bevel look). */
+    private static volatile Shape defaultShape = loadDefaultShape();
+
+    private static Shape loadDefaultShape() {
+        String stored = PREFS.get(DEFAULT_SHAPE_KEY, Shape.CUT.name());
+        try {
+            return Shape.valueOf(stored);
+        } catch (IllegalArgumentException ex) {
+            return Shape.CUT;
+        }
+    }
+
+    /** The shape applied by the {@code bevel(...)} overloads that don't take an explicit shape. */
+    public static Shape defaultShape() {
+        return defaultShape;
+    }
+
+    /** Sets and persists the default bevel-button shape.  Buttons built after this call pick up
+     *  the new shape on their next styling pass (existing buttons are not re-shaped in place). */
+    public static void setDefaultShape(Shape shape) {
+        defaultShape = shape == null ? Shape.CUT : shape;
+        PREFS.put(DEFAULT_SHAPE_KEY, defaultShape.name());
+    }
+
     private ButtonStyling() {
     }
 
     /**
-     * Applies bevel SVG artwork to {@code button}, tags it with {@code bevelStyleClass}, and lets it
-     * grow vertically for multi-line labels. On hover the supplied {@code hoverTint} (nullable) is
-     * applied to the button's image graphic and cleared on exit.
+     * Applies the current {@link #defaultShape() default shape} of SVG artwork — used by callers
+     * that don't pick a shape explicitly (the player's Preferences choice drives it).
      */
     public static Button bevel(Button button, String bevelStyleClass, ColorAdjust hoverTint) {
+        return bevel(button, bevelStyleClass, hoverTint, defaultShape);
+    }
+
+    /**
+     * Applies the requested {@code shape} of SVG artwork to {@code button}, tags it with
+     * {@code bevelStyleClass}, and lets it grow vertically for multi-line labels. On hover the
+     * supplied {@code hoverTint} (nullable) is applied to the button's image graphic and cleared
+     * on exit.
+     */
+    public static Button bevel(Button button, String bevelStyleClass, ColorAdjust hoverTint, Shape shape) {
         button.setPrefWidth(ButtonVisuals.BUTTON_ARTWORK_WIDTH);
         // Leave prefHeight unset so the rasterised artwork uses computed text height for multiline labels.
-        ButtonVisuals.applyBevelSvgArtwork(button);
+        switch (shape == null ? Shape.CUT : shape) {
+            case SQUARE -> ButtonVisuals.applySquareSvgArtwork(button);
+            case ROUND -> ButtonVisuals.applySvgArtwork(button);
+            case CUT -> ButtonVisuals.applyBevelSvgArtwork(button);
+        }
         if (bevelStyleClass != null && !button.getStyleClass().contains(bevelStyleClass)) {
             button.getStyleClass().add(bevelStyleClass);
         }
@@ -46,14 +93,21 @@ public final class ButtonStyling {
         return button;
     }
 
-    /** Recursively bevels every {@link Button} in {@code node}'s subtree. */
+    /** Recursively bevels every {@link Button} in {@code node}'s subtree using the current
+     *  {@link #defaultShape() default shape}. */
     public static void bevelDescendants(Node node, String bevelStyleClass, ColorAdjust hoverTint) {
+        bevelDescendants(node, bevelStyleClass, hoverTint, defaultShape);
+    }
+
+    /** Recursively applies the requested {@code shape} to every {@link Button} in {@code node}'s
+     *  subtree. */
+    public static void bevelDescendants(Node node, String bevelStyleClass, ColorAdjust hoverTint, Shape shape) {
         if (node instanceof Button button) {
-            bevel(button, bevelStyleClass, hoverTint);
+            bevel(button, bevelStyleClass, hoverTint, shape);
         }
         if (node instanceof Parent parent) {
             parent.getChildrenUnmodifiable()
-                    .forEach(child -> bevelDescendants(child, bevelStyleClass, hoverTint));
+                    .forEach(child -> bevelDescendants(child, bevelStyleClass, hoverTint, shape));
         }
     }
 

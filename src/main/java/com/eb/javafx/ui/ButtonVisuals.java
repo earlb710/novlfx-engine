@@ -38,6 +38,7 @@ import java.util.regex.Pattern;
 public final class ButtonVisuals {
     public static final String BUTTON_LONG_ARTWORK_RESOURCE = "/com/eb/javafx/images/svg/button-pill-long.svg";
     public static final String BUTTON_BEVEL_ARTWORK_RESOURCE = "/com/eb/javafx/images/svg/button-bevel.svg";
+    public static final String BUTTON_SQUARE_ARTWORK_RESOURCE = "/com/eb/javafx/images/svg/button-square.svg";
     public static final String BUTTON_SHAPE_RESOURCE = BUTTON_LONG_ARTWORK_RESOURCE;
     public static final String BUTTON_STYLE_CLASS = "svg-button";
     public static final String BUTTON_ARTWORK_STYLE_CLASS = "svg-button-artwork";
@@ -75,10 +76,13 @@ public final class ButtonVisuals {
     private static final System.Logger LOGGER = System.getLogger(ButtonVisuals.class.getName());
     private static final String SHAPE_PATH = loadShapePath(BUTTON_SHAPE_RESOURCE);
     private static final String BEVEL_SHAPE_PATH = loadShapePath(BUTTON_BEVEL_ARTWORK_RESOURCE);
+    private static final String SQUARE_SHAPE_PATH = loadShapePath(BUTTON_SQUARE_ARTWORK_RESOURCE);
     private static final ArtworkResource LONG_ARTWORK_BASE = loadArtworkResource(BUTTON_LONG_ARTWORK_RESOURCE);
     private static final ArtworkResource BEVEL_ARTWORK_BASE = loadArtworkResource(BUTTON_BEVEL_ARTWORK_RESOURCE);
+    private static final ArtworkResource SQUARE_ARTWORK_BASE = loadArtworkResource(BUTTON_SQUARE_ARTWORK_RESOURCE);
     private static volatile ArtworkResource longArtwork = LONG_ARTWORK_BASE;
     private static volatile ArtworkResource bevelArtwork = BEVEL_ARTWORK_BASE;
+    private static volatile ArtworkResource squareArtwork = SQUARE_ARTWORK_BASE;
     private static volatile String gradientStartColor = "#9dccff";
     private static volatile String gradientMidColor = "#0f4f9f";
     private static volatile String gradientEndColor = "#052f6f";
@@ -116,6 +120,12 @@ public final class ButtonVisuals {
     public static Button applyBevelSvgArtwork(Button button) {
         applyArtwork(button, createBevelArtworkGraphic(button.getText(),
                 positiveSizeOrUnset(button.getPrefWidth()), positiveSizeOrUnset(button.getPrefHeight())), BEVEL_SHAPE_PATH);
+        return button;
+    }
+
+    public static Button applySquareSvgArtwork(Button button) {
+        applyArtwork(button, createSquareArtworkGraphic(button.getText(),
+                positiveSizeOrUnset(button.getPrefWidth()), positiveSizeOrUnset(button.getPrefHeight())), SQUARE_SHAPE_PATH);
         return button;
     }
 
@@ -246,6 +256,21 @@ public final class ButtonVisuals {
         return new RasterizedArtwork(text, width, height, bevelArtwork, pressed);
     }
 
+    public static Node createSquareArtworkGraphic(String text) {
+        return createSquareArtworkGraphic(text, Region.USE_COMPUTED_SIZE, Region.USE_COMPUTED_SIZE);
+    }
+
+    public static Node createSquareArtworkGraphic(String text, double width, double height) {
+        return createSquareArtworkGraphic(text, width, height, false);
+    }
+
+    public static Node createSquareArtworkGraphic(String text, double width, double height, boolean pressed) {
+        if (squareArtwork.svg().isBlank()) {
+            return null;
+        }
+        return new RasterizedArtwork(text, width, height, squareArtwork, pressed);
+    }
+
     public static synchronized void configureArtworkGradient(String startColor, String midColor, String endColor) {
         String safeStart = validColorOrDefault(startColor, "#9dccff");
         String safeMid = validColorOrDefault(midColor, "#0f4f9f");
@@ -258,6 +283,7 @@ public final class ButtonVisuals {
         gradientEndColor = safeEnd;
         longArtwork = themeArtwork(LONG_ARTWORK_BASE, safeStart, safeMid, safeEnd);
         bevelArtwork = themeArtwork(BEVEL_ARTWORK_BASE, safeStart, safeMid, safeEnd);
+        squareArtwork = themeArtwork(SQUARE_ARTWORK_BASE, safeStart, safeMid, safeEnd);
         synchronized (RASTER_CACHE) {
             RASTER_CACHE.clear();
         }
