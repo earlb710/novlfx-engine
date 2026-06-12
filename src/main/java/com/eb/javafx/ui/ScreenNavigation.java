@@ -14,7 +14,7 @@ final class ScreenNavigation {
     }
 
     static Button button(RouteContext context, String text, String routeId) {
-        Button button = ButtonVisuals.applySvgArtwork(new Button(text));
+        Button button = ButtonStyling.applyDefaultShapeArtwork(new Button(text));
         button.setOnAction(event -> context.navigateTo(routeId));
         return button;
     }

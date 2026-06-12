@@ -131,7 +131,7 @@ public final class PreferencesSummaryScreen {
         // rasterized at that width.
         Button mainMenuButton = new Button(screenText("item.main-menu.label"));
         mainMenuButton.setPrefSize(FOOTER_BUTTON_WIDTH, ButtonVisuals.BUTTON_ARTWORK_HEIGHT);
-        ButtonVisuals.applySvgArtwork(mainMenuButton);
+        ButtonStyling.applyDefaultShapeArtwork(mainMenuButton);
         // Async confirmation via the in-scene DialogMessages helper — works in fullscreen
         // mode where stock Alert dialogs hide behind the primary stage.  Test escape
         // hatch (mainMenuConfirmationOverride) still answers synchronously for tests that
@@ -144,7 +144,7 @@ public final class PreferencesSummaryScreen {
         // the footer close icon and the Ctrl+P shortcut.
         Button closeButton = new Button(screenText("item.close.label"));
         closeButton.setPrefSize(FOOTER_BUTTON_WIDTH, ButtonVisuals.BUTTON_ARTWORK_HEIGHT);
-        ButtonVisuals.applySvgArtwork(closeButton);
+        ButtonStyling.applyDefaultShapeArtwork(closeButton);
         closeButton.setOnAction(event -> closeAction.run());
         HBox closeBox = new HBox(12, mainMenuButton, closeButton);
         closeBox.setAlignment(Pos.CENTER);
@@ -559,10 +559,29 @@ public final class PreferencesSummaryScreen {
         comboBox.setOnAction(event -> {
             ButtonStyling.Shape selected = comboBox.getValue();
             if (selected != null) {
-                ButtonStyling.setDefaultShape(selected);
+                applyButtonShape(context, selected);
             }
         });
         return labeledRow(screenText("item.button-style.label"), comboBox);
+    }
+
+    /** Persists the chosen button shape and rebuilds the preferences scene in place so the
+     *  screen's own buttons (Main Menu / Close) immediately show the new shape — mirrors
+     *  {@link #applyFontScale} / {@link #applyTheme}. */
+    private static void applyButtonShape(RouteContext context, ButtonStyling.Shape shape) {
+        ButtonStyling.setDefaultShape(shape);
+        Scene currentScene = context.primaryStage() == null ? null : context.primaryStage().getScene();
+        double width = currentScene == null ? context.preferencesService().windowWidth() : currentScene.getWidth();
+        double height = currentScene == null ? context.preferencesService().windowHeight() : currentScene.getHeight();
+        Scene rebuiltScene = createScene(context, width, height);
+        if (currentScene != null && rebuiltScene != null && rebuiltScene.getRoot() != null) {
+            javafx.scene.Parent rebuiltRoot = rebuiltScene.getRoot();
+            rebuiltScene.setRoot(new javafx.scene.layout.Pane());
+            currentScene.setRoot(rebuiltRoot);
+            currentScene.getStylesheets().setAll(rebuiltScene.getStylesheets());
+        } else if (context.primaryStage() != null) {
+            context.primaryStage().setScene(rebuiltScene);
+        }
     }
 
     private static HBox themeSelectionRow(RouteContext context) {

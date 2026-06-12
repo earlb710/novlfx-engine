@@ -93,6 +93,19 @@ public final class ButtonStyling {
         return button;
     }
 
+    /** Applies the current {@link #defaultShape() default shape}'s SVG artwork to {@code button}
+     *  WITHOUT changing its preferred size or adding a bevel style class — for fixed-size buttons
+     *  (main-menu / save / preferences / nav) that manage their own dimensions but should still
+     *  follow the player's chosen button shape. */
+    public static Button applyDefaultShapeArtwork(Button button) {
+        switch (defaultShape) {
+            case SQUARE -> ButtonVisuals.applySquareSvgArtwork(button);
+            case ROUND -> ButtonVisuals.applySvgArtwork(button);
+            case CUT -> ButtonVisuals.applyBevelSvgArtwork(button);
+        }
+        return button;
+    }
+
     /** Recursively bevels every {@link Button} in {@code node}'s subtree using the current
      *  {@link #defaultShape() default shape}. */
     public static void bevelDescendants(Node node, String bevelStyleClass, ColorAdjust hoverTint) {

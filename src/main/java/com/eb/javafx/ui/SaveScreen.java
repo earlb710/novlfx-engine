@@ -561,7 +561,7 @@ public final class SaveScreen {
                 refreshAutoSaveVisibility.run());
         refreshAutoSaveVisibility.run();
 
-        Button backButton = ButtonVisuals.applySvgArtwork(new Button(screenText("item.back.label")));
+        Button backButton = ButtonStyling.applyDefaultShapeArtwork(new Button(screenText("item.back.label")));
         backButton.setMinWidth(160);
         backButton.setOnAction(event -> closeAction.run());
 
