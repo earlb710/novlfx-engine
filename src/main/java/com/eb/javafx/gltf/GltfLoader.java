@@ -67,6 +67,9 @@ public final class GltfLoader {
     private final GltfModel model;
     /** Animation name → AnimationModel, preserving insertion order. */
     private final Map<String, AnimationModel> animations = new LinkedHashMap<>();
+    /** Decoded materials cached per source material — textures decode once, reused across bakes. */
+    private final java.util.IdentityHashMap<MaterialModel, PhongMaterial> materialCache =
+            new java.util.IdentityHashMap<>();
 
     private GltfLoader(GltfModel model) {
         this.model = model;
@@ -285,7 +288,10 @@ public final class GltfLoader {
 
         MeshView view = new MeshView(mesh);
         view.setDrawMode(DrawMode.FILL);
-        view.setCullFace(CullFace.NONE);
+        // Cull back faces: glTF/Blender export consistent CCW winding (preserved by the 180° X
+        // rotation), so the exterior renders correctly and back faces no longer z-fight the front
+        // on thin areas — which was producing scattered dark lines on the skin.
+        view.setCullFace(CullFace.BACK);
         view.setMaterial(mat);
         return view;
     }
@@ -508,6 +514,16 @@ public final class GltfLoader {
     // ── Material ──────────────────────────────────────────────────────────────
 
     private PhongMaterial buildMaterial(MaterialModel matModel) {
+        if (matModel != null) {
+            PhongMaterial cached = materialCache.get(matModel);
+            if (cached != null) return cached;   // decode textures once per loader
+        }
+        PhongMaterial built = buildMaterialUncached(matModel);
+        if (matModel != null) materialCache.put(matModel, built);
+        return built;
+    }
+
+    private PhongMaterial buildMaterialUncached(MaterialModel matModel) {
         PhongMaterial mat = new PhongMaterial(Color.LIGHTSTEELBLUE);
         if (matModel == null) return mat;
 
