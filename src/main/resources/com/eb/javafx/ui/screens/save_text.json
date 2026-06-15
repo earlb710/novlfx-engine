@@ -33,6 +33,10 @@
     "dialog.overwrite.header": "Are you sure you want to overwrite slot %d?",
     "dialog.overwrite.content": "The existing save will be replaced and cannot be recovered.",
 
+    "dialog.load.title": "Load game?",
+    "dialog.load.header": "A game is already in progress.",
+    "dialog.load.content": "Loading this save will discard your current game. Continue?",
+
     "dialog.name.title": "Name your save",
     "dialog.name.header": "Save game in slot %d",
     "dialog.name.content": "Enter a name for this save (or accept the default).",

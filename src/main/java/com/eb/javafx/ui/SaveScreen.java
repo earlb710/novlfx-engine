@@ -1002,11 +1002,34 @@ public final class SaveScreen {
                                           String callerRoute) {
         if (screenMode == SaveLoadMode.LOAD) {
             if (existing != null) {
-                triggerLoad(context, existing);
+                // A game is in progress when this screen was opened from a gameplay scene (the host
+                // prepared a caller route — see prepareCallerRoute); loading would discard it, so
+                // confirm first.  Opened from the main menu (no caller route) → load straight away.
+                if (callerRoute != null && !callerRoute.isBlank()
+                        && !SceneRouter.MAIN_MENU_ROUTE.equals(callerRoute)) {
+                    confirmThenLoad(context, existing);
+                } else {
+                    triggerLoad(context, existing);
+                }
             }
             return;
         }
         triggerSave(context, category, slot, existing, afterSave, callerSnapshot, callerRoute);
+    }
+
+    /** "Are you sure?" gate before {@link #triggerLoad} when a game is already in progress — uses
+     *  the same in-scene {@link DialogMessages} overlay as the delete / overwrite prompts. */
+    private static void confirmThenLoad(RouteContext context, SaveSlotSummary summary) {
+        Scene activeScene = context.primaryStage() == null ? null : context.primaryStage().getScene();
+        DialogMessages.confirm(activeScene, context.uiTheme(),
+                screenText("dialog.load.title"),
+                screenText("dialog.load.header"),
+                screenText("dialog.load.content"),
+                result -> {
+                    if (result == DialogMessages.Result.OK) {
+                        triggerLoad(context, summary);
+                    }
+                });
     }
 
     /** Resting / hover background hex codes for the delete pip — pulled out as constants
