@@ -295,19 +295,40 @@ public final class DialogMessages {
         btn.setMinWidth(90);
         btn.setFocusTraversable(true);
         btn.getStyleClass().add("dialog-message-button");
-        String bg = primary ? accent : "rgba(255, 255, 255, 0.08)";
         String fg = primary ? "#ffffff" : textHex;
-        // Corner radius lives in CSS (.dialog-message-button); colours/padding stay inline.
-        btn.setStyle(
-                "-fx-background-color: " + bg + ";"
+        // Resting / hover / pressed backgrounds.  Backgrounds are set INLINE (they depend on the
+        // runtime theme accent), and inline styles win over stylesheet :hover/:pressed rules — so the
+        // hover + click feedback is wired here via mouse handlers that swap the inline background.
+        //   • primary  — accent, lightened on hover, darkened on press (via CSS derive()).
+        //   • secondary — a translucent white wash that brightens on hover / press.
+        String restBg    = primary ? accent                      : "rgba(255, 255, 255, 0.08)";
+        String hoverBg   = primary ? "derive(" + accent + ", 22%)" : "rgba(255, 255, 255, 0.18)";
+        String pressedBg = primary ? "derive(" + accent + ", -14%)" : "rgba(255, 255, 255, 0.28)";
+
+        String restStyle    = dialogButtonStyle(restBg, fg, accent);
+        String hoverStyle   = dialogButtonStyle(hoverBg, fg, accent);
+        String pressedStyle = dialogButtonStyle(pressedBg, fg, accent);
+
+        btn.setStyle(restStyle);
+        btn.setOnMouseEntered(e -> { if (!btn.isPressed()) btn.setStyle(hoverStyle); });
+        btn.setOnMouseExited(e -> { if (!btn.isPressed()) btn.setStyle(restStyle); });
+        btn.setOnMousePressed(e -> btn.setStyle(pressedStyle));
+        // On release, settle on hover (cursor still over the button) or rest (cursor left).
+        btn.setOnMouseReleased(e -> btn.setStyle(btn.isHover() ? hoverStyle : restStyle));
+        return btn;
+    }
+
+    /** Builds the inline style for a dialog button with the given background — corner radius lives in
+     *  CSS (.dialog-message-button); colours / padding stay inline. */
+    private static String dialogButtonStyle(String bg, String fg, String accent) {
+        return "-fx-background-color: " + bg + ";"
                 + " -fx-text-fill: " + fg + ";"
                 + " -fx-padding: 6 18 6 18;"
                 + " -fx-border-color: " + accent + ";"
                 + " -fx-border-width: 1;"
                 + " -fx-cursor: hand;"
                 + " -fx-focus-color: transparent;"
-                + " -fx-faint-focus-color: transparent;");
-        return btn;
+                + " -fx-faint-focus-color: transparent;";
     }
 
     /** Renders a confirm-shaped card with a TextField between the header and the buttons.
