@@ -561,8 +561,12 @@ public final class SaveScreen {
                 refreshAutoSaveVisibility.run());
         refreshAutoSaveVisibility.run();
 
-        Button backButton = ButtonStyling.applyDefaultShapeArtwork(new Button(screenText("item.back.label")));
-        backButton.setMinWidth(160);
+        // Bigger back button than the other nav chips — set the pref size BEFORE applying the
+        // artwork so the SVG button art rasterises to these dimensions (applyArtwork reads the
+        // button's pref size as its fixed size).
+        Button backButton = new Button(screenText("item.back.label"));
+        backButton.setPrefSize(240, 64);
+        ButtonStyling.applyDefaultShapeArtwork(backButton);
         backButton.setOnAction(event -> closeAction.run());
 
         // BorderPane gives us the centred Back button while keeping the auto-save checkbox
