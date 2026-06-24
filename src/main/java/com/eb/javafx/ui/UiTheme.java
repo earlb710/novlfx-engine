@@ -61,6 +61,12 @@ public final class UiTheme {
                 -fx-padding: 1px;
             }
 
+            /* On hover the bar fills fully opaque (the resting fill above stays translucent);
+               combined with the node-opacity hover bump this makes the footer read fully solid. */
+            .screen-footer-bar:hover {
+                -fx-background-color: %s;
+            }
+
             .screen-footer-option {
                 -fx-text-fill: %s;
                 -fx-font-size: 9px;
@@ -1163,6 +1169,7 @@ public final class UiTheme {
                     screenPanelBackground,
                     screenPanelBorder,
                     footerBackground,
+                    footerBackgroundOpaque(footerBackground),
                     footerText,
                     sectionBorder,
                     sectionText,
@@ -1210,6 +1217,21 @@ public final class UiTheme {
 
         private static String cssQuoted(String value) {
             return value.replace("\\", "\\\\").replace("\"", "\\\"");
+        }
+
+        /** The fully-opaque form of a footer background colour, used for the {@code .screen-footer-bar:hover}
+         *  fill so the bar reads solid on hover while its resting fill stays translucent.  Parses any
+         *  CSS colour ({@code rgba(...)}, {@code rgb(...)}, hex) and drops the alpha; falls back to the
+         *  input unchanged when it can't be parsed. */
+        private static String footerBackgroundOpaque(String footerBackground) {
+            if (footerBackground == null || footerBackground.isBlank()) {
+                return footerBackground;
+            }
+            try {
+                return ThemeColors.toCssRgb(javafx.scene.paint.Color.web(footerBackground.trim()));
+            } catch (IllegalArgumentException ignored) {
+                return footerBackground;
+            }
         }
     }
 }
