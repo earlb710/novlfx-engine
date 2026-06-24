@@ -59,6 +59,35 @@ public final class ThemeColors {
         }
     }
 
+    /**
+     * Lightens {@code hex} by blending each RGB channel {@code factor} of the way toward white
+     * ({@code 0} = unchanged, {@code 1} = white), at full opacity, preserving hue otherwise.
+     * Returns {@code hex} unchanged when it can't be parsed, or {@code null} for a null input.
+     * The mirror of {@link #darken(String, double)}.
+     */
+    public static String lighten(String hex, double factor) {
+        if (hex == null) {
+            return null;
+        }
+        try {
+            Color c = Color.web(hex);
+            int r = clampChannel((int) Math.round((c.getRed()   + (1.0 - c.getRed())   * factor) * 255.0));
+            int g = clampChannel((int) Math.round((c.getGreen() + (1.0 - c.getGreen()) * factor) * 255.0));
+            int b = clampChannel((int) Math.round((c.getBlue()  + (1.0 - c.getBlue())  * factor) * 255.0));
+            return String.format("#%02x%02x%02x", r, g, b);
+        } catch (IllegalArgumentException ignored) {
+            return hex;
+        }
+    }
+
+    /** Formats {@code color} as a JavaFX-CSS {@code rgb(r,g,b)} string (0–255 per channel). */
+    public static String toCssRgb(Color color) {
+        return String.format("rgb(%d,%d,%d)",
+                (int) Math.round(color.getRed()   * 255),
+                (int) Math.round(color.getGreen() * 255),
+                (int) Math.round(color.getBlue()  * 255));
+    }
+
     private static int clampChannel(int value) {
         return Math.max(0, Math.min(255, value));
     }

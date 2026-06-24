@@ -30,6 +30,26 @@ final class ThemeColorsTest {
     }
 
     @Test
+    void lightenBlendsEachChannelTowardWhiteAndClampsToHex() {
+        assertEquals("#808080", ThemeColors.lighten("#000000", 0.5));
+        assertEquals("#ffffff", ThemeColors.lighten("#000000", 1.0));
+        assertEquals("#888888", ThemeColors.lighten("#888888", 0.0));
+    }
+
+    @Test
+    void lightenReturnsInputUnchangedOnBadHexAndNullOnNull() {
+        assertEquals("not-a-color", ThemeColors.lighten("not-a-color", 0.5));
+        assertNull(ThemeColors.lighten(null, 0.5));
+    }
+
+    @Test
+    void toCssRgbFormatsChannelsZeroToTwoFiftyFive() {
+        assertEquals("rgb(255,255,255)", ThemeColors.toCssRgb(Color.WHITE));
+        assertEquals("rgb(0,0,0)", ThemeColors.toCssRgb(Color.BLACK));
+        assertEquals("rgb(255,0,0)", ThemeColors.toCssRgb(Color.color(1, 0, 0)));
+    }
+
+    @Test
     void isLightThemeFalseForNullTheme() {
         assertFalse(ThemeColors.isLightTheme(null));
     }
