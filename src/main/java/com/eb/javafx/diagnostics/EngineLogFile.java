@@ -37,6 +37,8 @@ public final class EngineLogFile {
     public static final String DEFAULT_LOG_FILE = "log.txt";
 
     private static volatile boolean installed;
+    /** Writes ONLY to the log file (not the console) — backs {@link #fileOnly}.  Null until installed. */
+    private static volatile PrintStream fileStream;
 
     private EngineLogFile() {
     }
@@ -44,6 +46,18 @@ public final class EngineLogFile {
     /** Installs the tee to {@value #DEFAULT_LOG_FILE} in the working directory (fresh each run). */
     public static void installDefault() {
         install(Path.of(DEFAULT_LOG_FILE));
+    }
+
+    /**
+     * Writes {@code line} to the log file ONLY — not the console.  For high-volume diagnostics (image
+     * load timings, cache hits, …) that belong in the on-disk log but would spam the terminal.  A
+     * no-op when logging hasn't been installed (tests / headless), so those callers stay quiet too.
+     */
+    public static void fileOnly(String line) {
+        PrintStream fs = fileStream;
+        if (fs != null) {
+            fs.println(line);
+        }
     }
 
     /**
@@ -64,6 +78,9 @@ public final class EngineLogFile {
                     StandardOpenOption.WRITE,
                     StandardOpenOption.TRUNCATE_EXISTING);
             Object lock = new Object();
+            // File-only stream for fileOnly(); shares the same lock so its writes can't interleave
+            // mid-line with the teed console output into the same file.
+            fileStream = new PrintStream(fileOnlyStream(file, lock), /*autoFlush*/ true, StandardCharsets.UTF_8);
             System.setOut(tee(System.out, file, lock));
             System.setErr(tee(System.err, file, lock));
             installed = true;
@@ -72,6 +89,33 @@ public final class EngineLogFile {
             // Logging is best-effort — never let a missing/locked file stop the game from starting.
             System.err.println("[EngineLog] Could not open log file '" + logFile + "': " + ex);
         }
+    }
+
+    /** An OutputStream writing to {@code file} only, serialised on {@code lock} (so it interleaves
+     *  cleanly with the teed console output sharing the same lock). */
+    private static OutputStream fileOnlyStream(OutputStream file, Object lock) {
+        return new OutputStream() {
+            @Override
+            public void write(int b) throws IOException {
+                synchronized (lock) {
+                    file.write(b);
+                }
+            }
+
+            @Override
+            public void write(byte[] b, int off, int len) throws IOException {
+                synchronized (lock) {
+                    file.write(b, off, len);
+                }
+            }
+
+            @Override
+            public void flush() throws IOException {
+                synchronized (lock) {
+                    file.flush();
+                }
+            }
+        };
     }
 
     private static PrintStream tee(PrintStream console, OutputStream file, Object lock) {
