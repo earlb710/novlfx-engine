@@ -839,6 +839,19 @@ public final class SaveScreen {
             tile.getChildren().add(deleteBtn);
         }
 
+        // Single-click reveals a centred Save / Load button in the middle of the tile;
+        // double-click (or clicking that button) performs the action.  Loading an empty slot
+        // is a no-op, so such slots get no button and ignore clicks.
+        boolean slotActionable = !(screenMode == SaveLoadMode.LOAD && summary == null);
+        Runnable slotAction = () -> handleSlotClick(context, category, slot, summary, afterSave,
+                screenMode, callerSnapshot, callerRoute);
+        Button slotActionButton = slotActionable
+                ? buildSlotActionButton(context, screenMode, slotAction)
+                : null;
+        if (slotActionButton != null) {
+            tile.getChildren().add(slotActionButton);
+        }
+
         // Hover: brighten the tile border to a 2 px white outline, attach a soft white
         // outer glow, and bump the caption text to pure white — three coordinated cues
         // so the hovered tile reads clearly as the click target without dimming
@@ -852,15 +865,23 @@ public final class SaveScreen {
             tile.setStyle(tileRestStyle);
             tile.setEffect(null);
             caption.setStyle(captionRestStyle);
+            // Hide the action button again so it doesn't linger on every visited tile.
+            if (slotActionButton != null) {
+                slotActionButton.setVisible(false);
+            }
         });
-        // Double-click to save / load — single click is reserved for "select" so the
-        // player can hover without accidentally triggering a destructive save.
+        // Single click reveals the centred Save / Load button (so a casual click can't
+        // trigger a destructive overwrite or a game-discarding load); double-click performs
+        // the action directly for players who prefer the shortcut.
         tile.setOnMouseClicked(event -> {
-            if (event.getClickCount() < 2) {
+            if (!slotActionable) {
                 return;
             }
-            handleSlotClick(context, category, slot, summary, afterSave,
-                    screenMode, callerSnapshot, callerRoute);
+            if (event.getClickCount() >= 2) {
+                slotAction.run();
+            } else if (slotActionButton != null) {
+                slotActionButton.setVisible(true);
+            }
         });
         // NOTE: do not call tile.setStyle(...) here — that would overwrite the inline
         // border / padding / cursor style set above and revert to the default styling
@@ -979,10 +1000,36 @@ public final class SaveScreen {
         row.setPadding(new Insets(6, 8, 6, 8));
         row.setAlignment(Pos.CENTER_LEFT);
         row.getStyleClass().add(ScreenShell.LAYOUT_CARD_STYLE_CLASS);
-        row.setOnMouseClicked(event -> handleSlotClick(
-                context, category, slot, summary, afterSave, screenMode, callerSnapshot, callerRoute));
         row.setStyle(row.getStyle() + " -fx-cursor: hand;");
-        return row;
+
+        // Same single-click-reveals / double-click-acts behaviour as the grid tiles: wrap the
+        // row in a StackPane so the centred Save / Load button can overlay the middle of it.
+        StackPane rowStack = new StackPane(row);
+        boolean slotActionable = !(screenMode == SaveLoadMode.LOAD && summary == null);
+        Runnable slotAction = () -> handleSlotClick(
+                context, category, slot, summary, afterSave, screenMode, callerSnapshot, callerRoute);
+        Button slotActionButton = slotActionable
+                ? buildSlotActionButton(context, screenMode, slotAction)
+                : null;
+        if (slotActionButton != null) {
+            rowStack.getChildren().add(slotActionButton);
+        }
+        rowStack.setOnMouseClicked(event -> {
+            if (!slotActionable) {
+                return;
+            }
+            if (event.getClickCount() >= 2) {
+                slotAction.run();
+            } else if (slotActionButton != null) {
+                slotActionButton.setVisible(true);
+            }
+        });
+        rowStack.setOnMouseExited(event -> {
+            if (slotActionButton != null) {
+                slotActionButton.setVisible(false);
+            }
+        });
+        return rowStack;
     }
 
     private static Label rowCell(String text, int width) {
@@ -1019,6 +1066,38 @@ public final class SaveScreen {
             return;
         }
         triggerSave(context, category, slot, existing, afterSave, callerSnapshot, callerRoute);
+    }
+
+    /** Builds the centred "Save" / "Load" button shown in the middle of a slot after a single
+     *  click.  Starts hidden; a single click on the slot reveals it, leaving the slot hides it
+     *  again, and clicking it — or double-clicking the slot — performs the action.  The button
+     *  consumes its own mouse click so it doesn't bubble back to the slot's reveal handler. */
+    private static Button buildSlotActionButton(RouteContext context, SaveLoadMode screenMode,
+                                                  Runnable act) {
+        Button btn = new Button(screenMode == SaveLoadMode.LOAD
+                ? screenText("mode.load")
+                : screenText("mode.save"));
+        UiTheme theme = context.uiTheme();
+        String accent = (theme != null && theme.accentColor() != null && !theme.accentColor().isBlank())
+                ? theme.accentColor() : "#143869";
+        btn.setFocusTraversable(false);
+        btn.setVisible(false);
+        btn.setStyle(
+                "-fx-background-color: " + accent + ";"
+              + " -fx-text-fill: white;"
+              + " -fx-font-weight: bold;"
+              + " -fx-font-size: 15px;"
+              + " -fx-padding: 8 24 8 24;"
+              + " -fx-background-radius: 6;"
+              + " -fx-border-color: white;"
+              + " -fx-border-width: 1;"
+              + " -fx-border-radius: 6;"
+              + " -fx-cursor: hand;");
+        btn.setOnAction(e -> act.run());
+        // Don't let a click on the button bubble up to the slot's single-click reveal handler.
+        btn.setOnMouseClicked(e -> e.consume());
+        StackPane.setAlignment(btn, Pos.CENTER);
+        return btn;
     }
 
     /** "Are you sure?" gate before {@link #triggerLoad} when a game is already in progress — uses
