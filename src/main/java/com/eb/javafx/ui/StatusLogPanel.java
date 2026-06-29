@@ -139,7 +139,7 @@ public final class StatusLogPanel extends ScrollPane {
         // simpler than the DialogEntriesView two-pulse dance, and equivalent in effect.
         entriesContainer.heightProperty().addListener((obs, oldH, newH) -> {
             if (newH.doubleValue() > oldH.doubleValue() && getVmax() > 0) {
-                setVvalue(getVmax());
+                animateScrollToBottom();
             }
         });
     }
@@ -330,6 +330,11 @@ public final class StatusLogPanel extends ScrollPane {
     // ---------------------------------------------------------------------------------
 
     private void rebuild() {
+        // Snapshot the content height BEFORE we clear it, so the deferred scroll-in
+        // animation can seed itself from where the previous bottom sat (see
+        // animateScrollToBottom).  Captured here because clearing the children below
+        // immediately collapses entriesContainer's height.
+        preRebuildContentHeight = entriesContainer.getHeight();
         entriesContainer.getChildren().clear();
         for (StatusLogEntry entry : entries) {
             entriesContainer.getChildren().add(renderEntry(entry));
@@ -349,10 +354,67 @@ public final class StatusLogPanel extends ScrollPane {
     }
 
     private void scrollToBottomDeferred() {
+        animateScrollToBottom();
+    }
+
+    /** Running scroll-to-bottom animation, or null when none — kept so a fresh append can cancel the
+     *  in-flight one and re-aim at the new bottom. */
+    private javafx.animation.Timeline scrollAnimation;
+
+    /** Content height of the entries container captured just before the last {@link #rebuild()}
+     *  cleared it.  Used to seed the scroll-in animation from the previous bottom so a new row
+     *  always visibly slides up — independent of font size or how far the content overflows. */
+    private double preRebuildContentHeight;
+
+    /**
+     * Animates the scroll to the bottom (newest entry) over 500ms in 20 discrete steps, rather than
+     * snapping there — so a new log line visibly scrolls the feed up.  No-op when nothing overflows;
+     * cancels any in-flight scroll so rapid appends re-aim cleanly.
+     *
+     * <p>The animation's START is computed from {@link #preRebuildContentHeight} (where the previous
+     * bottom sat within the now-taller content) rather than from the live {@code vvalue}.  After a
+     * rebuild JavaFX often leaves {@code vvalue} already pinned at the bottom, which made the old
+     * {@code target - vvalue} seed fall under the snap threshold and jump instead of slide — and how
+     * often that happened depended on row height (font size).  Seeding from the previous content
+     * height makes exactly the newly-added height scroll into view every time.</p>
+     */
+    private void animateScrollToBottom() {
         double target = getVmax();
-        if (target > 0) {
-            setVvalue(target);
+        if (target <= 0) {
+            return;
         }
+        if (scrollAnimation != null) {
+            scrollAnimation.stop();
+        }
+        double viewportH = getViewportBounds() != null ? getViewportBounds().getHeight() : 0;
+        double newScrollable = entriesContainer.getHeight() - viewportH;
+        if (newScrollable <= 0.5) {
+            // Content fits the viewport — there's no scroll range, so a slide is impossible; the
+            // bottom-aligned row stack already shows the newest entry.  Snap (no-op) and bail.
+            setVvalue(target);
+            return;
+        }
+        // Where the previous bottom sat, as a fraction of the new scroll range.  Falls back to a
+        // full slide (0 → bottom) when the old content didn't overflow.
+        double oldScrollable = preRebuildContentHeight - viewportH;
+        double start = oldScrollable <= 0
+                ? 0.0
+                : Math.max(0.0, Math.min(target, (oldScrollable / newScrollable) * target));
+        if (target - start < 0.0005) {
+            setVvalue(target);   // already showing the bottom and nothing new to reveal
+            return;
+        }
+        setVvalue(start);
+        final int steps = 20;
+        final double totalMs = 500.0;
+        javafx.animation.Timeline tl = new javafx.animation.Timeline();
+        for (int i = 1; i <= steps; i++) {
+            final double v = (i == steps) ? target : start + (target - start) * i / steps;
+            tl.getKeyFrames().add(new javafx.animation.KeyFrame(
+                    javafx.util.Duration.millis(totalMs * i / steps), e -> setVvalue(v)));
+        }
+        scrollAnimation = tl;
+        tl.play();
     }
 
     private Node renderEntry(StatusLogEntry entry) {

@@ -22,7 +22,10 @@ public final class DialogSpeaker {
 
     public DialogSpeaker(String id, String label, String iconId, String textColor, String textFont) {
         this.id = Validation.requireNonBlank(id, "Dialog speaker id is required.");
-        this.label = Validation.requireNonBlank(label, "Dialog speaker label is required.");
+        // A blank/null label is allowed: it marks an unnamed narrator / system line, which
+        // DialogEntriesView renders as bare body (no speaker column, but still in the speaker's
+        // colour).  Normalise null to "" so callers of label() never see null.
+        this.label = label == null ? "" : label;
         this.iconId = iconId;
         this.textColor = textColor;
         this.textFont = textFont;

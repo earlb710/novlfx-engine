@@ -184,9 +184,26 @@ public final class GameState {
                 CharacterStatesSnapshot.fromStates(characterStates.values()),
                 JournalSnapshot.fromState(journal),
                 LocationOccupancySnapshot.fromState(locationOccupancy),
-                customRollbackSections.values().stream()
-                        .map(CustomRollbackSnapshotSection::snapshot)
-                        .toList());
+                captureCustomSections());
+    }
+
+    /** Captures every registered custom rollback section, isolating failures: a section whose
+     *  supplier throws is LOGGED and OMITTED rather than aborting the whole snapshot.  Without this,
+     *  one misbehaving section's supplier would make {@code gameState.snapshot()} throw — and a save
+     *  capture that throws writes NO snapshot file at all (the slot ends up route-only and won't
+     *  load), so a single bad section would silently destroy the entire save. */
+    private java.util.List<SaveSnapshotSection> captureCustomSections() {
+        java.util.List<SaveSnapshotSection> sections = new java.util.ArrayList<>();
+        for (CustomRollbackSnapshotSection section : customRollbackSections.values()) {
+            try {
+                sections.add(section.snapshot());
+            } catch (RuntimeException ex) {
+                System.err.println("[GameState] Snapshot supplier threw for section "
+                        + section.sectionId() + " — omitting it from this snapshot (its state will"
+                        + " not persist this time, but the rest of the save is written). " + ex);
+            }
+        }
+        return sections;
     }
 
     /** Restores reusable mutable gameplay state and game time from a checkpoint/save snapshot. */
@@ -235,7 +252,14 @@ public final class GameState {
         checkedSnapshot.customSections().forEach(section -> {
             CustomRollbackSnapshotSection customSection = customRollbackSections.get(section.sectionId());
             if (customSection != null) {
-                customSection.restore(section);
+                try {
+                    customSection.restore(section);
+                } catch (RuntimeException ex) {
+                    // Isolate restore failures the same way the reset pass does — one section's
+                    // consumer throwing must not abort the entire load.
+                    System.err.println("[GameState] Restore consumer threw for section "
+                            + section.sectionId() + " — load proceeds without this section. " + ex);
+                }
             }
         });
     }

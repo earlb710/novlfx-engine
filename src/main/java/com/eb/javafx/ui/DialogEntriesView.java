@@ -184,7 +184,10 @@ public final class DialogEntriesView extends ScrollPane {
         }
         @Override public String displayText() {
             String body = formattedBody();
-            return speaker == null ? body : speaker.label() + ": " + body;
+            // A blank speaker label (e.g. an unnamed narrator / system line) renders as bare body —
+            // no "name: " prefix — matching the UI, which omits the speaker column for a blank label.
+            return (speaker == null || speaker.label() == null || speaker.label().isBlank())
+                    ? body : speaker.label() + ": " + body;
         }
     }
 
@@ -1774,7 +1777,11 @@ public final class DialogEntriesView extends ScrollPane {
                 ? entry.speaker().textColor()
                 : null;
 
-        if (entry.speaker() != null) {
+        // A speaker with a blank label (an unnamed narrator / system line) renders with NO speaker
+        // column — just the body, in the speaker's colour (speakerColor above is independent of the
+        // label) — so the row reads as bare prose rather than a stray ": message".
+        if (entry.speaker() != null
+                && entry.speaker().label() != null && !entry.speaker().label().isBlank()) {
             Label speakerLabel = new Label(entry.speaker().label() + ":");
             speakerLabel.getStyleClass().add(SPEAKER_STYLE_CLASS);
             speakerLabel.setMinWidth(speakerColumnWidth);
