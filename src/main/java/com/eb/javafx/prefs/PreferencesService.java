@@ -40,6 +40,7 @@ public final class PreferencesService {
     private static final String FULLSCREEN_KEY = "window.fullscreen";
     private static final String LANGUAGE_KEY = "ui.language";
     private static final String TEXT_SPEED_KEY = "ui.textSpeed";
+    private static final String MODEL_3D_DETAIL_KEY = "graphics.model3dDetail";
     private static final String AUTO_SAVE_DAILY_KEY = "save.autoSaveDaily";
     private static final String SAVE_SCREEN_VIEW_MODE_KEY = "save.viewMode";
     private static final String SAVE_SCREEN_PAGE_COUNT_KEY = "save.pageCount";
@@ -76,6 +77,7 @@ public final class PreferencesService {
     private int saveScreenSelectedPage;
     private Language language;
     private TextSpeed textSpeed;
+    private Model3dDetail model3dDetail;
 
     // Config-overridable startup window sizing + clamp bounds (the `window` config object, applied
     // at boot before load()).  Defaults preserve the original 1280x720 within 640-3840 x 480-2160.
@@ -159,6 +161,8 @@ public final class PreferencesService {
         saveScreenSelectedPage = preferences.getInt(SAVE_SCREEN_SELECTED_PAGE_KEY, 1);
         language = validatedLanguage(preferences.get(LANGUAGE_KEY, Language.ENGLISH.preferenceValue()));
         textSpeed = validatedTextSpeed(preferences.get(TEXT_SPEED_KEY, TextSpeed.NORMAL.preferenceValue()));
+        model3dDetail = validatedModel3dDetail(
+                preferences.get(MODEL_3D_DETAIL_KEY, Model3dDetail.HIGH.preferenceValue()));
     }
 
     /** Returns the configured starting width for JavaFX scenes. */
@@ -403,6 +407,14 @@ public final class PreferencesService {
         return textSpeed;
     }
 
+    /**
+     * Selected level of detail for generated 3D character models. Applications map this to a mesh
+     * decimation strength; defaults to {@link Model3dDetail#HIGH} (no reduction).
+     */
+    public Model3dDetail model3dDetail() {
+        return model3dDetail;
+    }
+
     /** Config-driven per-speed reveal/auto-advance durations (ms): {@code [slow, normal, fast]},
      *  or null to use the {@link TextSpeed} enum defaults. */
     private static volatile int[] textSpeedDurationOverride;
@@ -633,6 +645,17 @@ public final class PreferencesService {
         saveTextSpeed(validatedTextSpeed(textSpeed));
     }
 
+    /** Persists the 3D model detail level, falling back to {@link Model3dDetail#HIGH} for null. */
+    public void saveModel3dDetail(Model3dDetail detail) {
+        this.model3dDetail = detail == null ? Model3dDetail.HIGH : detail;
+        preferences.put(MODEL_3D_DETAIL_KEY, this.model3dDetail.preferenceValue());
+    }
+
+    /** Persists a validated 3D-detail identifier, falling back to {@link Model3dDetail#HIGH}. */
+    public void saveModel3dDetail(String detail) {
+        saveModel3dDetail(validatedModel3dDetail(detail));
+    }
+
     private int clamp(int value, int minimum, int maximum) {
         return Math.max(minimum, Math.min(maximum, value));
     }
@@ -696,6 +719,15 @@ public final class PreferencesService {
             }
         }
         return TextSpeed.NORMAL;
+    }
+
+    private Model3dDetail validatedModel3dDetail(String value) {
+        for (Model3dDetail candidate : Model3dDetail.values()) {
+            if (candidate.preferenceValue().equals(value)) {
+                return candidate;
+            }
+        }
+        return Model3dDetail.HIGH;
     }
 
     private FooterShortcutDisplay validatedFooterShortcutDisplay(String value) {
@@ -842,6 +874,33 @@ public final class PreferencesService {
 
         public String label() {
             return SystemCodeTables.defaultCodeTitle(SystemCodeTables.TEXT_SPEED_TABLE_ID, preferenceValue);
+        }
+    }
+
+    /**
+     * Level of detail for generated 3D character models. {@link #HIGH} is full detail (no mesh
+     * reduction); {@link #MEDIUM} and {@link #LOW} apply progressively stronger decimation, trading
+     * fidelity for triangle count. The application owns the concrete decimation strength per level.
+     */
+    public enum Model3dDetail {
+        HIGH("high", "High"),
+        MEDIUM("medium", "Medium"),
+        LOW("low", "Low");
+
+        private final String preferenceValue;
+        private final String label;
+
+        Model3dDetail(String preferenceValue, String label) {
+            this.preferenceValue = preferenceValue;
+            this.label = label;
+        }
+
+        public String preferenceValue() {
+            return preferenceValue;
+        }
+
+        public String label() {
+            return label;
         }
     }
 

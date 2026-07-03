@@ -370,6 +370,14 @@ public final class SaveScreen {
         modeSeparator.setStyle(modeSeparator.getStyle() + " -fx-text-fill: #777;");
         saveModeLabel.setOnMouseClicked(event -> mode.set(SaveLoadMode.SAVE));
         loadModeLabel.setOnMouseClicked(event -> mode.set(SaveLoadMode.LOAD));
+        // Click-colour feedback: while a Save / Load word is pressed it flashes the theme accent
+        // colour, so the click registers visually even when it doesn't change the mode (re-clicking
+        // the already-active word).  On release the proper active / inactive style is restored.
+        String modeClickColor = context.uiTheme() == null || context.uiTheme().accentColor() == null
+                || context.uiTheme().accentColor().isBlank()
+                        ? "#ffd54a" : context.uiTheme().accentColor();
+        installModeClickColor(saveModeLabel, mode, SaveLoadMode.SAVE, modeClickColor);
+        installModeClickColor(loadModeLabel, mode, SaveLoadMode.LOAD, modeClickColor);
         // Initial highlight reflects the prepared mode — SAVE open → Save word lit,
         // LOAD open → Load word lit.  The mode-property change listener installed below
         // keeps the two labels in sync as the player switches modes mid-session.
@@ -635,6 +643,22 @@ public final class SaveScreen {
     /** Paints the active mode label white with a soft drop shadow + scale-up, paints the
      *  inactive mode label in muted grey with no effect.  Cursor is hand on both so the
      *  player can switch by clicking either. */
+    /** Adds pressed-state colour feedback to a Save / Load mode word: while the mouse is held the
+     *  glyph fills with {@code clickColor}; on release the proper active / inactive style is
+     *  restored (from the live {@code mode}).  Gives the words a visible "click colour" even when
+     *  the click doesn't change the mode. */
+    private static void installModeClickColor(Label label,
+                                              SimpleObjectProperty<SaveLoadMode> mode,
+                                              SaveLoadMode thisMode, String clickColor) {
+        label.setOnMousePressed(event -> label.setStyle(
+                "-fx-font-family: 'Nasalization Rg', sans-serif;"
+                + " -fx-font-size: 36px;"
+                + " -fx-font-weight: bold;"
+                + " -fx-text-fill: " + clickColor + ";"
+                + " -fx-cursor: hand;"));
+        label.setOnMouseReleased(event -> applyModeStyle(label, mode.get() == thisMode));
+    }
+
     private static void applyModeStyle(Label label, boolean active) {
         if (active) {
             label.setStyle(

@@ -6,6 +6,7 @@ import com.eb.javafx.prefs.PreferencesService.FooterIconDisplay;
 import com.eb.javafx.prefs.PreferencesService.FooterShortcutDisplay;
 import com.eb.javafx.prefs.PreferencesService;
 import com.eb.javafx.prefs.PreferencesService.Language;
+import com.eb.javafx.prefs.PreferencesService.Model3dDetail;
 import com.eb.javafx.prefs.PreferencesService.TextSpeed;
 import com.eb.javafx.prefs.PreferencesService.ThemeFamily;
 import com.eb.javafx.prefs.PreferencesService.ThemeVariant;
@@ -104,6 +105,7 @@ public final class PreferencesSummaryScreen {
                         screenText("block.visual.title"),
                         themeSelectionRow(context),
                         buttonStyleRow(context),
+                        model3dDetailRow(context),
                         hudOpacityRow(context),
                         footerIconDisplayRow(context),
                         footerDisplayRow(context),
@@ -563,6 +565,39 @@ public final class PreferencesSummaryScreen {
             }
         });
         return labeledRow(screenText("item.button-style.label"), comboBox);
+    }
+
+    /**
+     * 3D model detail selector (High / Medium / Low). Persists the choice; the level is read at the
+     * next game boot, where generated character models are decimated and cached for that level.
+     */
+    private static HBox model3dDetailRow(RouteContext context) {
+        ComboBox<Model3dDetail> comboBox = new ComboBox<>();
+        comboBox.getItems().addAll(Model3dDetail.values());
+        comboBox.setConverter(new StringConverter<>() {
+            @Override
+            public String toString(Model3dDetail detail) {
+                return detail == null ? "" : detail.label();
+            }
+
+            @Override
+            public Model3dDetail fromString(String string) {
+                for (Model3dDetail detail : Model3dDetail.values()) {
+                    if (detail.label().equals(string)) {
+                        return detail;
+                    }
+                }
+                return null;
+            }
+        });
+        comboBox.setValue(context.preferencesService().model3dDetail());
+        comboBox.setOnAction(event -> {
+            Model3dDetail selected = comboBox.getValue();
+            if (selected != null) {
+                context.preferencesService().saveModel3dDetail(selected);
+            }
+        });
+        return labeledRow("3D model detail", comboBox);
     }
 
     /** Persists the chosen button shape and rebuilds the preferences scene in place so the

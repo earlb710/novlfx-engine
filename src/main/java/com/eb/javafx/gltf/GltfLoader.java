@@ -32,6 +32,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
+import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -70,6 +71,8 @@ public final class GltfLoader {
     /** Decoded materials cached per source material — textures decode once, reused across bakes. */
     private final java.util.IdentityHashMap<MaterialModel, PhongMaterial> materialCache =
             new java.util.IdentityHashMap<>();
+    /** Current morph-target weights applied on the next bake (index = target order); null = neutral. */
+    private float[] morphWeights;
 
     private GltfLoader(GltfModel model) {
         this.model = model;
@@ -103,6 +106,36 @@ public final class GltfLoader {
      */
     public List<String> poseNames() {
         return new ArrayList<>(animations.keySet());
+    }
+
+    /** Number of morph targets (blend shapes) on the model's first primitive; 0 if none. */
+    public int morphTargetCount() {
+        for (MeshModel m : model.getMeshModels()) {
+            for (MeshPrimitiveModel p : m.getMeshPrimitiveModels()) {
+                List<Map<String, AccessorModel>> t = p.getTargets();
+                if (t != null && !t.isEmpty()) return t.size();
+            }
+        }
+        return 0;
+    }
+
+    /**
+     * Generic morph-target names ({@code morph0..N-1}). The glTF {@code extras.targetNames} that
+     * carry meaningful labels are read app-side (where a JSON parser is available) and matched by
+     * index — the engine stays dependency-free here.
+     */
+    public List<String> morphTargetNames() {
+        List<String> gen = new ArrayList<>();
+        for (int i = 0, n = morphTargetCount(); i < n; i++) gen.add("morph" + i);
+        return gen;
+    }
+
+    /**
+     * Sets the morph-target weights applied on the next {@link #bakeWithParts} (index = target
+     * order; {@code null} = neutral/all-zero). Re-bake to see the change.
+     */
+    public void setMorphWeights(float[] weights) {
+        this.morphWeights = weights;
     }
 
     /**
@@ -230,6 +263,27 @@ public final class GltfLoader {
         AccessorModel normAccessor = primitive.getAttributes().get("NORMAL");
         float[] normals = (normAccessor != null)
                 ? readFloats(normAccessor.getAccessorData(), normAccessor.getCount() * 3) : null;
+
+        // Apply morph targets (blend shapes) BEFORE skinning: positions += Σ weight · targetDelta.
+        List<Map<String, AccessorModel>> targets = primitive.getTargets();
+        if (morphWeights != null && targets != null) {
+            for (int t = 0; t < targets.size() && t < morphWeights.length; t++) {
+                float w = morphWeights[t];
+                if (w == 0f) continue;
+                AccessorModel dPos = targets.get(t).get("POSITION");
+                if (dPos != null) {
+                    float[] d = readFloats(dPos.getAccessorData(), vertexCount * 3);
+                    for (int i = 0; i < positions.length && i < d.length; i++) positions[i] += w * d[i];
+                }
+                if (normals != null) {
+                    AccessorModel dNorm = targets.get(t).get("NORMAL");
+                    if (dNorm != null) {
+                        float[] dn = readFloats(dNorm.getAccessorData(), vertexCount * 3);
+                        for (int i = 0; i < normals.length && i < dn.length; i++) normals[i] += w * dn[i];
+                    }
+                }
+            }
+        }
 
         // Apply skinning to positions (and the same joints/weights to normals — rotation only).
         if (skin != null && jointMatrices != null) {
@@ -605,14 +659,27 @@ public final class GltfLoader {
         return result;
     }
 
+    /**
+     * Reads a glTF index accessor into an {@code int[]}, handling all three index component types
+     * (UNSIGNED_BYTE / UNSIGNED_SHORT / UNSIGNED_INT).
+     *
+     * <p>The 32-bit branch builds the {@link IntBuffer} view ONCE. A prior version called
+     * {@code buf.asIntBuffer().get()} inside the loop — that rebuilds a view at position 0 each
+     * iteration, so every index equalled index 0 and scrambled every triangle for any GLB with
+     * 32-bit indices (i.e. &gt;65k-vertex figures).</p>
+     */
     private static int[] readIndices(AccessorData data, int count) {
         ByteBuffer buf = data.createByteBuffer();
         int[] result = new int[count];
-        if (buf.capacity() == count * 2) {
+        int bytesPer = count == 0 ? 0 : buf.capacity() / count;
+        if (bytesPer == 1) {                       // UNSIGNED_BYTE
+            for (int i = 0; i < count; i++) result[i] = buf.get() & 0xFF;
+        } else if (bytesPer == 2) {                // UNSIGNED_SHORT
             ShortBuffer sb = buf.asShortBuffer();
             for (int i = 0; i < count; i++) result[i] = sb.get() & 0xFFFF;
-        } else {
-            for (int i = 0; i < count; i++) result[i] = buf.asIntBuffer().get();
+        } else {                                   // UNSIGNED_INT
+            IntBuffer ib = buf.asIntBuffer();
+            for (int i = 0; i < count; i++) result[i] = ib.get();
         }
         return result;
     }
