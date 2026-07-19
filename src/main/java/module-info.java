@@ -4,6 +4,7 @@ module com.novlfx.engine {
     requires javafx.media;
     requires javafx.swing;
     requires java.desktop;
+    requires jdk.httpserver;
     requires batik.all;
     requires org.girod.javafx.svgimage;
     requires org.fxyz3d.core;
@@ -19,7 +20,9 @@ module com.novlfx.engine {
     exports com.eb.javafx.content;
     exports com.eb.javafx.debug;
     exports com.eb.javafx.diagnostics;
+    exports com.eb.javafx.dialog;
     exports com.eb.javafx.display;
+    exports com.eb.javafx.driver;
     exports com.eb.javafx.events;
     exports com.eb.javafx.gamesupport;
     exports com.eb.javafx.gltf;
