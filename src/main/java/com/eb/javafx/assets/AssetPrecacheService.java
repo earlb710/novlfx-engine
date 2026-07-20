@@ -86,6 +86,8 @@ public final class AssetPrecacheService {
     /** How deep into the order the pass has got — kept across pauses AND memory halts. */
     private int cursor;
     private int loaded;
+    /** Size of the source, captured when the pass starts. */
+    private int total;
     private long loadedBytes;
     /** Nested {@link #runExclusively} calls must not let the inner one resume the outer's pause. */
     private int pauseDepth;
@@ -240,6 +242,33 @@ public final class AssetPrecacheService {
         }
     }
 
+    /**
+     * How far through the library the pass has got, 0–100.
+     *
+     * <p>This is the honest "how full is the cache" reading: it only ever rises, because it counts
+     * assets warmed rather than memory in use. A heap reading cannot answer the same question — it
+     * moves with every allocation in the process and drops on every collection, so it falls back
+     * without anything having left the cache.</p>
+     */
+    public double filledPct() {
+        lock.lock();
+        try {
+            return total <= 0 ? 0.0 : 100.0 * cursor / (double) total;
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    /** How many assets the pass has to get through in total. */
+    public int total() {
+        lock.lock();
+        try {
+            return total;
+        } finally {
+            lock.unlock();
+        }
+    }
+
     /** How many bytes have been warmed. */
     public long loadedBytes() {
         lock.lock();
@@ -276,6 +305,12 @@ public final class AssetPrecacheService {
         } catch (RuntimeException | Error sourceFailure) {
             setState(State.STOPPED);
             return;
+        }
+        lock.lock();
+        try {
+            total = size;
+        } finally {
+            lock.unlock();
         }
         while (true) {
             int index;
