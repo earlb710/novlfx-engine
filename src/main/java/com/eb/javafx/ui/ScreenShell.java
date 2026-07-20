@@ -36,6 +36,7 @@ import javafx.scene.layout.BorderStrokeStyle;
 import javafx.scene.layout.BorderWidths;
 import javafx.scene.layout.CornerRadii;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
@@ -610,6 +611,58 @@ public final class ScreenShell {
      * style-class lookup — useful for "shortcut → synthesise click on current footer label"
      * dispatch where the footer Label instances change across navigations.</p>
      */
+    /** Style class of the footer's right-aligned status label. */
+    public static final String SCREEN_FOOTER_STATUS_STYLE_CLASS = "screen-footer-status";
+    /** Node id of the footer status label, so it can be found and updated in place. */
+    public static final String FOOTER_STATUS_ID = "footer-status";
+
+    /**
+     * Sets the footer's right-aligned <b>status</b> text, creating the slot on first use.
+     *
+     * <p>The engine owns the slot — where it sits, how it's styled, that it doesn't disturb the footer
+     * options — because that's presentation every game shares. What the text SAYS is the game's business;
+     * this deliberately takes a plain string rather than modelling any particular kind of status.</p>
+     *
+     * <p>Updated IN PLACE: the label is found by id and its text replaced, so a caller updating
+     * frequently doesn't churn the scene graph. A {@code null} or blank {@code text} hides the slot
+     * (and its spacer) rather than leaving an empty gap.</p>
+     *
+     * <p>FX thread only, like any scene-graph mutation.</p>
+     */
+    public static void setFooterStatus(HBox footer, String text) {
+        if (footer == null) {
+            return;
+        }
+        Label status = null;
+        for (Node child : footer.getChildren()) {
+            if (child instanceof Label label && FOOTER_STATUS_ID.equals(label.getId())) {
+                status = label;
+                break;
+            }
+        }
+        if (text == null || text.isBlank()) {
+            if (status != null) {
+                footer.getChildren().removeAll(status, status.getUserData() instanceof Node spacer
+                        ? spacer : status);
+            }
+            return;
+        }
+        if (status == null) {
+            // A growing spacer pushes the status to the far right without disturbing the options, which
+            // stay packed at the left. The spacer is kept on the label's userData so removing the status
+            // can take the spacer with it — otherwise hiding the status would leave the options
+            // mysteriously left-shoved by an orphan spacer.
+            Region spacer = new Region();
+            HBox.setHgrow(spacer, Priority.ALWAYS);
+            status = new Label();
+            status.setId(FOOTER_STATUS_ID);
+            status.getStyleClass().add(SCREEN_FOOTER_STATUS_STYLE_CLASS);
+            status.setUserData(spacer);
+            footer.getChildren().addAll(spacer, status);
+        }
+        status.setText(text);
+    }
+
     public static HBox findFooterBar(Node root) {
         if (root instanceof HBox hbox && hbox.getStyleClass().contains(SCREEN_FOOTER_BAR_STYLE_CLASS)) {
             return hbox;
