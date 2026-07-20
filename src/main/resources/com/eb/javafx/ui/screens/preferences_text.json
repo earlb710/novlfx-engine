@@ -12,6 +12,7 @@
     "item.sound-volume.label": "Sound volume",
     "item.mute-all.label": "Mute all",
     "item.fullscreen.label": "Fullscreen",
+    "item.antialias-2x.label": "2x antialiasing",
     "item.hud-opacity.label": "HUD opacity",
     "item.hud-opacity.solid": "Solid",
     "item.hud-opacity.subtle": "Subtle",

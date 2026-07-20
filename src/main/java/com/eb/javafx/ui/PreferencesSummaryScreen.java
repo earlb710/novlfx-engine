@@ -6,6 +6,7 @@ import com.eb.javafx.prefs.PreferencesService.FooterIconDisplay;
 import com.eb.javafx.prefs.PreferencesService.FooterShortcutDisplay;
 import com.eb.javafx.prefs.PreferencesService;
 import com.eb.javafx.prefs.PreferencesService.Language;
+import com.eb.javafx.prefs.PreferencesService.ArtCacheSize;
 import com.eb.javafx.prefs.PreferencesService.Model3dDetail;
 import com.eb.javafx.prefs.PreferencesService.TextSpeed;
 import com.eb.javafx.prefs.PreferencesService.ThemeFamily;
@@ -106,6 +107,8 @@ public final class PreferencesSummaryScreen {
                         themeSelectionRow(context),
                         buttonStyleRow(context),
                         model3dDetailRow(context),
+                        artCacheSizeRow(context),
+                        antialias2xRow(context),
                         hudOpacityRow(context),
                         footerIconDisplayRow(context),
                         footerDisplayRow(context),
@@ -600,6 +603,43 @@ public final class PreferencesSummaryScreen {
         return labeledRow("3D model detail", comboBox);
     }
 
+    /**
+     * Art-cache budget selector (Small → Huge). Controls how much heap the in-memory texture + built-figure
+     * caches may use: a bigger cache rebuilds less and re-shows faster, at the cost of memory. The caches
+     * re-read the budget as they evict, so it takes effect immediately (a restart works too).
+     *
+     * <p>The larger tiers only pay off when the process was launched with a matching {@code -Xmx} — pick a
+     * budget well under the heap or the game will spend its time collecting garbage (or run out).</p>
+     */
+    private static HBox artCacheSizeRow(RouteContext context) {
+        ComboBox<ArtCacheSize> comboBox = new ComboBox<>();
+        comboBox.getItems().addAll(ArtCacheSize.values());
+        comboBox.setConverter(new StringConverter<>() {
+            @Override
+            public String toString(ArtCacheSize size) {
+                return size == null ? "" : size.label();
+            }
+
+            @Override
+            public ArtCacheSize fromString(String string) {
+                for (ArtCacheSize size : ArtCacheSize.values()) {
+                    if (size.label().equals(string)) {
+                        return size;
+                    }
+                }
+                return null;
+            }
+        });
+        comboBox.setValue(context.preferencesService().artCacheSize());
+        comboBox.setOnAction(event -> {
+            ArtCacheSize selected = comboBox.getValue();
+            if (selected != null) {
+                context.preferencesService().saveArtCacheSize(selected);
+            }
+        });
+        return labeledRow("Art cache size", comboBox);
+    }
+
     /** Persists the chosen button shape and rebuilds the preferences scene in place so the
      *  screen's own buttons (Main Menu / Close) immediately show the new shape — mirrors
      *  {@link #applyFontScale} / {@link #applyTheme}. */
@@ -704,6 +744,26 @@ public final class PreferencesSummaryScreen {
             }
         });
         return labeledRow(screenText("item.footer-icon-display.label"), comboBox);
+    }
+
+    /**
+     * 2× antialiasing (supersampling) for 3D surfaces: renders them at twice the on-screen size and scales
+     * the result down.
+     *
+     * <p>Scene antialiasing is already applied, but that is MSAA — geometry edges only. This also smooths
+     * texture minification and thin alpha detail (hair strands, eyelashes, sheer fabric), which is what
+     * breaks up on a figure drawn small. It costs four times the fill rate, hence the opt-in. Viewports
+     * read it when they are built, so it applies to the next screen shown.</p>
+     */
+    private static HBox antialias2xRow(RouteContext context) {
+        CheckBox checkBox = new CheckBox(screenText("item.antialias-2x.label"));
+        checkBox.getStyleClass().add(ScreenShell.SCREEN_TEXT_STYLE_CLASS);
+        checkBox.setSelected(context.preferencesService().antialias2x());
+        checkBox.selectedProperty().addListener((observable, previous, current) ->
+                context.preferencesService().saveAntialias2x(current));
+        HBox row = new HBox(8, checkBox);
+        row.getStyleClass().add(ScreenShell.LAYOUT_SECTION_ROW_STYLE_CLASS);
+        return row;
     }
 
     private static HBox muteAllRow(RouteContext context) {

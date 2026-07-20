@@ -41,6 +41,8 @@ public final class PreferencesService {
     private static final String LANGUAGE_KEY = "ui.language";
     private static final String TEXT_SPEED_KEY = "ui.textSpeed";
     private static final String MODEL_3D_DETAIL_KEY = "graphics.model3dDetail";
+    private static final String ART_CACHE_SIZE_KEY = "graphics.artCacheSize";
+    private static final String ANTIALIAS_2X_KEY = "graphics.antialias2x";
     private static final String AUTO_SAVE_DAILY_KEY = "save.autoSaveDaily";
     private static final String SAVE_SCREEN_VIEW_MODE_KEY = "save.viewMode";
     private static final String SAVE_SCREEN_PAGE_COUNT_KEY = "save.pageCount";
@@ -78,6 +80,8 @@ public final class PreferencesService {
     private Language language;
     private TextSpeed textSpeed;
     private Model3dDetail model3dDetail;
+    private ArtCacheSize artCacheSize;
+    private boolean antialias2x;
 
     // Config-overridable startup window sizing + clamp bounds (the `window` config object, applied
     // at boot before load()).  Defaults preserve the original 1280x720 within 640-3840 x 480-2160.
@@ -163,6 +167,9 @@ public final class PreferencesService {
         textSpeed = validatedTextSpeed(preferences.get(TEXT_SPEED_KEY, TextSpeed.NORMAL.preferenceValue()));
         model3dDetail = validatedModel3dDetail(
                 preferences.get(MODEL_3D_DETAIL_KEY, Model3dDetail.HIGH.preferenceValue()));
+        artCacheSize = validatedArtCacheSize(
+                preferences.get(ART_CACHE_SIZE_KEY, ArtCacheSize.SMALL.preferenceValue()));
+        antialias2x = preferences.getBoolean(ANTIALIAS_2X_KEY, false);
     }
 
     /** Returns the configured starting width for JavaFX scenes. */
@@ -411,6 +418,55 @@ public final class PreferencesService {
      * Selected level of detail for generated 3D character models. Applications map this to a mesh
      * decimation strength; defaults to {@link Model3dDetail#HIGH} (no reduction).
      */
+    public ArtCacheSize artCacheSize() {
+        return artCacheSize;
+    }
+
+    /**
+     * Whether 3D surfaces should supersample — render at twice the on-screen size and scale back down.
+     *
+     * <p>Distinct from the scene antialiasing that is already applied: that is MSAA, which smooths
+     * GEOMETRY EDGES only. Supersampling also averages texture minification and thin alpha-blended detail
+     * (hair strands, eyelashes, sheer fabric), which is what actually breaks up on a figure drawn small.
+     * It costs four times the fill rate, so it is off by default.</p>
+     */
+    public boolean antialias2x() {
+        return antialias2x;
+    }
+
+    /** Persists the 2× antialiasing (supersampling) choice. */
+    public void saveAntialias2x(boolean enabled) {
+        this.antialias2x = enabled;
+        preferences.putBoolean(ANTIALIAS_2X_KEY, enabled);
+    }
+
+    /**
+     * The persisted 2× antialiasing flag read straight from the backing store, WITHOUT a service instance
+     * — for the same reason as {@link #currentArtCacheSize}: 3D viewports are often built before (or
+     * without) a {@code RouteContext}.
+     */
+    public static boolean currentAntialias2x() {
+        return Preferences.userNodeForPackage(PreferencesService.class)
+                .getBoolean(ANTIALIAS_2X_KEY, false);
+    }
+
+    /**
+     * The persisted art-cache budget read straight from the backing store, WITHOUT needing a service
+     * instance — for static/long-lived caches that are created before (or without) a {@code RouteContext},
+     * e.g. a texture cache initialised at class-load. Callers that read this once at construction pick up a
+     * changed setting on the next restart.
+     */
+    public static ArtCacheSize currentArtCacheSize() {
+        String value = Preferences.userNodeForPackage(PreferencesService.class)
+                .get(ART_CACHE_SIZE_KEY, ArtCacheSize.SMALL.preferenceValue());
+        for (ArtCacheSize candidate : ArtCacheSize.values()) {
+            if (candidate.preferenceValue().equals(value)) {
+                return candidate;
+            }
+        }
+        return ArtCacheSize.SMALL;
+    }
+
     public Model3dDetail model3dDetail() {
         return model3dDetail;
     }
@@ -656,6 +712,17 @@ public final class PreferencesService {
         saveModel3dDetail(validatedModel3dDetail(detail));
     }
 
+    /** Persists the art-cache budget, falling back to {@link ArtCacheSize#SMALL} for null. */
+    public void saveArtCacheSize(ArtCacheSize size) {
+        this.artCacheSize = size == null ? ArtCacheSize.SMALL : size;
+        preferences.put(ART_CACHE_SIZE_KEY, this.artCacheSize.preferenceValue());
+    }
+
+    /** Persists a validated art-cache identifier, falling back to {@link ArtCacheSize#SMALL}. */
+    public void saveArtCacheSize(String size) {
+        saveArtCacheSize(validatedArtCacheSize(size));
+    }
+
     private int clamp(int value, int minimum, int maximum) {
         return Math.max(minimum, Math.min(maximum, value));
     }
@@ -728,6 +795,15 @@ public final class PreferencesService {
             }
         }
         return Model3dDetail.HIGH;
+    }
+
+    private ArtCacheSize validatedArtCacheSize(String value) {
+        for (ArtCacheSize candidate : ArtCacheSize.values()) {
+            if (candidate.preferenceValue().equals(value)) {
+                return candidate;
+            }
+        }
+        return ArtCacheSize.SMALL;
     }
 
     private FooterShortcutDisplay validatedFooterShortcutDisplay(String value) {
@@ -901,6 +977,54 @@ public final class PreferencesService {
 
         public String label() {
             return label;
+        }
+    }
+
+    /**
+     * How much heap the game may spend on its in-memory art caches (decoded textures, built character
+     * geometry).  A bigger cache means fewer rebuilds — smoother repeat renders — at the cost of heap, so
+     * the top tiers only make sense when the process was launched with a matching {@code -Xmx}.
+     *
+     * <p>{@link #budgetBytes()} is the texture budget; {@link #figureCacheEntries()} scales the built-figure
+     * cache alongside it.  Consumers re-read the budget as they evict, so a change applies without a
+     * restart (a restart is equally fine).</p>
+     */
+    public enum ArtCacheSize {
+        // SMALL is the default and reproduces the historic hard-coded limits exactly (256 MB / 24 figures),
+        // so an untouched install behaves as before; the upper tiers trade heap for fewer rebuilds.
+        SMALL("small", "Small (256 MB)", 256L * 1024 * 1024, 24),
+        MEDIUM("medium", "Medium (512 MB)", 512L * 1024 * 1024, 48),
+        LARGE("large", "Large (1 GB)", 1024L * 1024 * 1024, 96),
+        HUGE("huge", "Huge (2 GB)", 2048L * 1024 * 1024, 192);
+
+        private final String preferenceValue;
+        private final String label;
+        private final long budgetBytes;
+        private final int figureCacheEntries;
+
+        ArtCacheSize(String preferenceValue, String label, long budgetBytes, int figureCacheEntries) {
+            this.preferenceValue = preferenceValue;
+            this.label = label;
+            this.budgetBytes = budgetBytes;
+            this.figureCacheEntries = figureCacheEntries;
+        }
+
+        public String preferenceValue() {
+            return preferenceValue;
+        }
+
+        public String label() {
+            return label;
+        }
+
+        /** Decoded-pixel budget for the texture cache, in bytes. */
+        public long budgetBytes() {
+            return budgetBytes;
+        }
+
+        /** How many built character figures to keep cached. */
+        public int figureCacheEntries() {
+            return figureCacheEntries;
         }
     }
 
