@@ -28,6 +28,12 @@ public final class UiTheme {
                 -fx-control-inner-background-alt: %s;
                 -fx-cell-hover-color: %s;
                 -fx-mark-color: %s;
+                /* Pinned EXPLICITLY: modena derives this via ladder(-fx-background), and a ladder
+                   needs a plain Color — any theme value along that chain that resolves to a String
+                   (an unparseable colour, a gradient) surfaces as a ClassCastException warning at
+                   the first consumer, the scroll-bar arrow -fx-effect. A dark theme doesn't want
+                   modena's white under-glint anyway, so pinning it is both the fix and the look. */
+                -fx-shadow-highlight-color: transparent;
             }
 
             .screen-root {

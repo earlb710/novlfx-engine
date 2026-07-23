@@ -1,5 +1,7 @@
 module com.novlfx.engine {
     requires java.prefs;
+    // JUL: EngineLogFile reroutes java.util.logging (JavaFX's own warnings) through the log-file tee.
+    requires java.logging;
     requires javafx.controls;
     requires javafx.media;
     requires javafx.swing;

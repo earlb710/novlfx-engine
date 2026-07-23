@@ -12,6 +12,7 @@
     -fx-control-inner-background-alt: rgba(10, 20, 38, 0.65);
     -fx-cell-hover-color: #143869;
     -fx-mark-color: #66c1e0;
+    -fx-shadow-highlight-color: transparent;
 }
 
 .screen-root {
@@ -679,4 +680,17 @@
     -fx-text-fill: rgba(255, 255, 255, 0.5);
     -fx-font-size: 9px;
     -fx-font-style: italic;
+}
+
+/* ---- scrollbar-arrow effect kill ----------------------------------------------------------------
+   Completes the mitigation above: those rules silenced modena's arrow BACKGROUND-COLOR conversions
+   (which resolve looked-up colours that can arrive as Strings in these subtrees), but modena ALSO
+   gives the arrows a dropshadow -fx-effect whose colour rides the same fragile lookup chain
+   (-fx-shadow-highlight-color <- ladder(-fx-background) <- derive(-fx-base)) - the remaining
+   CssStyleHelper ClassCastException warnings came from there. Author-origin rules beat the
+   user-agent stylesheet regardless of specificity, so this plain selector overrides modena's
+   pseudo-classed ones. The 1px under-glint it removes is invisible on a dark theme. */
+.scroll-bar > .increment-button > .increment-arrow,
+.scroll-bar > .decrement-button > .decrement-arrow {
+    -fx-effect: none;
 }

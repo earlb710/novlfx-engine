@@ -83,11 +83,48 @@ public final class EngineLogFile {
             fileStream = new PrintStream(fileOnlyStream(file, lock), /*autoFlush*/ true, StandardCharsets.UTF_8);
             System.setOut(tee(System.out, file, lock));
             System.setErr(tee(System.err, file, lock));
+            rerouteJavaUtilLogging();
             installed = true;
             System.out.println("[EngineLog] Logging to " + logFile.toAbsolutePath());
         } catch (IOException ex) {
             // Logging is best-effort — never let a missing/locked file stop the game from starting.
             System.err.println("[EngineLog] Could not open log file '" + logFile + "': " + ex);
+        }
+    }
+
+    /**
+     * Points {@code java.util.logging}'s console output at the TEE'D {@link System#err}.
+     *
+     * <p>Without this, JUL messages (JavaFX's own warnings — CSS conversion problems, media errors —
+     * all arrive through JUL) can miss the log file entirely: {@code ConsoleHandler} captures
+     * {@code System.err} once, when logging initialises, and if anything touched a {@code Logger}
+     * before {@link #install} ran, that snapshot is the REAL stderr from before the tee. The messages
+     * then show on the console but never in the file — which reads as the log "missing" exactly the
+     * warnings you're trying to diagnose.</p>
+     *
+     * <p>Replaces root {@code ConsoleHandler}s with a {@code StreamHandler} on the current (teed)
+     * stream, flushing per record so a crash doesn't hold back the tail.</p>
+     */
+    private static void rerouteJavaUtilLogging() {
+        try {
+            java.util.logging.Logger root = java.util.logging.LogManager.getLogManager().getLogger("");
+            for (java.util.logging.Handler h : root.getHandlers()) {
+                if (h instanceof java.util.logging.ConsoleHandler) {
+                    root.removeHandler(h);
+                }
+            }
+            java.util.logging.StreamHandler teed = new java.util.logging.StreamHandler(
+                    System.err, new java.util.logging.SimpleFormatter()) {
+                @Override
+                public synchronized void publish(java.util.logging.LogRecord record) {
+                    super.publish(record);
+                    flush();   // per-record: a crash must not swallow the last warnings
+                }
+            };
+            teed.setLevel(java.util.logging.Level.ALL);
+            root.addHandler(teed);
+        } catch (RuntimeException ex) {
+            System.err.println("[EngineLog] Could not reroute java.util.logging: " + ex);
         }
     }
 

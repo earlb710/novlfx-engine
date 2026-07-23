@@ -401,7 +401,11 @@ public final class SaveScreen {
         TabPane tabPane = new TabPane();
         tabPane.setTabClosingPolicy(TabPane.TabClosingPolicy.UNAVAILABLE);
         tabPane.getStyleClass().add("save-screen-tabs");
-        String accentHex = context.uiTheme() == null ? "#888888" : context.uiTheme().accentColor();
+        String themeAccent = context.uiTheme() == null ? null : context.uiTheme().accentColor();
+        // A null/blank accent would render "-fx-base: null;" — an unparseable colour that poisons every
+        // looked-up colour derived from -fx-base below this node (the CssStyleHelper String->Color
+        // warnings at scrollbar arrows). Fall back rather than interpolate whatever we were given.
+        String accentHex = themeAccent == null || themeAccent.isBlank() ? "#888888" : themeAccent;
         tabPane.setStyle(
                 "-fx-base: " + accentHex + ";"
                 + " -fx-accent: " + accentHex + ";"
