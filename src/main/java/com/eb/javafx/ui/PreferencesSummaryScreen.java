@@ -174,7 +174,10 @@ public final class PreferencesSummaryScreen {
         Scene scene = themedPreferencesScene(context, root, width, height);
         scene.getStylesheets().add(context.uiTheme().stylesheet());
         scene.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
-            if (isCloseShortcut(event.getCode(), event.isShortcutDown())) {
+            // ESC (and the Ctrl+P toggle) close the screen — back to whatever opened it (the game), or
+            // the main menu when there's no back-stack (opened from the menu).  See closeAction.
+            if (event.getCode() == KeyCode.ESCAPE
+                    || isCloseShortcut(event.getCode(), event.isShortcutDown())) {
                 closeAction.run();
                 event.consume();
             }

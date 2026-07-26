@@ -642,25 +642,38 @@ public final class ScreenShell {
         }
         if (text == null || text.isBlank()) {
             if (status != null) {
-                footer.getChildren().removeAll(status, status.getUserData() instanceof Node spacer
-                        ? spacer : status);
+                final Label toDrop = status;
+                footer.getChildren().removeIf(child ->
+                        child == toDrop || FOOTER_SPACER_MARKER.equals(child.getUserData()));
             }
             return;
         }
         if (status == null) {
-            // A growing spacer pushes the status to the far right without disturbing the options, which
-            // stay packed at the left. The spacer is kept on the label's userData so removing the status
-            // can take the spacer with it — otherwise hiding the status would leave the options
-            // mysteriously left-shoved by an orphan spacer.
-            Region spacer = new Region();
-            HBox.setHgrow(spacer, Priority.ALWAYS);
+            // The status sits at the far right — but a right-hand spacer ALONE would shove the footer
+            // options to the left (the footer bar centres its children).  A matching growing spacer on
+            // the LEFT balances it, so the options stay centred while the status still floats to the
+            // far right.  Both spacers are marked so hiding the status removes them too (otherwise an
+            // orphan spacer would leave the options mysteriously off-centre).
+            Region leftSpacer = footerStatusSpacer();
+            Region rightSpacer = footerStatusSpacer();
             status = new Label();
             status.setId(FOOTER_STATUS_ID);
             status.getStyleClass().add(SCREEN_FOOTER_STATUS_STYLE_CLASS);
-            status.setUserData(spacer);
-            footer.getChildren().addAll(spacer, status);
+            footer.getChildren().add(0, leftSpacer);
+            footer.getChildren().addAll(rightSpacer, status);
         }
         status.setText(text);
+    }
+
+    /** Marker set on a footer status spacer's {@code userData} so {@link #setFooterStatus} can find and
+     *  remove both balancing spacers when the status is hidden. */
+    private static final String FOOTER_SPACER_MARKER = "footer-status-spacer";
+
+    private static Region footerStatusSpacer() {
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+        spacer.setUserData(FOOTER_SPACER_MARKER);
+        return spacer;
     }
 
     public static HBox findFooterBar(Node root) {
@@ -1390,6 +1403,39 @@ public final class ScreenShell {
     public static boolean isFooterOptionEnabled(Label label) {
         Validation.requireNonNull(label, "Footer label is required.");
         return label.getUserData() instanceof FooterOption option && option.enabled();
+    }
+
+    /** The footer-option label with {@code optionId}, or {@code null} if the footer/option is absent. */
+    public static Label findFooterOption(HBox footer, String optionId) {
+        if (footer == null || optionId == null) {
+            return null;
+        }
+        for (Node child : footer.getChildren()) {
+            if (child instanceof Label label && label.getUserData() instanceof FooterOption option
+                    && optionId.equals(option.id())) {
+                return label;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Sets a footer option's enabled state — both the click gate (its {@link FooterOption} user data,
+     * read by {@link #isFooterOptionEnabled}) and the greyed disabled style.  No-op for a {@code null}
+     * label.  Used to lock out back/forward while a blocking dialog is up.
+     */
+    public static void setFooterOptionEnabled(Label label, boolean enabled) {
+        if (label == null) {
+            return;
+        }
+        if (label.getUserData() instanceof FooterOption option) {
+            label.setUserData(option.withEnabled(enabled));
+        }
+        if (enabled) {
+            label.getStyleClass().remove(SCREEN_FOOTER_OPTION_DISABLED_STYLE_CLASS);
+        } else if (!label.getStyleClass().contains(SCREEN_FOOTER_OPTION_DISABLED_STYLE_CLASS)) {
+            label.getStyleClass().add(SCREEN_FOOTER_OPTION_DISABLED_STYLE_CLASS);
+        }
     }
 
     /**

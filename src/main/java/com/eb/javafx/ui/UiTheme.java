@@ -34,6 +34,7 @@ public final class UiTheme {
                    the first consumer, the scroll-bar arrow -fx-effect. A dark theme doesn't want
                    modena's white under-glint anyway, so pinning it is both the fix and the look. */
                 -fx-shadow-highlight-color: transparent;
+                -fx-mark-highlight-color: transparent;
             }
 
             .screen-root {

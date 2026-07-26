@@ -166,10 +166,31 @@ public final class DialogMessages {
         showOverlay(scene, theme, title, header, content, okLabel, /*cancelLabel*/ null, bridge);
     }
 
+    /**
+     * Locks the footer's <b>back</b> / <b>forward</b> options while a blocking dialog is up so the
+     * player can't navigate the scene behind the modal, and returns a {@link Runnable} that restores
+     * their PRIOR enabled state — call it on dismiss.  Respects a state the host had already disabled
+     * and nests correctly for stacked dialogs.  No footer on the scene → a harmless no-op.
+     */
+    private static Runnable lockFooterNavigation(Pane container) {
+        HBox footer = ScreenShell.findFooterBar(container);
+        Label back = ScreenShell.findFooterOption(footer, "back");
+        Label forward = ScreenShell.findFooterOption(footer, "forward");
+        boolean backWas = back != null && ScreenShell.isFooterOptionEnabled(back);
+        boolean forwardWas = forward != null && ScreenShell.isFooterOptionEnabled(forward);
+        ScreenShell.setFooterOptionEnabled(back, false);
+        ScreenShell.setFooterOptionEnabled(forward, false);
+        return () -> {
+            ScreenShell.setFooterOptionEnabled(back, backWas);
+            ScreenShell.setFooterOptionEnabled(forward, forwardWas);
+        };
+    }
+
     private static void showOverlay(Scene scene, UiTheme theme, String title, String header,
                                       String content, String okLabel, String cancelLabel,
                                       Consumer<Result> callback) {
         Pane container = (Pane) scene.getRoot();
+        Runnable restoreFooterNav = lockFooterNavigation(container);
         String accent = theme == null ? DEFAULT_ACCENT : safeColor(theme.accentColor(), DEFAULT_ACCENT);
         String textHex = theme == null ? DEFAULT_TEXT : safeColor(theme.textColor(), DEFAULT_TEXT);
 
@@ -284,6 +305,7 @@ public final class DialogMessages {
         dismiss[0] = () -> {
             scene.removeEventFilter(KeyEvent.KEY_PRESSED, keyFilter);
             container.getChildren().remove(overlay);
+            restoreFooterNav.run();
         };
 
         container.getChildren().add(overlay);
@@ -339,6 +361,7 @@ public final class DialogMessages {
                                             String content, String defaultValue,
                                             java.util.function.Consumer<String> callback) {
         Pane container = (Pane) scene.getRoot();
+        Runnable restoreFooterNav = lockFooterNavigation(container);
         String accent = theme == null ? DEFAULT_ACCENT : safeColor(theme.accentColor(), DEFAULT_ACCENT);
         String textHex = theme == null ? DEFAULT_TEXT : safeColor(theme.textColor(), DEFAULT_TEXT);
 
@@ -441,6 +464,7 @@ public final class DialogMessages {
         dismiss[0] = () -> {
             scene.removeEventFilter(KeyEvent.KEY_PRESSED, keyFilter);
             container.getChildren().remove(overlay);
+            restoreFooterNav.run();
         };
 
         container.getChildren().add(overlay);

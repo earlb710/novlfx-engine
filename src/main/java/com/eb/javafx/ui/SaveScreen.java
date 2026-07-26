@@ -611,7 +611,10 @@ public final class SaveScreen {
         Scene scene = themedSaveScene(context, root, width, height);
         scene.getStylesheets().add(context.uiTheme().stylesheet());
         scene.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
-            if (event.isShortcutDown() && event.getCode() == KeyCode.P) {
+            // ESC (and the Ctrl+P toggle) close the save/load screen — back to whatever opened it (the
+            // game), or the main menu when there's no back-stack (opened from the menu).  See closeAction.
+            if (event.getCode() == KeyCode.ESCAPE
+                    || (event.isShortcutDown() && event.getCode() == KeyCode.P)) {
                 closeAction.run();
                 event.consume();
             }

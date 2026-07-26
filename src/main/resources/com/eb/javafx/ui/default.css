@@ -13,6 +13,7 @@
     -fx-cell-hover-color: #143869;
     -fx-mark-color: #66c1e0;
     -fx-shadow-highlight-color: transparent;
+    -fx-mark-highlight-color: transparent;
 }
 
 .screen-root {
@@ -693,4 +694,21 @@
 .scroll-bar > .increment-button > .increment-arrow,
 .scroll-bar > .decrement-button > .decrement-arrow {
     -fx-effect: none;
+}
+
+/* ---- tab overflow-menu arrow fix ----------------------------------------------------------------
+   The tab-down/up buttons' arrow paints -fx-background-color from the SAME looked-up chain the scroll
+   arrows do (-fx-mark-highlight-color, derive(-fx-base,...)); a theme value along it that resolves to
+   a String surfaces as the CssStyleHelper ClassCastException warning here.  -fx-mark-color is itself a
+   looked-up colour whose chain still hits that String, so point the arrow at a LITERAL colour — no
+   lookup, no conversion, no warning. */
+.tab-pane > .tab-header-area > .control-buttons-tab > .container > .tab-down-button > .arrow,
+.tab-pane > .tab-header-area > .control-buttons-tab > .container > .tab-up-button > .arrow {
+    -fx-background-color: white;
+}
+/* The overflow button itself resolves -fx-background-color through the SAME String-tainted chain — its
+   chrome is invisible here (only the arrow shows), so pin it to a literal transparent. */
+.tab-pane > .tab-header-area > .control-buttons-tab > .container > .tab-down-button,
+.tab-pane > .tab-header-area > .control-buttons-tab > .container > .tab-up-button {
+    -fx-background-color: transparent;
 }
