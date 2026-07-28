@@ -42,6 +42,7 @@ public final class PreferencesService {
     private static final String TEXT_SPEED_KEY = "ui.textSpeed";
     private static final String MODEL_3D_DETAIL_KEY = "graphics.model3dDetail";
     private static final String ART_CACHE_SIZE_KEY = "graphics.artCacheSize";
+    private static final String TEXTURE_SIZE_MAX_KEY = "graphics.textureSizeMax";
     private static final String ANTIALIAS_2X_KEY = "graphics.antialias2x";
     private static final String AUTO_SAVE_DAILY_KEY = "save.autoSaveDaily";
     private static final String SAVE_SCREEN_VIEW_MODE_KEY = "save.viewMode";
@@ -81,6 +82,7 @@ public final class PreferencesService {
     private TextSpeed textSpeed;
     private Model3dDetail model3dDetail;
     private ArtCacheSize artCacheSize;
+    private TextureSizeMax textureSizeMax;
     private boolean antialias2x;
 
     // Config-overridable startup window sizing + clamp bounds (the `window` config object, applied
@@ -169,6 +171,8 @@ public final class PreferencesService {
                 preferences.get(MODEL_3D_DETAIL_KEY, Model3dDetail.HIGH.preferenceValue()));
         artCacheSize = validatedArtCacheSize(
                 preferences.get(ART_CACHE_SIZE_KEY, ArtCacheSize.SMALL.preferenceValue()));
+        textureSizeMax = validatedTextureSizeMax(
+                preferences.get(TEXTURE_SIZE_MAX_KEY, TextureSizeMax.K4.preferenceValue()));
         antialias2x = preferences.getBoolean(ANTIALIAS_2X_KEY, false);
     }
 
@@ -471,6 +475,28 @@ public final class PreferencesService {
         return model3dDetail;
     }
 
+    /** The chosen maximum texture dimension for generated 3D models; defaults to {@link TextureSizeMax#K4}. */
+    public TextureSizeMax textureSizeMax() {
+        return textureSizeMax;
+    }
+
+    /**
+     * The persisted max-texture-size read straight from the backing store, WITHOUT a service instance —
+     * for the same reason as {@link #currentArtCacheSize}: texture builders are static/long-lived and run
+     * before (or without) a {@code RouteContext}. Callers read this per build, so a change applies to the
+     * next texture built (already-cached textures rebuild as they're evicted / re-rendered).
+     */
+    public static TextureSizeMax currentTextureSizeMax() {
+        String value = Preferences.userNodeForPackage(PreferencesService.class)
+                .get(TEXTURE_SIZE_MAX_KEY, TextureSizeMax.K4.preferenceValue());
+        for (TextureSizeMax candidate : TextureSizeMax.values()) {
+            if (candidate.preferenceValue().equals(value)) {
+                return candidate;
+            }
+        }
+        return TextureSizeMax.K4;
+    }
+
     /** Config-driven per-speed reveal/auto-advance durations (ms): {@code [slow, normal, fast]},
      *  or null to use the {@link TextSpeed} enum defaults. */
     private static volatile int[] textSpeedDurationOverride;
@@ -723,6 +749,17 @@ public final class PreferencesService {
         saveArtCacheSize(validatedArtCacheSize(size));
     }
 
+    /** Persists the max-texture-size level, falling back to {@link TextureSizeMax#K4} for null. */
+    public void saveTextureSizeMax(TextureSizeMax size) {
+        this.textureSizeMax = size == null ? TextureSizeMax.K4 : size;
+        preferences.put(TEXTURE_SIZE_MAX_KEY, this.textureSizeMax.preferenceValue());
+    }
+
+    /** Persists a validated max-texture-size identifier, falling back to {@link TextureSizeMax#K4}. */
+    public void saveTextureSizeMax(String size) {
+        saveTextureSizeMax(validatedTextureSizeMax(size));
+    }
+
     private int clamp(int value, int minimum, int maximum) {
         return Math.max(minimum, Math.min(maximum, value));
     }
@@ -804,6 +841,15 @@ public final class PreferencesService {
             }
         }
         return ArtCacheSize.SMALL;
+    }
+
+    private TextureSizeMax validatedTextureSizeMax(String value) {
+        for (TextureSizeMax candidate : TextureSizeMax.values()) {
+            if (candidate.preferenceValue().equals(value)) {
+                return candidate;
+            }
+        }
+        return TextureSizeMax.K4;
     }
 
     private FooterShortcutDisplay validatedFooterShortcutDisplay(String value) {
@@ -977,6 +1023,41 @@ public final class PreferencesService {
 
         public String label() {
             return label;
+        }
+    }
+
+    /**
+     * Maximum texture dimension (longest side, px) used when a 3D model's maps are built. Lower caps trade
+     * fine texture detail for less video/heap memory and faster texture composites — a big lever on figures
+     * that carry large fabric / skin / face maps. {@link #K4} (4096) reproduces the historic behaviour.
+     */
+    public enum TextureSizeMax {
+        K1("1k", "1K (1024)", 1024),
+        K2("2k", "2K (2048)", 2048),
+        K3("3k", "3K (3072)", 3072),
+        K4("4k", "4K (4096)", 4096);
+
+        private final String preferenceValue;
+        private final String label;
+        private final int maxDimension;
+
+        TextureSizeMax(String preferenceValue, String label, int maxDimension) {
+            this.preferenceValue = preferenceValue;
+            this.label = label;
+            this.maxDimension = maxDimension;
+        }
+
+        public String preferenceValue() {
+            return preferenceValue;
+        }
+
+        public String label() {
+            return label;
+        }
+
+        /** The maximum texture side length in pixels for this level. */
+        public int maxDimension() {
+            return maxDimension;
         }
     }
 

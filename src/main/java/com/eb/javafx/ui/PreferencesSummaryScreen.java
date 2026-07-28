@@ -8,6 +8,7 @@ import com.eb.javafx.prefs.PreferencesService;
 import com.eb.javafx.prefs.PreferencesService.Language;
 import com.eb.javafx.prefs.PreferencesService.ArtCacheSize;
 import com.eb.javafx.prefs.PreferencesService.Model3dDetail;
+import com.eb.javafx.prefs.PreferencesService.TextureSizeMax;
 import com.eb.javafx.prefs.PreferencesService.TextSpeed;
 import com.eb.javafx.prefs.PreferencesService.ThemeFamily;
 import com.eb.javafx.prefs.PreferencesService.ThemeVariant;
@@ -108,6 +109,7 @@ public final class PreferencesSummaryScreen {
                         buttonStyleRow(context),
                         model3dDetailRow(context),
                         artCacheSizeRow(context),
+                        textureSizeMaxRow(context),
                         antialias2xRow(context),
                         hudOpacityRow(context),
                         footerIconDisplayRow(context),
@@ -641,6 +643,35 @@ public final class PreferencesSummaryScreen {
             }
         });
         return labeledRow("Art cache size", comboBox);
+    }
+
+    private static HBox textureSizeMaxRow(RouteContext context) {
+        ComboBox<TextureSizeMax> comboBox = new ComboBox<>();
+        comboBox.getItems().addAll(TextureSizeMax.values());
+        comboBox.setConverter(new StringConverter<>() {
+            @Override
+            public String toString(TextureSizeMax size) {
+                return size == null ? "" : size.label();
+            }
+
+            @Override
+            public TextureSizeMax fromString(String string) {
+                for (TextureSizeMax size : TextureSizeMax.values()) {
+                    if (size.label().equals(string)) {
+                        return size;
+                    }
+                }
+                return null;
+            }
+        });
+        comboBox.setValue(context.preferencesService().textureSizeMax());
+        comboBox.setOnAction(event -> {
+            TextureSizeMax selected = comboBox.getValue();
+            if (selected != null) {
+                context.preferencesService().saveTextureSizeMax(selected);
+            }
+        });
+        return labeledRow("Texture size max", comboBox);
     }
 
     /** Persists the chosen button shape and rebuilds the preferences scene in place so the
