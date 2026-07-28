@@ -1263,27 +1263,56 @@ public final class SaveScreen {
      *  </ol>
      */
     static void triggerLoad(RouteContext context, SaveSlotSummary summary) {
-        // Restore the gameplay state BEFORE navigating so the destination scene
-        // constructs against the loaded NPCs / map / time / etc., not the boot-default
-        // state.  restoreSlotSnapshot returns false for legacy / metadata-only saves
-        // (no snapshot file on disk) — in that case we just navigate without restore,
-        // matching pre-snapshot behaviour so existing saves still "work" (they just
-        // don't carry game state).
-        try {
-            boolean restored = context.saveLoadService().restoreSlotSnapshot(
-                    summary.category(), summary.slot(), context.gameState());
-            if (!restored) {
-                System.err.println("[SaveScreen] Slot " + summary.category() + " "
-                        + summary.slot() + " has no snapshot file — loading navigates"
-                        + " to recorded route but gameplay state stays at boot defaults.");
+        Scene activeScene = context.primaryStage() == null ? null : context.primaryStage().getScene();
+        // Dim the screen with a busy spinner while loading.  Reading + decoding the snapshot file (the
+        // slow part) runs off-thread so the spinner animates; applying it to live GameState and
+        // navigating happen back on the FX thread — restore BEFORE navigate, so the destination scene
+        // constructs against the loaded NPCs / map / time, not the boot defaults.
+        Runnable dismissBusy = DialogMessages.busy(activeScene, context.uiTheme(), screenText("dialog.loading"));
+        Thread worker = new Thread(() -> {
+            com.eb.javafx.save.GameplayStateSnapshot decoded = null;
+            RuntimeException failure = null;
+            try {
+                decoded = context.saveLoadService().decodeSlotSnapshot(
+                        summary.category(), summary.slot());
+            } catch (RuntimeException ex) {
+                failure = ex;
             }
-        } catch (RuntimeException ex) {
-            // Snapshot decode / restore failure — log and proceed with navigation so
-            // the player isn't stranded on the save screen, but warn them in the log
-            // so a corrupt save is debuggable.
-            System.err.println("[SaveScreen] Failed to restore snapshot for slot "
-                    + summary.category() + " " + summary.slot() + ": " + ex);
-        }
+            final com.eb.javafx.save.GameplayStateSnapshot snapshot = decoded;
+            final RuntimeException decodeFailure = failure;
+            javafx.application.Platform.runLater(() -> {
+                try {
+                    if (snapshot != null) {
+                        context.gameState().restore(snapshot);
+                    } else if (decodeFailure == null) {
+                        // Legacy / metadata-only save (no snapshot file) — navigate without restore,
+                        // matching pre-snapshot behaviour so existing saves still "work".
+                        System.err.println("[SaveScreen] Slot " + summary.category() + " "
+                                + summary.slot() + " has no snapshot file — loading navigates"
+                                + " to recorded route but gameplay state stays at boot defaults.");
+                    }
+                    if (decodeFailure != null) {
+                        // Corrupt / undecodable snapshot — log and proceed with navigation so the
+                        // player isn't stranded on the save screen.
+                        System.err.println("[SaveScreen] Failed to restore snapshot for slot "
+                                + summary.category() + " " + summary.slot() + ": " + decodeFailure);
+                    }
+                } catch (RuntimeException ex) {
+                    System.err.println("[SaveScreen] Failed to apply snapshot for slot "
+                            + summary.category() + " " + summary.slot() + ": " + ex);
+                }
+                dismissBusy.run();
+                navigateAfterLoad(context, summary);
+            });
+        }, "load-snapshot-decode");
+        worker.setDaemon(true);
+        worker.start();
+    }
+
+    /** Navigation half of {@link #triggerLoad}: go to the save's recorded gameplay route, else pop the
+     *  back stack to the calling scene, else fall back to whatever route the summary had (main menu) so
+     *  the screen at least moves on rather than stranding the player. */
+    private static void navigateAfterLoad(RouteContext context, SaveSlotSummary summary) {
         String startupRoute = summary.startupRoute();
         boolean hasGameplayRoute = startupRoute != null
                 && !startupRoute.isBlank()
@@ -1292,13 +1321,9 @@ public final class SaveScreen {
             context.navigateTo(startupRoute);
             return;
         }
-        // Fallback: restore the calling scene from the back stack — the gameplay scene
-        // the player was on when they clicked Save / Load in the footer.
         if (context.navigateBack()) {
             return;
         }
-        // No back-stack entry either — best we can do is navigate to whatever the summary
-        // had (main menu) so the screen at least moves on rather than getting stuck.
         if (startupRoute != null && !startupRoute.isBlank()) {
             context.navigateTo(startupRoute);
         }
@@ -1391,48 +1416,26 @@ public final class SaveScreen {
                                       String description,
                                       Runnable afterSave, WritableImage callerSnapshot,
                                       String callerRoute, Scene activeScene) {
+        // Dim the screen with a busy spinner for the duration.  Everything that reads LIVE game state
+        // (the metadata + thumbnail write, and the full-snapshot CAPTURE) must run on the FX thread; only
+        // the slow JSON-serialise + disk-write of the captured snapshot goes off-thread, so the spinner
+        // actually animates instead of freezing.
+        Runnable dismissBusy = DialogMessages.busy(activeScene, context.uiTheme(), screenText("dialog.saving"));
+        com.eb.javafx.save.GameplayStateSnapshot captured;
         try {
             // Prefer the caller-supplied snapshot (the gameplay scene the player came from);
-            // skip the thumbnail entirely if no snapshot was prepared.  Falling back to
-            // context.primaryStage().getScene() here would write the SAVE SCREEN itself as
-            // the preview, which is the exact bug the prepare-snapshot baton avoids.
-            //
-            // callerRoute (also captured by the host before navigation) is recorded as the
-            // saved summary's startupRoute — see the SaveLoadService overload that takes
-            // a targetRoute parameter.  Without this, loading the save would navigate to
-            // the boot startup route on GameState (typically main menu) instead of back to
-            // the gameplay scene the player saved from.
+            // skip the thumbnail entirely if no snapshot was prepared.  callerRoute is recorded as the
+            // saved summary's startupRoute so loading returns to the gameplay scene, not the boot route.
             context.saveLoadService().writeSlotSummary(
-                    category,
-                    slot,
-                    context.gameState(),
-                    description,
-                    Instant.now(),
-                    callerSnapshot,
-                    callerRoute,
-                    // Pull the in-game date label from the host-registered supplier so
-                    // it persists with the slot.  Empty string when no host has wired
-                    // a supplier — the list view's Game-date column shows blank for
-                    // that case without breaking the save write.
-                    currentGameDateString());
-            // Full gameplay-state snapshot — writes <prefix>NNN.snapshot.json alongside
-            // the metadata .properties.  Captures every part of GameState plus every
-            // host-registered custom rollback section, so loading this slot later
-            // restores the full game state, not just navigation metadata.  Skipped when
-            // the host hasn't registered a GameDateTime supplier (e.g. tests / menu-only
-            // saves where there's no live game time) — the save then writes metadata
-            // only, and load falls back to navigate-without-restore.
+                    category, slot, context.gameState(), description, Instant.now(),
+                    callerSnapshot, callerRoute, currentGameDateString());
+            // Capture the full gameplay snapshot (reads live GameState + host rollback sections) HERE on
+            // the FX thread.  Null when no host GameDateTime supplier is wired (tests / menu-only saves) —
+            // then the save is metadata-only and load falls back to navigate-without-restore.
             com.eb.javafx.gamesupport.GameDateTime snapshotTime = currentGameDateTime();
-            if (snapshotTime != null) {
-                context.saveLoadService().captureSlotSnapshot(
-                        category, slot, context.gameState(), snapshotTime);
-            }
+            captured = snapshotTime == null ? null : context.gameState().snapshot(snapshotTime);
         } catch (RuntimeException ex) {
-            // Error surface is async (callback-resolved) too, so we have to defer the
-            // afterSave refresh until the player dismisses the dialog — otherwise the
-            // slot list could rebuild underneath the still-open overlay and the player
-            // would see stale chrome briefly.  No auto-return on error: the player stays
-            // on the save screen so they can try a different slot or back out manually.
+            dismissBusy.run();
             DialogMessages.error(activeScene, context.uiTheme(),
                     screenText("dialog.save-error.title"),
                     String.format(screenText("dialog.save-error.header"), slot),
@@ -1441,12 +1444,42 @@ public final class SaveScreen {
             System.err.println("[SaveScreen] Failed to save slot " + category + " " + slot + ": " + ex);
             return;
         }
-        // Successful save: return to the calling screen automatically — mirrors the
-        // load flow's "do the work, then take the player back to gameplay" UX.  The
-        // refresh-tab afterSave step is intentionally skipped here because we're about
-        // to leave the save screen entirely; refreshing the grid right before
-        // navigating away would be wasted layout work.
-        returnToCaller(context, callerRoute);
+        if (captured == null) {
+            // Metadata-only save — nothing heavy to write, so finish immediately.
+            dismissBusy.run();
+            returnToCaller(context, callerRoute);
+            return;
+        }
+        // Off-thread: serialise + write the (immutable) snapshot — the slow part — keeping the FX thread
+        // free so the spinner spins.  Then hop back to the FX thread to clear the overlay and navigate.
+        final com.eb.javafx.save.GameplayStateSnapshot snapshot = captured;
+        Thread worker = new Thread(() -> {
+            RuntimeException failure = null;
+            try {
+                context.saveLoadService().persistSlotSnapshot(category, slot, snapshot);
+            } catch (RuntimeException ex) {
+                failure = ex;
+            }
+            final RuntimeException writeFailure = failure;
+            javafx.application.Platform.runLater(() -> {
+                dismissBusy.run();
+                if (writeFailure != null) {
+                    DialogMessages.error(activeScene, context.uiTheme(),
+                            screenText("dialog.save-error.title"),
+                            String.format(screenText("dialog.save-error.header"), slot),
+                            writeFailure.getMessage(),
+                            afterSave);
+                    System.err.println("[SaveScreen] Failed to write snapshot for slot "
+                            + category + " " + slot + ": " + writeFailure);
+                    return;
+                }
+                // Successful save: return to the calling screen automatically — the refresh-tab afterSave
+                // step is skipped because we're leaving the save screen entirely.
+                returnToCaller(context, callerRoute);
+            });
+        }, "save-snapshot-write");
+        worker.setDaemon(true);
+        worker.start();
     }
 
     /** Pops the back-stack to restore the calling screen after a successful save / load.

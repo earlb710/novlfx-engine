@@ -7,6 +7,7 @@ import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.ProgressIndicator;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.HBox;
@@ -183,6 +184,63 @@ public final class DialogMessages {
         return () -> {
             ScreenShell.setFooterOptionEnabled(back, backWas);
             ScreenShell.setFooterOptionEnabled(forward, forwardWas);
+        };
+    }
+
+    /**
+     * A modal BUSY overlay: dim backdrop + an indeterminate {@link ProgressIndicator} (with an optional
+     * message), no buttons, swallowing all mouse + key input, footer navigation locked. Returns a
+     * {@code Runnable} that removes it — call it on the FX thread when the work finishes.
+     *
+     * <p>The overlay paints while the FX thread is free, so the pattern is: show this, run the slow work
+     * OFF the FX thread, then dismiss from {@code Platform.runLater}. Only then does the spinner actually
+     * animate; if the caller blocks the FX thread instead, the overlay shows but the spinner won't turn.
+     * A no-op dismiss is returned when the scene has no {@link Pane} root (nothing to attach to).</p>
+     */
+    public static Runnable busy(Scene scene, UiTheme theme, String message) {
+        if (scene == null || !(scene.getRoot() instanceof Pane container)) {
+            return () -> { };
+        }
+        Runnable restoreFooterNav = lockFooterNavigation(container);
+        String accent = theme == null ? DEFAULT_ACCENT : safeColor(theme.accentColor(), DEFAULT_ACCENT);
+        String textHex = theme == null ? DEFAULT_TEXT : safeColor(theme.textColor(), DEFAULT_TEXT);
+
+        ProgressIndicator spinner = new ProgressIndicator();   // indeterminate → the "round animation"
+        spinner.setPrefSize(64, 64);
+        spinner.setStyle("-fx-progress-color: " + accent + ";");
+
+        VBox box = new VBox(14, spinner);
+        box.setAlignment(Pos.CENTER);
+        box.setMaxSize(Region.USE_PREF_SIZE, Region.USE_PREF_SIZE);
+        if (message != null && !message.isBlank()) {
+            Label label = new Label(message);
+            label.getStyleClass().add("dialog-message-header");
+            label.setStyle("-fx-text-fill: " + textHex + ";");
+            box.getChildren().add(label);
+        }
+
+        StackPane overlay = new StackPane(box);
+        overlay.setAlignment(Pos.CENTER);
+        overlay.setStyle("-fx-background-color: " + BACKDROP_BG + ";");
+        overlay.setPickOnBounds(true);
+        overlay.prefWidthProperty().bind(container.widthProperty());
+        overlay.prefHeightProperty().bind(container.heightProperty());
+        // Swallow ALL input while busy: nothing behind the scrim is clickable and the state can't be
+        // dismissed by the player (only the caller's dismiss Runnable clears it).
+        overlay.setOnMouseClicked(event -> event.consume());
+        EventHandler<KeyEvent> keyBlock = event -> event.consume();
+        scene.addEventFilter(KeyEvent.KEY_PRESSED, keyBlock);
+
+        container.getChildren().add(overlay);
+        boolean[] dismissed = {false};
+        return () -> {
+            if (dismissed[0]) {
+                return;
+            }
+            dismissed[0] = true;
+            scene.removeEventFilter(KeyEvent.KEY_PRESSED, keyBlock);
+            container.getChildren().remove(overlay);
+            restoreFooterNav.run();
         };
     }
 

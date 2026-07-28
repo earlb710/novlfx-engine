@@ -552,7 +552,21 @@ public final class SaveLoadService {
         Validation.requireNonNull(category, "Save category is required.");
         Validation.requireNonNull(gameState, "Game state is required for snapshot capture.");
         Validation.requireNonNull(gameDateTime, "Game date/time is required for snapshot capture.");
-        GameplayStateSnapshot snapshot = gameState.snapshot(gameDateTime);
+        persistSlotSnapshot(category, slot, gameState.snapshot(gameDateTime));
+    }
+
+    /**
+     * Serialises an ALREADY-CAPTURED snapshot to the slot's snapshot file — the pure JSON + disk half of
+     * {@link #captureSlotSnapshot}, split out so a caller can capture the snapshot on the FX thread (where
+     * live game state must be read) and then run this slow step OFF the FX thread, keeping the UI
+     * responsive (a busy spinner actually animates) while it writes. Touches NO live game state, so it is
+     * safe to call off the FX thread.
+     */
+    public void persistSlotSnapshot(SaveSlotCategory category, int slot, GameplayStateSnapshot snapshot) {
+        assertInitialized();
+        validateSlot(slot);
+        Validation.requireNonNull(category, "Save category is required.");
+        Validation.requireNonNull(snapshot, "Snapshot is required for persistence.");
         String json = GameplayStateSnapshotJson.toJson(snapshot);
         try {
             java.nio.file.Files.writeString(slotSnapshotPath(category, slot), json);
@@ -583,9 +597,28 @@ public final class SaveLoadService {
         validateSlot(slot);
         Validation.requireNonNull(category, "Save category is required.");
         Validation.requireNonNull(gameState, "Game state is required for snapshot restore.");
+        GameplayStateSnapshot snapshot = decodeSlotSnapshot(category, slot);
+        if (snapshot == null) {
+            return false;
+        }
+        gameState.restore(snapshot);
+        return true;
+    }
+
+    /**
+     * Reads + decodes the slot's snapshot file into an immutable {@link GameplayStateSnapshot}, or
+     * {@code null} when no snapshot file exists (legacy / metadata-only save) — the pure read + parse half
+     * of {@link #restoreSlotSnapshot}, split out so a caller can run it OFF the FX thread and then apply
+     * the result via {@link GameState#restore} on the FX thread. Touches NO live game state, so it is safe
+     * off the FX thread. Throws on a corrupt / undecodable file.
+     */
+    public GameplayStateSnapshot decodeSlotSnapshot(SaveSlotCategory category, int slot) {
+        assertInitialized();
+        validateSlot(slot);
+        Validation.requireNonNull(category, "Save category is required.");
         Path snapshotPath = slotSnapshotPath(category, slot);
         if (!java.nio.file.Files.exists(snapshotPath)) {
-            return false;
+            return null;
         }
         String json;
         try {
@@ -594,10 +627,7 @@ public final class SaveLoadService {
             throw new IllegalStateException(
                     "Unable to read save-slot snapshot: " + category + " " + slot, exception);
         }
-        GameplayStateSnapshot snapshot = GameplayStateSnapshotJson.fromJson(
-                json, "slot " + category + " " + slot);
-        gameState.restore(snapshot);
-        return true;
+        return GameplayStateSnapshotJson.fromJson(json, "slot " + category + " " + slot);
     }
 
     /** Returns the on-disk thumbnail path that ACTUALLY exists for this slot — checks the

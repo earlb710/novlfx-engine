@@ -51,6 +51,9 @@
     "dialog.save-error.title": "Save failed",
     "dialog.save-error.header": "Could not write slot %d.",
 
+    "dialog.saving": "Saving…",
+    "dialog.loading": "Loading…",
+
     "item.delete.tooltip": "Delete this save"
   }
 }
