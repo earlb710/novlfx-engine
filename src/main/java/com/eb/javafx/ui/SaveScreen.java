@@ -1269,6 +1269,7 @@ public final class SaveScreen {
         // navigating happen back on the FX thread — restore BEFORE navigate, so the destination scene
         // constructs against the loaded NPCs / map / time, not the boot defaults.
         Runnable dismissBusy = DialogMessages.busy(activeScene, context.uiTheme(), screenText("dialog.loading"));
+        long busyStart = System.nanoTime();
         Thread worker = new Thread(() -> {
             com.eb.javafx.save.GameplayStateSnapshot decoded = null;
             RuntimeException failure = null;
@@ -1301,12 +1302,35 @@ public final class SaveScreen {
                     System.err.println("[SaveScreen] Failed to apply snapshot for slot "
                             + summary.category() + " " + summary.slot() + ": " + ex);
                 }
-                dismissBusy.run();
-                navigateAfterLoad(context, summary);
+                finishBusy(busyStart, dismissBusy, () -> navigateAfterLoad(context, summary));
             });
         }, "load-snapshot-decode");
         worker.setDaemon(true);
         worker.start();
+    }
+
+    /** Minimum time the busy overlay stays up, so a fast save / load still shows the spinner long enough
+     *  to visibly ROTATE rather than flashing a frozen circle for a frame or two. */
+    private static final long MIN_BUSY_VISIBLE_MS = 600L;
+
+    /** Dismisses the busy overlay and runs {@code then}, but not before it has been visible for
+     *  {@link #MIN_BUSY_VISIBLE_MS}.  During the extra wait the FX thread is idle, so the spinner
+     *  actually animates.  FX thread only. */
+    private static void finishBusy(long busyStartNanos, Runnable dismissBusy, Runnable then) {
+        long elapsedMs = (System.nanoTime() - busyStartNanos) / 1_000_000L;
+        long remaining = MIN_BUSY_VISIBLE_MS - elapsedMs;
+        Runnable done = () -> {
+            dismissBusy.run();
+            then.run();
+        };
+        if (remaining <= 0) {
+            done.run();
+            return;
+        }
+        javafx.animation.PauseTransition wait =
+                new javafx.animation.PauseTransition(javafx.util.Duration.millis(remaining));
+        wait.setOnFinished(event -> done.run());
+        wait.play();
     }
 
     /** Navigation half of {@link #triggerLoad}: go to the save's recorded gameplay route, else pop the
@@ -1421,6 +1445,7 @@ public final class SaveScreen {
         // the slow JSON-serialise + disk-write of the captured snapshot goes off-thread, so the spinner
         // actually animates instead of freezing.
         Runnable dismissBusy = DialogMessages.busy(activeScene, context.uiTheme(), screenText("dialog.saving"));
+        long busyStart = System.nanoTime();
         com.eb.javafx.save.GameplayStateSnapshot captured;
         try {
             // Prefer the caller-supplied snapshot (the gameplay scene the player came from);
@@ -1445,9 +1470,8 @@ public final class SaveScreen {
             return;
         }
         if (captured == null) {
-            // Metadata-only save — nothing heavy to write, so finish immediately.
-            dismissBusy.run();
-            returnToCaller(context, callerRoute);
+            // Metadata-only save — nothing heavy to write.
+            finishBusy(busyStart, dismissBusy, () -> returnToCaller(context, callerRoute));
             return;
         }
         // Off-thread: serialise + write the (immutable) snapshot — the slow part — keeping the FX thread
@@ -1462,8 +1486,8 @@ public final class SaveScreen {
             }
             final RuntimeException writeFailure = failure;
             javafx.application.Platform.runLater(() -> {
-                dismissBusy.run();
                 if (writeFailure != null) {
+                    dismissBusy.run();
                     DialogMessages.error(activeScene, context.uiTheme(),
                             screenText("dialog.save-error.title"),
                             String.format(screenText("dialog.save-error.header"), slot),
@@ -1473,9 +1497,9 @@ public final class SaveScreen {
                             + category + " " + slot + ": " + writeFailure);
                     return;
                 }
-                // Successful save: return to the calling screen automatically — the refresh-tab afterSave
-                // step is skipped because we're leaving the save screen entirely.
-                returnToCaller(context, callerRoute);
+                // Successful save: keep the spinner up for its minimum, then return to the calling screen
+                // (the refresh-tab afterSave step is skipped because we're leaving the save screen).
+                finishBusy(busyStart, dismissBusy, () -> returnToCaller(context, callerRoute));
             });
         }, "save-snapshot-write");
         worker.setDaemon(true);
