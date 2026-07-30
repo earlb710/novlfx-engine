@@ -1482,6 +1482,19 @@ public class UtilString extends UtilUnicode {
         }
     }
 
+    /**
+     * Capitalises the first character of {@code pString} (Unicode-aware) and leaves the rest
+     * untouched. {@code null} and empty strings are returned unchanged. Unlike
+     * {@link #firstUpperString(String)}, this uses {@link Character#toUpperCase(char)} rather than
+     * an ASCII bit-mask, so it is safe for non-ASCII names and nicknames.
+     */
+    public static String titleCase(String pString) {
+        if (pString == null || pString.isEmpty()) {
+            return pString;
+        }
+        return Character.toUpperCase(pString.charAt(0)) + pString.substring(1);
+    }
+
     public static char[] firstLowerString(char[] pString) {
         if (pString.length > 0) {
             char[] retChar = new char[pString.length];

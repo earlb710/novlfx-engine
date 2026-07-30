@@ -1686,12 +1686,32 @@ Use utility classes for common engine behavior:
 - `JsonStrings` for JSON string escaping and parsing quoted strings; `JsonStrings.ParsedString` reports the parsed value and end index for callers that parse larger documents.
 - `SimpleJson` and `JsonData` for small engine-owned JSON configuration documents that need object, array, string, boolean, null, and numeric value handling without an additional dependency.
 - `InitializationGuard` for fail-fast service initialization checks.
-- `UtilConvert`, `UtilString`, `UtilUnicode`, and `ECharMappings` for small conversion, string, Unicode, and character-mapping helpers retained for reusable engine code.
+- `UtilConvert`, `UtilString`, `UtilUnicode`, and `ECharMappings` for small conversion, string, Unicode, and character-mapping helpers retained for reusable engine code. `UtilString.titleCase(s)` capitalizes the first character (Unicode-aware, null/empty-safe) — handy for turning a lower-case nickname or id into a display label.
 - `UtilImage` for image conversion helpers used by reusable JavaFX/AWT bridge code.
+- `FxImageOps` for game-agnostic pixel algorithms over JavaFX `Image`s: `boxBlur` (separable box blur of a float channel), `overlayAlpha` (alpha compositing), `composeImage` (size-match then composite at a 0–100 opacity), `scaleTo` (nearest-neighbour resample) and `blendImages` (per-pixel linear blend). Use these instead of re-deriving `getArgb`/`setArgb` loops when layering or resampling in-memory maps.
+- `ColorCss` for colour maths and inline-CSS: `luminance` (Rec.601), `isLight` (luminance-based dark-text test), `withAlpha`, `toRgbaCss` (`Color` → `rgba(...)`), `labelStyle` (text fill + size + optional weight/background), plus the `clamp01` / `to255` / `clampByte255` component clamps. The `Color`-typed companion to `ThemeColors` (which works on hex strings and `UiTheme`).
 - `UtilJavaFx.run(Runnable)` for executing work immediately on the JavaFX application thread or scheduling it with `Platform.runLater(...)` from a background thread.
 - `VectorImage` and `VectorImage.ViewBox` for reusable SVG loading, metadata, sizing, styling, transform, export, and sanitization helpers.
 
 Prefer these helpers over duplicating validation and formatting logic in application code.
+
+```java
+import static com.eb.javafx.util.ColorCss.*;
+import static com.eb.javafx.util.FxImageOps.*;
+import com.eb.javafx.util.UtilString;
+
+// Colour → CSS, with a luminance-driven text colour.
+Color accent = Color.web("#3b7d4f");
+String panelCss = "-fx-background-color: " + toRgbaCss(withAlpha(accent, 0.8)) + ";";
+String labelCss = labelStyle(isLight(accent) ? Color.BLACK : Color.WHITE, 16, "bold", null);
+
+// In-memory texture compositing (all size-safe; return the base/null on mismatch).
+Image decaled = composeImage(baseMap, decalMap, 60.0);   // decal's own alpha × 60%
+Image tween   = blendImages(mapA, mapB, 0.5);            // 50/50 linear blend
+
+// First-letter capitalise a nickname for a speaker label.
+String label = UtilString.titleCase("my toy");           // "My toy"
+```
 
 When application code needs one of the engine-bundled fonts, prefer `FontResources` over hard-coded classpath strings. It validates known font filenames and centralizes lookups for resources now packaged in `src/main/resources/com/eb/javafx/fonts`.
 
@@ -1800,6 +1820,8 @@ All are stateless static utilities unless noted.
 | `com.eb.javafx.util.ScaledStylesheet` | `scaledUri(sourceUrl, scale)` — produces a font-scaled copy of a CSS sheet as a cached temp file (returns the source unchanged at scale ≈ 1.0). Backs the global Text-size accessibility scale. |
 | `com.eb.javafx.ui.StageGeometry` | `clampToVisibleScreen(stage)` / `visualBoundsFor(stage)` / `clampToBounds(stage, bounds)` — keep a restored/configured window inside the visible screen bounds. |
 | `com.eb.javafx.ui.ThemeColors` | `relativeLuminance(color)`, `isLightTheme(uiTheme)` (luminance-based light/dark inference), `darken(hex, factor)` / `lighten(hex, factor)` (hue-preserving channel blend, parse-safe), `toCssRgb(color)` (Color → `rgb(r,g,b)` CSS string). |
+| `com.eb.javafx.util.ColorCss` | The `javafx.scene.paint.Color`-typed companion to `ThemeColors`: `luminance` (Rec.601), `isLight` (dark-text test), `withAlpha`, `toRgbaCss` (Color → `rgba(r,g,b,a)`), `labelStyle(text, size, weight, bg)` (inline `-fx-` label style), plus `clamp01` / `to255` / `clampByte255` component clamps. |
+| `com.eb.javafx.util.FxImageOps` | Pixel algorithms over JavaFX `Image`s: `boxBlur(float[], w, h, radius)`, `overlayAlpha(base, over, strength)`, `composeImage(base, overlay, opacityPercent)`, `scaleTo(src, dim)` (nearest-neighbour), `blendImages(a, b, t)` (linear). Size-safe: return the base or `null` on a size/error mismatch. |
 | `com.eb.javafx.ui.ButtonStyling` | `bevel` / `bevelDescendants` / `centeredRow` / `centerButtonContainers` over `ButtonVisuals` — style-class names, spacing, padding, and hover tint are all caller-supplied. |
 | `com.eb.javafx.ui.RepeatedIconBadge` | `build(resourcePath, opacities, sizePx, gapPx, rasteriser)` / `singleIcon(...)` — an "N icons at opacity" badge (e.g. a meter drawn as a row of hearts) with an injected `IconRasteriser` callback. |
 | `com.eb.javafx.transitions.SheetTransitions` | `fadeIn(node[, duration])` — modal popup show choreography (fade + 0.95→1.0 scale, ease-out, crisp-text finisher). Sits beside `TransitionPlayer`. |
