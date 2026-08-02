@@ -466,6 +466,32 @@ public class UtilString extends UtilUnicode {
         }
     }
 
+    /**
+     * Appends {@code token} to a {@code divider}-separated list, but skips it when the exact token is
+     * already present (element match between dividers). A {@code null}/blank list returns {@code token}.
+     * Unlike {@link #addTokenString}, this dedupes and takes an explicit divider.
+     */
+    public static String appendUniqueToken(String list, String token, String divider) {
+        if (list == null || list.isBlank()) {
+            return token;
+        }
+        // Sentinel-wrap both sides so an exact element match (not a substring) is required.
+        if ((divider + list + divider).contains(divider + token + divider)) {
+            return list;
+        }
+        return list + divider + token;
+    }
+
+    /**
+     * Appends a signed {@code "label +N"} / {@code "label -N"} entry to {@code parts}, skipping a zero
+     * value. Builds compact effect summaries like {@code "Love +3, Fear -2"} (join the parts yourself).
+     */
+    public static void appendSignedPart(List<String> parts, String label, int value) {
+        if (value != 0) {
+            parts.add(label + " " + (value > 0 ? "+" + value : Integer.toString(value)));
+        }
+    }
+
     /*
      * Add string token to a StringBuilder using set divider. If the string is empty ony the token is returned.
      *
@@ -1493,6 +1519,39 @@ public class UtilString extends UtilUnicode {
             return pString;
         }
         return Character.toUpperCase(pString.charAt(0)) + pString.substring(1);
+    }
+
+    /**
+     * Splits {@code text} on {@code separator}, capitalises the first character of each non-empty word,
+     * and joins the words with a single space — e.g. {@code spacedTitleCase("early-morning", '-')}
+     * returns {@code "Early Morning"}. {@code null}/blank returns {@code ""}.
+     */
+    public static String spacedTitleCase(String text, char separator) {
+        if (text == null || text.isBlank()) {
+            return "";
+        }
+        String[] words = text.split(java.util.regex.Pattern.quote(String.valueOf(separator)));
+        StringBuilder sb = new StringBuilder(text.length());
+        for (String w : words) {
+            if (w.isEmpty()) {
+                continue;
+            }
+            if (sb.length() > 0) {
+                sb.append(' ');
+            }
+            sb.append(Character.toUpperCase(w.charAt(0))).append(w.substring(1));
+        }
+        return sb.toString();
+    }
+
+    /**
+     * The English day-of-week name for a 1-based day counter where {@code 1 = Monday}, wrapping weekly
+     * ({@code day 8} is Monday again, {@code day 14} is Sunday). Negative and zero counters wrap too.
+     */
+    public static String dayOfWeekName(int day) {
+        String[] names = {"Monday", "Tuesday", "Wednesday", "Thursday",
+                          "Friday", "Saturday", "Sunday"};
+        return names[Math.floorMod(day - 1, 7)];
     }
 
     public static char[] firstLowerString(char[] pString) {

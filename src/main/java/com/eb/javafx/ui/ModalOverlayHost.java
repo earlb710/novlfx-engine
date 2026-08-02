@@ -1,5 +1,7 @@
 package com.eb.javafx.ui;
 
+import com.eb.javafx.util.ColorCss;
+
 import javafx.event.Event;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
@@ -7,6 +9,7 @@ import javafx.scene.Parent;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
+import javafx.scene.paint.Color;
 
 /**
  * Reusable, stateless building blocks for a modal-overlay host: a dim full-screen backdrop with a
@@ -90,5 +93,49 @@ public final class ModalOverlayHost {
             }
         }
         return null;
+    }
+
+    /**
+     * The first descendant of {@code root} (inclusive) whose style-class list contains
+     * {@code styleClass}, or {@code null} if none. Depth-first — the style-class sibling of
+     * {@link #firstDescendantOfType} (find a marked wrapper node rather than a node type).
+     */
+    public static Node firstDescendantWithStyleClass(Node root, String styleClass) {
+        if (root == null) {
+            return null;
+        }
+        if (root.getStyleClass().contains(styleClass)) {
+            return root;
+        }
+        if (root instanceof Parent parent) {
+            for (Node child : parent.getChildrenUnmodifiable()) {
+                Node found = firstDescendantWithStyleClass(child, styleClass);
+                if (found != null) {
+                    return found;
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Tints a ScrollPane-skinned {@code region}'s outer chrome AND its inner {@code .viewport} with a
+     * solid {@code color} at {@code alpha}. A ScrollPane skin paints the viewport separately from the
+     * outer Region, so an inline style on the region alone leaves the viewport tinted by the skin
+     * default — both surfaces must be styled together. No-op when {@code region} is {@code null}.
+     */
+    public static void tintScrollChrome(Region region, Color color, double alpha) {
+        if (region == null) {
+            return;
+        }
+        String rgba = "rgba(" + ColorCss.to255(color.getRed()) + "," + ColorCss.to255(color.getGreen())
+                + "," + ColorCss.to255(color.getBlue()) + "," + ColorCss.formatAlpha(alpha) + ")";
+        region.setStyle("-fx-background-color: " + rgba + ";"
+                + " -fx-background: " + rgba + ";"
+                + " -fx-background-insets: 0;");
+        Node viewport = region.lookup(".viewport");
+        if (viewport != null) {
+            viewport.setStyle("-fx-background-color: " + rgba + ";");
+        }
     }
 }

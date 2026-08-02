@@ -53,6 +53,31 @@ public final class ColorCss {
         return new Color(c.getRed(), c.getGreen(), c.getBlue(), alpha);
     }
 
+    /** Linear RGB interpolation between two colours: {@code t=0} → {@code a}, {@code t=1} → {@code b}
+     *  (alpha forced to 1.0; {@code t} is not clamped). */
+    public static Color lerp(Color a, Color b, double t) {
+        return new Color(
+                a.getRed()   + (b.getRed()   - a.getRed())   * t,
+                a.getGreen() + (b.getGreen() - a.getGreen()) * t,
+                a.getBlue()  + (b.getBlue()  - a.getBlue())  * t,
+                1.0);
+    }
+
+    /** Formats a 0..1 alpha to a stable, locale-independent CSS token ({@code %.2f}), clamped to
+     *  {@code [0,1]}. Avoids locales where {@code Double.toString(0.5)} renders as {@code "0,5"} —
+     *  which JavaFX CSS rejects. */
+    public static String formatAlpha(double alpha) {
+        return String.format(Locale.ROOT, "%.2f", clamp01(alpha));
+    }
+
+    /** An {@code -fx-background-color: rgba(...)} inline style for {@code base} at {@code alpha}
+     *  (locale-safe alpha via {@link #formatAlpha}). */
+    public static String backgroundColorStyle(Color base, double alpha) {
+        return "-fx-background-color: rgba("
+                + to255(base.getRed()) + "," + to255(base.getGreen()) + "," + to255(base.getBlue())
+                + "," + formatAlpha(alpha) + ");";
+    }
+
     /** {@code c} as an {@code rgba(r,g,b,a)} CSS string (locale-independent). */
     public static String toRgbaCss(Color c) {
         return String.format(Locale.ROOT,
