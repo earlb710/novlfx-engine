@@ -153,3 +153,46 @@ of the track instead of repeating.
 
 - `./gradlew --no-daemon test --tests com.eb.javafx.audio.AudioQueueTest --tests
   com.eb.javafx.globalApi.GlobalApiAdapterTest` — BUILD SUCCESSFUL.
+
+## events: add EventSequencer (serial, completion-gated ordering)
+
+Adds `com.eb.javafx.events.EventSequencer` + `SequencedEvent` (functional interface).
+The existing `GameEventBus` (fire-and-forget) and `GameEventQueue` (drain-all FIFO)
+cannot guarantee that one interactive event finishes before the next begins, which
+caused "multiple events firing at once" when a turn ended while the previous turn's
+bonus events were still pending.
+
+EventSequencer runs one SequencedEvent at a time and does not start the next until the
+current one calls `Control.complete()` (so a dialog/scene spanning many frames still
+blocks everything behind it). Enqueue is lazy; assemble a phase then call `run()`.
+Ordering tools:
+- `enqueue(event)` / `enqueueBarrier(action)` — lazy FIFO append.
+- `run()` — process until an event blocks (hasn't completed) or the queue drains;
+  completion of a blocking event, and enqueues done by a barrier action, resume it.
+- `Control.spawn(child)` — insert a bonus/sub-event to run after the current phase's
+  already-queued events and before the next barrier (BREADTH-FIRST, by generation): the
+  event finishes, then its bonus is handed out, rather than the bonus interrupting the
+  rest of the phase.
+- `enqueueBarrier(action)` — a phase boundary whose action runs only after all prior work
+  (including spawned bonus events) has completed; typically enqueues the next turn.
+
+Turn/bonus pattern: enqueue the turn's events (which may spawn bonus events), then
+`enqueueBarrier(startNextTurn)`, then `run()` — the next turn cannot begin until every
+bonus event completes. A throwing event is logged, skipped, and the sequence advances; an
+event that never completes intentionally halts (the completion gate). Single-threaded
+(FX thread).
+
+Tests: `EventSequencerTest` (7 tests, all passing) — FIFO order, async blocking, the
+turn→bonus→barrier→new-turn scenario, breadth-first bonus ordering (siblings-then-bonus,
+by generation), double-complete guard, enqueue-while-busy.
+
+### Docs: events usage guide
+
+- `docs/USER_MANUAL.md` (section 9): added a dedicated `### Events` subsection documenting the bus,
+  queue, command dispatch, and `EventSequencer` (completion gate, breadth-first bonus placement,
+  lazy enqueue + `run()`, the turn/bonus pattern), with code examples. Also cross-linked it from the
+  events bullet under "Generic support modules".
+- `examples/user-manual/09-game-support-state-save-prefs-random/EventsDemo.java`: new runnable
+  reference snippet covering all four primitives; verified it compiles against the built engine and
+  prints `Sequencer order: [turnEndA, turnEndB, bonus, BARRIER, turn2]`.
+- `examples/user-manual/README.md`: added the index row for `EventsDemo.java`.

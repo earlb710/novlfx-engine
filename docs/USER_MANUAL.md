@@ -1593,7 +1593,7 @@ Use the generic support packages when an application needs reusable game systems
 - `LocalizationService` and `LocalizedTextBundle` select a language, resolve stable text IDs, and report missing translations.
 - `AssetCatalog` stores app-owned `AssetDefinition` entries with `AssetType`, preload hints, and deterministic `AssetValidationReport` / `AssetValidationProblem` diagnostics for missing files or paths that escape the configured asset root.
 - `InputMap` stores context-scoped `InputAction` values and `InputBinding` trigger bindings. Triggers combine an `InputDevice` and `InputTrigger` value so menu, dialogue, gameplay, and debug controls can be rebindable without hard-coding UI controls.
-- `GameEventBus` publishes lightweight runtime events and keeps a deterministic history for diagnostics, tests, or save-related inspection. Use `GameEventQueue` for FIFO deferred event processing, `GameEventListener` for listener adapters, and `GameCommandDispatcher` with `GameCommandHandler` for type-keyed command dispatch that can emit events back to the bus.
+- `GameEventBus` publishes lightweight runtime events and keeps a deterministic history for diagnostics, tests, or save-related inspection. Use `GameEventQueue` for FIFO deferred event processing, `GameEventListener` for listener adapters, and `GameCommandDispatcher` with `GameCommandHandler` for type-keyed command dispatch that can emit events back to the bus. When events must run one at a time — each finishing before the next begins — use `EventSequencer` (see the **Events** subsection below).
 - `ProgressTracker`, `ProgressSupport`, and `ProgressSnapshotCodec` model reusable flags, counters, milestones, unlocks, action requirements/effects, and save snapshot sections.
 - `InventoryCatalog` and `InventoryState` provide generic `InventoryItemDefinition` metadata and stack quantities while authored item data remains application-owned. Use `WearableSlotDefinition`, `WearableDefinition`, `WardrobeCatalog`, `OutfitState`, and `WardrobeState` for generic wearable slots, equipped item maps, unlocked wearables, and named outfit snapshots. `InventorySnapshotCodec` and `WardrobeSnapshotCodec` serialize those reusable state slices into application-owned save documents.
 - `CharacterRegistry` and `RelationshipState` provide reusable `CharacterProfile` metadata and numeric relationship state. Use `CharacterTemplate`, `CharacterTemplateRegistry`, `CharacterStatBlock`, and `CharacterState` for template-level base stats plus per-save mutable stats, relationship values, flags, and metadata. `CharacterStatesSnapshotCodec` serializes per-save character state without owning application rules. `CharacterTemplate` exposes two metadata-backed accessors for animation wiring: `talkingAnimationId()` returns `Optional<String>` from the `"talkingAnimationId"` metadata key and is used by `SceneExecutor` to populate `SceneExecutionResult.talkingCue()` on dialogue steps; `idleAnimationId()` returns `Optional<String>` from the `"idleAnimationId"` metadata key for application-owned idle animation setup. Register these IDs in the template's `metadata` map; they are not record components.
@@ -1612,6 +1612,52 @@ These modules intentionally store IDs, metadata, and reusable state only. Concre
 Example/demo code:
 - [`examples/user-manual/09-game-support-state-save-prefs-random/GenericSupportModulesDemo.java`](../examples/user-manual/09-game-support-state-save-prefs-random/GenericSupportModulesDemo.java)
 - [`examples/user-manual/09-game-support-state-save-prefs-random/GenericStateSystemsDemo.java`](../examples/user-manual/09-game-support-state-save-prefs-random/GenericStateSystemsDemo.java)
+
+### Events
+
+The `events` package provides reusable, content-neutral messaging primitives. All are engine-owned and hold no authored game data.
+
+**Fire-and-forget bus.** `GameEventBus` publishes a `GameEvent` (a `type`, `sourceId`, immutable `Map<String,String>` payload, and `Instant`) synchronously to every subscriber and keeps a deterministic in-memory `history()` for diagnostics, tests, and save inspection. `subscribe(type, listener)` returns a `Runnable` that unsubscribes; `GameEventListener` adapts a listener object via `subscribeListener`.
+
+```java
+GameEventBus bus = new GameEventBus();
+Runnable off = bus.subscribe("route.changed", event -> System.out.println(event.payload()));
+bus.publish(GameEvent.now("route.changed", "menu", Map.of("to", "office")));
+off.run();                     // stop listening
+bus.history("route.changed");  // deterministic replay for tests
+```
+
+**Deferred queue.** `GameEventQueue` is a FIFO buffer: `enqueue` events during a frame or turn and `drain()` them (returns and clears) at a controlled point, keeping event production decoupled from processing.
+
+**Command dispatch.** `GameCommandDispatcher` routes a `GameCommand` (a data-only request) to the `GameCommandHandler` registered for its `type`; the handler returns the `GameEvent`s it emitted, and `dispatch(command, bus)` also publishes them to a bus.
+
+**Guaranteed ordering — `EventSequencer`.** The bus and queue are unordered with respect to *completion*: a subscriber that opens an interactive dialog or scene returns immediately, so publishing more events runs them on top of the unfinished one. When events must happen one at a time — each finishing before the next begins — use `EventSequencer`.
+
+It runs one `SequencedEvent` at a time and does not start the next until the current one calls `control.complete()`. Instant events call `complete()` before returning; an interactive event holds the `control` and calls it later (e.g. when a dialog closes), so everything behind it waits. Enqueue is lazy — assemble a phase with `enqueue`/`enqueueBarrier`, then call `run()`:
+
+- `control.spawn(child)` inserts a bonus/sub-event that runs after the current phase's already-queued events and before the next barrier (**breadth-first**: the event finishes, then its bonus is handed out; bonuses of bonuses queue after them, generation by generation).
+- `enqueueBarrier(action)` marks a phase boundary whose `action` runs only after all prior work — including spawned bonus events — has completed. The action typically enqueues the next phase (e.g. the next turn).
+
+The turn pattern: enqueue the turn's events (which may `spawn` bonus events), then `enqueueBarrier(startNextTurn)`, then `run()`. Because every bonus event queues before the barrier, the next turn cannot begin until every bonus event has completed — the fix for "new-turn events firing before the previous turn's bonus events finished".
+
+```java
+EventSequencer sequencer = new EventSequencer();
+sequencer.enqueue(control -> {                 // a turn event
+    openDialog(() -> {                         // interactive; the callback runs on close
+        if (rewardEarned) {                    // award a bonus that must finish this turn
+            control.spawn(bonus -> openBonus(bonus::complete));
+        }
+        control.complete();
+    });
+});
+sequencer.enqueueBarrier(this::startNextTurn); // gated behind every bonus event
+sequencer.run();
+```
+
+A `SequencedEvent` whose `run` throws is logged, skipped (its pending bonus events discarded), and the sequence advances; an event that never calls `complete()` intentionally halts the sequence (that is the completion gate — use `isBusy()` to diagnose a stall). `EventSequencer` is single-threaded — drive it from the JavaFX application thread.
+
+Example/demo code:
+- [`examples/user-manual/09-game-support-state-save-prefs-random/EventsDemo.java`](../examples/user-manual/09-game-support-state-save-prefs-random/EventsDemo.java)
 
 ### State
 
