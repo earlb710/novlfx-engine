@@ -16,6 +16,8 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
 
 /**
@@ -147,6 +149,55 @@ public final class DialogMessages {
             return;
         }
         showPromptOverlay(scene, theme, title, header, content, defaultValue, callback);
+    }
+
+    // ----- Completion-stage API (composable presentation) -------------------------------------
+    // Thin wrappers over the callback-based dialogs above that return a CompletionStage instead of
+    // taking a callback, so a caller can SEQUENCE a follow-up with standard composition —
+    //     DialogMessages.info(scene, theme, title, header, content).thenRun(() -> playSleep());
+    // — rather than nesting callbacks or juggling external "is a dialog still open?" flags.  The stage
+    // completes from the dialog's own dismiss callback, i.e. on the JavaFX Application Thread once the
+    // player has closed the dialog — so any thenRun/thenAccept continuation also runs on the FX thread,
+    // which is exactly what a UI follow-up (show the next beat, advance the turn) needs.
+    //
+    // These are the modal half of a broader "presentation sequencer" idea: give every timed animation and
+    // player-dismissed dialog a completion signal, and ordering ("response dialog, THEN sleep") becomes
+    // ordinary stage composition instead of bespoke per-game queues.
+
+    /** {@link #confirm(Scene, UiTheme, String, String, String, Consumer)} as a stage: completes with the
+     *  chosen {@link Result} when the player answers (OK / Cancel / Enter / Escape / backdrop). */
+    public static CompletionStage<Result> confirm(Scene scene, UiTheme theme, String title,
+                                                   String header, String content) {
+        CompletableFuture<Result> done = new CompletableFuture<>();
+        confirm(scene, theme, title, header, content, done::complete);
+        return done;
+    }
+
+    /** {@link #info(Scene, UiTheme, String, String, String, Runnable)} as a stage: completes (with
+     *  {@code null}) when the player dismisses the dialog. */
+    public static CompletionStage<Void> info(Scene scene, UiTheme theme, String title,
+                                             String header, String content) {
+        CompletableFuture<Void> done = new CompletableFuture<>();
+        info(scene, theme, title, header, content, () -> done.complete(null));
+        return done;
+    }
+
+    /** {@link #error(Scene, UiTheme, String, String, String, Runnable)} as a stage: completes (with
+     *  {@code null}) when the player dismisses the dialog. */
+    public static CompletionStage<Void> error(Scene scene, UiTheme theme, String title,
+                                              String header, String content) {
+        CompletableFuture<Void> done = new CompletableFuture<>();
+        error(scene, theme, title, header, content, () -> done.complete(null));
+        return done;
+    }
+
+    /** {@link #prompt(Scene, UiTheme, String, String, String, String, Consumer)} as a stage: completes
+     *  with the entered text on OK, or {@code null} on Cancel / Escape / backdrop. */
+    public static CompletionStage<String> prompt(Scene scene, UiTheme theme, String title,
+                                                 String header, String content, String defaultValue) {
+        CompletableFuture<String> done = new CompletableFuture<>();
+        prompt(scene, theme, title, header, content, defaultValue, done::complete);
+        return done;
     }
 
     // ----- Implementation ---------------------------------------------------------------

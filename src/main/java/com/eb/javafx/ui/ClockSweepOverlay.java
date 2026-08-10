@@ -21,6 +21,8 @@ import javafx.scene.text.TextAlignment;
 import javafx.scene.transform.Rotate;
 import javafx.util.Duration;
 
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
 
 /**
@@ -74,6 +76,25 @@ public final class ClockSweepOverlay {
      * @param onFinished      run once the overlay has fully dissolved (or immediately when {@code parent}
      *                        is {@code null})
      */
+    /**
+     * Completion-stage variant of {@link #play}: identical, but instead of an {@code onFinished} callback
+     * it returns a {@link CompletionStage} that completes (with {@code null}, on the JavaFX Application
+     * Thread) once the overlay has fully dissolved — or immediately when {@code parent} is {@code null}.
+     * Lets a caller sequence the turn's follow-up with ordinary composition
+     * ({@code playTurnClock(...).thenRun(this::finishTurn)}) instead of threading a continuation callback
+     * through, so the animation "speaks the same completion language" as the stage-returning
+     * {@code DialogMessages} dialogs.
+     */
+    public static CompletionStage<Void> play(StackPane parent, String caption,
+            double fromAngle, double target, int steps, double totalMillis,
+            boolean sleeping, Consumer<Button> sleepButtonSkin,
+            Runnable sleepAction, Runnable onSleepDissolve) {
+        CompletableFuture<Void> done = new CompletableFuture<>();
+        play(parent, caption, fromAngle, target, steps, totalMillis, sleeping, sleepButtonSkin,
+                sleepAction, onSleepDissolve, () -> done.complete(null));
+        return done;
+    }
+
     public static void play(StackPane parent, String caption,
             double fromAngle, double target, int steps, double totalMillis,
             boolean sleeping, Consumer<Button> sleepButtonSkin,

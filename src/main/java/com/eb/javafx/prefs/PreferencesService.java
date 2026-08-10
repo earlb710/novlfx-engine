@@ -172,7 +172,7 @@ public final class PreferencesService {
         artCacheSize = validatedArtCacheSize(
                 preferences.get(ART_CACHE_SIZE_KEY, ArtCacheSize.SMALL.preferenceValue()));
         textureSizeMax = validatedTextureSizeMax(
-                preferences.get(TEXTURE_SIZE_MAX_KEY, TextureSizeMax.K4.preferenceValue()));
+                preferences.get(TEXTURE_SIZE_MAX_KEY, TextureSizeMax.K2.preferenceValue()));
         antialias2x = preferences.getBoolean(ANTIALIAS_2X_KEY, false);
     }
 
@@ -462,20 +462,41 @@ public final class PreferencesService {
      */
     public static ArtCacheSize currentArtCacheSize() {
         String value = Preferences.userNodeForPackage(PreferencesService.class)
-                .get(ART_CACHE_SIZE_KEY, ArtCacheSize.SMALL.preferenceValue());
-        for (ArtCacheSize candidate : ArtCacheSize.values()) {
-            if (candidate.preferenceValue().equals(value)) {
-                return candidate;
+                .get(ART_CACHE_SIZE_KEY, null);
+        if (value != null) {
+            for (ArtCacheSize candidate : ArtCacheSize.values()) {
+                if (candidate.preferenceValue().equals(value)) {
+                    return candidate;   // the player picked one explicitly — honour it
+                }
             }
         }
-        return ArtCacheSize.SMALL;
+        return defaultArtCacheSizeForHeap();
+    }
+
+    /**
+     * The art-cache size to use when the player hasn't picked one — scaled to the JVM's max heap so the
+     * game runs within an 8 GB machine's budget and uses the extra room on a 16 GB / 32 GB one.  The
+     * cache textures + figures must fit the HEAP (not physical RAM), so we read {@link Runtime#maxMemory()}
+     * directly (which already tracks {@code -Xmx} / {@code -XX:MaxRAMPercentage}).  Never auto-selects
+     * {@link ArtCacheSize#HUGE} — that stays an explicit opt-in for very large machines.
+     */
+    private static ArtCacheSize defaultArtCacheSizeForHeap() {
+        long maxHeap = Runtime.getRuntime().maxMemory();
+        long gb = 1024L * 1024 * 1024;
+        if (maxHeap >= 10 * gb) {
+            return ArtCacheSize.LARGE;    // ~32 GB RAM
+        }
+        if (maxHeap >= 5 * gb) {
+            return ArtCacheSize.MEDIUM;   // ~16 GB RAM
+        }
+        return ArtCacheSize.SMALL;        // ~8 GB RAM (and anything smaller)
     }
 
     public Model3dDetail model3dDetail() {
         return model3dDetail;
     }
 
-    /** The chosen maximum texture dimension for generated 3D models; defaults to {@link TextureSizeMax#K4}. */
+    /** The chosen maximum texture dimension for generated 3D models; defaults to {@link TextureSizeMax#K2}. */
     public TextureSizeMax textureSizeMax() {
         return textureSizeMax;
     }
@@ -488,13 +509,13 @@ public final class PreferencesService {
      */
     public static TextureSizeMax currentTextureSizeMax() {
         String value = Preferences.userNodeForPackage(PreferencesService.class)
-                .get(TEXTURE_SIZE_MAX_KEY, TextureSizeMax.K4.preferenceValue());
+                .get(TEXTURE_SIZE_MAX_KEY, TextureSizeMax.K2.preferenceValue());
         for (TextureSizeMax candidate : TextureSizeMax.values()) {
             if (candidate.preferenceValue().equals(value)) {
                 return candidate;
             }
         }
-        return TextureSizeMax.K4;
+        return TextureSizeMax.K2;
     }
 
     /** Config-driven per-speed reveal/auto-advance durations (ms): {@code [slow, normal, fast]},
@@ -749,13 +770,13 @@ public final class PreferencesService {
         saveArtCacheSize(validatedArtCacheSize(size));
     }
 
-    /** Persists the max-texture-size level, falling back to {@link TextureSizeMax#K4} for null. */
+    /** Persists the max-texture-size level, falling back to {@link TextureSizeMax#K2} for null. */
     public void saveTextureSizeMax(TextureSizeMax size) {
-        this.textureSizeMax = size == null ? TextureSizeMax.K4 : size;
+        this.textureSizeMax = size == null ? TextureSizeMax.K2 : size;
         preferences.put(TEXTURE_SIZE_MAX_KEY, this.textureSizeMax.preferenceValue());
     }
 
-    /** Persists a validated max-texture-size identifier, falling back to {@link TextureSizeMax#K4}. */
+    /** Persists a validated max-texture-size identifier, falling back to {@link TextureSizeMax#K2}. */
     public void saveTextureSizeMax(String size) {
         saveTextureSizeMax(validatedTextureSizeMax(size));
     }
@@ -849,7 +870,7 @@ public final class PreferencesService {
                 return candidate;
             }
         }
-        return TextureSizeMax.K4;
+        return TextureSizeMax.K2;
     }
 
     private FooterShortcutDisplay validatedFooterShortcutDisplay(String value) {

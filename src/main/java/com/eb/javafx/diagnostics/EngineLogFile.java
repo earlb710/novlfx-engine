@@ -7,6 +7,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 /**
  * Mirrors everything written to {@link System#out} and {@link System#err} into a log file, so a
@@ -61,6 +63,23 @@ public final class EngineLogFile {
     }
 
     /**
+     * Logs an ERROR — a {@code context} line plus {@code t}'s full stack trace — to {@link System#err},
+     * which is teed into {@value #DEFAULT_LOG_FILE} (so every error is captured on disk instead of
+     * swallowed).  Reusable from any {@code catch} block, and the default uncaught-exception handler
+     * routes through it.  Best-effort: it never throws, so logging a failure can't cause a second one.
+     */
+    public static void logError(String context, Throwable t) {
+        try {
+            System.err.println("[error] " + (context == null ? "" : context));
+            if (t != null) {
+                t.printStackTrace();   // -> System.err (teed to the log file)
+            }
+        } catch (Throwable ignored) {
+            // Logging must never itself crash the caller (e.g. an OOM while formatting the trace).
+        }
+    }
+
+    /**
      * Redirects {@link System#out} / {@link System#err} to tee into {@code logFile} (truncated), in
      * addition to their original console streams.  Idempotent within a run — a second call is a
      * no-op (the file is only truncated by the first install of the process).
@@ -73,10 +92,13 @@ public final class EngineLogFile {
             if (logFile.getParent() != null) {
                 Files.createDirectories(logFile.getParent());
             }
-            OutputStream file = Files.newOutputStream(logFile,
+            OutputStream rawFile = Files.newOutputStream(logFile,
                     StandardOpenOption.CREATE,
                     StandardOpenOption.WRITE,
                     StandardOpenOption.TRUNCATE_EXISTING);
+            // Stamp every FILE line with a timestamp first column — the console streams stay unprefixed,
+            // so the terminal is unchanged and only log.txt carries the timestamps.
+            OutputStream file = timestampPrefixing(rawFile);
             Object lock = new Object();
             // File-only stream for fileOnly(); shares the same lock so its writes can't interleave
             // mid-line with the teed console output into the same file.
@@ -126,6 +148,68 @@ public final class EngineLogFile {
         } catch (RuntimeException ex) {
             System.err.println("[EngineLog] Could not reroute java.util.logging: " + ex);
         }
+    }
+
+    /** Timestamp first-column format written at the start of every log-file line. */
+    private static final DateTimeFormatter LINE_TIMESTAMP =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
+
+    /**
+     * Wraps {@code underlying} so every LINE it writes is prefixed with a {@link #LINE_TIMESTAMP} first
+     * column (e.g. {@code 2026-08-09 14:23:01.123 [Class] …}).  The timestamp is stamped at the moment a
+     * line's first byte is written, and a line may span several {@code write} calls (a stamp is emitted
+     * only once per line — when the previous byte was a {@code \n}, or at the very start).  Not
+     * synchronised itself: every caller writes through the shared {@code lock} in {@link #tee} /
+     * {@link #fileOnlyStream}, so the line-start state stays consistent.
+     */
+    private static OutputStream timestampPrefixing(OutputStream underlying) {
+        return new OutputStream() {
+            private boolean atLineStart = true;
+
+            private void stampIfLineStart() throws IOException {
+                if (atLineStart) {
+                    underlying.write((LocalDateTime.now().format(LINE_TIMESTAMP) + " ")
+                            .getBytes(StandardCharsets.UTF_8));
+                    atLineStart = false;
+                }
+            }
+
+            @Override
+            public void write(int b) throws IOException {
+                stampIfLineStart();
+                underlying.write(b);
+                if (b == '\n') {
+                    atLineStart = true;
+                }
+            }
+
+            @Override
+            public void write(byte[] b, int off, int len) throws IOException {
+                int segStart = off;
+                for (int i = off; i < off + len; i++) {
+                    if (b[i] == '\n') {
+                        stampIfLineStart();
+                        underlying.write(b, segStart, i - segStart + 1);   // through the newline
+                        atLineStart = true;
+                        segStart = i + 1;
+                    }
+                }
+                if (segStart < off + len) {                                // trailing line with no newline yet
+                    stampIfLineStart();
+                    underlying.write(b, segStart, off + len - segStart);
+                }
+            }
+
+            @Override
+            public void flush() throws IOException {
+                underlying.flush();
+            }
+
+            @Override
+            public void close() throws IOException {
+                underlying.close();
+            }
+        };
     }
 
     /** An OutputStream writing to {@code file} only, serialised on {@code lock} (so it interleaves

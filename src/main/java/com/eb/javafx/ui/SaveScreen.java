@@ -1403,18 +1403,17 @@ public final class SaveScreen {
 
     /** Builds the default save-name prepopulated in the prompt.  Priority order:
      *  <ol>
-     *    <li>Existing slot description (overwriting a named save reuses its name so the
-     *        player can re-save with a quick Enter without losing the label).</li>
      *    <li>Host-supplied default via {@link #setDefaultSaveNameSupplier} (game-context
      *        aware — typically the MC's current map location or scene name).</li>
      *    <li>Engine fallback "{tab label} {slot} — {yyyy-MM-dd HH:mm}" — used when no
      *        host supplier is registered or it returned null/blank.</li>
-     *  </ol> */
+     *  </ol>
+     *  <p>Overwriting a filled slot deliberately does NOT reuse that slot's old description:
+     *  the prompt is repopulated as if the slot were blank (the fresh host/fallback default),
+     *  so a re-save reflects where the player IS now, not the stale label from the last write.
+     *  {@code existing} is therefore accepted but unused — kept for call-site stability.</p> */
     private static String defaultSaveName(SaveSlotCategory category, int slot,
                                             SaveSlotSummary existing) {
-        if (existing != null && !existing.description().isBlank()) {
-            return existing.description();
-        }
         java.util.function.Supplier<String> supplier = defaultSaveNameSupplier;
         if (supplier != null) {
             try {
