@@ -188,7 +188,12 @@ public final class DialogEntriesViewSnapshotJson {
 
     private static DialogSpeaker speakerFromJson(Map<String, Object> object) {
         String id = JsonData.optionalString(object, "speakerId", "speaker id").orElse("");
-        String label = JsonData.optionalString(object, "speakerLabel", "speaker label").orElse("");
+        // A narrator / unnamed-system line has a BLANK label (DialogSpeaker allows it), and the writer
+        // saves it as "speakerLabel":"".  JsonData.optionalString REJECTS a present-but-blank value, so
+        // read the label RAW here and tolerate blank — otherwise restoring any snapshot that contains a
+        // narrator entry throws "speaker label must not be blank".
+        Object rawLabel = object.get("speakerLabel");
+        String label = rawLabel instanceof String labelStr ? labelStr : "";
         String color = JsonData.optionalString(object, "speakerColor", "speaker color").orElse("");
         String iconId = JsonData.optionalString(object, "speakerIconId", "speaker icon").orElse("");
         if (id.isBlank() && label.isBlank()) {

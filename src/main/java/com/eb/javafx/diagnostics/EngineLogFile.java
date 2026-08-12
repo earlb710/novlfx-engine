@@ -150,9 +150,10 @@ public final class EngineLogFile {
         }
     }
 
-    /** Timestamp first-column format written at the start of every log-file line. */
+    /** Timestamp first-column format written at the start of every log-file line
+     *  ({@code yyyy-MM-dd HH:mm:ss} — 24-hour clock, no milliseconds). */
     private static final DateTimeFormatter LINE_TIMESTAMP =
-            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     /**
      * Wraps {@code underlying} so every LINE it writes is prefixed with a {@link #LINE_TIMESTAMP} first
